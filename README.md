@@ -4,19 +4,32 @@
 
 ## Overview
 
+The project contains Windows PowerShell Desired State Configuration (DSC) Resources for managing VC and ESXi settings. DSC is a management platform in PowerShell that enables managing infrastructure configuration as code. It is a declarative platform used for configuration, deployment and management of systems. The purpose of the project is to allow users to configure VC and ESXi in a declarative fashion. Configuration management software like Chef and Puppet are able to run DSC resources. Applying a configuration makes vCenter or ESXi in the desired by the user state.
+
 ## Try it out
 
 ### Prerequisites
 
-* Prereq 1
-* Prereq 2
-* Prereq 3
+* Install PowerCLI
+  ```
+   Install-Module -Name VMware.PowerCLI -Scope CurrentUser
+  ```
+* Configure LCM
+  ```
+   winrm quickconfig
+  ```
+* Install Pester
+  ```
+   Install-Module -Name Pester
+  ```
 
 ### Build & Run
 
-1. Step 1
-2. Step 2
-3. Step 3
+1. Copy the VMware.vSphereDSC Module to one of the module directories.
+2. Import the VMware.vSphereDSC Module
+   ```
+    Import-Module -Name 'VMware.vSphereDSC'
+   ```
 
 ## Documentation
 
