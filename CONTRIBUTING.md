@@ -4,11 +4,21 @@
 
 The dscr-for-vmware project team welcomes contributions from the community. If you wish to contribute code and you have not
 signed our contributor license agreement (CLA), our bot will update the issue when you open a Pull Request. For any
-questions about the CLA process, please refer to our [FAQ](https://cla.vmware.com/faq).
+questions about the CLA process, please refer to our [FAQ](https://cla.vmware.com/faq) or contact us through the GitHub issue tracker.
+
+This page presents guidelines for contributing to dscr-for-vmware. Following the guidelines helps to make the contribution process easy, collaborative, and productive.
 
 ## Community
 
 ## Getting Started
+
+## Submitting Bug Reports and Feature Requests
+
+Please submit bug reports and feature requests by using our GitHub [Issues](https://github.com/vmware/dscr-for-vmware/issues) page.
+
+Before you submit a bug report about the code in the repository, please check the Issues page to see whether someone has already reported the problem. In the bug report, be as specific as possible about the error and the conditions under which it occurred. On what version and build did it occur? What are the steps to reproduce the bug? 
+
+Feature requests should fall within the scope of the project. Keep in mind that Photon OS is intended to be a minimalist Linux operating system geared toward hosting containerized applications and cloud-native applications.
 
 ## Contribution Flow
 
