@@ -992,7 +992,7 @@ class vCenterStatistics : BaseDSC
     <#
     .DESCRIPTION
 
-    The unit of period. Statistics can be stored separatelly for each of the {Day, Week, Month, Year} period units
+    The unit of period. Statistics can be stored separatelly for each of the {Day, Week, Month, Year} period units.
     #>
     [DscProperty(Key)]
     [Period] $Period

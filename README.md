@@ -1,101 +1,96 @@
 
 
-# dscr-for-vmware
+# Desired State Configuration Resources for VMware
 
 ## Overview
 
-The project contains Windows PowerShell Desired State Configuration (DSC) Resources for managing VC and ESXi settings. DSC is a management platform in PowerShell that enables managing infrastructure configuration as code. It is a declarative platform used for configuration, deployment and management of systems. The purpose of the project is to allow users to configure VC and ESXi in a declarative fashion. Configuration management software like Chef and Puppet are able to run DSC resources. Applying a configuration makes vCenter or ESXi in the desired by the user state.
+The **VMware.vSphereDSC** module is a collection of DSC Resources. This module includes DSC resources that simplify the management of vCenter and ESXi settings, with a simple declarative language.
+
+The **VMware.vSphereDSC** module contains the following resources:
+
+- **VMHostNtpSettings**: Used to configure NTP Server property and the Service Policy of the 'ntpd' Service of a ESXi host.
+- **VMHostDnsSettings**: Used to configure the DNS Settings of a ESXi host.
+- **VMHostSatpClaimRule**: Used to create or remove SATP Claim Rules of a ESXi host.
+- **VMHostTpsSettings**: Used to configure TPS Settings of a ESXi host.
+- **vCenterStatistics**: Used to configure the Statistics Settings of a vCenter.
+- **vCenterSettings**: Used to update EventMaxAge Settings, TaskMaxAge Settings and the Logging Level of a vCenter.
 
 ## Getting Started
+## Requirements
+The following table describes the required dependencies for running VMware.vSphereDSC Resources.
 
-### Prerequisites
+ **Required dependency**   | **Minimum version**
+-------------------------- | -------------------
+`PowerShell`               | 5.1
+`PowerCLI`                 | 10.1.1
 
-* Install PowerCLI
-  ```
-   Install-Module -Name VMware.PowerCLI -Scope CurrentUser
-  ```
-* Configure LCM
-  ```
-   winrm quickconfig
-  ```
-* Install Pester
-  ```
-   Install-Module -Name Pester
-  ```
+For information on how to install PowerShell, please visit the [Microsoft Page](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell?view=powershell-5.1).  
+For information on how to install PowerCLI, please visit the [PowerCLI Blog](https://blogs.vmware.com/PowerCLI/2018/02/powercli-10.html).  
 
-### Accessing the Repository
-#### Downloading the Repository for Local Access
-1. Load the GitHub repository page: <https://github.com/vmware/dscr-for-vmware>
-2. Click on the green “Clone or Download” button and then click “Download ZIP”  
-3. Once downloaded, extract the zip file to the location of your choosing  
-4. At this point, you now have a local copy of the repository
+You also need to configure the WRM(Windows Remote Management) on the machine you are going to run the configurations. For more information on how to configure it, please visit the [Microsoft Page](https://docs.microsoft.com/en-us/windows/desktop/winrm/installation-and-configuration-for-windows-remote-management).  
 
-#### Creating Your Own GitHub Based Access Point
-1. Login (or signup) to GitHub
-2. Load the GitHub repository page: <https://github.com/vmware/dscr-for-vmware>
-3. Click on the Fork button, which will create a copy of the repository and place it in the GitHub based location of your choosing.
+## Installing the VMware.vSphereDSC Resources
 
-### Build & Run
-
-1. Open new Powershell window to find your module directories by typing: 
-   ``` 
-   $env:PSModulePath 
+1. Copy the VMware.vSphereDSC Module to one of your module directories.
+2. Import the VMware.vSphereDSC Module:
    ```
-2. Copy the VMware.vSphereDSC Module to one of the module directories.
-3. Import the VMware.vSphereDSC Module by typing:
+    Import-Module -Name 'VMware.vSphereDSC' 
    ```
-    Import-Module -Name 'VMware.vSphereDSC'
+
+   To check if the module was successfully installed: 
    ```
-4. To see the available DSC Resources type:
+    Get-DscResource -Name 'VMware.vSphereDSC'
    ```
-    Get-DscResource -Module VMware.vSphereDSC
-   ```
-5. To apply one of the desired configurations:  
-   Compile the ps1 configuration file (for example VMHostNtpSettings_Config.ps1 file)
+
+## Applying VMware.vSphereDSC Resource Configuration
+# Example
+The following example uses [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) and configures the NTP Server and the 'ntpd' Service Policy.  
+
+1. You need to compile the [Configuration File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Configurations/ESXiConfigs/VMHostNtpSettings_Config.ps1) to [MOF](https://docs.microsoft.com/en-us/windows/desktop/wmisdk/managed-object-format--mof-):  
    ```
     $ntpConfigPath = Join-Path (Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Configurations') 'ESXiConfigs')'VMHostNtpSettings_Config.ps1'
     . $ntpConfigPath -Name '<VMHost Name>' -Server 'Server Name>' -User '<User Name>' -Password '<Password for User>'
    ```
-
-   To check if the NTP Settings are in the desired state:
+2. To Test if the NTP Settings are in the desired state:
    ```
-    Test-DscConfiguration -ComputerName <your computer name> -Path .\VMHostNtpSettings_Config\
+    Test-DscConfiguration -ComputerName <The name of the machine on which you are applying your configuration> -Path .\VMHostNtpSettings_Config\
    ```
-
-   To apply the configuration and configure the NTP Settings to be in the desired state:
+3. To Apply the NTP Configuration:
    ```
-    Start-DscConfiguration -ComputerName <your computer name> -Path .\VMHostNtpSettings_Config\
+    Start-DscConfiguration -ComputerName <The name of the machine on which you are applying your configuration> -Path .\VMHostNtpSettings_Config\ -Wait -Force
    ```
-
-   To get the current state of the NTP Settings and also the last applied configuration:
+4. To get the latest applied configuration on your machine:
    ```
     Get-DscConfiguration
    ```
-  
-6. To run all unit tests:
-   ```
-    cd (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests')  
-    .\TestRunner.ps1 -Unit
-   ```
 
-## Documentation
+If you want to apply other configurations, you just need to compile the configuration file and pass the path of the created MOF file to the DSC cmdlets.
 
- DSC is a declarative platform used for configuration, deployment, and management of systems. It consists of three primary components:
+For more information about the DSC cmdlets please visit the [Microsoft Page](https://docs.microsoft.com/en-us/powershell/module/psdesiredstateconfiguration/?view=powershell-5.1).
 
- * Configurations are declarative PowerShell scripts which define and configure instances of resources.
- * Resources are the "make it so" part of DSC. They contain the code that puts and keeps the target of a configuration in the specified state.
- * The Local Configuration Manager (LCM) is the engine by which DSC facilitates the interaction between resources and configurations.
+## Documentation and Examples
 
-## Releases & Major Branches
+For a full list of resources in VMware.vSphereDSC and examples on their use, check out
+the [Desired State Configuration Resources for VMware wiki](https://github.com/vmware/dscr-for-vmware/wiki).
+
+## Branches
+
+### master
+
+This is the branch containing the latest release - no contributions should be made
+directly to this branch.
+
+### dev
+
+This is the development branch to which contributions should be proposed by contributors
+as pull requests. This development branch will periodically be merged to the master
+branch.
 
 ## Contributing
 
-The dscr-for-vmware project team welcomes contributions from the community. If you wish to contribute code and you have not
-signed our contributor license agreement (CLA), our bot will update the issue when you open a Pull Request. For any
-questions about the CLA process, please refer to our [FAQ](https://cla.vmware.com/faq). For more detailed information,
-refer to [CONTRIBUTING.md](CONTRIBUTING.md).
+The Desired State Configuration Resources for VMware project team welcomes contributions from the community. For more detailed information, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
-The dscr-for-vmware is distributed under the [BSD-2](https://github.com/vmware/dscr-for-vmware/blob/master/LICENSE.txt).
+The Desired State Configuration Resources for VMware is distributed under the [BSD-2](https://github.com/vmware/dscr-for-vmware/blob/master/LICENSE.txt).
 
 For more details, please refer to the [BSD-2 License File](https://github.com/vmware/dscr-for-vmware/blob/master/LICENSE.txt).
