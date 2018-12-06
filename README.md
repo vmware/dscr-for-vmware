@@ -24,10 +24,10 @@ The following table describes the required dependencies for running VMware.vSphe
 `PowerShell`               | 5.1
 `PowerCLI`                 | 10.1.1
 
-For information on how to install PowerShell, please visit the [Installing Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell?view=powershell-5.1).  
+For information on how to install PowerShell, please visit [Installing Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell?view=powershell-5.1).  
 For information on how to install PowerCLI, please visit the [PowerCLI Blog](https://blogs.vmware.com/PowerCLI/2018/02/powercli-10.html).  
 
-You also need to configure the WinRM (Windows Remote Management) on the machine you are going to run the configurations. For more information on how to configure it, please visit the [Installation and Configuration for Windows Remote Management](https://docs.microsoft.com/en-us/windows/desktop/winrm/installation-and-configuration-for-windows-remote-management).  
+You also need to configure the WinRM (Windows Remote Management) on the machine you are going to run the configurations. For more information on how to configure it, please visit [Installation and Configuration for Windows Remote Management](https://docs.microsoft.com/en-us/windows/desktop/winrm/installation-and-configuration-for-windows-remote-management).  
 
 ## Installing the VMware.vSphereDSC Resources
 
