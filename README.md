@@ -17,6 +17,7 @@ The **VMware.vSphereDSC** module contains the following resources:
 
 ## Getting Started
 ## Requirements
+**VMware.vSphereDSC** module contains Windows PowerShell Desired State Configuration Resources. 
 The following table describes the required dependencies for running VMware.vSphereDSC Resources.
 
  **Required dependency**   | **Minimum version**
@@ -25,9 +26,10 @@ The following table describes the required dependencies for running VMware.vSphe
 `PowerCLI`                 | 10.1.1
 
 For information on how to install PowerShell, please visit [Installing Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell?view=powershell-5.1).  
+
 For information on how to install PowerCLI, please visit the [PowerCLI Blog](https://blogs.vmware.com/PowerCLI/2018/02/powercli-10.html).  
 
-You also need to configure the WinRM (Windows Remote Management) on the machine you are going to run the configurations. For more information on how to configure it, please visit [Installation and Configuration for Windows Remote Management](https://docs.microsoft.com/en-us/windows/desktop/winrm/installation-and-configuration-for-windows-remote-management).  
+You also need to configure the DSC LCM on a Windows machine where the resources will run. For more information on how to configure it, please visit [Desired State Configuration Quick Start](https://docs.microsoft.com/en-us/powershell/dsc/quickstart)
 
 ## Installing the VMware.vSphereDSC Resources
 
