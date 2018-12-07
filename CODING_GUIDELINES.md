@@ -2,18 +2,16 @@
 
 When writing code for any new DSC Resource, you need to inherit from BaseDSC or VMHostBaseDSC.
 
-If you are writing a resource that configures settings of a vCenter, you want to inherit from BaseDSC.
- ```powershell
-  [DscResource()]
-  MyResource : BaseDSC
- ```
-
-Otherwise, if you are configuring ESXi settings you need to inherit from VMHostBaseDSC.
+If you are configuring ESXi settings you need to inherit from VMHostBaseDSC.
  ```powershell
   [DscResource()]
   MyResource : VMHostBaseDSC
  ```
-
+For any other resource you need to inherit from BaseDSC.
+ ```powershell
+  [DscResource()]
+  MyResource : BaseDSC
+ ```
 You need to implement your new resource in the [VMware.vSphereDSC Module File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/VMware.vSphereDSC.psm1). In the Set(), Test() and Get() methods of your resource, you need to call ConnectVIServer() method from the base class to establish a connection either to  a vCenter or an ESXi. 
  ```powershell
   [void] Set()
@@ -89,7 +87,7 @@ Basically for the unit tests, you need to test the Set(), Test() and Get() metho
   }
  ```
 
-For every PowerCLI cmdlet you use, you need to create mock implementation in the [VMware.Vim Test Module](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core).
+For every PowerCLI cmdlet you use, you need to create mock implementation in the [VMware.VimAutomation.Core Test Module](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMware.VimAutomation.Core.psm1).
  ```powershell
   function <PowerCLI cmdlet>
   {
@@ -101,7 +99,7 @@ For every PowerCLI cmdlet you use, you need to create mock implementation in the
   }
  ```
 
-For every VMware.Vim type you use, you need to provide .NET implementation of that type in the [VMware.Vim Module File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMware.VimAutomation.Core.psm1).
+For every VMware.Vim type you use, you need to provide .NET implementation of that type in the [VMware.VimAutomation.Core Test Module File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMware.VimAutomation.Core.psm1).
  ```powershell
   <#
   Mock types of VMware.Vim assembly for the purpose of unit testing.
@@ -112,7 +110,7 @@ For every VMware.Vim type you use, you need to provide .NET implementation of th
   "
  ```
 
-In your unit test file you need to change your VMware.Vim module, so the tests can run with the mock types.
+In your unit test file you need to replace VMware PowerCLI modules with the script modules that allows PowerCLI cmdlets and types to be mocked.
  ```powershell
   $script:modulePath = $env:PSModulePath
   $script:unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
@@ -162,7 +160,7 @@ In your unit test file you need to change your VMware.Vim module, so the tests c
   }
  ```
 
-The needed Configurations for the Integration Tests should be located in the [Configurations Folder](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Configurations)
+The needed Configurations for the Integration Tests should be located in the [Configurations Folder](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Tests/Integration/Configurations)
 
 Running the tests:
 1. Go to the Tests folder:
