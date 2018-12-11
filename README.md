@@ -41,7 +41,7 @@ You also need to configure the DSC LCM on a Windows machine where the resources 
 
    To check if the module was successfully installed: 
    ```
-    Get-DscResource -Name 'VMware.vSphereDSC'
+    Get-DscResource -Module 'VMware.vSphereDSC'
    ```
 
 ## Applying VMware.vSphereDSC Resource Configuration
