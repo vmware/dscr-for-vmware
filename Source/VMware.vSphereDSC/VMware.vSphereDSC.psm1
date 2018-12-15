@@ -141,6 +141,88 @@ class VMHostBaseDSC : BaseDSC
 }
 
 [DscResource()]
+class VMHostPowerPolicySettings : VMHostBaseDSC
+{
+    <#
+    .DESCRIPTION
+
+    Host setting for power policy
+    #>
+    [DscProperty()]
+    [System.Int32] $PowerPolicy = 2
+
+    $powerProfiles =  @{
+        "High Performance" = 1 ;
+        "Balanced"         = 2 ;
+        "Low Power"        = 3 ;
+        "Custom"           = 4
+    }
+
+    [void] Set()
+    {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $this.UpdatePowerPolicy($vmHost)
+    }
+
+    [void] UpdatePowerPolicy($vmHost)
+    {
+        $vmHostCurrentPowerPolicy = $vmHost.ExtensionData.config.PowerSystemInfo.CurrentPolicy
+        $shouldUpdateVMHostPowerPolicy = $this.ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
+
+        if (!$shouldUpdateVMHostPowerPolicy)
+        {
+            return
+        }
+
+        $powerSystem = Get-View ($vmHost | Get-View).ConfigManager.PowerSystem
+
+        Update-HostPowerPolicy -PowerSystem $powerSystem -PowerPolicy $this.PowerPolicy
+    }
+
+    [bool] Test()
+    {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostPowerPolicy = $vmHost.ExtensionData.config.PowerSystemInfo.CurrentPolicy
+
+        $shouldUpdateVMHostPowerPolicy = $this.ShouldUpdateVMHostPowerPolicy($vmHostPowerPolicy)
+
+        return $shouldUpdateVMHostPowerPolicy
+    }
+
+    [VMHostPowerPolicySettings] Get()
+    {
+        $result = [VMHostPowerPolicySettings]::new()
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostPowerPolicy = $vmHost.ExtensionData.config.PowerSystemInfo.CurrentPolicy
+
+		$result.Name = $this.Name
+		$result.Server = $this.Server
+        $result.PowerPolicy = $vmHostPowerPolicy.Key
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the VMHost Power policy should be updated.
+    #>
+    [bool] ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
+    {
+        if( $this.PowerPolicy -eq $vmHostCurrentPowerPolicy.Key ) {
+            return $true
+        }
+
+        return $false
+    }
+}
+
+[DscResource()]
 class VMHostNtpSettings : VMHostBaseDSC
 {
     <#

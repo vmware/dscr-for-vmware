@@ -29,6 +29,17 @@ function New-DateTimeConfig
     return $dateTimeConfig
 }
 
+function Update-HostPowerPolicy
+{
+    [CmdletBinding()]
+    param(
+        [VMware.Vim.HostPowerSystem] $PowerSystem,
+        [System.Int32] $PowerPolicy
+    )
+
+    $PowerSystem.ConfigurePowerPolicy($PowerPolicy)
+}
+
 function Update-DateTimeConfig
 {
     [CmdletBinding()]
