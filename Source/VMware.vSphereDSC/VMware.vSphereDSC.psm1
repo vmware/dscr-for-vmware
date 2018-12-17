@@ -987,6 +987,165 @@ class VMHostTpsSettings : VMHostBaseDSC
 }
 
 [DscResource()]
+class VMHostSettings : VMHostBaseDSC {
+  <#
+    .DESCRIPTION
+
+    Motd value.
+    #>
+  [DscProperty()]
+  [string] $Motd
+
+  <#
+    .DESCRIPTION
+
+    Clear the Motd content
+    #>
+  [DscProperty()]
+  [bool] $MotdClear
+
+  <#
+    .DESCRIPTION
+
+    Issue value.
+    #>
+  [DscProperty()]
+  [string] $Issue
+
+  <#
+    .DESCRIPTION
+
+    Clear the Issue content
+    #>
+  [DscProperty()]
+  [bool] $IssueClear
+
+
+  hidden [string] $IssueSettingName = "Config.Etc.issue"
+  hidden [string] $MotdSettingName = "Config.Etc.motd"
+
+  [void] Set() {
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    $this.ConnectVIServer()
+    $vmHost = $this.GetVMHost()
+
+    $this.UpdateVMHostSettings($vmHost)
+  }
+
+  [bool] Test() {
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    $this.ConnectVIServer()
+    $vmHost = $this.GetVMHost()
+
+    return !$this.ShouldUpdateVMHostSettings($vmHost)
+  }
+
+  [VMHostSettings] Get() {
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    $result = [VMHostSettings]::new()
+
+    $this.ConnectVIServer()
+    $vmHost = $this.GetVMHost()
+    $this.PopulateResult($vmHost, $result)
+
+    return $result
+  }
+
+  <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the Advanced Setting value should be updated.
+    #>
+  [bool] ShouldUpdateSettingValue($desiredValue, $currentValue) {
+    <#
+            Desired value equal to $null means that the setting value was not specified.
+            If it is specified we check if the setting value is not equal to the current value.
+         #>
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    return ($null -ne $desiredValue -and $desiredValue -ne $currentValue)
+  }
+
+  <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if at least one Advanced Setting value should be updated.
+    #>
+  [bool] ShouldUpdateVMHostSettings($VMHost) {
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    $VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
+
+    $currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    $currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+
+    $shouldUpdate = @()
+    $shouldUpdate += ($this.MotdClear -and ($currentMotd.Value -ne '')) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
+    $shouldUpdate += ($this.IssueClear -and ($currentIssue.Value -ne '')) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
+
+    return ($shouldUpdate -contains $true)
+  }
+
+  <#
+    .DESCRIPTION
+
+    Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
+    #>
+  [void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    if ($clearValue) {
+      if ($this.ShouldUpdateSettingValue('', $advancedSettingCurrentValue)) {
+        Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value '' -Confirm:$false
+      }
+    }
+    else {
+      if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
+        Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
+      }
+    }
+  }
+
+  <#
+    .DESCRIPTION
+
+    Performs update on those Advanced Settings values that needs to be updated.
+    #>
+  [void] UpdateVMHostSettings($VMHost) {
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    $VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
+
+    $currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    $currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+
+    $this.SetAdvancedSetting($currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
+    $this.SetAdvancedSetting($currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
+  }
+
+  <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the advanced settings from the server.
+    #>
+  [void] PopulateResult($VMHost, $result) {
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    $VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
+
+    $currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    $currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+
+    $result.Motd = $currentMotd.Value
+    $result.Issue = $currentIssue.Value
+  }
+
+}
+
+[DscResource()]
 class vCenterStatistics : BaseDSC
 {
     <#
@@ -1215,11 +1374,44 @@ class vCenterSettings : BaseDSC
     [DscProperty()]
     [nullable[int]] $TaskMaxAge
 
+  <#
+    .DESCRIPTION
+
+    Motd value.
+    #>
+  [DscProperty()]
+  [string] $Motd
+
+  <#
+    .DESCRIPTION
+
+    Clear the Motd content
+    #>
+  [DscProperty()]
+  [bool] $MotdClear
+
+  <#
+    .DESCRIPTION
+
+    Issue value.
+    #>
+  [DscProperty()]
+  [string] $Issue
+  <#
+    .DESCRIPTION
+
+    Clear the Issue content
+    #>
+  [DscProperty()]
+  [bool] $IssueClear
+
     hidden [string] $LogLevelSettingName = "log.level"
     hidden [string] $EventMaxAgeEnabledSettingName = "event.maxAgeEnabled"
     hidden [string] $EventMaxAgeSettingName = "event.maxAge"
     hidden [string] $TaskMaxAgeEnabledSettingName = "task.maxAgeEnabled"
     hidden [string] $TaskMaxAgeSettingName = "task.maxAge"
+    hidden [string] $MotdSettingName = "etc.motd"
+    hidden [string] $IssueSettingName = "etc.issue"
 
     [void] Set()
     {
@@ -1274,21 +1466,25 @@ class vCenterSettings : BaseDSC
     #>
     [bool] ShouldUpdatevCenterSettings($vCenter)
     {
-        $vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
+    $currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
+    $currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
+    $currentEventMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }
+    $currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
+    $currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
+    $currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    $currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-        $currentLogLevelValue = ($vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }).Value
-        $currentEventMaxAgeEnabledValue = ($vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }).Value
-        $currentEventMaxAgeValue = ($vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }).Value
-        $currentTaskMaxAgeEnabledValue = ($vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }).Value
-        $currentTaskMaxAgeValue = ($vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }).Value
+    $shouldUpdate = @()
+    $shouldUpdate += $this.ShouldUpdateSettingValue($this.LoggingLevel, $currentLogLevel.Value)
+    $shouldUpdate += $this.ShouldUpdateSettingValue($this.EventMaxAgeEnabled, $currentEventMaxAgeEnabled.Value)
+    $shouldUpdate += $this.ShouldUpdateSettingValue($this.EventMaxAge, $currentEventMaxAge.Value)
+    $shouldUpdate += $this.ShouldUpdateSettingValue($this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
+    $shouldUpdate += $this.ShouldUpdateSettingValue($this.TaskMaxAge, $currentTaskMaxAge.Value)
+    $shouldUpdate += ($this.MotdClear -and ($currentMotd.Value -ne '')) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
+    $shouldUpdate += $this.ShouldUpdateSettingValue($this.Issue, $currentIssue.Value)
+    $shouldUpdate += ($this.IssueClear -and ($currentIssue.Value -ne '')) -or (-not $this.MotdClear -and ($this.Motd -ne $currentIssue.Value))
 
-        $shouldUpdateLogLevel = $this.ShouldUpdateSettingValue($this.LoggingLevel, $currentLogLevelValue)
-        $shouldUpdateEventMaxAgeEnabled = $this.ShouldUpdateSettingValue($this.EventMaxAgeEnabled, $currentEventMaxAgeEnabledValue)
-        $shouldUpdateEventMaxAge = $this.ShouldUpdateSettingValue($this.EventMaxAge, $currentEventMaxAgeValue)
-        $shouldUpdateTaskMaxAgeEnabled = $this.ShouldUpdateSettingValue($this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabledValue)
-        $shouldUpdateTaskMaxAge = $this.ShouldUpdateSettingValue($this.TaskMaxAge, $currentTaskMaxAgeValue)
-
-        return ($shouldUpdateLogLevel -or $shouldUpdateEventMaxAgeEnabled -or $shouldUpdateEventMaxAge -or $shouldUpdateTaskMaxAgeEnabled -or $shouldUpdateTaskMaxAge)
+    return ($shouldUpdate -contains $true)
     }
 
     <#
@@ -1304,6 +1500,28 @@ class vCenterSettings : BaseDSC
         }
     }
 
+  <#
+    .DESCRIPTION
+
+    Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
+    This handles Advanced Settings that have a "Clear" property.
+    #>
+
+  [void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    if ($clearValue) {
+      if ($this.ShouldUpdateSettingValue('', $advancedSettingCurrentValue)) {
+        Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value '' -Confirm:$false
+      }
+    }
+    else {
+      if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
+        Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
+      }
+    }
+  }
+
     <#
     .DESCRIPTION
 
@@ -1318,12 +1536,16 @@ class vCenterSettings : BaseDSC
         $currentEventMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }
         $currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
         $currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
+    $currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    $currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
         $this.SetAdvancedSetting($currentLogLevel, $this.LoggingLevel, $currentLogLevel.Value)
         $this.SetAdvancedSetting($currentEventMaxAgeEnabled, $this.EventMaxAgeEnabled, $currentEventMaxAgeEnabled.Value)
         $this.SetAdvancedSetting($currentEventMaxAge, $this.EventMaxAge, $currentEventMaxAge.Value)
         $this.SetAdvancedSetting($currentTaskMaxAgeEnabled, $this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
         $this.SetAdvancedSetting($currentTaskMaxAge, $this.TaskMaxAge, $currentTaskMaxAge.Value)
+    $this.SetAdvancedSetting($currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
+    $this.SetAdvancedSetting($currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
     }
 
     <#
@@ -1340,11 +1562,15 @@ class vCenterSettings : BaseDSC
         $currentEventMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }
         $currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
         $currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
+    $currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    $currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
         $result.LoggingLevel = $currentLogLevel.Value
         $result.EventMaxAgeEnabled = $currentEventMaxAgeEnabled.Value
         $result.EventMaxAge = $currentEventMaxAge.Value
         $result.TaskMaxAgeEnabled = $currentTaskMaxAgeEnabled.Value
         $result.TaskMaxAge = $currentTaskMaxAge.Value
+    $result.Motd = $currentMotd.Value
+    $result.Issue = $currentIssue.Value
     }
 }
