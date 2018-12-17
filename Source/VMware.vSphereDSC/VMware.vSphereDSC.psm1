@@ -163,22 +163,15 @@ class VMHostPowerPolicySettings : VMHostBaseDSC
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
 
-        $this.UpdatePowerPolicy($vmHost)
-    }
-
-    [void] UpdatePowerPolicy($vmHost)
-    {
         $vmHostCurrentPowerPolicy = $vmHost.ExtensionData.config.PowerSystemInfo.CurrentPolicy
         $shouldUpdateVMHostPowerPolicy = $this.ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
 
-        if (!$shouldUpdateVMHostPowerPolicy)
+        if ($shouldUpdateVMHostPowerPolicy -eq $false)
         {
             return
         }
 
-        $powerSystem = Get-View ($vmHost | Get-View).ConfigManager.PowerSystem
-
-        Update-HostPowerPolicy -PowerSystem $powerSystem -PowerPolicy $this.PowerPolicy
+        Set-HostPowerPolicy -vmHost $vmHost -PowerPolicy $this.PowerPolicy
     }
 
     [bool] Test()
@@ -187,9 +180,7 @@ class VMHostPowerPolicySettings : VMHostBaseDSC
         $vmHost = $this.GetVMHost()
         $vmHostPowerPolicy = $vmHost.ExtensionData.config.PowerSystemInfo.CurrentPolicy
 
-        $shouldUpdateVMHostPowerPolicy = $this.ShouldUpdateVMHostPowerPolicy($vmHostPowerPolicy)
-
-        return $shouldUpdateVMHostPowerPolicy
+        return !$this.ShouldUpdateVMHostPowerPolicy($vmHostPowerPolicy)
     }
 
     [VMHostPowerPolicySettings] Get()
@@ -198,11 +189,10 @@ class VMHostPowerPolicySettings : VMHostBaseDSC
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
-        $vmHostPowerPolicy = $vmHost.ExtensionData.config.PowerSystemInfo.CurrentPolicy
 
 		$result.Name = $this.Name
 		$result.Server = $this.Server
-        $result.PowerPolicy = $vmHostPowerPolicy.Key
+        $result.PowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy.Key
 
         return $result
     }
@@ -214,11 +204,12 @@ class VMHostPowerPolicySettings : VMHostBaseDSC
     #>
     [bool] ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
     {
-        if( $this.PowerPolicy -eq $vmHostCurrentPowerPolicy.Key ) {
-            return $true
-        }
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Host Power Policy - Should Update from/to [{0}/{1}]" -f $vmHostCurrentPowerPolicy.Key, $this.PowerPolicy)"
 
-        return $false
+        $result = $this.PowerPolicy -ne $vmHostCurrentPowerPolicy.Key
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Host Power Policy - Should Update Power Policy result [{0}]" -f $result)"
+        
+        return $result
     }
 }
 

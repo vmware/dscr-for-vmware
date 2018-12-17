@@ -14,6 +14,17 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
+function Set-HostPowerPolicy {
+    [CmdletBinding()]
+    param (
+        $vmHost,
+        [System.Int32] $PowerPolicy
+    )
+    
+    $powerSystem = Get-View ($vmHost | Get-View).ConfigManager.PowerSystem
+    $powerSystem.ConfigurePowerPolicy($PowerPolicy)
+}
+
 function New-DateTimeConfig
 {
     [CmdletBinding()]
@@ -27,17 +38,6 @@ function New-DateTimeConfig
     $dateTimeConfig.NtpConfig.Server = $NtpServer
 
     return $dateTimeConfig
-}
-
-function Update-HostPowerPolicy
-{
-    [CmdletBinding()]
-    param(
-        [VMware.Vim.HostPowerSystem] $PowerSystem,
-        [System.Int32] $PowerPolicy
-    )
-
-    $PowerSystem.ConfigurePowerPolicy($PowerPolicy)
 }
 
 function Update-DateTimeConfig
