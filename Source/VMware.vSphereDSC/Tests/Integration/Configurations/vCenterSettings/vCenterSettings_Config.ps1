@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -36,6 +36,8 @@ $script:eventMaxAgeEnabled = $false
 $script:eventMaxAge = 40
 $script:taskMaxAgeEnabled = $false
 $script:taskMaxAge = 40
+$script:motd = 'vCenterSettings motd test'
+$script:issue = 'vCenterSettings issue test'
 
 $script:configurationData = @{
     AllNodes = @(
@@ -96,6 +98,23 @@ Configuration vCenterSettings_WithTaskMaxAge_Config
     }
 }
 
+Configuration vCenterSettings_WithMotdAndIssue_Config
+{
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost
+    {
+        vCenterSettings vCenterSettings
+        {
+            Server = $Server
+            Credential = $script:vCenterCredential
+            Motd = $script:motd
+            Issue = $script:issue
+        }
+    }
+}
+
 vCenterSettings_WithLoggingLevel_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithLoggingLevel_Config" -ConfigurationData $script:configurationData
 vCenterSettings_WithEventMaxAge_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithEventMaxAge_Config" -ConfigurationData $script:configurationData
 vCenterSettings_WithTaskMaxAge_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithTaskMaxAge_Config" -ConfigurationData $script:configurationData
+vCenterSettings_WithMotdAndIssue_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithMotdAndIssue_Config" -ConfigurationData $script:configurationData
