@@ -193,3 +193,14 @@ function Update-PerfInterval
 
     $PerformanceManager.UpdatePerfInterval($PerformanceInterval)
 }
+
+function Set-HostPowerPolicy {
+    [CmdletBinding()]
+    param (
+        $vmHost,
+        [System.Int32] $PowerPolicy
+    )
+    
+    $powerSystem = Get-View ($vmHost | Get-View).ConfigManager.PowerSystem
+    $powerSystem.ConfigurePowerPolicy($PowerPolicy)
+}

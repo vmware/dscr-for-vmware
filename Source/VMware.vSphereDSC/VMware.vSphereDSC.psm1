@@ -1348,3 +1348,76 @@ class vCenterSettings : BaseDSC
         $result.TaskMaxAge = $currentTaskMaxAge.Value
     }
 }
+
+[DscResource()]
+class VMHostPowerPolicySettings : VMHostBaseDSC
+{
+    <#
+    .DESCRIPTION
+
+    Host setting for power policy
+    #>
+    [DscProperty()]
+    [System.Int32] $PowerPolicy = 2
+
+    $powerProfiles =  @{
+        "High Performance" = 1 ;
+        "Balanced"         = 2 ;
+        "Low Power"        = 3 ;
+        "Custom"           = 4
+    }
+
+    [void] Set()
+    {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $vmHostCurrentPowerPolicy = $vmHost.ExtensionData.config.PowerSystemInfo.CurrentPolicy
+        $shouldUpdateVMHostPowerPolicy = $this.ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
+
+        if ($shouldUpdateVMHostPowerPolicy -eq $false)
+        {
+            return
+        }
+
+        Set-HostPowerPolicy -vmHost $vmHost -PowerPolicy $this.PowerPolicy
+    }
+
+    [bool] Test()
+    {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostPowerPolicy = $vmHost.ExtensionData.config.PowerSystemInfo.CurrentPolicy
+
+        return !$this.ShouldUpdateVMHostPowerPolicy($vmHostPowerPolicy)
+    }
+
+    [VMHostPowerPolicySettings] Get()
+    {
+        $result = [VMHostPowerPolicySettings]::new()
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+		$result.Name = $this.Name
+		$result.Server = $this.Server
+        $result.PowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy.Key
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the VMHost Power policy should be updated.
+    #>
+    [bool] ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
+    {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Host Power Policy - Should Update from/to [{0}/{1}]" -f $vmHostCurrentPowerPolicy.Key, $this.PowerPolicy)"
+
+        $result = $this.PowerPolicy -ne $vmHostCurrentPowerPolicy.Key
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Host Power Policy - Should Update Power Policy result [{0}]" -f $result)"
+        
+        return $result
+    }
+}
