@@ -75,7 +75,7 @@ Limiting your current working branch to a single issue will also both streamline
 The Git guide to branching is available [here](https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging).
 
 ### Make Code Changes
-If you are creating new DSC Resource for VMware, you need to get familiar with the following guidelins: [Coding Guidelines](https://github.com/vmware/dscr-for-vmware/CODING_GUIDELINES.md)
+If you are creating new DSC Resource for VMware, you need to get familiar with the following guidelines: [Coding Guidelines](https://github.com/vmware/dscr-for-vmware/blob/master/CODING_GUIDELINES.md)
 Pay attention to any new code merged into the dev branch of the official repository. If this occurs, you will need to pick-up these changes in your fork.
 
 ### Submit a Pull Request
@@ -130,5 +130,5 @@ Some things to pay attention to while reviewing:
 * Is the code easy to read?
 * Do all variables, parameters, and functions have **descriptive** names? (e.g. no $params, $args, $i, $a, etc.)
 * Does every function have a help comment?
-* Does the code follow the [Coding Guidelines]((https://github.com/vmware/dscr-for-vmware/CODING_GUIDELINES.md))?
+* Does the code follow the [Coding Guidelines](https://github.com/vmware/dscr-for-vmware/blob/master/CODING_GUIDELINES.md)?
 * Has the author included test coverage for their changes?

@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -56,6 +56,8 @@ Describe 'vCenterSettings' {
             $script:resourceProperties.EventMaxAge = 40
             $script:resourceProperties.TaskMaxAgeEnabled = $false
             $script:resourceProperties.TaskMaxAge = 40
+            $script:resourceProperties.Motd = ''
+            $script:resourceProperties.Issue = ''
         }
 
         Context 'Invoking with default resource properties' {
@@ -77,7 +79,7 @@ Describe 'vCenterSettings' {
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
@@ -87,7 +89,7 @@ Describe 'vCenterSettings' {
             It 'Should call Get-AdvancedSetting mock with the passed server and vCenter once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-AdvancedSetting `
                                   -ParameterFilter { $Server -eq $vCenter -and $Entity -eq $vCenter } `
@@ -103,25 +105,31 @@ Describe 'vCenterSettings' {
                 $script:resourceProperties.EventMaxAge = 41
                 $script:resourceProperties.TaskMaxAgeEnabled = $true
                 $script:resourceProperties.TaskMaxAge = 41
+                $script:resourceProperties.Motd = 'Hello World from motd!'
+                $script:resourceProperties.Issue = 'Hello World from isue!'
 
-                $advancedSettings = @( 
+                $advancedSettings = @(
                     [VMware.Vim.AdvancedSetting] @{ Name = 'log.level'; Value = 'Warning' }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAgeEnabled'; Value = $true }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 41 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $true }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 41 }
+                    [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = 'Hello World from motd!' }
+                    [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = 'Hello World from issue!' }
                 )
 
                 $vCenterMock = {
                     return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'log.level'; Value = 'Info' }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAgeEnabled'; Value = $false }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 40 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $false }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 40 }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = '' }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = '' }
                     )
                 }
 
@@ -153,6 +161,12 @@ Describe 'vCenterSettings' {
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
                                   -ParameterFilter { $AdvancedSetting -eq $advancedSettings[4] -and $Value -eq $script:resourceProperties.TaskMaxAge -and !$Confirm } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
+                Assert-MockCalled -CommandName Set-AdvancedSetting `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[5] -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+                Assert-MockCalled -CommandName Set-AdvancedSetting `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[6] -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
 
@@ -164,25 +178,31 @@ Describe 'vCenterSettings' {
                 $script:resourceProperties.EventMaxAge = 41
                 $script:resourceProperties.TaskMaxAgeEnabled = $true
                 $script:resourceProperties.TaskMaxAge = 41
+                $script:resourceProperties.Motd = 'Hello World from motd!'
+                $script:resourceProperties.Issue = 'Hello World from issue!'
 
-                $advancedSettings = @( 
+                $advancedSettings = @(
                     [VMware.Vim.AdvancedSetting] @{ Name = 'log.level'; Value = 'Warning' }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAgeEnabled'; Value = $true }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 41 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $true }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 41 }
+                    [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = 'Hello World from motd!' }
+                    [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = 'Hello World from issue!' }
                 )
 
                 $vCenterMock = {
                     return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'log.level'; Value = 'Warning' }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAgeEnabled'; Value = $true }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 41 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $true }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 41 }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = 'Hello World from motd!' }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = 'Hello World from issue!' }
                     )
                 }
 
@@ -214,6 +234,12 @@ Describe 'vCenterSettings' {
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
                                   -ParameterFilter { $AdvancedSetting -eq $advancedSettings[4] -and $Value -eq $script:resourceProperties.TaskMaxAge -and !$Confirm } `
                                   -ModuleName $script:moduleName -Exactly 0 -Scope It
+                Assert-MockCalled -CommandName Set-AdvancedSetting `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[5] -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
+                                  -ModuleName $script:moduleName -Exactly 0 -Scope It
+                Assert-MockCalled -CommandName Set-AdvancedSetting `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[6] -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
+                                  -ModuleName $script:moduleName -Exactly 0 -Scope It
             }
         }
     }
@@ -225,6 +251,8 @@ Describe 'vCenterSettings' {
             $script:resourceProperties.EventMaxAge = 40
             $script:resourceProperties.TaskMaxAgeEnabled = $false
             $script:resourceProperties.TaskMaxAge = 40
+            $script:resourceProperties.Motd = ''
+            $script:resourceProperties.Issue = ''
         }
 
         Context 'Invoking with default resource properties' {
@@ -246,7 +274,7 @@ Describe 'vCenterSettings' {
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
@@ -256,7 +284,7 @@ Describe 'vCenterSettings' {
             It 'Should call Get-AdvancedSetting mock with the passed server and vCenter once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-AdvancedSetting `
                                   -ParameterFilter { $Server -eq $vCenter -and $Entity -eq $vCenter } `
@@ -272,17 +300,21 @@ Describe 'vCenterSettings' {
                 $script:resourceProperties.EventMaxAge = 41
                 $script:resourceProperties.TaskMaxAgeEnabled = $true
                 $script:resourceProperties.TaskMaxAge = 41
+                $script:resourceProperties.Motd = 'Hello World from motd!'
+                $script:resourceProperties.Issue = 'Hello World from issue!'
 
                 $vCenterMock = {
                     return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'log.level'; Value = 'Info' }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAgeEnabled'; Value = $false }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 40 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $false }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 40 }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = '' }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = '' }
                     )
                 }
 
@@ -311,17 +343,21 @@ Describe 'vCenterSettings' {
                 $script:resourceProperties.EventMaxAge = 41
                 $script:resourceProperties.TaskMaxAgeEnabled = $true
                 $script:resourceProperties.TaskMaxAge = 41
+                $script:resourceProperties.Motd = 'Hello World from motd!'
+                $script:resourceProperties.Issue = 'Hello World from issue!'
 
                 $vCenterMock = {
                     return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'log.level'; Value = 'Warning' }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAgeEnabled'; Value = $true }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 41 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $true }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 41 }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = 'Hello World from motd!' }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = 'Hello World from issue!' }
                     )
                 }
 
@@ -350,6 +386,8 @@ Describe 'vCenterSettings' {
             $script:resourceProperties.EventMaxAge = 40
             $script:resourceProperties.TaskMaxAgeEnabled = $false
             $script:resourceProperties.TaskMaxAge = 40
+            $script:resourceProperties.Motd = ''
+            $script:resourceProperties.Issue = ''
         }
 
         Context 'Invoking with default resource properties' {
@@ -360,26 +398,32 @@ Describe 'vCenterSettings' {
                 $script:resourceProperties.EventMaxAge = 41
                 $script:resourceProperties.TaskMaxAgeEnabled = $true
                 $script:resourceProperties.TaskMaxAge = 41
+                $script:resourceProperties.Motd = 'Hello World from motd!'
+                $script:resourceProperties.Issue = 'Hello World from issue!'
 
                 $vCenter = [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user' }
-                $advancedSettings = @( 
+                $advancedSettings = @(
                     [VMware.Vim.AdvancedSetting] @{ Name = 'log.level'; Value = 'Warning' }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAgeEnabled'; Value = $true }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 41 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $true }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 41 }
+                    [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = 'Hello World from motd!' }
+                    [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = 'Hello World from issue!' }
                 )
 
                 $vCenterMock = {
                     return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'log.level'; Value = 'Warning' }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAgeEnabled'; Value = $true }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 41 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $true }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 41 }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = 'Hello World from motd!' }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = 'Hello World from issue!' }
                     )
                 }
 
@@ -394,7 +438,7 @@ Describe 'vCenterSettings' {
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Get()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
@@ -404,7 +448,7 @@ Describe 'vCenterSettings' {
             It 'Should call Get-AdvancedSetting mock with the passed server and vmhost once' {
                 # Act
                 $resource.Get()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-AdvancedSetting `
                                   -ParameterFilter { $Server -eq $vCenter -and $Entity -eq $vCenter } `
@@ -422,6 +466,8 @@ Describe 'vCenterSettings' {
                 $result.EventMaxAge | Should -Be $script:resourceProperties.EventMaxAge
                 $result.TaskMaxAgeEnabled | Should -Be $script:resourceProperties.TaskMaxAgeEnabled
                 $result.TaskMaxAge | Should -Be $script:resourceProperties.TaskMaxAge
+                $result.Motd | Should -Be $script:resourceProperties.Motd
+                $result.Issue | Should -Be $script:resourceProperties.Issue
             }
         }
     }
