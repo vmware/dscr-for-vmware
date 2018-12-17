@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -40,13 +40,20 @@ enum Period
 
 enum LoggingLevel
 {
-    Unset 
+    Unset
     None
     Error
     Warning
     Info
     Verbose
     Trivia
+}
+
+enum VMHostServicePolicy
+{
+    Automatic
+    Off
+    On
 }
 
 class BaseDSC
@@ -83,16 +90,16 @@ class BaseDSC
     {
 	    $savedVerbosePreference = $global:VerbosePreference
         $global:VerbosePreference = 'SilentlyContinue'
-		
+
         Import-Module -Name VMware.VimAutomation.Core
-		
+
 		$global:VerbosePreference = $savedVerbosePreference
     }
 
     <#
     .DESCRIPTION
 
-    Connects to the specified Server with the passed Credentials. 
+    Connects to the specified Server with the passed Credentials.
     The method sets the Connection property to the established connection.
     If connection cannot be established, the method writes an error.
     #>
@@ -135,7 +142,7 @@ class VMHostBaseDSC : BaseDSC
         {
             Write-Error "VMHost with name $($this.Name) was not found."
         }
-         
+
         return $vmHost
     }
 }
@@ -230,7 +237,7 @@ class VMHostNtpSettings : VMHostBaseDSC
             # Empty array specified as desired, but current is not an empty array, so update VMHost NTP Server.
             return $true
         }
-        else 
+        else
         {
             $ntpServerToAdd = $desiredVMHostNtpServer | Where-Object { $currentVMHostNtpServer -NotContains $_ }
             $ntpServerToRemove = $currentVMHostNtpServer | Where-Object { $desiredVMHostNtpServer -NotContains $_ }
@@ -244,7 +251,7 @@ class VMHostNtpSettings : VMHostBaseDSC
                 #>
                 return $true
             }
-            
+
             # No need to update VMHost NTP Server.
             return $false
         }
@@ -271,7 +278,7 @@ class VMHostNtpSettings : VMHostBaseDSC
     <#
     .DESCRIPTION
 
-    Updates the VMHost NTP Server with the desired NTP Server array.    
+    Updates the VMHost NTP Server with the desired NTP Server array.
     #>
     [void] UpdateVMHostNtpServer($vmHost)
     {
@@ -282,7 +289,7 @@ class VMHostNtpSettings : VMHostBaseDSC
         {
             return
         }
-        
+
         $dateTimeConfig = New-DateTimeConfig -NtpServer $this.NtpServer
         $dateTimeSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.DateTimeSystem
 
@@ -323,7 +330,7 @@ class VMHostDnsSettings : VMHostBaseDSC
     .DESCRIPTION
 
     Indicates whether DHCP is used to determine DNS configuration.
-    #> 
+    #>
     [DscProperty(Mandatory)]
     [bool] $Dhcp
 
@@ -423,7 +430,7 @@ class VMHostDnsSettings : VMHostBaseDSC
 
     Returns a boolean value indicating if the desired DNS optional value is equal to the current DNS value from the server.
     #>
-    [bool] AreDnsOptionalPropertiesEqual($desiredPropertyValue, $currentPropertyValue) 
+    [bool] AreDnsOptionalPropertiesEqual($desiredPropertyValue, $currentPropertyValue)
     {
         if ([string]::IsNullOrEmpty($desiredPropertyValue) -and [string]::IsNullOrEmpty($currentPropertyValue))
         {
@@ -440,7 +447,7 @@ class VMHostDnsSettings : VMHostBaseDSC
     #>
     [bool] Equals($vmHostDnsConfig)
     {
-        # Checks if desired Mandatory values are equal to current values from server. 
+        # Checks if desired Mandatory values are equal to current values from server.
         if ($this.Dhcp -ne $vmHostDnsConfig.Dhcp -or $this.DomainName -ne $vmHostDnsConfig.DomainName -or $this.HostName -ne $vmHostDnsConfig.HostName)
         {
             return $false
@@ -478,12 +485,12 @@ class VMHostDnsSettings : VMHostBaseDSC
 
         $dnsConfig = New-DNSConfig @dnsConfigArgs
         $networkSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.NetworkSystem
-        
-        try 
+
+        try
         {
             Update-DNSConfig -NetworkSystem $networkSystem -DnsConfig $dnsConfig
         }
-        catch 
+        catch
         {
             Write-Error "The DNS Config could not be updated: $($PSItem.ToString())"
         }
@@ -930,7 +937,7 @@ class VMHostTpsSettings : VMHostBaseDSC
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
         $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
-        
+
         foreach ($tpsSetting in $tpsSettings)
         {
             $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
@@ -1145,6 +1152,66 @@ class VMHostSettings : VMHostBaseDSC {
 
 }
 
+class VMHostService {
+    [string]$Name
+    [VMHostServicePolicy]$Policy
+    [bool]$Running
+}
+
+[DscResource()]
+class VMHostServices : VMHostBaseDSC {
+  <#
+    .DESCRIPTION
+
+    Host services.
+    #>
+  [DscProperty()]
+  [VMHostService[]] $VMHostServices
+
+  [void]Set(){
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    $this.ConnectVIServer()
+    $vmHost = $this.GetVMHost()
+
+    $this.UpdateVMHostServices($vmHost)
+  }
+
+  [bool]Test(){
+      $this.ConnectVIServer()
+  }
+  [VMHostServices]Get(){
+      return $this
+  }
+
+  <#
+    .DESCRIPTION
+
+    Updates the configuration of the VMHostServices that require an update.
+    #>
+  [void] UpdateVMHostServices($VMHost) {
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    $VMHostCurrentServices = Get-VMHostServices -Server $this.Connection -Entity $VMHost
+
+
+    foreach($service in $this.VMHostServices){
+        $currentVMHostService = $VMHostCurrentServices | where{$_.Key -eq $service.Name}
+        if($service.Policy -ne  $currentVMHostService.Policy){
+            Set-VMHostService -HostService $currentVMHostService -Policy $service.Policy -Confirm:$false
+        }
+        if($service.Running -ne $currentVMHostService.Running){
+            if($service.Running){
+                Start-VMHostService -HostService $currentVMHostService -Confirm:$false
+            }
+            else{
+                Stop-VMHostService -HostService $currentVMHostService -Confirm:$false
+            }
+        }
+    }
+  }
+}
+
 [DscResource()]
 class vCenterStatistics : BaseDSC
 {
@@ -1289,14 +1356,14 @@ class vCenterStatistics : BaseDSC
 
     Returns the value to set for the Performance Interval Setting.
     #>
-    [PSObject] SpecifiedOrCurrentValue($desiredValue, $currentValue) 
+    [PSObject] SpecifiedOrCurrentValue($desiredValue, $currentValue)
     {
-        if ($null -eq $desiredValue) 
+        if ($null -eq $desiredValue)
         {
             # Desired value is not specified
             return $currentValue
-        } 
-        else 
+        }
+        else
         {
             return $desiredValue
         }
@@ -1444,14 +1511,14 @@ class vCenterSettings : BaseDSC
     [bool] ShouldUpdateSettingValue($desiredValue, $currentValue)
     {
         <#
-            LoggingLevel type properties should be updated only when Desired value is different than Unset. 
+            LoggingLevel type properties should be updated only when Desired value is different than Unset.
             Unset means that value was not specified for such type of property.
          #>
         if ($desiredValue -is [LoggingLevel] -and $desiredValue -eq [LoggingLevel]::Unset)
         {
             return $false
         }
-        
+
         <#
             Desired value equal to $null means that the setting value was not specified.
             If it is specified we check if the setting value is not equal to the current value.
