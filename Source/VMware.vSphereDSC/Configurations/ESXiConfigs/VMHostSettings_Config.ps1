@@ -17,6 +17,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 param(
         [Parameter(Mandatory = $true)]
         [string]
+        $Name,
+
+        [Parameter(Mandatory = $true)]
+        [string]
         $Server,
 
         [Parameter(Mandatory = $true)]
@@ -37,7 +41,7 @@ $script:configurationData = @{
     )
 }
 
-Configuration vCenterSettings_Config
+Configuration VMHostSettings_Config
 {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
@@ -46,19 +50,17 @@ Configuration vCenterSettings_Config
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        vCenterSettings vCenterSettings
+        VMHostSettings vmHostSettings
         {
+            Name = $Name
             Server = $Server
             Credential = $Credential
-            LoggingLevel = 'Warning'
-            EventMaxAgeEnabled = $false
-            EventMaxAge = 40
-            TaskMaxAgeEnabled = $false
-            TaskMaxAge = 40
+            HostName = "esx-server1"
+            DomainName = "eng.vmware.com"
             Motd = 'Hello World from motd!'
             Issue = 'Hello World from issue!'
-        }
+          }
     }
 }
 
-vCenterSettings_Config -ConfigurationData $script:configurationData
+VMHostSettings_Config -ConfigurationData $script:configurationData
