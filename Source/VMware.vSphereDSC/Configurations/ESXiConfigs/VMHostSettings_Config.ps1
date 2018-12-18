@@ -15,21 +15,21 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Name,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Name,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
 $script:configurationData = @{
@@ -41,12 +41,10 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostSettings_Config
-{
+Configuration VMHostSettings_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
+    Node localhost {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
@@ -55,8 +53,6 @@ Configuration VMHostSettings_Config
             Name = $Name
             Server = $Server
             Credential = $Credential
-            HostName = "esx-server1"
-            DomainName = "eng.vmware.com"
             Motd = 'Hello World from motd!'
             Issue = 'Hello World from issue!'
           }
