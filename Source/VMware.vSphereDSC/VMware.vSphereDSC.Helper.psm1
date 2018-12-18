@@ -74,7 +74,7 @@ function New-DNSConfig {
         $dnsConfig.Dhcp = $Dhcp
         $dnsConfig.VirtualNicDevice = $VirtualNicDevice
 
-		if ($Ipv6VirtualNicDevice -ne [string]::Empty) {
+    	if ($Ipv6VirtualNicDevice -ne [string]::Empty) {
             $dnsConfig.Ipv6VirtualNicDevice = $Ipv6VirtualNicDevice
 		}
     }

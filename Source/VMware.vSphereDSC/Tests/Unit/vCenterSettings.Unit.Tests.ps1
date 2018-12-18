@@ -55,8 +55,8 @@ Describe 'vCenterSettings' {
             $script:resourceProperties.EventMaxAge = 40
             $script:resourceProperties.TaskMaxAgeEnabled = $false
             $script:resourceProperties.TaskMaxAge = 40
-            $script:resourceProperties.Motd = [string]::empty
-            $script:resourceProperties.Issue = [string]::empty
+            $script:resourceProperties.Motd = [string]::Empty
+            $script:resourceProperties.Issue = [string]::Empty
         }
 
         Context 'Invoking with default resource properties' {
@@ -127,8 +127,8 @@ Describe 'vCenterSettings' {
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 40 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $false }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 40 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = [string]::empty }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = [string]::empty }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = [string]::Empty }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = [string]::Empty }
                     )
                 }
 
@@ -250,8 +250,8 @@ Describe 'vCenterSettings' {
             $script:resourceProperties.EventMaxAge = 40
             $script:resourceProperties.TaskMaxAgeEnabled = $false
             $script:resourceProperties.TaskMaxAge = 40
-            $script:resourceProperties.Motd = [string]::empty
-            $script:resourceProperties.Issue = [string]::empty
+            $script:resourceProperties.Motd = [string]::Empty
+            $script:resourceProperties.Issue = [string]::Empty
         }
 
         Context 'Invoking with default resource properties' {
@@ -312,8 +312,8 @@ Describe 'vCenterSettings' {
                         [VMware.Vim.AdvancedSetting] @{ Name = 'event.maxAge'; Value = 40 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAgeEnabled'; Value = $false }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'task.maxAge'; Value = 40 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = [string]::empty }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = [string]::empty }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.motd'; Value = [string]::Empty }
+                        [VMware.Vim.AdvancedSetting] @{ Name = 'etc.issue'; Value = [string]::Empty }
                     )
                 }
 
@@ -385,8 +385,8 @@ Describe 'vCenterSettings' {
             $script:resourceProperties.EventMaxAge = 40
             $script:resourceProperties.TaskMaxAgeEnabled = $false
             $script:resourceProperties.TaskMaxAge = 40
-            $script:resourceProperties.Motd = [string]::empty
-            $script:resourceProperties.Issue = [string]::empty
+            $script:resourceProperties.Motd = [string]::Empty
+            $script:resourceProperties.Issue = [string]::Empty
         }
 
         Context 'Invoking with default resource properties' {

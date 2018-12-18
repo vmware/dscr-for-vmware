@@ -1,6 +1,6 @@
 # Formatting Guidelines
 
-You can use the following settings when implementing your resources:
+You can use the following settings when implementing your resources (The example is with [VS Code](https://code.visualstudio.com/)):
 
 ```
  {
@@ -15,3 +15,5 @@ You can use the following settings when implementing your resources:
     "files.trimTrailingWhitespace": true
  }
 ```
+
+VS Code formatting file is available in the .vscode folder (settings.json File).
