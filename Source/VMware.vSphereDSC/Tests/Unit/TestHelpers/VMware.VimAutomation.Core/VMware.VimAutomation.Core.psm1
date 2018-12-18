@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -115,7 +115,7 @@ Add-Type -TypeDefinition @"
 
         public bool Equals(HostDnsConfig dnsConfig)
         {
-            return (dnsConfig != null && this.Dhcp == dnsConfig.Dhcp && this.DomainName == dnsConfig.DomainName && this.HostName == dnsConfig.HostName && 
+            return (dnsConfig != null && this.Dhcp == dnsConfig.Dhcp && this.DomainName == dnsConfig.DomainName && this.HostName == dnsConfig.HostName &&
                     this.VirtualNicDevice == dnsConfig.VirtualNicDevice && this.Ipv6VirtualNicDevice == dnsConfig.Ipv6VirtualNicDevice);
         }
 
@@ -386,7 +386,7 @@ Add-Type -TypeDefinition @"
 
         public bool Equals(PerfInterval perfInterval)
         {
-            return (perfInterval != null && this.Key == perfInterval.Key && this.Name == perfInterval.Name && this.Enabled == perfInterval.Enabled && 
+            return (perfInterval != null && this.Key == perfInterval.Key && this.Name == perfInterval.Name && this.Enabled == perfInterval.Enabled &&
                     this.SamplingPeriod == perfInterval.SamplingPeriod && this.Length == perfInterval.Length && this.Level == perfInterval.Level);
         }
 
@@ -464,8 +464,7 @@ Add-Type -TypeDefinition @"
  }
 "@
 
-function Connect-VIServer
-{
+function Connect-VIServer {
     param(
         [string] $Server,
         [PSCredential] $Credential
@@ -474,8 +473,7 @@ function Connect-VIServer
     return New-Object VMware.Vim.VIServer
 }
 
-function Get-VMHost
-{
+function Get-VMHost {
     param(
         [PSObject] $Server,
         [string] $Name
@@ -484,8 +482,7 @@ function Get-VMHost
     return New-Object VMware.Vim.VMHost
 }
 
-function Get-View
-{
+function Get-View {
     param(
         [PSObject] $Server,
         [PSObject] $VIObject
@@ -494,8 +491,7 @@ function Get-View
     return $null
 }
 
-function Get-EsxCli
-{
+function Get-EsxCli {
     param(
         [PSObject] $Server,
         [VMware.Vim.VMHost] $VMHost,
@@ -505,8 +501,7 @@ function Get-EsxCli
     return $null
 }
 
-function Get-AdvancedSetting
-{
+function Get-AdvancedSetting {
     param(
         [PSObject] $Server,
         [PSObject] $Entity,
@@ -516,8 +511,7 @@ function Get-AdvancedSetting
     return @( [VMware.Vim.AdvancedSetting] @{} )
 }
 
-function Set-AdvancedSetting
-{
+function Set-AdvancedSetting {
     param(
         [Vmware.Vim.AdvancedSetting] $AdvancedSetting,
         [string] $Value,

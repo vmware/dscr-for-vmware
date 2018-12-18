@@ -837,7 +837,7 @@ class VMHostTpsSettings : VMHostBaseDSC {
         $vmHost = $this.GetVMHost()
         $shouldUpdateTpsSettings = $this.ShouldUpdateTpsSettings($vmHost)
 
-        return -not $shouldUpdateTpsSettings
+        return !$shouldUpdateTpsSettings
     }
 
     [VMHostTpsSettings] Get() {
@@ -993,11 +993,11 @@ class VMHostSettings : VMHostBaseDSC {
     	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
     	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	$shouldUpdate = @()
-    	$shouldUpdate += ($this.MotdClear -and ($currentMotd.Value -ne '')) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
-    	$shouldUpdate += ($this.IssueClear -and ($currentIssue.Value -ne '')) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
+    	$shouldUpdateVMHostSettings = @()
+    	$shouldUpdateVMHostSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
+    	$shouldUpdateVMHostSettings += ($this.IssueClear -and ($currentIssue.Value -ne [string]::Empty)) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
 
-    	return ($shouldUpdate -contains $true)
+    	return ($shouldUpdateVMHostSettings -Contains $true)
   	}
 
   	<#
@@ -1009,8 +1009,8 @@ class VMHostSettings : VMHostBaseDSC {
     	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
     	if ($clearValue) {
-      	    if ($this.ShouldUpdateSettingValue('', $advancedSettingCurrentValue)) {
-        	    Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value '' -Confirm:$false
+      	    if ($this.ShouldUpdateSettingValue([string]::Empty, $advancedSettingCurrentValue)) {
+        	    Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
       	    }
     	}
     	else {
@@ -1372,9 +1372,8 @@ class vCenterSettings : BaseDSC {
     	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.EventMaxAge, $currentEventMaxAge.Value)
     	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
     	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.TaskMaxAge, $currentTaskMaxAge.Value)
-    	$shouldUpdatevCenterSettings += ($this.MotdClear -and ($currentMotd.Value -ne '')) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.Issue, $currentIssue.Value)
-    	$shouldUpdatevCenterSettings += ($this.IssueClear -and ($currentIssue.Value -ne '')) -or (-not $this.MotdClear -and ($this.Motd -ne $currentIssue.Value))
+    	$shouldUpdatevCenterSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
+        $shouldUpdatevCenterSettings += ($this.IssueClear -and ($currentIssue.Value -ne [string]::Empty)) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
 
     	return ($shouldUpdatevCenterSettings -Contains $true)
     }

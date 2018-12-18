@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -43,8 +43,7 @@ Describe 'VMHostSatpClaimRule' {
     BeforeAll {
         $env:PSModulePath = $script:mockModuleLocation
         $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
-        if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers')
-        {
+        if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
             throw 'The Original VMware.VimAutomation.Core Module is loaded in the current session. If you want to run the unit tests please open a new PowerShell session.'
         }
 
@@ -70,7 +69,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
                 $esxCliMock = {
@@ -87,9 +86,9 @@ Describe 'VMHostSatpClaimRule' {
                        [VMware.Vim.SatpClaimRule] @{ Name = 'VMW_SATP_NOT_LOCAL'; Transport = 'VMW_SATP_NOT_LOCAL Transport'; Description = 'Description of VMW_SATP_LOCAL Claim Rule.'; DefaultPSP = 'VMW_PSP_MRU' }
                     )
 
-                    $addSatpArgs = @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
-                        psp = $null; option = $null; model = $null; force = $false 
+                    $addSatpArgs = @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
+                        psp = $null; option = $null; model = $null; force = $false
                     }
 
                     $esxcli.storage.nmp.satp.rule.list | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { $satpClaimRules }
@@ -105,8 +104,8 @@ Describe 'VMHostSatpClaimRule' {
                     )
                 }
                 $satpAddArgsMock = {
-                    return @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
+                    return @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
                         psp = $null; option = $null; model = $null; force = $false
                     }
                 }
@@ -118,24 +117,24 @@ Describe 'VMHostSatpClaimRule' {
                 Mock -CommandName Add-CreateArgs -MockWith $satpAddArgsMock -ModuleName $script:moduleName
                 Mock -CommandName Add-SATPClaimRule -MockWith { return $null } -ModuleName $script:moduleName
             }
-    
+
             # Arrange
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-    
+
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
-    
+
             It 'Should call Get-VMHost mock with the passed server and name once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHost `
                                   -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
@@ -145,7 +144,7 @@ Describe 'VMHostSatpClaimRule' {
             It 'Should call Get-EsxCli mock with the passed server and vmhost once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
                                   -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $vmhostObject -and $V2 } `
@@ -156,9 +155,9 @@ Describe 'VMHostSatpClaimRule' {
         Context 'Invoking when ensure set to Present and the SATP Claim Rule is not installed' {
             BeforeAll {
                 # Arrange
-                $addSatpArgs = @{ 
-                    satp = 'VMW_SATP_LOCAL'; pspoption = $null; transport = 'VMW_SATP_LOCAL Transport'; description = 'Description of VMW_SATP_LOCAL Claim Rule.'; vendor = $null; boot = $false; 
-                    type = 'transport'; device = $null; driver = $null; claimoption = $null; psp = 'VMW_PSP_MRU'; option = $null; model = $null; force = $false 
+                $addSatpArgs = @{
+                    satp = 'VMW_SATP_LOCAL'; pspoption = $null; transport = 'VMW_SATP_LOCAL Transport'; description = 'Description of VMW_SATP_LOCAL Claim Rule.'; vendor = $null; boot = $false;
+                    type = 'transport'; device = $null; driver = $null; claimoption = $null; psp = 'VMW_PSP_MRU'; option = $null; model = $null; force = $false
                 }
 
                 $esxcliObject = New-Object PSObject
@@ -167,7 +166,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -185,8 +184,8 @@ Describe 'VMHostSatpClaimRule' {
                        [VMware.Vim.SatpClaimRule] @{ Name = 'VMW_SATP_NOT_LOCAL'; Transport = 'VMW_SATP_NOT_LOCAL Transport'; Description = 'Description of VMW_SATP_LOCAL Claim Rule.'; DefaultPSP = 'VMW_PSP_MRU' }
                     )
 
-                    $addSatpArgs = @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
+                    $addSatpArgs = @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
                         psp = $null; option = $null; model = $null; force = $false
                     }
 
@@ -203,8 +202,8 @@ Describe 'VMHostSatpClaimRule' {
                     )
                 }
                 $satpAddArgsMock = {
-                    return @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
+                    return @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
                         psp = $null; option = $null; model = $null; force = $false
                     }
                 }
@@ -254,9 +253,9 @@ Describe 'VMHostSatpClaimRule' {
         Context 'Invoking when ensure set to Present and the SATP Claim Rule is installed' {
             BeforeAll {
                 # Arrange
-                $addSatpArgs = @{ 
-                    satp = 'VMW_SATP_LOCAL'; pspoption = $null; transport = 'VMW_SATP_LOCAL Transport'; description = 'Description of VMW_SATP_LOCAL Claim Rule.'; vendor = $null; boot = $false; 
-                    type = 'transport'; device = $null; driver = $null; claimoption = $null; psp = 'VMW_PSP_MRU'; option = $null; model = $null; force = $false 
+                $addSatpArgs = @{
+                    satp = 'VMW_SATP_LOCAL'; pspoption = $null; transport = 'VMW_SATP_LOCAL Transport'; description = 'Description of VMW_SATP_LOCAL Claim Rule.'; vendor = $null; boot = $false;
+                    type = 'transport'; device = $null; driver = $null; claimoption = $null; psp = 'VMW_PSP_MRU'; option = $null; model = $null; force = $false
                 }
 
                 $esxcliObject = New-Object PSObject
@@ -265,7 +264,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -284,11 +283,11 @@ Describe 'VMHostSatpClaimRule' {
                        [VMware.Vim.SatpClaimRule] @{ Name = 'VMW_SATP_LOCAL'; Transport = 'VMW_SATP_LOCAL Transport'; Description = 'Description of VMW_SATP_LOCAL Claim Rule.'; DefaultPSP = 'VMW_PSP_MRU' }
                     )
 
-                    $addSatpArgs = @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
+                    $addSatpArgs = @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
                         psp = $null; option = $null; model = $null; force = $false
                     }
-                    
+
                     $esxcli.storage.nmp.satp.rule.list | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { $satpClaimRules }
                     $esxcli.storage.nmp.satp.rule.add | Add-Member -MemberType ScriptMethod -Name 'CreateArgs' -Value { return $addSatpArgs }
                     $esxcli.storage.nmp.satp.rule.add | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { return $null }
@@ -303,8 +302,8 @@ Describe 'VMHostSatpClaimRule' {
                     )
                 }
                 $satpAddArgsMock = {
-                    return @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
+                    return @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
                         psp = $null; option = $null; model = $null; force = $false
                     }
                 }
@@ -354,8 +353,8 @@ Describe 'VMHostSatpClaimRule' {
         Context 'Invoking when ensure set to Absent and the SATP Claim Rule is installed' {
             BeforeAll {
                 # Arrange
-                $removeSatpArgs = @{ 
-                    satp = 'VMW_SATP_LOCAL'; pspoption = $null; transport = 'VMW_SATP_LOCAL Transport'; description = 'Description of VMW_SATP_LOCAL Claim Rule.'; vendor = $null; boot = $false; 
+                $removeSatpArgs = @{
+                    satp = 'VMW_SATP_LOCAL'; pspoption = $null; transport = 'VMW_SATP_LOCAL Transport'; description = 'Description of VMW_SATP_LOCAL Claim Rule.'; vendor = $null; boot = $false;
                     type = 'transport'; device = $null; driver = $null; claimoption = $null; psp = 'VMW_PSP_MRU'; option = $null; model = $null
                 }
 
@@ -367,7 +366,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -386,11 +385,11 @@ Describe 'VMHostSatpClaimRule' {
                        [VMware.Vim.SatpClaimRule] @{ Name = 'VMW_SATP_LOCAL'; Transport = 'VMW_SATP_LOCAL Transport'; Description = 'Description of VMW_SATP_LOCAL Claim Rule.'; DefaultPSP = 'VMW_PSP_MRU' }
                     )
 
-                    $removeSatpArgs = @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
+                    $removeSatpArgs = @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
                         psp = $null; option = $null; model = $null
                     }
-                    
+
                     $esxcli.storage.nmp.satp.rule.list | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { $satpClaimRules }
                     $esxcli.storage.nmp.satp.rule.remove | Add-Member -MemberType ScriptMethod -Name 'CreateArgs' -Value { return $removeSatpArgs }
                     $esxcli.storage.nmp.satp.rule.remove | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { return $null }
@@ -405,8 +404,8 @@ Describe 'VMHostSatpClaimRule' {
                     )
                 }
                 $satpRemoveArgsMock = {
-                    return @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
+                    return @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
                         psp = $null; option = $null; model = $null
                     }
                 }
@@ -456,8 +455,8 @@ Describe 'VMHostSatpClaimRule' {
         Context 'Invoking when ensure set to Absent and the SATP Claim Rule is not installed' {
             BeforeAll {
                 # Arrange
-                $removeSatpArgs = @{ 
-                    satp = 'VMW_SATP_LOCAL'; pspoption = $null; transport = 'VMW_SATP_LOCAL Transport'; description = 'Description of VMW_SATP_LOCAL Claim Rule.'; vendor = $null; boot = $false; 
+                $removeSatpArgs = @{
+                    satp = 'VMW_SATP_LOCAL'; pspoption = $null; transport = 'VMW_SATP_LOCAL Transport'; description = 'Description of VMW_SATP_LOCAL Claim Rule.'; vendor = $null; boot = $false;
                     type = 'transport'; device = $null; driver = $null; claimoption = $null; psp = 'VMW_PSP_MRU'; option = $null; model = $null
                 }
 
@@ -469,7 +468,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -487,11 +486,11 @@ Describe 'VMHostSatpClaimRule' {
                        [VMware.Vim.SatpClaimRule] @{ Name = 'VMW_SATP_NOT_LOCAL'; Transport = 'VMW_SATP_NOT_LOCAL Transport'; Description = 'Description of VMW_SATP_LOCAL Claim Rule.'; DefaultPSP = 'VMW_PSP_MRU' }
                     )
 
-                    $removeSatpArgs = @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
+                    $removeSatpArgs = @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
                         psp = $null; option = $null; model = $null
                     }
-                    
+
                     $esxcli.storage.nmp.satp.rule.list | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { $satpClaimRules }
                     $esxcli.storage.nmp.satp.rule.remove | Add-Member -MemberType ScriptMethod -Name 'CreateArgs' -Value { return $removeSatpArgs }
                     $esxcli.storage.nmp.satp.rule.remove | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { return $null }
@@ -505,8 +504,8 @@ Describe 'VMHostSatpClaimRule' {
                     )
                 }
                 $satpRemoveArgsMock = {
-                    return @{ 
-                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null; 
+                    return @{
+                        satp = $null; pspoption = $null; transport = $null; description = $null; vendor = $null; boot = $false; type = $null; device = $null; driver = $null; claimoption = $null;
                         psp = $null; option = $null; model = $null
                     }
                 }
@@ -568,7 +567,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
                 $esxCliMock = {
@@ -600,24 +599,24 @@ Describe 'VMHostSatpClaimRule' {
                 Mock -CommandName Get-EsxCli -MockWith $esxCliMock -ModuleName $script:moduleName
                 Mock -CommandName Get-SATPClaimRules -MockWith $satpClaimRulesMock -ModuleName $script:moduleName
             }
-    
+
             # Arrange
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-    
+
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
-    
+
             It 'Should call Get-VMHost mock with the passed server and name once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHost `
                                   -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
@@ -627,7 +626,7 @@ Describe 'VMHostSatpClaimRule' {
             It 'Should call Get-EsxCli mock with the passed server and vmhost once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
                                   -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $vmhostObject -and $V2 } `
@@ -641,7 +640,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -692,7 +691,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -747,7 +746,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -802,7 +801,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -862,7 +861,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
                 $esxCliMock = {
@@ -894,24 +893,24 @@ Describe 'VMHostSatpClaimRule' {
                 Mock -CommandName Get-EsxCli -MockWith $esxCliMock -ModuleName $script:moduleName
                 Mock -CommandName Get-SATPClaimRules -MockWith $satpClaimRulesMock -ModuleName $script:moduleName
             }
-    
+
             # Arrange
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-    
+
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Get()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
-    
+
             It 'Should call Get-VMHost mock with the passed server and name once' {
                 # Act
                 $resource.Get()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHost `
                                   -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
@@ -921,7 +920,7 @@ Describe 'VMHostSatpClaimRule' {
             It 'Should call Get-EsxCli mock with the passed server and vmhost once' {
                 # Act
                 $resource.Get()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
                                   -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $vmhostObject -and $V2 } `
@@ -935,7 +934,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -969,14 +968,14 @@ Describe 'VMHostSatpClaimRule' {
                 Mock -CommandName Get-EsxCli -MockWith $esxCliMock -ModuleName $script:moduleName
                 Mock -CommandName Get-SATPClaimRules -MockWith $satpClaimRulesMock -ModuleName $script:moduleName
             }
-    
+
             # Arrange
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-    
+
             It 'Should return the resource with the properties retrieved from the server' {
                 # Act
                 $result = $resource.Get()
-    
+
                 # Assert
                 $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Server | Should -Be $script:resourceProperties.Server
@@ -1004,7 +1003,7 @@ Describe 'VMHostSatpClaimRule' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{}
                 }
                 $esxCliMock = {
@@ -1036,14 +1035,14 @@ Describe 'VMHostSatpClaimRule' {
                 Mock -CommandName Get-EsxCli -MockWith $esxCliMock -ModuleName $script:moduleName
                 Mock -CommandName Get-SATPClaimRules -MockWith $satpClaimRulesMock -ModuleName $script:moduleName
             }
-    
+
             # Arrange
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-    
+
             It 'Should return the resource with the properties retrieved from the server' {
                 # Act
                 $result = $resource.Get()
-    
+
                 # Assert
                 $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Server | Should -Be $script:resourceProperties.Server
