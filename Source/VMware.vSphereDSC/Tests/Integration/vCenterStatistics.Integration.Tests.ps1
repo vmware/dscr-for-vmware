@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -15,17 +15,17 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
 $script:dscResourceName = 'vCenterStatistics'
@@ -75,7 +75,7 @@ $script:mofFileWithoutEnabledPropertyPath = "$script:integrationTestsFolderPath\
 function BeforeAllTests {
     $script:performanceManager = Get-View -Server $script:vCenter $script:vCenter.ExtensionData.Content.PerfManager
     $script:currentPerformanceInterval = $script:performanceManager.HistoricalInterval | Where-Object { $_.Name -Match $script:period }
-    
+
     $script:currentLevel = $script:currentPerformanceInterval.Level
     $script:currentEnabled = $script:currentPerformanceInterval.Enabled
     $script:currentSamplingPeriod = $script:currentPerformanceInterval.SamplingPeriod
@@ -115,7 +115,7 @@ Describe "$($script:dscResourceName)_Integration" {
                 Wait = $true
                 Force = $true
             }
-            
+
             # Act
             $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
         }
@@ -129,7 +129,7 @@ Describe "$($script:dscResourceName)_Integration" {
             # Arrange && Act
             $script:dscConfigWithPassedEnabledProperty = Get-DscConfiguration
 
-            $configuration = $script:dscConfigWithPassedEnabledProperty 
+            $configuration = $script:dscConfigWithPassedEnabledProperty
 
             # Assert
             { $script:dscConfigWithPassedEnabledProperty } | Should -Not -Throw
@@ -165,7 +165,7 @@ Describe "$($script:dscResourceName)_Integration" {
                 Wait = $true
                 Force = $true
             }
-            
+
             # Act
             $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
         }
@@ -180,7 +180,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $script:dscConfigWithoutEnabledProperty = Get-DscConfiguration
 
             $configuration = $script:dscConfigWithoutEnabledProperty
-            
+
             # Assert
             { $script:dscConfigWithoutEnabledProperty } | Should -Not -Throw
 

@@ -15,17 +15,17 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
 $script:configurationData = @{
@@ -37,12 +37,10 @@ $script:configurationData = @{
     )
 }
 
-Configuration vCenterSettings_Config
-{
+Configuration vCenterSettings_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
+    Node localhost {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
