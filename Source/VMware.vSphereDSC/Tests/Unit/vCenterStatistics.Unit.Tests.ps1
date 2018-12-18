@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -37,8 +37,7 @@ Describe 'vCenterStatistics' {
     BeforeAll {
         $env:PSModulePath = $script:mockModuleLocation
         $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
-        if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers')
-        {
+        if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
             throw 'The Original VMware.VimAutomation.Core Module is loaded in the current session. If you want to run the unit tests please open a new PowerShell session.'
         }
 
@@ -90,7 +89,7 @@ Describe 'vCenterStatistics' {
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
@@ -100,7 +99,7 @@ Describe 'vCenterStatistics' {
             It 'Should call the Get-View mock with the PerformanceManager once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-View `
                                   -ParameterFilter { $Server -eq $vCenter -and $VIObject -eq $perfManager } `
@@ -110,7 +109,7 @@ Describe 'vCenterStatistics' {
             It 'Should call the New-PerformanceInterval mock with the Performance Interval once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName New-PerformanceInterval `
                                   -ParameterFilter { $Key -eq $perfInterval.Key -and $Name -eq $perfInterval.Name -and $Enabled -eq $perfInterval.Enabled -and `
@@ -166,7 +165,7 @@ Describe 'vCenterStatistics' {
             It 'Should call the New-PerformanceInterval mock with the Performance Interval once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName New-PerformanceInterval `
                                   -ParameterFilter { $Key -eq $perfInterval.Key -and $Name -eq $perfInterval.Name -and $Enabled -eq $perfInterval.Enabled -and `
@@ -220,7 +219,7 @@ Describe 'vCenterStatistics' {
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
@@ -230,7 +229,7 @@ Describe 'vCenterStatistics' {
             It 'Should call the Get-View mock with the PerformanceManager once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-View `
                                   -ParameterFilter { $Server -eq $vCenter -and $VIObject -eq $perfManager } `

@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -22,26 +22,21 @@ param (
     [switch] $Integration
 )
 
-try
-{
+try {
     $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
     $moduleTestsFolderPath = Join-Path $moduleFolderPath 'Tests'
 
-    if (($Unit -and $Integration) -or (!$Unit -and !$Integration))
-    {
+    if (($Unit -and $Integration) -or (!$Unit -and !$Integration)) {
         Start-Process -FilePath "powershell.exe" -ArgumentList "& '$moduleTestsFolderPath\UnitTests.ps1'" -Wait -NoNewWindow
         Start-Process -FilePath "powershell.exe" -ArgumentList "& '$moduleTestsFolderPath\IntegrationTests.ps1'" -Wait -NoNewWindow
     }
-    elseif ($Unit) 
-    {
+    elseif ($Unit) {
         Start-Process -FilePath "powershell.exe" -ArgumentList "& '$moduleTestsFolderPath\UnitTests.ps1'" -Wait -NoNewWindow
     }
-    else 
-    {
+    else {
         Start-Process -FilePath "powershell.exe" -ArgumentList "& '$moduleTestsFolderPath\IntegrationTests.ps1'" -Wait -NoNewWindow
     }
 }
-catch
-{
+catch {
     Write-Error "Ran into an issue: $($PSItem.ToString())"
 }

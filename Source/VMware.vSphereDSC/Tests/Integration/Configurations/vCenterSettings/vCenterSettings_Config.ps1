@@ -15,17 +15,17 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
@@ -51,12 +51,10 @@ $script:configurationData = @{
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-Configuration vCenterSettings_WithLoggingLevel_Config
-{
+Configuration vCenterSettings_WithLoggingLevel_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
+    Node localhost {
         vCenterSettings vCenterSettings
         {
             Server = $Server
@@ -66,12 +64,10 @@ Configuration vCenterSettings_WithLoggingLevel_Config
     }
 }
 
-Configuration vCenterSettings_WithEventMaxAge_Config
-{
+Configuration vCenterSettings_WithEventMaxAge_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
+    Node localhost {
         vCenterSettings vCenterSettings
         {
             Server = $Server
@@ -82,12 +78,10 @@ Configuration vCenterSettings_WithEventMaxAge_Config
     }
 }
 
-Configuration vCenterSettings_WithTaskMaxAge_Config
-{
+Configuration vCenterSettings_WithTaskMaxAge_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
+    Node localhost {
         vCenterSettings vCenterSettings
         {
             Server = $Server
