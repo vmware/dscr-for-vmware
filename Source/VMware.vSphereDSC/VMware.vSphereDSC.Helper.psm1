@@ -178,3 +178,32 @@ function Update-PerfInterval {
 
     $PerformanceManager.UpdatePerfInterval($PerformanceInterval)
 }
+
+function Compare-Settings
+{
+    <#
+    .SYNOPSIS
+    Compare settings between current and desired states
+    .DESCRIPTION
+    This compares the current and desired states by comparing the configuration values specified in the desired state to the current state.
+    If a value is not specified in the desired state it is not assessed against the current state.
+
+    .PARAMETER DesiredState
+    Desired state configuration object.
+
+    .PARAMETER CurrentState
+    Current state configuration object.
+    #>
+    [CmdletBinding()]
+    param(
+        $DesiredState,
+        $CurrentState
+    )
+
+    foreach ($key in $DesiredState.Keys) {
+        if ($CurrentState.$key -ne $DesiredState.$key ){
+            return $true
+        }
+    }
+    return $false
+}
