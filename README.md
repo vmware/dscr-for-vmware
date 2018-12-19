@@ -17,17 +17,17 @@ The **VMware.vSphereDSC** module contains the following resources:
 
 ## Getting Started
 ## Requirements
-**VMware.vSphereDSC** module contains Windows PowerShell Desired State Configuration Resources. 
+**VMware.vSphereDSC** module contains Windows PowerShell Desired State Configuration Resources.
 The following table describes the required dependencies for running VMware.vSphereDSC Resources.
 
  **Required dependency**   | **Minimum version**
 -------------------------- | -------------------
-`PowerShell`               | 5.1
+`PowerShell`               | 5.1 (PS Core not supported)
 `PowerCLI`                 | 10.1.1
 
-For information on how to install PowerShell, please visit [Installing Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell?view=powershell-5.1).  
+For information on how to install PowerShell, please visit [Installing Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell?view=powershell-5.1).
 
-For information on how to install PowerCLI, please visit the [PowerCLI Blog](https://blogs.vmware.com/PowerCLI/2018/02/powercli-10.html).  
+For information on how to install PowerCLI, please visit the [PowerCLI Blog](https://blogs.vmware.com/PowerCLI/2018/02/powercli-10.html).
 
 You also need to configure the DSC LCM on a Windows machine where the resources will run. For more information on how to configure it, please visit [Desired State Configuration Quick Start](https://docs.microsoft.com/en-us/powershell/dsc/quickstart)
 
@@ -36,19 +36,19 @@ You also need to configure the DSC LCM on a Windows machine where the resources 
 1. Copy the VMware.vSphereDSC Module to one of the system PowerShell module directories.For more information on installing PowerShell Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/developer/module/installing-a-powershell-module#rules-for-installing-modules).
 2. In PowerShell import the VMware.vSphereDSC Module:
    ```
-    Import-Module -Name 'VMware.vSphereDSC' 
+    Import-Module -Name 'VMware.vSphereDSC'
    ```
 
-   To check if the module was successfully installed: 
+   To check if the module was successfully installed:
    ```
     Get-DscResource -Module 'VMware.vSphereDSC'
    ```
 
 ## Applying VMware.vSphereDSC Resource Configuration
 # Example
-The following example uses [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) and configures the NTP Server and the 'ntpd' Service Policy.  
+The following example uses [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) and configures the NTP Server and the 'ntpd' Service Policy.
 
-1. You need to compile the [Configuration File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Configurations/ESXiConfigs/VMHostNtpSettings_Config.ps1) to [MOF](https://docs.microsoft.com/en-us/windows/desktop/wmisdk/managed-object-format--mof-):  
+1. You need to compile the [Configuration File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Configurations/ESXiConfigs/VMHostNtpSettings_Config.ps1) to [MOF](https://docs.microsoft.com/en-us/windows/desktop/wmisdk/managed-object-format--mof-):
    ```
     $ntpConfigPath = Join-Path (Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Configurations') 'ESXiConfigs')'VMHostNtpSettings_Config.ps1'
     . $ntpConfigPath -Name '<VMHost Name>' -Server 'Server Name>' -User '<User Name>' -Password '<Password for User>'
