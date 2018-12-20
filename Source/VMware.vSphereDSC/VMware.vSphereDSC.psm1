@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018 VMware, Inc.  All rights reserved				
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License
+BSD-2 License 
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -17,32 +17,32 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 Using module '.\VMware.vSphereDSC.Helper.psm1'
 
 enum Ensure {
-	Absent
+    Absent
     Present
 }
 
-enum ServicePolicy {
-	Unset
-    On
-  	Off
-  	Automatic
-}
-
-enum Period {
-	Day = 86400
-  	Week = 604800
-  	Month = 2629800
-  	Year = 31556926
-}
-
 enum LoggingLevel {
-	Unset
+    Unset
     None
     Error
     Warning
     Info
     Verbose
     Trivia
+}
+
+enum Period {
+    Day = 86400
+    Week = 604800
+    Month = 2629800
+    Year = 31556926
+}
+
+enum ServicePolicy {
+    Unset
+    On
+    Off
+    Automatic
 }
 
 class BaseDSC {
@@ -75,12 +75,12 @@ class BaseDSC {
     Imports the needed VMware Modules.
     #>
     [void] ImportRequiredModules() {
-	    $savedVerbosePreference = $global:VerbosePreference
+        $savedVerbosePreference = $global:VerbosePreference
         $global:VerbosePreference = 'SilentlyContinue'
 
         Import-Module -Name VMware.VimAutomation.Core
 
-		$global:VerbosePreference = $savedVerbosePreference
+        $global:VerbosePreference = $savedVerbosePreference
     }
 
     <#
@@ -97,7 +97,7 @@ class BaseDSC {
       	    $this.Connection = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction SilentlyContinue
 
             if ($null -eq $this.Connection) {
-         	    Write-Error "Cannot establish connection to server $($this.Server)."
+                Write-Error "Cannot establish connection to server $($this.Server). For more information: $($PSItem.ToString())."
             }
         }
     }
@@ -121,7 +121,7 @@ class VMHostBaseDSC : BaseDSC {
     [PSObject] GetVMHost() {
         $vmHost = Get-VMHost -Server $this.Connection -Name $this.Name -ErrorAction SilentlyContinue
         if ($null -eq $vmHost) {
-            Write-Error "VMHost with name $($this.Name) was not found."
+            Write-Error "VMHost with name $($this.Name) was not found. For more information: $($PSItem.ToString())."
         }
 
         return $vmHost
@@ -129,777 +129,47 @@ class VMHostBaseDSC : BaseDSC {
 }
 
 [DscResource()]
-class VMHostNtpSettings : VMHostBaseDSC {
+class vCenterSettings : BaseDSC {
     <#
     .DESCRIPTION
 
-    List of domain name or IP address of the desired NTP Servers.
+    Logging Level Advanced Setting value.
     #>
     [DscProperty()]
-    [string[]] $NtpServer
+    [LoggingLevel] $LoggingLevel
 
     <#
     .DESCRIPTION
 
-    Desired Policy of the VMHost 'ntpd' service activation.
+    Event Max Age Enabled Advanced Setting value.
     #>
     [DscProperty()]
-    [ServicePolicy] $NtpServicePolicy
-
-    hidden [string] $ServiceId = "ntpd"
-
-    [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-
-        $this.UpdateVMHostNtpServer($vmHost)
-        $this.UpdateVMHostNtpServicePolicy($vmHost)
-    }
-
-    [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
-
-        $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
-        if ($shouldUpdateVMHostNtpServer) {
-			return $false
-        }
-
-        $vmHostServices = $vmHost.ExtensionData.Config.Service
-        $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostServices)
-        if ($shouldUpdateVMHostNtpServicePolicy) {
-            return $false
-        }
-
-        return $true
-    }
-
-    [VMHostNtpSettings] Get() {
-        $result = [VMHostNtpSettings]::new()
-
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
-        $vmHostServices = $vmHost.ExtensionData.Config.Service
-        $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
-
-		$result.Name = $this.Name
-		$result.Server = $this.Server
-        $result.NtpServer = $vmHostNtpConfig.Server
-        $result.NtpServicePolicy = $vmHostNtpService.Policy
-
-        return $result
-    }
+    [nullable[bool]] $EventMaxAgeEnabled
 
     <#
     .DESCRIPTION
 
-    Returns a boolean value indicating if the VMHost NTP Server should be updated.
-    #>
-    [bool] ShouldUpdateVMHostNtpServer($vmHostNtpConfig) {
-        $desiredVMHostNtpServer = $this.NtpServer
-        $currentVMHostNtpServer = $vmHostNtpConfig.Server
-
-        if ($null -eq $desiredVMHostNtpServer) {
-            # The property is not specified.
-            return $false
-        }
-        elseif ($desiredVMHostNtpServer.Length -eq 0 -and $currentVMHostNtpServer.Length -ne 0) {
-			# Empty array specified as desired, but current is not an empty array, so update VMHost NTP Server.
-            return $true
-        }
-        else {
-            $ntpServerToAdd = $desiredVMHostNtpServer | Where-Object { $currentVMHostNtpServer -NotContains $_ }
-            $ntpServerToRemove = $currentVMHostNtpServer | Where-Object { $desiredVMHostNtpServer -NotContains $_ }
-
-            if ($null -ne $ntpServerToAdd -or $null -ne $ntpServerToRemove) {
-                <#
-                The currentVMHostNtpServer does not contain at least one element from desiredVMHostNtpServer or
-                the desiredVMHostNtpServer is a subset of the currentVMHostNtpServer. In both cases
-                we should update VMHost NTP Server.
-                #>
-                return $true
-            }
-
-            # No need to update VMHost NTP Server.
-            return $false
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the VMHost 'ntpd' Service Policy should be updated.
-    #>
-    [bool] ShouldUpdateVMHostNtpServicePolicy($vmHostServices) {
-        if ($this.NtpServicePolicy -eq [ServicePolicy]::Unset) {
-            # The property is not specified.
-            return $false
-        }
-
-        $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
-
-        return $this.NtpServicePolicy -ne $vmHostNtpService.Policy
-    }
-
-    <#
-    .DESCRIPTION
-
-    Updates the VMHost NTP Server with the desired NTP Server array.
-    #>
-    [void] UpdateVMHostNtpServer($vmHost) {
-        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
-        $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
-
-        if (!$shouldUpdateVMHostNtpServer) {
-            return
-        }
-
-        $dateTimeConfig = New-DateTimeConfig -NtpServer $this.NtpServer
-        $dateTimeSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.DateTimeSystem
-
-        Update-DateTimeConfig -DateTimeSystem $dateTimeSystem -DateTimeConfig $dateTimeConfig
-    }
-
-    <#
-    .DESCRIPTION
-
-    Updates the VMHost 'ntpd' Service Policy with the desired Service Policy.
-    #>
-    [void] UpdateVMHostNtpServicePolicy($vmHost) {
-        $vmHostService = $vmHost.ExtensionData.Config.Service
-        $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostService)
-        if (!$shouldUpdateVMHostNtpServicePolicy) {
-            return
-        }
-
-        $serviceSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.ServiceSystem
-        Update-ServicePolicy -ServiceSystem $serviceSystem -ServiceId $this.ServiceId -ServicePolicyValue $this.NtpServicePolicy.ToString().ToLower()
-    }
-}
-
-[DscResource()]
-class VMHostDnsSettings : VMHostBaseDSC {
-    <#
-    .DESCRIPTION
-
-
-    List of domain name or IP address of the DNS Servers.
+    Event Max Age Advanced Setting value.
     #>
     [DscProperty()]
-    [string[]] $Address
+    [nullable[int]] $EventMaxAge
 
     <#
     .DESCRIPTION
 
-    Indicates whether DHCP is used to determine DNS configuration.
-    #>
-    [DscProperty(Mandatory)]
-    [bool] $Dhcp
-
-    <#
-    .DESCRIPTION
-
-    Domain Name portion of the DNS name. For example, "vmware.com".
-    #>
-    [DscProperty(Mandatory)]
-    [string] $DomainName
-
-    <#
-    .DESCRIPTION
-
-    Host Name portion of DNS name. For example, "esx01".
-    #>
-    [DscProperty(Mandatory)]
-    [string] $HostName
-
-    <#
-    .DESCRIPTION
-
-    Desired value for the VMHost DNS Ipv6VirtualNicDevice.
+    Task Max Age Enabled Advanced Setting value.
     #>
     [DscProperty()]
-    [string] $Ipv6VirtualNicDevice
+    [nullable[bool]] $TaskMaxAgeEnabled
 
     <#
     .DESCRIPTION
 
-    Domain in which to search for hosts, placed in order of preference.
+    Task Max Age Advanced Setting value.
     #>
     [DscProperty()]
-    [string[]] $SearchDomain
+    [nullable[int]] $TaskMaxAge
 
-    <#
-    .DESCRIPTION
-
-    Desired value for the VMHost DNS VirtualNicDevice.
-    #>
-    [DscProperty()]
-    [string] $VirtualNicDevice
-
-    [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-
-        $this.UpdateDns($vmHost)
-    }
-
-    [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
-
-        return $this.Equals($vmHostDnsConfig)
-    }
-
-    [VMHostDnsSettings] Get() {
-        $result = [VMHostDnsSettings]::new()
-
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
-
-        $result.Name = $this.Name
-        $result.Server = $this.Server
-        $result.Address = $vmHostDnsConfig.Address
-        $result.Dhcp = $vmHostDnsConfig.Dhcp
-        $result.DomainName = $vmHostDnsConfig.DomainName
-        $result.HostName = $vmHostDnsConfig.HostName
-        $result.Ipv6VirtualNicDevice = $vmHostDnsConfig.Ipv6VirtualNicDevice
-        $result.SearchDomain = $vmHostDnsConfig.SearchDomain
-        $result.VirtualNicDevice = $vmHostDnsConfig.VirtualNicDevice
-
-        return $result
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the desired DNS array property is equal to the current DNS array property.
-    #>
-    [bool] AreDnsArrayPropertiesEqual($desiredArrayPropertyValue, $currentArrayPropertyValue) {
-        $valuesToAdd = $desiredArrayPropertyValue | Where-Object { $currentArrayPropertyValue -NotContains $_ }
-        $valuesToRemove = $currentArrayPropertyValue | Where-Object { $desiredArrayPropertyValue -NotContains $_ }
-
-        return ($null -eq $valuesToAdd -and $null -eq $valuesToRemove)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the desired DNS optional value is equal to the current DNS value from the server.
-    #>
-    [bool] AreDnsOptionalPropertiesEqual($desiredPropertyValue, $currentPropertyValue) {
-        if ([string]::IsNullOrEmpty($desiredPropertyValue) -and [string]::IsNullOrEmpty($currentPropertyValue)) {
-            return $true
-        }
-
-        return $desiredPropertyValue -eq $currentPropertyValue
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the current DNS Config is equal to the Desired DNS Config.
-    #>
-    [bool] Equals($vmHostDnsConfig) {
-        # Checks if desired Mandatory values are equal to current values from server.
-        if ($this.Dhcp -ne $vmHostDnsConfig.Dhcp -or $this.DomainName -ne $vmHostDnsConfig.DomainName -or $this.HostName -ne $vmHostDnsConfig.HostName) {
-            return $false
-        }
-
-        if (!$this.AreDnsArrayPropertiesEqual($this.Address, $vmHostDnsConfig.Address) -or !$this.AreDnsArrayPropertiesEqual($this.SearchDomain, $vmHostDnsConfig.SearchDomain)) {
-            return $false
-        }
-
-        if (!$this.AreDnsOptionalPropertiesEqual($this.Ipv6VirtualNicDevice, $vmHostDnsConfig.Ipv6VirtualNicDevice) -or !$this.AreDnsOptionalPropertiesEqual($this.VirtualNicDevice, $vmHostDnsConfig.VirtualNicDevice)) {
-            return $false
-        }
-
-        return $true
-    }
-
-    <#
-    .DESCRIPTION
-
-    Updates the DNS Config of the VMHost with the Desired DNS Config.
-    #>
-    [void] UpdateDns($vmHost) {
-        $dnsConfigArgs = @{
-            Address = $this.Address
-            Dhcp = $this.Dhcp
-            DomainName = $this.DomainName
-            HostName = $this.HostName
-            Ipv6VirtualNicDevice = $this.Ipv6VirtualNicDevice
-            SearchDomain = $this.SearchDomain
-            VirtualNicDevice = $this.VirtualNicDevice
-        }
-
-        $dnsConfig = New-DNSConfig @dnsConfigArgs
-        $networkSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.NetworkSystem
-
-        try {
-            Update-DNSConfig -NetworkSystem $networkSystem -DnsConfig $dnsConfig
-        }
-        catch {
-            Write-Error "The DNS Config could not be updated: $($PSItem.ToString())"
-        }
-    }
-}
-
-[DscResource()]
-class VMHostSatpClaimRule : VMHostBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Value indicating if the SATP Claim Rule should be Present or Absent.
-    #>
-    [DscProperty(Mandatory)]
-    [Ensure] $Ensure
-
-    <#
-    .DESCRIPTION
-
-    Name of the SATP Claim Rule.
-    #>
-    [DscProperty(Mandatory)]
-    [string] $RuleName
-
-    <#
-    .DESCRIPTION
-
-    PSP options for the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $PSPOptions
-
-    <#
-    .DESCRIPTION
-
-    Transport Property of the Satp Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $Transport
-
-    <#
-    .DESCRIPTION
-
-    Description string to set when adding the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $Description
-
-    <#
-    .DESCRIPTION
-
-    Vendor string to set when adding the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $Vendor
-
-    <#
-    .DESCRIPTION
-
-    System default rule added at boot time.
-    #>
-    [DscProperty()]
-    [bool] $Boot
-
-    <#
-    .DESCRIPTION
-
-    Claim type for the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $Type
-
-    <#
-    .DESCRIPTION
-
-    Device of the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $Device
-
-    <#
-    .DESCRIPTION
-
-    Driver string for the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $Driver
-
-    <#
-    .DESCRIPTION
-
-    Claim option string for the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $ClaimOptions
-
-    <#
-    .DESCRIPTION
-
-    Default PSP for the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $Psp
-
-    <#
-    .DESCRIPTION
-
-    Option string for the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $Options
-
-    <#
-    .DESCRIPTION
-
-    Model string for the SATP Claim Rule.
-    #>
-    [DscProperty()]
-    [string] $Model
-
-    <#
-    .DESCRIPTION
-
-    Value, which ignores validity checks and install the rule anyway.
-    #>
-    [DscProperty()]
-    [bool] $Force
-
-    [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
-        $satpClaimRulePresent = ($null -ne $satpClaimRule)
-
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if (!$satpClaimRulePresent) {
-                $this.AddSatpClaimRule($esxCli)
-            }
-        }
-        else {
-            if ($satpClaimRulePresent) {
-                $this.RemoveSatpClaimRule($esxCli)
-            }
-        }
-    }
-
-    [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
-        $satpClaimRulePresent = ($null -ne $satpClaimRule)
-
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return $satpClaimRulePresent
-		}
-		else {
-            return -not $satpClaimRulePresent
-        }
-    }
-
-    [VMHostSatpClaimRule] Get() {
-        $result = [VMHostSatpClaimRule]::new()
-
-        $result.Name = $this.Name
-        $result.Server = $this.Server
-		$result.RuleName = $this.RuleName
-        $result.Boot = $this.Boot
-        $result.Type = $this.Type
-        $result.Force = $this.Force
-
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
-        $satpClaimRulePresent = ($null -ne $satpClaimRule)
-
-        if (!$satpClaimRulePresent) {
-            $result.Ensure = "Absent"
-			$result.Psp = $this.Psp
-            $this.PopulateResult($result, $this)
-        }
-        else {
-            $result.Ensure = "Present"
-			$result.Psp = $satpClaimRule.DefaultPSP
-            $this.PopulateResult($result, $satpClaimRule)
-        }
-
-        return $result
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the desired SATP Claim Rule is equal to the passed SATP Claim Rule.
-    #>
-    [bool] Equals($satpClaimRule) {
-        if ($this.RuleName -ne $satpClaimRule.Name) {
-            return $false
-        }
-
-        <#
-             For every optional property we check if it is not passed(if it is null), because
-            all properties on the server, which are not set are returned as empty strings and
-            if we compare null with empty string the equality will fail.
-        #>
-
-        if ($null -ne $this.PSPOptions -and $this.PSPOptions -ne $satpClaimRule.PSPOptions) {
-            return $false
-        }
-
-        if ($null -ne $this.Transport -and $this.Transport -ne $satpClaimRule.Transport) {
-            return $false
-        }
-
-        if ($null -ne $this.Description -and $this.Description -ne $satpClaimRule.Description) {
-            return $false
-        }
-
-        if ($null -ne $this.Vendor -and $this.Vendor -ne $satpClaimRule.Vendor) {
-            return $false
-        }
-
-        if ($null -ne $this.Device -and $this.Device -ne $satpClaimRule.Device) {
-            return $false
-        }
-
-        if ($null -ne $this.Driver -and $this.Driver -ne $satpClaimRule.Driver) {
-            return $false
-        }
-
-        if ($null -ne $this.ClaimOptions -and $this.ClaimOptions -ne $satpClaimRule.ClaimOptions) {
-            return $false
-        }
-
-        if ($null -ne $this.Psp -and $this.Psp -ne $satpClaimRule.DefaultPSP) {
-            return $false
-        }
-
-        if ($null -ne $this.Options -and $this.Options -ne $satpClaimRule.Options) {
-            return $false
-        }
-
-        if ($null -ne $this.Model -and $this.Model -ne $satpClaimRule.Model) {
-            return $false
-        }
-
-        return $true
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns the desired SatpClaimRule if the Rule is present on the server, otherwise returns $null.
-    #>
-    [PSObject] GetSatpClaimRule($esxCli) {
-        $foundSatpClaimRule = $null
-        $satpClaimRules = Get-SATPClaimRules -EsxCli $esxCli
-
-        foreach ($satpClaimRule in $satpClaimRules) {
-            if ($this.Equals($satpClaimRule)) {
-                $foundSatpClaimRule = $satpClaimRule
-                break
-            }
-        }
-
-        return $foundSatpClaimRule
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the result returned from the Get() method with the SATP Claim Rule properties from the server.
-    #>
-    [void] PopulateResult($result, $satpClaimRule) {
-        $result.PSPoptions = $satpClaimRule.PSPOptions
-        $result.Transport = $satpClaimRule.Transport
-        $result.Description = $satpClaimRule.Description
-        $result.Vendor = $satpClaimRule.Vendor
-        $result.Device = $satpClaimRule.Device
-        $result.Driver = $satpClaimRule.Driver
-        $result.ClaimOptions = $satpClaimRule.ClaimOptions
-        $result.Options = $satpClaimRule.Options
-        $result.Model = $satpClaimRule.Model
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the arguments for the Add and Remove operations of SATP Claim Rule with the specified properties from the user.
-    #>
-    [void] PopulateSatpArgs($satpArgs) {
-        $satpArgs.satp = $this.RuleName
-        $satpArgs.pspoption = $this.PSPoptions
-        $satpArgs.transport = $this.Transport
-        $satpArgs.description = $this.Description
-        $satpArgs.vendor = $this.Vendor
-        $satpArgs.boot = $this.Boot
-        $satpArgs.type = $this.Type
-        $satpArgs.device = $this.Device
-        $satpArgs.driver = $this.Driver
-        $satpArgs.claimoption = $this.ClaimOptions
-        $satpArgs.psp = $this.Psp
-        $satpArgs.option = $this.Options
-        $satpArgs.model = $this.Model
-    }
-
-    <#
-    .DESCRIPTION
-
-    Installs the new SATP Claim Rule with the specified properties from the user.
-    #>
-    [void] AddSatpClaimRule($esxCli) {
-        $satpArgs = Add-CreateArgs -EsxCli $esxCli
-        $satpArgs.force = $this.Force
-
-        $this.PopulateSatpArgs($satpArgs)
-
-        try {
-            Add-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
-        }
-        catch {
-            Write-Error "EsxCLI command for adding satp rule failed with the following exception: $($PSItem.ToString())"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Uninstalls the SATP Claim Rule with the specified properties from the user.
-    #>
-    [void] RemoveSatpClaimRule($esxCli) {
-        $satpArgs = Remove-CreateArgs -EsxCli $esxCli
-
-        $this.PopulateSatpArgs($satpArgs)
-
-        try {
-            Remove-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
-        }
-        catch {
-            Write-Error "EsxCLI command for removing satp rule failed with the following exception: $($PSItem.ToString())"
-        }
-    }
-}
-
-[DscResource()]
-class VMHostTpsSettings : VMHostBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Share Scan Time Advanced Setting value.
-    #>
-    [DscProperty()]
-    [nullable[int]] $ShareScanTime
-
-    <#
-    .DESCRIPTION
-
-    Share Scan GHz Advanced Setting value.
-    #>
-    [DscProperty()]
-    [nullable[int]] $ShareScanGHz
-
-    <#
-    .DESCRIPTION
-
-    Share Rate Max Advanced Setting value.
-    #>
-    [DscProperty()]
-    [nullable[int]] $ShareRateMax
-
-    <#
-    .DESCRIPTION
-
-    Share Force Salting Advanced Setting value.
-    #>
-    [DscProperty()]
-    [nullable[int]] $ShareForceSalting
-
-    hidden [string] $TpsSettingsName = "Mem.Sh*"
-    hidden [string] $MemValue = "Mem."
-
-    [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-
-        $this.UpdateTpsSettings($vmHost)
-    }
-
-    [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $shouldUpdateTpsSettings = $this.ShouldUpdateTpsSettings($vmHost)
-
-        return !$shouldUpdateTpsSettings
-    }
-
-    [VMHostTpsSettings] Get() {
-        $result = [VMHostTpsSettings]::new()
-
-        $result.Name = $this.Name
-        $result.Server = $this.Server
-
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
-
-        foreach ($tpsSetting in $tpsSettings) {
-            $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
-
-            $result.$tpsSettingName = $tpsSetting.Value
-        }
-
-        return $result
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value, indicating if update operation should be performed on at least one of the TPS Settings.
-    #>
-    [bool] ShouldUpdateTpsSettings($vmHost) {
-        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
-
-        foreach ($tpsSetting in $tpsSettings) {
-            $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
-
-            if ($null -ne $this.$tpsSettingName -and $this.$tpsSettingName -ne $tpsSetting.Value) {
-                return $true
-            }
-        }
-
-        return $false
-    }
-
-    <#
-    .DESCRIPTION
-
-    Updates the needed TPS Settings with the specified values.
-    #>
-    [void] UpdateTpsSettings($vmHost) {
-        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
-
-        foreach ($tpsSetting in $tpsSettings) {
-            $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
-
-            if ($null -eq $this.$tpsSettingName -or $this.$tpsSettingName -eq $tpsSetting.Value) {
-                continue
-            }
-
-             Set-AdvancedSetting -AdvancedSetting $tpsSetting -Value $this.$tpsSettingName -Confirm:$false
-        }
-    }
-}
-
-[DscResource()]
-class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
@@ -932,127 +202,165 @@ class VMHostSettings : VMHostBaseDSC {
     [DscProperty()]
     [bool] $IssueClear
 
-    hidden [string] $IssueSettingName = "Config.Etc.issue"
-    hidden [string] $MotdSettingName = "Config.Etc.motd"
+    hidden [string] $LogLevelSettingName = "log.level"
+    hidden [string] $EventMaxAgeEnabledSettingName = "event.maxAgeEnabled"
+    hidden [string] $EventMaxAgeSettingName = "event.maxAge"
+    hidden [string] $TaskMaxAgeEnabledSettingName = "task.maxAgeEnabled"
+    hidden [string] $TaskMaxAgeSettingName = "task.maxAge"
+    hidden [string] $MotdSettingName = "etc.motd"
+    hidden [string] $IssueSettingName = "etc.issue"
 
     [void] Set() {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        $this.ConnectVIServer()
+        $this.UpdatevCenterSettings($this.Connection)
+    }
 
-    	$this.ConnectVIServer()
-    	$vmHost = $this.GetVMHost()
+    [bool] Test() {
+        $this.ConnectVIServer()
+        return !$this.ShouldUpdatevCenterSettings($this.Connection)
+    }
 
-    	$this.UpdateVMHostSettings($vmHost)
-  	}
+    [vCenterSettings] Get() {
+        $result = [vCenterSettings]::new()
+        $result.Server = $this.Server
 
-  	[bool] Test() {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        $this.ConnectVIServer()
+        $this.PopulateResult($this.Connection, $result)
 
-    	$this.ConnectVIServer()
-    	$vmHost = $this.GetVMHost()
+        return $result
+    }
 
-    	return !$this.ShouldUpdateVMHostSettings($vmHost)
-  	}
-
-  	[VMHostSettings] Get() {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
-
-    	$result = [VMHostSettings]::new()
-
-    	$this.ConnectVIServer()
-    	$vmHost = $this.GetVMHost()
-    	$this.PopulateResult($vmHost, $result)
-
-    	return $result
-  	}
-
-  	<#
+    <#
     .DESCRIPTION
 
     Returns a boolean value indicating if the Advanced Setting value should be updated.
     #>
     [bool] ShouldUpdateSettingValue($desiredValue, $currentValue) {
-    	<#
-        Desired value equal to $null means that the setting value was not specified.
-        If it is specified we check if the setting value is not equal to the current value.
+        <#
+            LoggingLevel type properties should be updated only when Desired value is different than Unset.
+            Unset means that value was not specified for such type of property.
         #>
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        if ($desiredValue -is [LoggingLevel] -and $desiredValue -eq [LoggingLevel]::Unset) {
+            return $false
+        }
 
-    	return ($null -ne $desiredValue -and $desiredValue -ne $currentValue)
-  	}
+        <#
+            Desired value equal to $null means that the setting value was not specified.
+            If it is specified we check if the setting value is not equal to the current value.
+        #>
+        return ($null -ne $desiredValue -and $desiredValue -ne $currentValue)
+    }
 
-  	<#
+    <#
     .DESCRIPTION
 
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
-    [bool] ShouldUpdateVMHostSettings($VMHost) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    [bool] ShouldUpdatevCenterSettings($vCenter) {
+        $vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
 
-    	$VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
+    	$currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
+    	$currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
+    	$currentEventMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }
+    	$currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
+    	$currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
+    	$currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    	$currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+    	$shouldUpdatevCenterSettings = @()
+    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.LoggingLevel, $currentLogLevel.Value)
+    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.EventMaxAgeEnabled, $currentEventMaxAgeEnabled.Value)
+    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.EventMaxAge, $currentEventMaxAge.Value)
+    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
+    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.TaskMaxAge, $currentTaskMaxAge.Value)
+    	$shouldUpdatevCenterSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
+        $shouldUpdatevCenterSettings += ($this.IssueClear -and ($currentIssue.Value -ne [string]::Empty)) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
 
-    	$shouldUpdateVMHostSettings = @()
-    	$shouldUpdateVMHostSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
-    	$shouldUpdateVMHostSettings += ($this.IssueClear -and ($currentIssue.Value -ne [string]::Empty)) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
+    	return ($shouldUpdatevCenterSettings -Contains $true)
+    }
 
-    	return ($shouldUpdateVMHostSettings -Contains $true)
-  	}
-
-  	<#
+    <#
     .DESCRIPTION
 
     Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
     #>
-  	[void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+   [void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue) {
+        if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
+            Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
+    This handles Advanced Settings that have a "Clear" property.
+    #>
+
+    [void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
     	if ($clearValue) {
       	    if ($this.ShouldUpdateSettingValue([string]::Empty, $advancedSettingCurrentValue)) {
-        	    Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
+                Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
       	    }
     	}
     	else {
       	    if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
-        		Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
+                Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
       	    }
     	}
   	}
 
-  	<#
+    <#
     .DESCRIPTION
 
     Performs update on those Advanced Settings values that needs to be updated.
     #>
-  	[void] UpdateVMHostSettings($VMHost) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    [void] UpdatevCenterSettings($vCenter) {
+        $vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
 
-    	$VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
+        $currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
+        $currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
+        $currentEventMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }
+        $currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
+        $currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
+    	$currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    	$currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
-
+        $this.SetAdvancedSetting($currentLogLevel, $this.LoggingLevel, $currentLogLevel.Value)
+        $this.SetAdvancedSetting($currentEventMaxAgeEnabled, $this.EventMaxAgeEnabled, $currentEventMaxAgeEnabled.Value)
+        $this.SetAdvancedSetting($currentEventMaxAge, $this.EventMaxAge, $currentEventMaxAge.Value)
+        $this.SetAdvancedSetting($currentTaskMaxAgeEnabled, $this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
+        $this.SetAdvancedSetting($currentTaskMaxAge, $this.TaskMaxAge, $currentTaskMaxAge.Value)
     	$this.SetAdvancedSetting($currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
     	$this.SetAdvancedSetting($currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
-  	}
+    }
 
-  	<#
+    <#
     .DESCRIPTION
 
     Populates the result returned from the Get() method with the values of the advanced settings from the server.
     #>
-  	[void] PopulateResult($VMHost, $result) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    [void] PopulateResult($vCenter, $result) {
+        $vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
 
-    	$VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
+        $currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
+        $currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
+        $currentEventMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }
+        $currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
+        $currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
+        $currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+        $currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
-
-    	$result.Motd = $currentMotd.Value
-    	$result.Issue = $currentIssue.Value
-  	}
+        $result.LoggingLevel = $currentLogLevel.Value
+        $result.EventMaxAgeEnabled = $currentEventMaxAgeEnabled.Value
+        $result.EventMaxAge = $currentEventMaxAge.Value
+        $result.TaskMaxAgeEnabled = $currentTaskMaxAgeEnabled.Value
+        $result.TaskMaxAge = $currentTaskMaxAge.Value
+        $result.Motd = $currentMotd.Value
+        $result.Issue = $currentIssue.Value
+    }
 }
 
 [DscResource()]
@@ -1228,47 +536,667 @@ class vCenterStatistics : BaseDSC {
 }
 
 [DscResource()]
-class vCenterSettings : BaseDSC {
+class VMHostDnsSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Logging Level Advanced Setting value.
+
+    List of domain name or IP address of the DNS Servers.
     #>
     [DscProperty()]
-    [LoggingLevel] $LoggingLevel
-
-    <#
-    .DESCRIPTION
-
-    Event Max Age Enabled Advanced Setting value.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $EventMaxAgeEnabled
+    [string[]] $Address
 
     <#
     .DESCRIPTION
 
-    Event Max Age Advanced Setting value.
+    Indicates whether DHCP is used to determine DNS configuration.
     #>
-    [DscProperty()]
-    [nullable[int]] $EventMaxAge
+    [DscProperty(Mandatory)]
+    [bool] $Dhcp
 
     <#
     .DESCRIPTION
 
-    Task Max Age Enabled Advanced Setting value.
+    Domain Name portion of the DNS name. For example, "vmware.com".
     #>
-    [DscProperty()]
-    [nullable[bool]] $TaskMaxAgeEnabled
+    [DscProperty(Mandatory)]
+    [string] $DomainName
 
     <#
     .DESCRIPTION
 
-    Task Max Age Advanced Setting value.
+    Host Name portion of DNS name. For example, "esx01".
+    #>
+    [DscProperty(Mandatory)]
+    [string] $HostName
+
+    <#
+    .DESCRIPTION
+
+    Desired value for the VMHost DNS Ipv6VirtualNicDevice.
     #>
     [DscProperty()]
-    [nullable[int]] $TaskMaxAge
+    [string] $Ipv6VirtualNicDevice
 
+    <#
+    .DESCRIPTION
+
+    Domain in which to search for hosts, placed in order of preference.
+    #>
+    [DscProperty()]
+    [string[]] $SearchDomain
+
+    <#
+    .DESCRIPTION
+
+    Desired value for the VMHost DNS VirtualNicDevice.
+    #>
+    [DscProperty()]
+    [string] $VirtualNicDevice
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $this.UpdateDns($vmHost)
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
+
+        return $this.Equals($vmHostDnsConfig)
+    }
+
+    [VMHostDnsSettings] Get() {
+        $result = [VMHostDnsSettings]::new()
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
+
+        $result.Name = $this.Name
+        $result.Server = $this.Server
+        $result.Address = $vmHostDnsConfig.Address
+        $result.Dhcp = $vmHostDnsConfig.Dhcp
+        $result.DomainName = $vmHostDnsConfig.DomainName
+        $result.HostName = $vmHostDnsConfig.HostName
+        $result.Ipv6VirtualNicDevice = $vmHostDnsConfig.Ipv6VirtualNicDevice
+        $result.SearchDomain = $vmHostDnsConfig.SearchDomain
+        $result.VirtualNicDevice = $vmHostDnsConfig.VirtualNicDevice
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the desired DNS array property is equal to the current DNS array property.
+    #>
+    [bool] AreDnsArrayPropertiesEqual($desiredArrayPropertyValue, $currentArrayPropertyValue) {
+        $valuesToAdd = $desiredArrayPropertyValue | Where-Object { $currentArrayPropertyValue -NotContains $_ }
+        $valuesToRemove = $currentArrayPropertyValue | Where-Object { $desiredArrayPropertyValue -NotContains $_ }
+
+        return ($null -eq $valuesToAdd -and $null -eq $valuesToRemove)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the desired DNS optional value is equal to the current DNS value from the server.
+    #>
+    [bool] AreDnsOptionalPropertiesEqual($desiredPropertyValue, $currentPropertyValue) {
+        if ([string]::IsNullOrEmpty($desiredPropertyValue) -and [string]::IsNullOrEmpty($currentPropertyValue)) {
+            return $true
+        }
+
+        return $desiredPropertyValue -eq $currentPropertyValue
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the current DNS Config is equal to the Desired DNS Config.
+    #>
+    [bool] Equals($vmHostDnsConfig) {
+        # Checks if desired Mandatory values are equal to current values from server.
+        if ($this.Dhcp -ne $vmHostDnsConfig.Dhcp -or $this.DomainName -ne $vmHostDnsConfig.DomainName -or $this.HostName -ne $vmHostDnsConfig.HostName) {
+            return $false
+        }
+
+        if (!$this.AreDnsArrayPropertiesEqual($this.Address, $vmHostDnsConfig.Address) -or !$this.AreDnsArrayPropertiesEqual($this.SearchDomain, $vmHostDnsConfig.SearchDomain)) {
+            return $false
+        }
+
+        if (!$this.AreDnsOptionalPropertiesEqual($this.Ipv6VirtualNicDevice, $vmHostDnsConfig.Ipv6VirtualNicDevice) -or !$this.AreDnsOptionalPropertiesEqual($this.VirtualNicDevice, $vmHostDnsConfig.VirtualNicDevice)) {
+            return $false
+        }
+
+        return $true
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the DNS Config of the VMHost with the Desired DNS Config.
+    #>
+    [void] UpdateDns($vmHost) {
+        $dnsConfigArgs = @{
+            Address = $this.Address
+            Dhcp = $this.Dhcp
+            DomainName = $this.DomainName
+            HostName = $this.HostName
+            Ipv6VirtualNicDevice = $this.Ipv6VirtualNicDevice
+            SearchDomain = $this.SearchDomain
+            VirtualNicDevice = $this.VirtualNicDevice
+        }
+
+        $dnsConfig = New-DNSConfig @dnsConfigArgs
+        $networkSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.NetworkSystem
+
+        try {
+            Update-DNSConfig -NetworkSystem $networkSystem -DnsConfig $dnsConfig
+        }
+        catch {
+            Write-Error "The DNS Config could not be updated: $($PSItem.ToString())"
+        }
+    }
+}
+
+[DscResource()]
+class VMHostNtpSettings : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    List of domain name or IP address of the desired NTP Servers.
+    #>
+    [DscProperty()]
+    [string[]] $NtpServer
+
+    <#
+    .DESCRIPTION
+
+    Desired Policy of the VMHost 'ntpd' service activation.
+    #>
+    [DscProperty()]
+    [ServicePolicy] $NtpServicePolicy
+
+    hidden [string] $ServiceId = "ntpd"
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $this.UpdateVMHostNtpServer($vmHost)
+        $this.UpdateVMHostNtpServicePolicy($vmHost)
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
+
+        $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
+        if ($shouldUpdateVMHostNtpServer) {
+            return $false
+        }
+
+        $vmHostServices = $vmHost.ExtensionData.Config.Service
+        $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostServices)
+        if ($shouldUpdateVMHostNtpServicePolicy) {
+            return $false
+        }
+
+        return $true
+    }
+
+    [VMHostNtpSettings] Get() {
+        $result = [VMHostNtpSettings]::new()
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
+        $vmHostServices = $vmHost.ExtensionData.Config.Service
+        $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
+
+        $result.Name = $this.Name
+        $result.Server = $this.Server
+        $result.NtpServer = $vmHostNtpConfig.Server
+        $result.NtpServicePolicy = $vmHostNtpService.Policy
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the VMHost NTP Server should be updated.
+    #>
+    [bool] ShouldUpdateVMHostNtpServer($vmHostNtpConfig) {
+        $desiredVMHostNtpServer = $this.NtpServer
+        $currentVMHostNtpServer = $vmHostNtpConfig.Server
+
+        if ($null -eq $desiredVMHostNtpServer) {
+            # The property is not specified.
+            return $false
+        }
+        elseif ($desiredVMHostNtpServer.Length -eq 0 -and $currentVMHostNtpServer.Length -ne 0) {
+            # Empty array specified as desired, but current is not an empty array, so update VMHost NTP Server.
+            return $true
+        }
+        else {
+            $ntpServerToAdd = $desiredVMHostNtpServer | Where-Object { $currentVMHostNtpServer -NotContains $_ }
+            $ntpServerToRemove = $currentVMHostNtpServer | Where-Object { $desiredVMHostNtpServer -NotContains $_ }
+
+            if ($null -ne $ntpServerToAdd -or $null -ne $ntpServerToRemove) {
+                <#
+                The currentVMHostNtpServer does not contain at least one element from desiredVMHostNtpServer or
+                the desiredVMHostNtpServer is a subset of the currentVMHostNtpServer. In both cases
+                we should update VMHost NTP Server.
+                #>
+                return $true
+            }
+
+            # No need to update VMHost NTP Server.
+            return $false
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the VMHost 'ntpd' Service Policy should be updated.
+    #>
+    [bool] ShouldUpdateVMHostNtpServicePolicy($vmHostServices) {
+        if ($this.NtpServicePolicy -eq [ServicePolicy]::Unset) {
+            # The property is not specified.
+            return $false
+        }
+
+        $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
+
+        return $this.NtpServicePolicy -ne $vmHostNtpService.Policy
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the VMHost NTP Server with the desired NTP Server array.
+    #>
+    [void] UpdateVMHostNtpServer($vmHost) {
+        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
+        $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
+
+        if (!$shouldUpdateVMHostNtpServer) {
+            return
+        }
+
+        $dateTimeConfig = New-DateTimeConfig -NtpServer $this.NtpServer
+        $dateTimeSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.DateTimeSystem
+
+        Update-DateTimeConfig -DateTimeSystem $dateTimeSystem -DateTimeConfig $dateTimeConfig
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the VMHost 'ntpd' Service Policy with the desired Service Policy.
+    #>
+    [void] UpdateVMHostNtpServicePolicy($vmHost) {
+        $vmHostService = $vmHost.ExtensionData.Config.Service
+        $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostService)
+        if (!$shouldUpdateVMHostNtpServicePolicy) {
+            return
+        }
+
+        $serviceSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.ServiceSystem
+        Update-ServicePolicy -ServiceSystem $serviceSystem -ServiceId $this.ServiceId -ServicePolicyValue $this.NtpServicePolicy.ToString().ToLower()
+    }
+}
+
+[DscResource()]
+class VMHostSatpClaimRule : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Value indicating if the SATP Claim Rule should be Present or Absent.
+    #>
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Name of the SATP Claim Rule.
+    #>
+    [DscProperty(Mandatory)]
+    [string] $RuleName
+
+    <#
+    .DESCRIPTION
+
+    PSP options for the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $PSPOptions
+
+    <#
+    .DESCRIPTION
+
+    Transport Property of the Satp Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $Transport
+
+    <#
+    .DESCRIPTION
+
+    Description string to set when adding the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $Description
+
+    <#
+    .DESCRIPTION
+
+    Vendor string to set when adding the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $Vendor
+
+    <#
+    .DESCRIPTION
+
+    System default rule added at boot time.
+    #>
+    [DscProperty()]
+    [bool] $Boot
+
+    <#
+    .DESCRIPTION
+
+    Claim type for the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $Type
+
+    <#
+    .DESCRIPTION
+
+    Device of the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $Device
+
+    <#
+    .DESCRIPTION
+
+    Driver string for the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $Driver
+
+    <#
+    .DESCRIPTION
+
+    Claim option string for the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $ClaimOptions
+
+    <#
+    .DESCRIPTION
+
+    Default PSP for the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $Psp
+
+    <#
+    .DESCRIPTION
+
+    Option string for the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $Options
+
+    <#
+    .DESCRIPTION
+
+    Model string for the SATP Claim Rule.
+    #>
+    [DscProperty()]
+    [string] $Model
+
+    <#
+    .DESCRIPTION
+
+    Value, which ignores validity checks and install the rule anyway.
+    #>
+    [DscProperty()]
+    [bool] $Force
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
+        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+        $satpClaimRulePresent = ($null -ne $satpClaimRule)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            if (!$satpClaimRulePresent) {
+                $this.AddSatpClaimRule($esxCli)
+            }
+        }
+        else {
+            if ($satpClaimRulePresent) {
+                $this.RemoveSatpClaimRule($esxCli)
+            }
+        }
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
+        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+        $satpClaimRulePresent = ($null -ne $satpClaimRule)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            return $satpClaimRulePresent
+        }
+        else {
+            return -not $satpClaimRulePresent
+        }
+    }
+
+    [VMHostSatpClaimRule] Get() {
+        $result = [VMHostSatpClaimRule]::new()
+
+        $result.Name = $this.Name
+        $result.Server = $this.Server
+        $result.RuleName = $this.RuleName
+        $result.Boot = $this.Boot
+        $result.Type = $this.Type
+        $result.Force = $this.Force
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
+        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+        $satpClaimRulePresent = ($null -ne $satpClaimRule)
+
+        if (!$satpClaimRulePresent) {
+            $result.Ensure = "Absent"
+            $result.Psp = $this.Psp
+            $this.PopulateResult($result, $this)
+        }
+        else {
+            $result.Ensure = "Present"
+            $result.Psp = $satpClaimRule.DefaultPSP
+            $this.PopulateResult($result, $satpClaimRule)
+        }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the desired SATP Claim Rule is equal to the passed SATP Claim Rule.
+    #>
+    [bool] Equals($satpClaimRule) {
+        if ($this.RuleName -ne $satpClaimRule.Name) {
+            return $false
+        }
+
+        <#
+            For every optional property we check if it is not passed(if it is null), because
+            all properties on the server, which are not set are returned as empty strings and
+            if we compare null with empty string the equality will fail.
+        #>
+
+        if ($null -ne $this.PSPOptions -and $this.PSPOptions -ne $satpClaimRule.PSPOptions) {
+            return $false
+        }
+
+        if ($null -ne $this.Transport -and $this.Transport -ne $satpClaimRule.Transport) {
+            return $false
+        }
+
+        if ($null -ne $this.Description -and $this.Description -ne $satpClaimRule.Description) {
+            return $false
+        }
+
+        if ($null -ne $this.Vendor -and $this.Vendor -ne $satpClaimRule.Vendor) {
+            return $false
+        }
+
+        if ($null -ne $this.Device -and $this.Device -ne $satpClaimRule.Device) {
+            return $false
+        }
+
+        if ($null -ne $this.Driver -and $this.Driver -ne $satpClaimRule.Driver) {
+            return $false
+        }
+
+        if ($null -ne $this.ClaimOptions -and $this.ClaimOptions -ne $satpClaimRule.ClaimOptions) {
+            return $false
+        }
+
+        if ($null -ne $this.Psp -and $this.Psp -ne $satpClaimRule.DefaultPSP) {
+            return $false
+        }
+
+        if ($null -ne $this.Options -and $this.Options -ne $satpClaimRule.Options) {
+            return $false
+        }
+
+        if ($null -ne $this.Model -and $this.Model -ne $satpClaimRule.Model) {
+            return $false
+        }
+
+        return $true
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the desired SatpClaimRule if the Rule is present on the server, otherwise returns $null.
+    #>
+    [PSObject] GetSatpClaimRule($esxCli) {
+        $foundSatpClaimRule = $null
+        $satpClaimRules = Get-SATPClaimRules -EsxCli $esxCli
+
+        foreach ($satpClaimRule in $satpClaimRules) {
+            if ($this.Equals($satpClaimRule)) {
+                $foundSatpClaimRule = $satpClaimRule
+                break
+            }
+        }
+
+        return $foundSatpClaimRule
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the SATP Claim Rule properties from the server.
+    #>
+    [void] PopulateResult($result, $satpClaimRule) {
+        $result.PSPoptions = $satpClaimRule.PSPOptions
+        $result.Transport = $satpClaimRule.Transport
+        $result.Description = $satpClaimRule.Description
+        $result.Vendor = $satpClaimRule.Vendor
+        $result.Device = $satpClaimRule.Device
+        $result.Driver = $satpClaimRule.Driver
+        $result.ClaimOptions = $satpClaimRule.ClaimOptions
+        $result.Options = $satpClaimRule.Options
+        $result.Model = $satpClaimRule.Model
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the arguments for the Add and Remove operations of SATP Claim Rule with the specified properties from the user.
+    #>
+    [void] PopulateSatpArgs($satpArgs) {
+        $satpArgs.satp = $this.RuleName
+        $satpArgs.pspoption = $this.PSPoptions
+        $satpArgs.transport = $this.Transport
+        $satpArgs.description = $this.Description
+        $satpArgs.vendor = $this.Vendor
+        $satpArgs.boot = $this.Boot
+        $satpArgs.type = $this.Type
+        $satpArgs.device = $this.Device
+        $satpArgs.driver = $this.Driver
+        $satpArgs.claimoption = $this.ClaimOptions
+        $satpArgs.psp = $this.Psp
+        $satpArgs.option = $this.Options
+        $satpArgs.model = $this.Model
+    }
+
+    <#
+    .DESCRIPTION
+
+    Installs the new SATP Claim Rule with the specified properties from the user.
+    #>
+    [void] AddSatpClaimRule($esxCli) {
+        $satpArgs = Add-CreateArgs -EsxCli $esxCli
+        $satpArgs.force = $this.Force
+
+        $this.PopulateSatpArgs($satpArgs)
+
+        try {
+            Add-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
+        }
+        catch {
+            Write-Error "EsxCLI command for adding satp rule failed with the following exception: $($PSItem.ToString())"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Uninstalls the SATP Claim Rule with the specified properties from the user.
+    #>
+    [void] RemoveSatpClaimRule($esxCli) {
+        $satpArgs = Remove-CreateArgs -EsxCli $esxCli
+
+        $this.PopulateSatpArgs($satpArgs)
+
+        try {
+            Remove-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
+        }
+        catch {
+            Write-Error "EsxCLI command for removing satp rule failed with the following exception: $($PSItem.ToString())"
+        }
+    }
+}
+
+[DscResource()]
+class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
@@ -1291,7 +1219,7 @@ class vCenterSettings : BaseDSC {
     Issue value.
     #>
     [DscProperty()]
-	[string] $Issue
+    [string] $Issue
 
     <#
     .DESCRIPTION
@@ -1301,30 +1229,35 @@ class vCenterSettings : BaseDSC {
     [DscProperty()]
     [bool] $IssueClear
 
-    hidden [string] $LogLevelSettingName = "log.level"
-    hidden [string] $EventMaxAgeEnabledSettingName = "event.maxAgeEnabled"
-    hidden [string] $EventMaxAgeSettingName = "event.maxAge"
-    hidden [string] $TaskMaxAgeEnabledSettingName = "task.maxAgeEnabled"
-    hidden [string] $TaskMaxAgeSettingName = "task.maxAge"
-    hidden [string] $MotdSettingName = "etc.motd"
-    hidden [string] $IssueSettingName = "etc.issue"
+    hidden [string] $IssueSettingName = "Config.Etc.issue"
+    hidden [string] $MotdSettingName = "Config.Etc.motd"
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.UpdatevCenterSettings($this.Connection)
+    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    	$this.ConnectVIServer()
+    	$vmHost = $this.GetVMHost()
+
+        $this.UpdateVMHostSettings($vmHost)
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        return !$this.ShouldUpdatevCenterSettings($this.Connection)
+    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    	$this.ConnectVIServer()
+    	$vmHost = $this.GetVMHost()
+
+        return !$this.ShouldUpdateVMHostSettings($vmHost)
     }
 
-    [vCenterSettings] Get() {
-        $result = [vCenterSettings]::new()
-        $result.Server = $this.Server
+    [VMHostSettings] Get() {
+    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $this.ConnectVIServer()
-        $this.PopulateResult($this.Connection, $result)
+    	$result = [VMHostSettings]::new()
+
+    	$this.ConnectVIServer()
+    	$vmHost = $this.GetVMHost()
+    	$this.PopulateResult($vmHost, $result)
 
         return $result
     }
@@ -1335,18 +1268,12 @@ class vCenterSettings : BaseDSC {
     Returns a boolean value indicating if the Advanced Setting value should be updated.
     #>
     [bool] ShouldUpdateSettingValue($desiredValue, $currentValue) {
-        <#
-            LoggingLevel type properties should be updated only when Desired value is different than Unset.
-            Unset means that value was not specified for such type of property.
+    	<#
+        Desired value equal to $null means that the setting value was not specified.
+        If it is specified we check if the setting value is not equal to the current value.
         #>
-        if ($desiredValue -is [LoggingLevel] -and $desiredValue -eq [LoggingLevel]::Unset) {
-            return $false
-        }
+    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        <#
-            Desired value equal to $null means that the setting value was not specified.
-            If it is specified we check if the setting value is not equal to the current value.
-        #>
         return ($null -ne $desiredValue -and $desiredValue -ne $currentValue)
     }
 
@@ -1355,85 +1282,56 @@ class vCenterSettings : BaseDSC {
 
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
-    [bool] ShouldUpdatevCenterSettings($vCenter) {
-		$vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
+    [bool] ShouldUpdateVMHostSettings($VMHost) {
+    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-    	$currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
-    	$currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
-    	$currentEventMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }
-    	$currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
-    	$currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
-    	$currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+    	$VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
 
-    	$shouldUpdatevCenterSettings = @()
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.LoggingLevel, $currentLogLevel.Value)
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.EventMaxAgeEnabled, $currentEventMaxAgeEnabled.Value)
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.EventMaxAge, $currentEventMaxAge.Value)
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.TaskMaxAge, $currentTaskMaxAge.Value)
-    	$shouldUpdatevCenterSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
-        $shouldUpdatevCenterSettings += ($this.IssueClear -and ($currentIssue.Value -ne [string]::Empty)) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
+    	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	return ($shouldUpdatevCenterSettings -Contains $true)
+    	$shouldUpdateVMHostSettings = @()
+    	$shouldUpdateVMHostSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
+    	$shouldUpdateVMHostSettings += ($this.IssueClear -and ($currentIssue.Value -ne [string]::Empty)) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
+
+        return ($shouldUpdateVMHostSettings -Contains $true)
     }
 
-    <#
+  	<#
     .DESCRIPTION
 
     Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
     #>
-   [void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue) {
-        if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
-            Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
-    This handles Advanced Settings that have a "Clear" property.
-    #>
-
-    [void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
-		Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+  	[void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
+    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
     	if ($clearValue) {
       	    if ($this.ShouldUpdateSettingValue([string]::Empty, $advancedSettingCurrentValue)) {
-        		Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
+                  Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
       	    }
     	}
     	else {
       	    if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
-        		Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
+                  Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
       	    }
     	}
-  	}
+    }
 
     <#
     .DESCRIPTION
 
     Performs update on those Advanced Settings values that needs to be updated.
     #>
-    [void] UpdatevCenterSettings($vCenter) {
-   	    $vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
+    [void] UpdateVMHostSettings($VMHost) {
+    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
-        $currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
-        $currentEventMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }
-        $currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
-        $currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
-    	$currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+    	$VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
 
-        $this.SetAdvancedSetting($currentLogLevel, $this.LoggingLevel, $currentLogLevel.Value)
-        $this.SetAdvancedSetting($currentEventMaxAgeEnabled, $this.EventMaxAgeEnabled, $currentEventMaxAgeEnabled.Value)
-        $this.SetAdvancedSetting($currentEventMaxAge, $this.EventMaxAge, $currentEventMaxAge.Value)
-        $this.SetAdvancedSetting($currentTaskMaxAgeEnabled, $this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
-        $this.SetAdvancedSetting($currentTaskMaxAge, $this.TaskMaxAge, $currentTaskMaxAge.Value)
+    	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+
     	$this.SetAdvancedSetting($currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
-    	$this.SetAdvancedSetting($currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
+        $this.SetAdvancedSetting($currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
     }
 
     <#
@@ -1441,23 +1339,125 @@ class vCenterSettings : BaseDSC {
 
     Populates the result returned from the Get() method with the values of the advanced settings from the server.
     #>
-    [void] PopulateResult($vCenter, $result) {
-   	    $vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
+    [void] PopulateResult($VMHost, $result) {
+    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
-        $currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
-        $currentEventMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeSettingName }
-        $currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
-        $currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
-        $currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-        $currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+    	$VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
 
-        $result.LoggingLevel = $currentLogLevel.Value
-        $result.EventMaxAgeEnabled = $currentEventMaxAgeEnabled.Value
-        $result.EventMaxAge = $currentEventMaxAge.Value
-        $result.TaskMaxAgeEnabled = $currentTaskMaxAgeEnabled.Value
-        $result.TaskMaxAge = $currentTaskMaxAge.Value
-        $result.Motd = $currentMotd.Value
+    	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+
+    	$result.Motd = $currentMotd.Value
         $result.Issue = $currentIssue.Value
-	}
+    }
+}
+
+[DscResource()]
+class VMHostTpsSettings : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Share Scan Time Advanced Setting value.
+    #>
+    [DscProperty()]
+    [nullable[int]] $ShareScanTime
+
+    <#
+    .DESCRIPTION
+
+    Share Scan GHz Advanced Setting value.
+    #>
+    [DscProperty()]
+    [nullable[int]] $ShareScanGHz
+
+    <#
+    .DESCRIPTION
+
+    Share Rate Max Advanced Setting value.
+    #>
+    [DscProperty()]
+    [nullable[int]] $ShareRateMax
+
+    <#
+    .DESCRIPTION
+
+    Share Force Salting Advanced Setting value.
+    #>
+    [DscProperty()]
+    [nullable[int]] $ShareForceSalting
+
+    hidden [string] $TpsSettingsName = "Mem.Sh*"
+    hidden [string] $MemValue = "Mem."
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $this.UpdateTpsSettings($vmHost)
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $shouldUpdateTpsSettings = $this.ShouldUpdateTpsSettings($vmHost)
+
+        return !$shouldUpdateTpsSettings
+    }
+
+    [VMHostTpsSettings] Get() {
+        $result = [VMHostTpsSettings]::new()
+
+        $result.Name = $this.Name
+        $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+
+        foreach ($tpsSetting in $tpsSettings) {
+            $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
+
+            $result.$tpsSettingName = $tpsSetting.Value
+        }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value, indicating if update operation should be performed on at least one of the TPS Settings.
+    #>
+    [bool] ShouldUpdateTpsSettings($vmHost) {
+        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+
+        foreach ($tpsSetting in $tpsSettings) {
+            $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
+
+            if ($null -ne $this.$tpsSettingName -and $this.$tpsSettingName -ne $tpsSetting.Value) {
+                return $true
+            }
+        }
+
+        return $false
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the needed TPS Settings with the specified values.
+    #>
+    [void] UpdateTpsSettings($vmHost) {
+        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+
+        foreach ($tpsSetting in $tpsSettings) {
+            $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
+
+            if ($null -eq $this.$tpsSettingName -or $this.$tpsSettingName -eq $tpsSetting.Value) {
+                continue
+            }
+
+            Set-AdvancedSetting -AdvancedSetting $tpsSetting -Value $this.$tpsSettingName -Confirm:$false
+        }
+    }
 }
