@@ -201,6 +201,6 @@ function Set-HostPowerPolicy {
         [System.Int32] $PowerPolicy
     )
     
-    $powerSystem = Get-View ($vmHost | Get-View).ConfigManager.PowerSystem
+    $powerSystem = Get-View $vmhost.ExtensionData.ConfigManager.PowerSystem
     $powerSystem.ConfigurePowerPolicy($PowerPolicy)
 }
