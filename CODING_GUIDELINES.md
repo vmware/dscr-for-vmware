@@ -12,7 +12,7 @@ For any other resource you need to inherit from BaseDSC.
   [DscResource()]
   MyResource : BaseDSC
  ```
-You need to implement your new resource in the [VMware.vSphereDSC Module File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/VMware.vSphereDSC.psm1). In the Set(), Test() and Get() methods of your resource, you need to call ConnectVIServer() method from the base class to establish a connection either to  a vCenter or an ESXi. 
+You need to implement your new resource in separate file in the [DSCResources Folder](https://github.com/vmware/dscr-for-vmware/blob/dev/Source/VMware.vSphereDSC/DSCResources). In the Set(), Test() and Get() methods of your resource, you need to call ConnectVIServer() method from the base class to establish a connection either to  a vCenter or an ESXi.
  ```powershell
   [void] Set()
   {
@@ -42,11 +42,7 @@ For every property and helper method in your resource, you need to add brief des
   #>
  ```
 
-After you implement it, you need to add it to the [Module Manifest File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/VMware.vSphereDSC.psd1) (in the DscResourcesToExport array).
- ```powershell
-  # DSC resources to export from this module
-  DscResourcesToExport = @()
- ```
+After you implement it, you need to run the build script [VMware.vSphereDSC.build.ps1](https://github.com/vmware/dscr-for-vmware/blob/dev/Source/VMware.vSphereDSC/VMware.vSphereDSC.build.ps1), which updates the psm1 and psd1 content with your new resource.
 
 You need to write example configuration to show how your resource works. You can look at the [Configurations Folder](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Configurations) to see other example configurations.
 
@@ -78,7 +74,7 @@ Basically for the unit tests, you need to test the Set(), Test() and Get() metho
       }
 
       Describe 'MyResource\Test' {
-          ...   
+          ...
       }
 
       Describe 'MyResource\Get' {
@@ -149,7 +145,7 @@ In your unit test file you need to replace VMware PowerCLI modules with the scri
 
           It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
               # Make sure the returned configuration is the desired one.
-              ... 
+              ...
           }
 
           It 'Should return $true when Test-DscConfiguration is run' {
@@ -168,7 +164,7 @@ Running the tests:
   cd (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests')
  ```
 
-2. The [Test Runner](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/TestRunner.ps1) script gives you the ability to:  
+2. The [Test Runner](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/TestRunner.ps1) script gives you the ability to:
    Run both Unit and Integration Tests:
     ```powershell
      .\TestRunner.ps1 -Integration -Unit
