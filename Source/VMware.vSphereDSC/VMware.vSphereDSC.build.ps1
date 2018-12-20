@@ -29,6 +29,40 @@ $script:LicenseFileContent = Get-Content -Path $script:LicensePath | Select-Obje
 $script:ImportFolders = @('Enums', 'Classes', 'DSCResources')
 $script:DSCResourcesFolder = Join-Path -Path $script:ModuleRoot -ChildPath "DSCResources"
 
+function Get-LinesRange {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+    param(
+        [System.Object[]] $FileContent,
+        [string] $StartLinePattern,
+        [string] $EndLinePattern
+    )
+
+    $range = @{}
+
+    $index = 1
+    $startLine = 0
+    $endLine = 0
+
+    foreach ($line in $FileContent) {
+        if ($line -Like $StartLinePattern) {
+            $startLine = $index
+        }
+
+        if ($line.Trim().EndsWith($EndLinePattern) -and $startLine -ne 0) {
+            $endLine = $index
+            break
+        }
+
+        $index++
+    }
+
+    $range.Set_Item("startLine", $startLine)
+    $range.Set_Item("endLine", $endLine)
+
+    return $range
+}
+
 # Add License to psm1 file.
 "<#" | Out-File -FilePath $script:PsmPath -Encoding Default
 $script:LicenseFileContent | ForEach-Object { $_ | Out-File -FilePath $script:PsmPath -Encoding Default -Append }
@@ -45,23 +79,10 @@ foreach ($folder in $script:ImportFolders) {
         $files = Get-ChildItem -Path $currentFolder -File -Filter '*.ps1'
 
         foreach ($file in $files) {
-            $index = 1
-            $startLine = 0
-            $endLine = 0
-
             $fileContent = Get-Content -Path $file.FullName
-            $fileContent | ForEach-Object {
-                if ($_ -Like '*Copyright*') {
-                    $startLine = $index
-                }
 
-                if ($_.Trim().EndsWith('#>') -and $startLine -ne 0) {
-                    $endLine = $index
-                    $startLine = 0
-                }
-
-                $index++
-            }
+            $range = Get-LinesRange -FileContent $fileContent -StartLinePattern '*Copyright*' -EndLinePattern '#>'
+            $endLine = $range.Get_Item("endLine")
 
             # We skip the comment lines for the License and the License text for each file.
             $fileContent = $fileContent[$endLine..($fileContent.Length - 1)]
@@ -76,25 +97,11 @@ if (Test-Path -Path $script:DSCResourcesFolder) {
     $resources = "'{0}'" -f $resources
     $dscResourcesToExport = "DscResourcesToExport = @($resources)"
 
-    $index = 1
-    $startLine = 0
-    $endLine = 0
-    $counter = 0
-
     $psdFileContent = Get-Content -Path $script:PsdPath
-    $psdFileContent | ForEach-Object {
-        if ($_ -Like '*DscResourcesToExport*') {
-            $startLine = $index
-            $counter++
-        }
 
-        if ($_.Trim().EndsWith(')') -and $counter -ne 0) {
-            $endLine = $index
-            $counter = 0
-        }
-
-        $index++
-    }
+    $range = Get-LinesRange -FileContent $psdFileContent -StartLinePattern '*DscResourcesToExport*' -EndLinePattern ')'
+    $startLine = $range.Get_Item("startLine")
+    $endLine = $range.Get_Item("endLine")
 
     $psdFileContent = $psdFileContent[0..($startLine - 2)], $dscResourcesToExport, $psdFileContent[$endLine..($psdFileContent.Length - 1)]
     $psdFileContent | Out-File -FilePath $script:PsdPath -Encoding Default
