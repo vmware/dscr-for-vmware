@@ -203,6 +203,8 @@ Add-Type -TypeDefinition @"
         public HostServiceInfo Service { get; set; }
 
         public HostNetworkInfo Network { get; set; }
+
+        public PowerSystemInfo PowerSystemInfo { get; set; }
     }
 
     public class HostDateTimeSystem : System.IEquatable<HostDateTimeSystem>
@@ -459,6 +461,50 @@ Add-Type -TypeDefinition @"
         public override int GetHashCode()
         {
             return (this.Name + "_" + this.User).GetHashCode();
+        }
+    }
+
+    public class PowerSystemInfo : System.IEquatable<PowerSystemInfo>
+    {
+        public HostPowerPolicy CurrentPolicy { get; set; }
+        
+        public bool Equals(PowerSystemInfo powerSystemInfo)
+        {
+            return powerSystemInfo != null && this.CurrentPolicy == powerSystemInfo.CurrentPolicy;
+        }
+
+        public override bool Equals(object powerSystemInfo)
+        {
+            return this.Equals(powerSystemInfo as PowerSystemInfo);
+        }
+
+        public override int GetHashCode()
+        {
+            if( this.CurrentPolicy == null ) {
+                return 0;
+            }
+
+            return this.CurrentPolicy.GetHashCode();
+        }
+    }
+
+    public class HostPowerPolicy : System.IEquatable<HostPowerPolicy>
+    {
+        public int Key { get; set; }
+
+        public bool Equals(HostPowerPolicy hostPowerPolicy)
+        {
+            return hostPowerPolicy != null && this.Key == hostPowerPolicy.Key;
+        }
+
+        public override bool Equals(object hostPowerPolicy)
+        {
+            return this.Equals(hostPowerPolicy as HostPowerPolicy);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.Key.GetHashCode();
         }
     }
  }
