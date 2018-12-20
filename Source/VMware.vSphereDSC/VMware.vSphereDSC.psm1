@@ -1360,13 +1360,6 @@ class VMHostPowerPolicySettings : VMHostBaseDSC
     [DscProperty(Mandatory)]
     [System.Int32] $PowerPolicy = 2
 
-    $powerProfiles =  @{
-        "High Performance" = 1 ;
-        "Balanced"         = 2 ;
-        "Low Power"        = 3 ;
-        "Custom"           = 4
-    }
-
     [void] Set()
     {
         $this.ConnectVIServer()
