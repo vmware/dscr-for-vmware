@@ -17,6 +17,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 param(
     [Parameter(Mandatory = $true)]
     [string]
+    $Name,
+    
+    [Parameter(Mandatory = $true)]
+    [string]
     $Server,
 
     [Parameter(Mandatory = $true)]
@@ -27,6 +31,9 @@ param(
     [string]
     $Password
 )
+
+#Mandatore Integration Parameter unused so set to null
+$Name = $null
 
 $script:dscResourceName = 'vCenterStatistics'
 $script:dscConfig = $null
