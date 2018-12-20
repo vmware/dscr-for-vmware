@@ -203,4 +203,6 @@ function Set-HostPowerPolicy {
     
     $powerSystem = Get-View $vmhost.ExtensionData.ConfigManager.PowerSystem
     $powerSystem.ConfigurePowerPolicy($PowerPolicy)
+
+    return $vmHost
 }

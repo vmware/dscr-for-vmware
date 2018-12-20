@@ -51,6 +51,189 @@ Describe 'VMHostPowerPolicySettings' {
         $env:PSModulePath = $script:modulePath
     }
 
+    Describe 'VMHostPowerPolicySettings\Set' {
+        AfterEach {
+            $script:resourceProperties.PowerPolicy = 2
+        }
+
+        Context 'Invoking with default resource properties' {
+            BeforeAll {
+                # Arrange
+                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = { 
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{
+                        Config = [VMware.Vim.HostConfig] @{
+                            PowerSystemInfo = [VMware.Vim.PowerSystemInfo] @{
+                                CurrentPolicy = [VMware.Vim.HostPowerPolicy] @{
+                                    Key = 2;
+                                }
+                            }
+                        };
+                    } } 
+                }
+                
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+                Mock -CommandName Set-HostPowerPolicy -MockWith { return $vmHostMock } -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
+                # Act
+                $resource.Set()
+    
+                # Assert
+                Assert-MockCalled -CommandName Connect-VIServer `
+                                  -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+    
+            It 'Should call Get-VMHost mock with the passed server and name once' {
+                # Act
+                $resource.Set()
+    
+                # Assert
+                Assert-MockCalled -CommandName Get-VMHost `
+                                  -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+
+            It 'Should not call Set-HostPowerPolicy as power policy defaults to 2' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName Set-HostPowerPolicy `
+                                  -ModuleName $script:moduleName -Exactly 0 -Scope It
+            }
+        }
+
+        Context 'Invoking with same resource properties' {
+            BeforeAll {
+                # Arrange
+                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = { 
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{
+                        Config = [VMware.Vim.HostConfig] @{
+                            PowerSystemInfo = [VMware.Vim.PowerSystemInfo] @{
+                                CurrentPolicy = [VMware.Vim.HostPowerPolicy] @{
+                                    Key = 2;
+                                }
+                            }
+                        };
+                    } } 
+                }
+                
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+                Mock -CommandName Set-HostPowerPolicy -MockWith { return $vmHostMock } -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
+                # Act
+                $resource.Set()
+    
+                # Assert
+                Assert-MockCalled -CommandName Connect-VIServer `
+                                  -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+    
+            It 'Should call Get-VMHost mock with the passed server and name once' {
+                # Act
+                $resource.Set()
+    
+                # Assert
+                Assert-MockCalled -CommandName Get-VMHost `
+                                  -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+
+            It 'Should not call Set-HostPowerPolicy as power policy is equal' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName Set-HostPowerPolicy `
+                                  -ModuleName $script:moduleName -Exactly 0 -Scope It
+            }
+        }
+
+        Context 'Invoking with changed resource properties' {
+            BeforeAll {
+                # Arrange
+                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = { 
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{
+                        Config = [VMware.Vim.HostConfig] @{
+                            PowerSystemInfo = [VMware.Vim.PowerSystemInfo] @{
+                                CurrentPolicy = [VMware.Vim.HostPowerPolicy] @{
+                                    Key = 1;
+                                }
+                            }
+                        };
+                    } } 
+                }
+                
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+                Mock -CommandName Set-HostPowerPolicy -MockWith { return $vmHostMock } -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
+                # Act
+                $resource.Set()
+    
+                # Assert
+                Assert-MockCalled -CommandName Connect-VIServer `
+                                  -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+    
+            It 'Should call Get-VMHost mock with the passed server and name once' {
+                # Act
+                $resource.Set()
+    
+                # Assert
+                Assert-MockCalled -CommandName Get-VMHost `
+                                  -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+
+            It 'Should call Set-HostPowerPolicy as power policy is changed' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName Set-HostPowerPolicy `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+        }
+    }
+
     Describe 'VMHostPowerPolicySettings\Test' {
         AfterEach {
             $script:resourceProperties.PowerPolicy = 2
@@ -68,28 +251,12 @@ Describe 'VMHostPowerPolicySettings' {
                 $vmHostMock = { 
                     return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{
                         Config = [VMware.Vim.HostConfig] @{
-                            DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{
-                                Id = 'HostDateTimeConfig'
-                            };
-                            Service = [VMware.Vim.HostServiceInfo] @{
-                                Service = @(
-                                    [VMware.Vim.HostService] @{
-                                        Key = 'ntpd';
-                                        Policy = 'automatic'
-                                    }
-                                )
-                            };
                             PowerSystemInfo = [VMware.Vim.PowerSystemInfo] @{
                                 CurrentPolicy = [VMware.Vim.HostPowerPolicy] @{
                                     Key = 2;
                                 }
                             }
                         };
-                        ConfigManager = [VMware.Vim.HostConfigManager] @{
-                            ServiceSystem = [VMware.Vim.HostServiceSystem] @{
-                                Id = 'HostServiceSystem'
-                            }
-                        }
                     } } 
                 }
                 
@@ -125,7 +292,7 @@ Describe 'VMHostPowerPolicySettings' {
                 $result = $resource.Test()
 
                 # Assert
-                $result | Should -Be $true -Because ("[{0}] -eq [{1}]" -f $script:resourceProperties.PowerPolicy, $resource.PowerPolicy)
+                $result | Should -Be $true
             }
         }
 
@@ -141,28 +308,12 @@ Describe 'VMHostPowerPolicySettings' {
                 $vmHostMock = { 
                     return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{
                         Config = [VMware.Vim.HostConfig] @{
-                            DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{
-                                Id = 'HostDateTimeConfig'
-                            };
-                            Service = [VMware.Vim.HostServiceInfo] @{
-                                Service = @(
-                                    [VMware.Vim.HostService] @{
-                                        Key = 'ntpd';
-                                        Policy = 'automatic'
-                                    }
-                                )
-                            };
                             PowerSystemInfo = [VMware.Vim.PowerSystemInfo] @{
                                 CurrentPolicy = [VMware.Vim.HostPowerPolicy] @{
                                     Key = 1;
                                 }
                             }
                         };
-                        ConfigManager = [VMware.Vim.HostConfigManager] @{
-                            ServiceSystem = [VMware.Vim.HostServiceSystem] @{
-                                Id = 'HostServiceSystem'
-                            }
-                        }
                     } } 
                 }
                 
@@ -178,7 +329,7 @@ Describe 'VMHostPowerPolicySettings' {
                 $result = $resource.Test()
 
                 # Assert
-                $result | Should -Be $false -Because ("[{0}] -ne [{1}]" -f $script:resourceProperties.PowerPolicy, $resource.PowerPolicy)
+                $result | Should -Be $false
             }
         }
 
@@ -194,28 +345,12 @@ Describe 'VMHostPowerPolicySettings' {
                 $vmHostMock = { 
                     return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{
                         Config = [VMware.Vim.HostConfig] @{
-                            DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{
-                                Id = 'HostDateTimeConfig'
-                            };
-                            Service = [VMware.Vim.HostServiceInfo] @{
-                                Service = @(
-                                    [VMware.Vim.HostService] @{
-                                        Key = 'ntpd';
-                                        Policy = 'automatic'
-                                    }
-                                )
-                            };
                             PowerSystemInfo = [VMware.Vim.PowerSystemInfo] @{
                                 CurrentPolicy = [VMware.Vim.HostPowerPolicy] @{
                                     Key = 2;
                                 }
                             }
                         };
-                        ConfigManager = [VMware.Vim.HostConfigManager] @{
-                            ServiceSystem = [VMware.Vim.HostServiceSystem] @{
-                                Id = 'HostServiceSystem'
-                            }
-                        }
                     } } 
                 }
                 
@@ -226,12 +361,12 @@ Describe 'VMHostPowerPolicySettings' {
             # Arrange
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
-            It 'Should return $true as mock policy is changed to 2' {
+            It 'Should return $true as mock policy is only changed to 2' {
                 # Act
                 $result = $resource.Test()
 
                 # Assert
-                $result | Should -Be $true -Because ("[{0}] -ne [{1}]" -f $script:resourceProperties.PowerPolicy, $resource.PowerPolicy)
+                $result | Should -Be $true
             }
         }
     }
@@ -253,28 +388,12 @@ Describe 'VMHostPowerPolicySettings' {
                 $vmHostMock = { 
                     return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{
                         Config = [VMware.Vim.HostConfig] @{
-                            DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{
-                                Id = 'HostDateTimeConfig'
-                            };
-                            Service = [VMware.Vim.HostServiceInfo] @{
-                                Service = @(
-                                    [VMware.Vim.HostService] @{
-                                        Key = 'ntpd';
-                                        Policy = 'automatic'
-                                    }
-                                )
-                            };
                             PowerSystemInfo = [VMware.Vim.PowerSystemInfo] @{
                                 CurrentPolicy = [VMware.Vim.HostPowerPolicy] @{
                                     Key = 2;
                                 }
                             }
                         };
-                        ConfigManager = [VMware.Vim.HostConfigManager] @{
-                            ServiceSystem = [VMware.Vim.HostServiceSystem] @{
-                                Id = 'HostServiceSystem'
-                            }
-                        }
                     } } 
                 }
                 
