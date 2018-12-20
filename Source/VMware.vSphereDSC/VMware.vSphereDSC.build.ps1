@@ -57,8 +57,8 @@ function Get-LinesRange {
         $index++
     }
 
-    $range.Set_Item("startLine", $startLine)
-    $range.Set_Item("endLine", $endLine)
+    $range.StartLine = $startLine
+    $range.EndLine = $endLine
 
     return $range
 }
@@ -82,7 +82,7 @@ foreach ($folder in $script:ImportFolders) {
             $fileContent = Get-Content -Path $file.FullName
 
             $range = Get-LinesRange -FileContent $fileContent -StartLinePattern '*Copyright*' -EndLinePattern '#>'
-            $endLine = $range.Get_Item("endLine")
+            $endLine = $range.EndLine
 
             # We skip the comment lines for the License and the License text for each file.
             $fileContent = $fileContent[$endLine..($fileContent.Length - 1)]
@@ -100,8 +100,8 @@ if (Test-Path -Path $script:DSCResourcesFolder) {
     $psdFileContent = Get-Content -Path $script:PsdPath
 
     $range = Get-LinesRange -FileContent $psdFileContent -StartLinePattern '*DscResourcesToExport*' -EndLinePattern ')'
-    $startLine = $range.Get_Item("startLine")
-    $endLine = $range.Get_Item("endLine")
+    $startLine = $range.StartLine
+    $endLine = $range.EndLine
 
     $psdFileContent = $psdFileContent[0..($startLine - 2)], $dscResourcesToExport, $psdFileContent[$endLine..($psdFileContent.Length - 1)]
     $psdFileContent | Out-File -FilePath $script:PsdPath -Encoding Default
