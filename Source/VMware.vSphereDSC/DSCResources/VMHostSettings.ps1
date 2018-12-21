@@ -73,8 +73,6 @@ class VMHostSettings : VMHostBaseDSC {
     	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
         $result = [VMHostSettings]::new()
-
-        $result.Name = $this.Name
         $result.Server = $this.Server
 
     	$this.ConnectVIServer()
@@ -169,6 +167,7 @@ class VMHostSettings : VMHostBaseDSC {
     	$currentMotd = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
     	$currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
+        $result.Name = $vmHost.Name
     	$result.Motd = $currentMotd.Value
         $result.Issue = $currentIssue.Value
     }

@@ -616,7 +616,7 @@ class VMHostDnsSettings : VMHostBaseDSC {
         $vmHost = $this.GetVMHost()
         $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
-        $result.Name = $this.Name
+        $result.Name = $vmHost.Name
         $result.Server = $this.Server
         $result.Address = $vmHostDnsConfig.Address
         $result.Dhcp = $vmHostDnsConfig.Dhcp
@@ -760,7 +760,7 @@ class VMHostNtpSettings : VMHostBaseDSC {
         $vmHostServices = $vmHost.ExtensionData.Config.Service
         $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
 
-        $result.Name = $this.Name
+        $result.Name = $vmHost.Name
         $result.Server = $this.Server
         $result.NtpServer = $vmHostNtpConfig.Server
         $result.NtpServicePolicy = $vmHostNtpService.Policy
@@ -1014,7 +1014,6 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
     [VMHostSatpClaimRule] Get() {
         $result = [VMHostSatpClaimRule]::new()
 
-        $result.Name = $this.Name
         $result.Server = $this.Server
         $result.RuleName = $this.RuleName
         $result.Boot = $this.Boot
@@ -1023,6 +1022,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
+        $result.Name = $vmHost.Name
         $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
         $satpClaimRule = $this.GetSatpClaimRule($esxCli)
         $satpClaimRulePresent = ($null -ne $satpClaimRule)
@@ -1254,8 +1254,6 @@ class VMHostSettings : VMHostBaseDSC {
     	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
         $result = [VMHostSettings]::new()
-
-        $result.Name = $this.Name
         $result.Server = $this.Server
 
     	$this.ConnectVIServer()
@@ -1350,6 +1348,7 @@ class VMHostSettings : VMHostBaseDSC {
     	$currentMotd = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
     	$currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
+        $result.Name = $vmHost.Name
     	$result.Motd = $currentMotd.Value
         $result.Issue = $currentIssue.Value
     }
@@ -1409,12 +1408,11 @@ class VMHostTpsSettings : VMHostBaseDSC {
 
     [VMHostTpsSettings] Get() {
         $result = [VMHostTpsSettings]::new()
-
-        $result.Name = $this.Name
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
+        $result.Name = $vmHost.Name
         $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
 
         foreach ($tpsSetting in $tpsSettings) {

@@ -95,7 +95,7 @@ class VMHostDnsSettings : VMHostBaseDSC {
         $vmHost = $this.GetVMHost()
         $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
-        $result.Name = $this.Name
+        $result.Name = $vmHost.Name
         $result.Server = $this.Server
         $result.Address = $vmHostDnsConfig.Address
         $result.Dhcp = $vmHostDnsConfig.Dhcp

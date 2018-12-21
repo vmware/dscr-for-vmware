@@ -68,12 +68,11 @@ class VMHostTpsSettings : VMHostBaseDSC {
 
     [VMHostTpsSettings] Get() {
         $result = [VMHostTpsSettings]::new()
-
-        $result.Name = $this.Name
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
+        $result.Name = $vmHost.Name
         $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
 
         foreach ($tpsSetting in $tpsSettings) {

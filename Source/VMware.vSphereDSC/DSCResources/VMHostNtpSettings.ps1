@@ -70,7 +70,7 @@ class VMHostNtpSettings : VMHostBaseDSC {
         $vmHostServices = $vmHost.ExtensionData.Config.Service
         $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
 
-        $result.Name = $this.Name
+        $result.Name = $vmHost.Name
         $result.Server = $this.Server
         $result.NtpServer = $vmHostNtpConfig.Server
         $result.NtpServicePolicy = $vmHostNtpService.Policy
