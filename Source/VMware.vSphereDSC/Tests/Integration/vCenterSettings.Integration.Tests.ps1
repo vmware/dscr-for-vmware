@@ -44,6 +44,7 @@ $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$
 $script:configWithLoggingLevel = "$($script:dscResourceName)_WithLoggingLevel_Config"
 $script:configWithEventMaxAge = "$($script:dscResourceName)_WithEventMaxAge_Config"
 $script:configWithTaskMaxAge = "$($script:dscResourceName)_WithTaskMaxAge_Config"
+$script:configWithMotdAndIssue = "$($script:dscResourceName)_WithMotdAndIssue_Config"
 
 $script:vCenter = Connect-VIServer -Server $Server -User $User -Password $Password
 $script:vCenterCurrentAdvancedSettings = $null
@@ -52,12 +53,16 @@ $script:currentEventMaxAgeEnabled = $null
 $script:currentEventMaxAge = $null
 $script:currentTaskMaxAgeEnabled = $null
 $script:currentTaskMaxAge = $null
+$script:currentMotd = $null
+$script:currentIssue = $null
 
 $script:loggingLevel = 'Warning'
 $script:eventMaxAgeEnabled = $false
 $script:eventMaxAge = 40
 $script:taskMaxAgeEnabled = $false
 $script:taskMaxAge = 40
+$script:motd = 'vCenterSettings motd test'
+$script:issue = 'vCenterSettings issue test'
 
 $script:resourceWithLoggingLevel = @{
     Server = $Server
@@ -76,11 +81,18 @@ $script:resourceWithTaskMaxAge = @{
     TaskMaxAge = $script:taskMaxAge
 }
 
+$script:resourceWithMotdAndIssue = @{
+    Server = $Server
+    Motd = $script:motd
+    Issue = $script:issue
+}
+
 . $script:configurationFile -Server $Server -User $User -Password $Password
 
 $script:mofFileWithLoggingLevelPath = "$script:integrationTestsFolderPath\$($script:configWithLoggingLevel)\"
 $script:mofFileWithEventMaxAgePath = "$script:integrationTestsFolderPath\$($script:configWithEventMaxAge)\"
 $script:mofFileWithTaskMaxAgePath = "$script:integrationTestsFolderPath\$($script:configWithTaskMaxAge)"
+$script:mofFileWithMotdAndIssuePath = "$script:integrationTestsFolderPath\$($script:configWithMotdAndIssue)\"
 
 function BeforeAllTests {
     $script:vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $script:vCenter -Entity $script:vCenter
@@ -90,6 +102,8 @@ function BeforeAllTests {
     $script:currentEventMaxAge = $script:vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq "event.maxAge" }
     $script:currentTaskMaxAgeEnabled = $script:vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq "task.maxAgeEnabled" }
     $script:currentTaskMaxAge = $script:vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq "task.maxAge" }
+    $script:currentMotd = $script:vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq "etc.motd"}
+    $script:currentIssue = $script:vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq "etc.issue"}
 }
 
 function AfterAllTests {
@@ -98,6 +112,8 @@ function AfterAllTests {
     Set-AdvancedSetting -AdvancedSetting $script:currentEventMaxAge -Value $script:currentEventMaxAge.Value -Confirm:$false
     Set-AdvancedSetting -AdvancedSetting $script:currentTaskMaxAgeEnabled -Value $script:currentTaskMaxAgeEnabled.Value -Confirm:$false
     Set-AdvancedSetting -AdvancedSetting $script:currentTaskMaxAge -Value $script:currentTaskMaxAge.Value -Confirm:$false
+    Set-AdvancedSetting -AdvancedSetting $script:currentMotd -Value $script:currentMotd.Value -Confirm:$false
+    Set-AdvancedSetting -AdvancedSetting $script:currentIssue -Value $script:currentIssue.Value -Confirm:$false
 }
 
 Describe "$($script:dscResourceName)_Integration" {
@@ -143,6 +159,8 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.EventMaxAge | Should -Be ($script:currentEventMaxAge).Value
             $configuration.TaskMaxAgeEnabled | Should -Be ($script:currentTaskMaxAgeEnabled).Value
             $configuration.TaskMaxAge | Should -Be ($script:currentTaskMaxAge).Value
+            $configuration.Motd | Should -Be ($script:currentMotd).Value
+            $configuration.Issue | Should -Be ($script:currentIssue).Value
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {
@@ -193,6 +211,8 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.EventMaxAge | Should -Be $script:resourceWithEventMaxAge.EventMaxAge
             $configuration.TaskMaxAgeEnabled | Should -Be ($script:currentTaskMaxAgeEnabled).Value
             $configuration.TaskMaxAge | Should -Be ($script:currentTaskMaxAge).Value
+            $configuration.Motd | Should -Be ($script:currentMotd).Value
+            $configuration.Issue | Should -Be ($script:currentIssue).Value
 
         }
 
@@ -244,7 +264,60 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.EventMaxAge | Should -Be ($script:currentEventMaxAge).Value
             $configuration.TaskMaxAgeEnabled | Should -Be $script:resourceWithTaskMaxAge.TaskMaxAgeEnabled
             $configuration.TaskMaxAge | Should -Be $script:resourceWithTaskMaxAge.TaskMaxAge
+            $configuration.Motd | Should -Be ($script:currentMotd).Value
+            $configuration.Issue | Should -Be ($script:currentIssue).Value
 
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
+        }
+    }
+    Context "When using configuration $($script:configWithMotdAndIssue)" {
+        BeforeAll {
+            BeforeAllTests
+        }
+
+        AfterAll {
+            AfterAllTests
+        }
+
+        BeforeEach {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithMotdAndIssuePath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+        }
+
+        It 'Should compile and apply the MOF without throwing' {
+            # Assert
+            { $script:dscConfig } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+            # Arrange && Act
+            $script:dscConfigWithMotdAndIssue = Get-DscConfiguration
+
+            $configuration = $script:dscConfigWithMotdAndIssue
+
+            # Assert
+            { $script:dscConfigWithTaskMaxAge } | Should -Not -Throw
+
+            $configuration.Server | Should -Be $script:resourceWithTaskMaxAge.Server
+            $configuration.LoggingLevel | Should -Be ($script:currentLoggingLevel).Value
+            $configuration.EventMaxAgeEnabled | Should -Be ($script:currentEventMaxAgeEnabled).Value
+            $configuration.EventMaxAge | Should -Be ($script:currentEventMaxAge).Value
+            $configuration.TaskMaxAgeEnabled | Should -Be ($script:currentTaskMaxAgeEnabled).Value
+            $configuration.TaskMaxAge | Should -Be ($script:currentTaskMaxAge).Value
+            $configuration.Motd | Should -Be $script:resourceWithMotd.Motd
+            $configuration.Issue | Should -Be $script:resourceWithIssue.Issue
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {

@@ -17,6 +17,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 param(
     [Parameter(Mandatory = $true)]
     [string]
+    $Name,
+
+    [Parameter(Mandatory = $true)]
+    [string]
     $Server,
 
     [Parameter(Mandatory = $true)]
@@ -29,13 +33,10 @@ param(
 )
 
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-$script:vCenterCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
+$script:vmHostCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-$script:loggingLevel = 'Warning'
-$script:eventMaxAgeEnabled = $false
-$script:eventMaxAge = 40
-$script:taskMaxAgeEnabled = $false
-$script:taskMaxAge = 40
+$script:motd = 'VMHostSettings motd test'
+$script:issue = 'VMHostSettings issue test'
 
 $script:configurationData = @{
     AllNodes = @(
@@ -49,59 +50,20 @@ $script:configurationData = @{
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-Configuration vCenterSettings_WithLoggingLevel_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        vCenterSettings vCenterSettings {
-            Server = $Server
-            Credential = $script:vCenterCredential
-            LoggingLevel = $script:loggingLevel
-        }
-    }
-}
-
-Configuration vCenterSettings_WithEventMaxAge_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        vCenterSettings vCenterSettings {
-            Server = $Server
-            Credential = $script:vCenterCredential
-            EventMaxAgeEnabled = $script:eventMaxAgeEnabled
-            EventMaxAge = $script:eventMaxAge
-        }
-    }
-}
-
-Configuration vCenterSettings_WithTaskMaxAge_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        vCenterSettings vCenterSettings {
-            Server = $Server
-            Credential = $script:vCenterCredential
-            TaskMaxAgeEnabled = $script:taskMaxAgeEnabled
-            TaskMaxAge = $script:taskMaxAge
-        }
-    }
-}
-
-Configuration vCenterSettings_WithMotdAndIssue_Config {
+Configuration VMHostSettings_Config
+{
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost
     {
-        vCenterSettings vCenterSettings {
+        VMHostSettings vmHostSettings {
+            Name = $Name
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $script:vmHostCredential
             Motd = $script:motd
             Issue = $script:issue
         }
     }
 }
 
-vCenterSettings_WithLoggingLevel_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithLoggingLevel_Config" -ConfigurationData $script:configurationData
-vCenterSettings_WithEventMaxAge_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithEventMaxAge_Config" -ConfigurationData $script:configurationData
-vCenterSettings_WithTaskMaxAge_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithTaskMaxAge_Config" -ConfigurationData $script:configurationData
-vCenterSettings_WithMotdAndIssue_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithMotdAndIssue_Config" -ConfigurationData $script:configurationData
+VMHostSettings_Config -OutputPath "$integrationTestsFolderPath\VMHostSettings_Config" -ConfigurationData $script:configurationData
