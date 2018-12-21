@@ -33,7 +33,6 @@ param(
 )
 
 $script:dscResourceName = 'VMHostNtpSettings'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -136,23 +135,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithoutNtpServerAndNtpServicePolicyPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithoutNtpProperties = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithoutNtpProperties
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithoutNtpProperties } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithoutNtpProperties.Name
             $configuration.Server | Should -Be $script:resourceWithoutNtpProperties.Server
             $configuration.NtpServer | Should -Be $script:ntpServer
@@ -184,23 +192,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithEmptyArrayNtpServerPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithEmptyArrayNtpServer = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithEmptyArrayNtpServer
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithEmptyArrayNtpServer } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithEmptyArrayNtpServer.Name
             $configuration.Server | Should -Be $script:resourceWithEmptyArrayNtpServer.Server
             $configuration.NtpServer | Should -Be $script:resourceWithEmptyArrayNtpServer.NtpServer
@@ -232,23 +249,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithNtpServerAddUseCasePath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithNtpServerAddUseCase = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithNtpServerAddUseCase
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithNtpServerAddUseCase } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithNtpServerAddUseCase.Name
             $configuration.Server | Should -Be $script:resourceWithNtpServerAddUseCase.Server
             $configuration.NtpServer | Should -Be $script:resourceWithNtpServerAddUseCase.NtpServer
@@ -280,23 +306,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithNtpServerRemoveUseCasePath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithNtpServerRemoveUseCase = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithNtpServerRemoveUseCase
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithNtpServerRemoveUseCase } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithNtpServerRemoveUseCase.Name
             $configuration.Server | Should -Be $script:resourceWithNtpServerRemoveUseCase.Server
             $configuration.NtpServer | Should -Be $script:resourceWithNtpServerRemoveUseCase.NtpServer
@@ -328,23 +363,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithTheSameNtpServicePolicyPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithoutNtpProperties = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithoutNtpProperties
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithoutNtpProperties } | Should -Not -Throw
-
             $configuration.Name | Should -Be $Name
             $configuration.Server | Should -Be $Server
             $configuration.NtpServer | Should -Be $script:ntpServer
@@ -376,23 +420,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithNtpServicePolicyPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithNtpServicePolicy = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithNtpServicePolicy
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithNtpServicePolicy } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithNtpServicePolicy.Name
             $configuration.Server | Should -Be $script:resourceWithNtpServicePolicy.Server
             $configuration.NtpServer | Should -Be $script:ntpServer

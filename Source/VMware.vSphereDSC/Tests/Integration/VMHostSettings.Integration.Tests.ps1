@@ -33,7 +33,6 @@ param(
 )
 
 $script:dscResourceName = 'VMHostSettings'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -43,14 +42,17 @@ $script:config = "$($script:dscResourceName)_Config"
 $script:connection = Connect-VIServer -Server $Server -User $User -Password $Password
 $script:vmHost = $null
 
-$script:motd = 'VMHostSettings motd test'
-$script:issue = 'VMHostSettings issue test'
+$script:motd = $null
+$script:issue = $null
+
+$script:motdValue = 'VMHostSettings motd test'
+$script:issueValue = 'VMHostSettings issue test'
 
 $script:resourceProperties = @{
     Name = $Name
     Server = $Server
-    Motd = $script:motd
-    Issue = $script:issue
+    Motd = $script:motdValue
+    Issue = $script:issueValue
 }
 
 . $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
@@ -91,29 +93,36 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFilePath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfig = Get-DscConfiguration `
-                | Where-Object {$_.configurationName -eq $script:config }
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfig `
-                | Select-Object -Last 1
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceProperties.Name
             $configuration.Server | Should -Be $script:resourceProperties.Server
-            $configuration.Motd | Should -Be $script:motd
-            $configuration.Issue | Should -Be $script:issue
+            $configuration.Motd | Should -Be $script:resourceProperties.Motd
+            $configuration.Issue | Should -Be $script:resourceProperties.Issue
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {

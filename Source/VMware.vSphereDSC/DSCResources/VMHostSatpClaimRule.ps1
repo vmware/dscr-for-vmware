@@ -173,7 +173,6 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
     [VMHostSatpClaimRule] Get() {
         $result = [VMHostSatpClaimRule]::new()
 
-        $result.Name = $this.Name
         $result.Server = $this.Server
         $result.RuleName = $this.RuleName
         $result.Boot = $this.Boot
@@ -182,6 +181,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
+        $result.Name = $vmHost.Name
         $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
         $satpClaimRule = $this.GetSatpClaimRule($esxCli)
         $satpClaimRulePresent = ($null -ne $satpClaimRule)

@@ -33,7 +33,6 @@ param(
 )
 
 $script:dscResourceName = 'VMHostSatpClaimRule'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -91,28 +90,35 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithClaimRuleToAdd
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange
             $emptyProperty = [string]::Empty
 
             # Act
-            $script:dscConfigWithClaimRuleToAdd = Get-DscConfiguration `
-            | Where-Object {$_.configurationName -eq $script:configWithClaimRuleToAdd }
-
-            $configuration = $script:dscConfigWithClaimRuleToAdd `
-            | Select-Object -Last 1
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithClaimRuleToAdd } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithClaimRuleToAdd.Name
             $configuration.Server | Should -Be $script:resourceWithClaimRuleToAdd.Server
             $configuration.Ensure | Should -Be $script:resourceWithClaimRuleToAdd.Ensure
@@ -149,28 +155,35 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithClaimRuleToRemove
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange
             $emptyProperty = [string]::Empty
 
             # Act
-            $script:dscConfigWithClaimRuleToRemove = Get-DscConfiguration `
-            | Where-Object {$_.configurationName -eq $script:configWithClaimRuleToRemove }
-
-            $configuration = $script:dscConfigWithClaimRuleToRemove `
-            | Select-Object -Last 1
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithClaimRuleToRemove } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithClaimRuleToRemove.Name
             $configuration.Server | Should -Be $script:resourceWithClaimRuleToRemove.Server
             $configuration.Ensure | Should -Be $script:resourceWithClaimRuleToRemove.Ensure
