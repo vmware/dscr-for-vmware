@@ -43,14 +43,17 @@ $script:config = "$($script:dscResourceName)_Config"
 $script:connection = Connect-VIServer -Server $Server -User $User -Password $Password
 $script:vmHost = $null
 
-$script:motd = 'VMHostSettings motd test'
-$script:issue = 'VMHostSettings issue test'
+$script:motd = $null
+$script:issue = $null
+
+$script:motdValue = 'VMHostSettings motd test'
+$script:issueValue = 'VMHostSettings issue test'
 
 $script:resourceProperties = @{
     Name = $Name
     Server = $Server
-    Motd = $script:motd
-    Issue = $script:issue
+    Motd = $script:motdValue
+    Issue = $script:issueValue
 }
 
 . $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
@@ -101,19 +104,15 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfig = Get-DscConfiguration `
-                | Where-Object {$_.configurationName -eq $script:config }
-
-            $configuration = $script:dscConfig `
-                | Select-Object -Last 1
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceProperties.Name
             $configuration.Server | Should -Be $script:resourceProperties.Server
-            $configuration.Motd | Should -Be $script:motd
-            $configuration.Issue | Should -Be $script:issue
+            $configuration.Motd | Should -Be $script:resourceProperties.Motd
+            $configuration.Issue | Should -Be $script:resourceProperties.Issue
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {

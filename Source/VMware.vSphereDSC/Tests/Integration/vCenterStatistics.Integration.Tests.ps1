@@ -18,7 +18,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]
     $Name,
-    
+
     [Parameter(Mandatory = $true)]
     [string]
     $Server,
@@ -134,12 +134,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithPassedEnabledProperty = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithPassedEnabledProperty
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithPassedEnabledProperty } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Server | Should -Be $script:resourceWithPassedEnabledProperty.Server
             $configuration.Period | Should -Be $script:resourceWithPassedEnabledProperty.Period
@@ -184,12 +182,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithoutEnabledProperty = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithoutEnabledProperty
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithoutEnabledProperty } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Server | Should -Be $script:resourceWithoutEnabledProperty.Server
             $configuration.Period | Should -Be $script:resourceWithoutEnabledProperty.Period

@@ -18,7 +18,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]
     $Name,
-    
+
     [Parameter(Mandatory = $true)]
     [string]
     $Server,
@@ -146,12 +146,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithLoggingLevel = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithLoggingLevel
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithLoggingLevel } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Server | Should -Be $script:resourceWithLoggingLevel.Server
             $configuration.LoggingLevel | Should -Be $script:resourceWithLoggingLevel.LoggingLevel
@@ -198,12 +196,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithEventMaxAge = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithEventMaxAge
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithEventMaxAge } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Server | Should -Be $script:resourceWithEventMaxAge.Server
             $configuration.LoggingLevel | Should -Be ($script:currentLoggingLevel).Value
@@ -251,12 +247,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithTaskMaxAge = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithTaskMaxAge
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithTaskMaxAge } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Server | Should -Be $script:resourceWithTaskMaxAge.Server
             $configuration.LoggingLevel | Should -Be ($script:currentLoggingLevel).Value
@@ -303,12 +297,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithMotdAndIssue = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithMotdAndIssue
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithTaskMaxAge } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Server | Should -Be $script:resourceWithTaskMaxAge.Server
             $configuration.LoggingLevel | Should -Be ($script:currentLoggingLevel).Value
@@ -316,8 +308,8 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.EventMaxAge | Should -Be ($script:currentEventMaxAge).Value
             $configuration.TaskMaxAgeEnabled | Should -Be ($script:currentTaskMaxAgeEnabled).Value
             $configuration.TaskMaxAge | Should -Be ($script:currentTaskMaxAge).Value
-            $configuration.Motd | Should -Be $script:resourceWithMotd.Motd
-            $configuration.Issue | Should -Be $script:resourceWithIssue.Issue
+            $configuration.Motd | Should -Be $script:resourceWithMotdAndIssue.Motd
+            $configuration.Issue | Should -Be $script:resourceWithMotdAndIssue.Issue
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {

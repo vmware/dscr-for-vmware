@@ -138,12 +138,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithDhcpDisabled = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithDhcpDisabled
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithDhcpDisabled } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithDhcpDisabled.Name
             $configuration.Server | Should -Be $script:resourceWithDhcpDisabled.Server
@@ -202,12 +200,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithoutAddressAndSearchDomain = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithoutAddressAndSearchDomain
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithoutAddressAndSearchDomain } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithoutAddressAndSearchDomain.Name
             $configuration.Server | Should -Be $script:resourceWithoutAddressAndSearchDomain.Server
@@ -266,12 +262,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithDhcpEnabled = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithDhcpEnabled
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithDhcpEnabled } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithDhcpEnabled.Name
             $configuration.Server | Should -Be $script:resourceWithDhcpEnabled.Server

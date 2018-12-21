@@ -104,14 +104,10 @@ Describe "$($script:dscResourceName)_Integration" {
             $emptyProperty = [string]::Empty
 
             # Act
-            $script:dscConfigWithClaimRuleToAdd = Get-DscConfiguration `
-            | Where-Object {$_.configurationName -eq $script:configWithClaimRuleToAdd }
-
-            $configuration = $script:dscConfigWithClaimRuleToAdd `
-            | Select-Object -Last 1
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithClaimRuleToAdd } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithClaimRuleToAdd.Name
             $configuration.Server | Should -Be $script:resourceWithClaimRuleToAdd.Server
@@ -162,14 +158,10 @@ Describe "$($script:dscResourceName)_Integration" {
             $emptyProperty = [string]::Empty
 
             # Act
-            $script:dscConfigWithClaimRuleToRemove = Get-DscConfiguration `
-            | Where-Object {$_.configurationName -eq $script:configWithClaimRuleToRemove }
-
-            $configuration = $script:dscConfigWithClaimRuleToRemove `
-            | Select-Object -Last 1
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithClaimRuleToRemove } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithClaimRuleToRemove.Name
             $configuration.Server | Should -Be $script:resourceWithClaimRuleToRemove.Server

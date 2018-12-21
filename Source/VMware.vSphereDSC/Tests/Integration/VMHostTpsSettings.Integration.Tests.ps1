@@ -108,14 +108,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfig = Get-DscConfiguration `
-            | Where-Object {$_.configurationName -eq $script:config }
-
-            $configuration = $script:dscConfig `
-            | Select-Object -Last 1
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceProperties.Name
             $configuration.Server | Should -Be $script:resourceProperties.Server

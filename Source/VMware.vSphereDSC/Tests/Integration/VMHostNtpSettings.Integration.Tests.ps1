@@ -146,12 +146,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithoutNtpProperties = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithoutNtpProperties
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithoutNtpProperties } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithoutNtpProperties.Name
             $configuration.Server | Should -Be $script:resourceWithoutNtpProperties.Server
@@ -194,12 +192,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithEmptyArrayNtpServer = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithEmptyArrayNtpServer
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithEmptyArrayNtpServer } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithEmptyArrayNtpServer.Name
             $configuration.Server | Should -Be $script:resourceWithEmptyArrayNtpServer.Server
@@ -242,12 +238,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithNtpServerAddUseCase = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithNtpServerAddUseCase
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithNtpServerAddUseCase } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithNtpServerAddUseCase.Name
             $configuration.Server | Should -Be $script:resourceWithNtpServerAddUseCase.Server
@@ -290,12 +284,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithNtpServerRemoveUseCase = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithNtpServerRemoveUseCase
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithNtpServerRemoveUseCase } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithNtpServerRemoveUseCase.Name
             $configuration.Server | Should -Be $script:resourceWithNtpServerRemoveUseCase.Server
@@ -338,12 +330,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithoutNtpProperties = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithoutNtpProperties
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithoutNtpProperties } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $Name
             $configuration.Server | Should -Be $Server
@@ -386,12 +376,10 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithNtpServicePolicy = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithNtpServicePolicy
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithNtpServicePolicy } | Should -Not -Throw
+            { $configuration } | Should -Not -Throw
 
             $configuration.Name | Should -Be $script:resourceWithNtpServicePolicy.Name
             $configuration.Server | Should -Be $script:resourceWithNtpServicePolicy.Server
