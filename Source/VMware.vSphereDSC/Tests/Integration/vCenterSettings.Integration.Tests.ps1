@@ -36,7 +36,6 @@ param(
 $Name = $null
 
 $script:dscResourceName = 'vCenterSettings'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -136,21 +135,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithLoggingLevelPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange && Act
             $configuration = Get-DscConfiguration
 
             # Assert
-            { $configuration } | Should -Not -Throw
-
             $configuration.Server | Should -Be $script:resourceWithLoggingLevel.Server
             $configuration.LoggingLevel | Should -Be $script:resourceWithLoggingLevel.LoggingLevel
             $configuration.EventMaxAgeEnabled | Should -Be ($script:currentEventMaxAgeEnabled).Value
@@ -186,21 +196,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithEventMaxAgePath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange && Act
             $configuration = Get-DscConfiguration
 
             # Assert
-            { $configuration } | Should -Not -Throw
-
             $configuration.Server | Should -Be $script:resourceWithEventMaxAge.Server
             $configuration.LoggingLevel | Should -Be ($script:currentLoggingLevel).Value
             $configuration.EventMaxAgeEnabled | Should -Be $script:resourceWithEventMaxAge.EventMaxAgeEnabled
@@ -237,21 +258,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithTaskMaxAgePath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange && Act
             $configuration = Get-DscConfiguration
 
             # Assert
-            { $configuration } | Should -Not -Throw
-
             $configuration.Server | Should -Be $script:resourceWithTaskMaxAge.Server
             $configuration.LoggingLevel | Should -Be ($script:currentLoggingLevel).Value
             $configuration.EventMaxAgeEnabled | Should -Be ($script:currentEventMaxAgeEnabled).Value
@@ -260,7 +292,6 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.TaskMaxAge | Should -Be $script:resourceWithTaskMaxAge.TaskMaxAge
             $configuration.Motd | Should -Be ($script:currentMotd).Value
             $configuration.Issue | Should -Be ($script:currentIssue).Value
-
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {
@@ -287,21 +318,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithMotdAndIssuePath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange && Act
             $configuration = Get-DscConfiguration
 
             # Assert
-            { $configuration } | Should -Not -Throw
-
             $configuration.Server | Should -Be $script:resourceWithTaskMaxAge.Server
             $configuration.LoggingLevel | Should -Be ($script:currentLoggingLevel).Value
             $configuration.EventMaxAgeEnabled | Should -Be ($script:currentEventMaxAgeEnabled).Value

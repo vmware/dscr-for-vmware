@@ -143,7 +143,12 @@ In your unit test file you need to replace VMware PowerCLI modules with the scri
               ...
           }
 
-          It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+          It 'Should be able to call Get-DscConfiguration without throwing' {
+              # Make sure getting the configuration did not fail.
+              ...
+          }
+
+          It 'Should be able to call Get-DscConfiguration and all parameters should match' {
               # Make sure the returned configuration is the desired one.
               ...
           }

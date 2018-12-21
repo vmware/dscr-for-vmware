@@ -33,7 +33,6 @@ param(
 )
 
 $script:dscResourceName = 'VMHostTpsSettings'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -98,21 +97,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFilePath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange && Act
             $configuration = Get-DscConfiguration
 
             # Assert
-            { $configuration } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceProperties.Name
             $configuration.Server | Should -Be $script:resourceProperties.Server
             $configuration.ShareScanTime | Should -Be $script:shareScanTimeTestValue
