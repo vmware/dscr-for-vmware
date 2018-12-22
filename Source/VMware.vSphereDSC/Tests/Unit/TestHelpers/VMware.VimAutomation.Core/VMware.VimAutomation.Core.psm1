@@ -461,6 +461,34 @@ Add-Type -TypeDefinition @"
             return (this.Name + "_" + this.User).GetHashCode();
         }
     }
+
+     public enum ServicePolicy {
+         Unset = 0,
+         On = 1,
+         Off = 2,
+         Automatic = 3
+     }
+
+    public class VMHostService
+    {
+        public VMHostService()
+        {
+        }
+
+        public string Key { get; set; }
+
+        public string Label { get; set; }
+
+        public ServicePolicy Policy { get; set; }
+
+        public bool Required { get; set; }
+
+        public string Ruleset { get; set; }
+
+        public bool Running { get; set; }
+
+        public bool Uninstallable { get; set; }
+    }
  }
 "@
 
@@ -519,4 +547,43 @@ function Set-AdvancedSetting {
     )
 
     return $null
+}
+
+function Get-VMHostService {
+    param(
+        [PSObject] $Server,
+        [VMware.Vim.VMHost] $VMHost,
+        [switch] $Refresh,
+        [switch] $Confirm
+    )
+
+    return @( [VMware.Vim.VMHostService] @{} )
+}
+
+function Set-VMHostService {
+    param(
+        [VMware.Vim.VMHostService] $HostService,
+        [ServicePolicy] $Policy,
+        [switch] $Confirm
+    )
+
+    return @( [VMware.Vim.VMHostService] @{} )
+}
+
+function Start-VMHostService {
+    param(
+        [VMware.Vim.VMHostService] $HostService,
+        [switch] $Confirm
+    )
+
+    return @( [VMware.Vim.VMHostService] @{} )
+}
+
+function Stop-VMHostService {
+    param(
+        [VMware.Vim.VMHostService] $HostService,
+        [switch] $Confirm
+    )
+
+    return @( [VMware.Vim.VMHostService] @{} )
 }
