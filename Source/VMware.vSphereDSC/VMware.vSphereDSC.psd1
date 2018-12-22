@@ -55,7 +55,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
     # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
     AliasesToExport = @()
 
-    # DSC resources to export from this module
-DscResourcesToExport = @('vCenterSettings', 'vCenterStatistics', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostTpsSettings')
+# DSC resources to export from this module
+DscResourcesToExport = @('vCenterSettings', 'vCenterStatistics', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostSatpClaimRule', 'VMHostSettings', 'VMHostTpsSettings')
 
 }

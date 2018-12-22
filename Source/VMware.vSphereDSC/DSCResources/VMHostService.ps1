@@ -48,18 +48,18 @@ class VMHostService : VMHostBaseDSC {
     [DscProperty(NotConfigurable)]
     [string]$Label
 
-        <#
+    <#
     .DESCRIPTION
 
     Host Service Required flag.
     #>
     [DscProperty(NotConfigurable)]
-    [string]$Required
+    [bool]$Required
 
-        <#
+    <#
     .DESCRIPTION
 
-    Host Service Required flag.
+    Firewall rule set.
     #>
     [DscProperty(NotConfigurable)]
     [string[]]$Ruleset
@@ -85,13 +85,14 @@ class VMHostService : VMHostBaseDSC {
     [VMHostService]Get() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $service = [VMHostService]::new()
+        $vmHostService = [VMHostService]::new()
+        $vmHostService.Server = $this.Server
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
-        $this.PopulateResult($vmHost, $service)
+        $this.PopulateResult($vmHost, $vmHostService)
 
-        return $service
+        return $vmHostService
     }
 
     <#
@@ -99,16 +100,16 @@ class VMHostService : VMHostBaseDSC {
 
     Returns a boolean value if the VMHostService needs to be updated.
     #>
-    [bool]ShouldUpdateVMHostService($VMHost) {
+    [bool]ShouldUpdateVMHostService($vmHost) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $VMHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $VMHost | where-object {$_.Key -eq $this.Key}
+        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object {$_.Key -eq $this.Key}
 
-        $shouldUpdate = @()
-        $shouldUpdate += $this.Policy -ne $VMHostCurrentService.Policy
-        $shouldUpdate += $this.Running -ne $VMHostCurrentService.Running
+        $shouldUpdateVMHostService = @()
+        $shouldUpdateVMHostService += $this.Policy -ne $vmHostCurrentService.Policy
+        $shouldUpdateVMHostService += $this.Running -ne $vmHostCurrentService.Running
 
-        return ($shouldUpdate -contains $true)
+        return ($shouldUpdateVMHostService -Contains $true)
     }
 
     <#
@@ -116,39 +117,39 @@ class VMHostService : VMHostBaseDSC {
 
     Updates the configuration of the VMHostService
     #>
-    [void] UpdateVMHostService($VMHost) {
+    [void] UpdateVMHostService($vmHost) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $VMHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $VMHost | where-object {$_.Key -eq $this.Key}
+        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object {$_.Key -eq $this.Key}
 
-        if ($VMHostCurrentService.Policy -ne $this.Policy) {
-            Set-VMHostService -HostService $VMHostCurrentService -Policy $this.Policy.ToString() -Confirm:$false
+        if ($vmHostCurrentService.Policy -ne $this.Policy) {
+            Set-VMHostService -HostService $vmHostCurrentService -Policy $this.Policy.ToString() -Confirm:$false
         }
 
-        if ($VMHostCurrentService.Running -ne $this.Running) {
-                if ($VMHostCurrentService.Running) {
-                    Stop-VMHostService -HostService $VMHostCurrentService -Confirm:$false
-                }
-                else {
-                    Start-VMHostService -HostService $VMHostCurrentService -Confirm:$false
-                }
+        if ($vmHostCurrentService.Running -ne $this.Running) {
+            if ($vmHostCurrentService.Running) {
+                Stop-VMHostService -HostService $vmHostCurrentService -Confirm:$false
+            }
+            else {
+                Start-VMHostService -HostService $vmHostCurrentService -Confirm:$false
             }
         }
+    }
 
     <#
     .DESCRIPTION
 
     Populates the result returned from the Get() method with the values of the VMHostService.
     #>
-    [void] PopulateResult($VMHost, $service) {
+    [void] PopulateResult($vmHost, $vmHostService) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $VMHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $VMHost | where-object {$_.Key -eq $this.Key}
-        $service.Key = $VMHostCurrentService.Key
-        $service.Policy = $VMHostCurrentService.Policy
-        $service.Running = $VMHostCurrentService.Running
-        $service.Label = $VMHostCurrentService.Label
-        $service.Required = $VMHostCurrentService.Required
-        $service.Ruleset = $VMHostCurrentService.Ruleset
+        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object {$_.Key -eq $this.Key}
+        $vmHostService.Key = $vmHostCurrentService.Key
+        $vmHostService.Policy = $vmHostCurrentService.Policy
+        $vmHostService.Running = $vmHostCurrentService.Running
+        $vmHostService.Label = $vmHostCurrentService.Label
+        $vmHostService.Required = $vmHostCurrentService.Required
+        $vmHostService.Ruleset = $vmHostCurrentService.Ruleset
     }
 }

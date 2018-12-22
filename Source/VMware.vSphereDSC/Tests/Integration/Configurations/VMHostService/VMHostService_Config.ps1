@@ -36,8 +36,11 @@ $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
 $script:vmHostCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
 $script:ServiceKey = 'TMS-SSH'
-$script:ServicePolicy = [ServicePolicy]::Automatic
-$script:ServiceRunning = $true
+$script:ServicePolicyUnset = 'Unset'                # [ServicePolicy]::Unset
+$script:ServicePolicyOn = 'On'                      # [ServicePolicy]::On
+$script:ServicePolicyOff = 'Off'                    # [ServicePolicy]::Off
+$script:ServiceRunningFalse = $false
+$script:ServiceRunningTrue = $true
 
 $script:configurationData = @{
     AllNodes = @(
@@ -51,7 +54,7 @@ $script:configurationData = @{
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-Configuration VMHostService_Config {
+Configuration VMHostService_WithServicePolicyUnset_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
@@ -60,10 +63,58 @@ Configuration VMHostService_Config {
             Server = $Server
             Credential = $script:vmHostCredential
             Key = $script:ServiceKey
-            Policy = $script:ServicePolicy
-            Running = $script:ServiceRunning
+            Policy = $script:ServicePolicyUnset
+            Running = $script:ServiceRunningFalse
         }
     }
 }
 
-VMHostService_Config -OutputPath "$integrationTestsFolderPath\VMHostServiceSettings_Config" -ConfigurationData $script:configurationData
+Configuration VMHostService_WithServicePolicyOn_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostService vmHostServiceSettings {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            Key = $script:ServiceKey
+            Policy = $script:ServicePolicyOn
+            Running = $script:ServiceRunningFalse
+        }
+    }
+}
+
+Configuration VMHostService_WithServicePolicyOff_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostService vmHostServiceSettings {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            Key = $script:ServiceKey
+            Policy = $script:ServicePolicyOff
+            Running = $script:ServiceRunningFalse
+        }
+    }
+}
+
+Configuration VMHostService_WithServicePolicyOnAndRunning_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostService vmHostServiceSettings {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            Key = $script:ServiceKey
+            Policy = $script:ServicePolicyOn
+            Running = $script:ServiceRunningTrue
+        }
+    }
+}
+
+VMHostService_WithServicePolicyUnset_Config -OutputPath "$integrationTestsFolderPath\VMHostService_WithServicePolicyUnset_Config" -ConfigurationData $script:configurationData
+VMHostService_WithServicePolicyOn_Config -OutputPath "$integrationTestsFolderPath\VMHostService_WithServicePolicyOn_Config" -ConfigurationData $script:configurationData
+VMHostService_WithServicePolicyOff_Config -OutputPath "$integrationTestsFolderPath\VMHostService_WithServicePolicyOff_Config" -ConfigurationData $script:configurationData
+VMHostService_WithServicePolicyOnAndRunning_Config -OutputPath "$integrationTestsFolderPath\VMHostService_WithServicePolicyOnAndRunning_Config" -ConfigurationData $script:configurationData

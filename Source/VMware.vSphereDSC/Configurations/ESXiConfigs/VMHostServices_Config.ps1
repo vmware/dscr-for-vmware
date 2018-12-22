@@ -54,7 +54,7 @@ Configuration VMHostServices_Config {
             Server = $Server
             Credential = $Credential
             Key = 'TSM-SSH'
-            Policy = [ServicePolicy]::Automatic
+            Policy = 'Automatic'
             Running = $true
         }
     }

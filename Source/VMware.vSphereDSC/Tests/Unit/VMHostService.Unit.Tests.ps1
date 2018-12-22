@@ -134,13 +134,17 @@ Describe 'VMHostService' {
                 }
 
                 $getServiceSettingsMock = {
-                    return [VMware.Vim.VMHostService] @{Key = 'TSM-SSH'; Policy = [ServicePolicy]::Unset; Running = $false}
+                    return [VMware.Vim.VMHostService] @{Key = 'TSM-SSH'; Policy = [VMware.Vim.ServicePolicy]::Off; Running = $false}
+                }
+
+                $setServiceSettingMock = {
+                    return $null
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
                 Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
                 Mock -CommandName Get-VMHostService -MockWith $getServiceSettingsMock -ModuleName $script:moduleName
-                Mock -CommandName Set-VMHostService -MockWith {return $null} -ModuleName $script:moduleName
+                Mock -CommandName Set-VMHostService -MockWith $setServiceSettingMock -ModuleName $script:moduleName
             }
 
             # Arrange
@@ -152,7 +156,7 @@ Describe 'VMHostService' {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-VMHostService `
-                    -ParameterFilter { $HostService.Key -eq $script:resourceProperties.Key -and $Policy -eq [ServicePolicy]::On } `
+                    -ParameterFilter { $HostService.Key -eq $script:resourceProperties.Key-and $Policy -eq $script:resourceProperties.Policy } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
