@@ -381,7 +381,7 @@ Describe 'VMHostTpsSettings' {
             BeforeAll {
                 # Arrange
                 $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
                 $advancedSettings = @(
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
@@ -393,7 +393,7 @@ Describe 'VMHostTpsSettings' {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
                 }
                 $advancedSettingsMock = {
                     return @(
@@ -447,7 +447,7 @@ Describe 'VMHostTpsSettings' {
                 $result = $resource.Get()
 
                 # Assert
-                $result.Name | Should -Be $script:resourceProperties.Name
+                $result.Name | Should -Be $vmhost.Name
                 $result.Server | Should -Be $script:resourceProperties.Server
                 $result.ShareScanTime | Should -Be $advancedSettings[0].Value
                 $result.ShareScanGHz | Should -Be $advancedSettings[1].Value
