@@ -387,7 +387,7 @@ Describe 'VMHostDnsSettings' {
                 return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
             }
             $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
+                return [VMware.Vim.VMHost] @{ Name = '10.23.82.112'; ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
                      = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('Search Domain 1'); VirtualNicDevice = 'Virtual Nic Device'; Ipv6VirtualNicDevice = 'Ipv6' } } } } }
             }
 

@@ -897,7 +897,7 @@ Describe 'VMHostNtpSettings' {
                 return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
             }
             $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ ExtensionData `
+                return [VMware.Vim.VMHost] @{ Name = '10.23.82.112'; ExtensionData `
                      = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                      = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org') } }; Service = [VMware.Vim.HostServiceInfo] @{ Service `
                      = @([VMware.Vim.HostService] @{ Key = 'ntpd'; Policy = 'automatic' }) } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
