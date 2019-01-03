@@ -419,7 +419,7 @@ Describe 'VMHostSettings' {
         BeforeAll {
             # Arrange
             $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+            $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
             $advancedSettings = @(
                 [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = 'Hello Brave New World!' }
                 [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = 'Hello Brave New World!' }
@@ -429,7 +429,7 @@ Describe 'VMHostSettings' {
                 return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
             }
             $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                return [VMware.Vim.VMHost] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
             }
             $advancedSettingsMock = {
                 return @(
@@ -481,6 +481,8 @@ Describe 'VMHostSettings' {
             $result = $resource.Get()
 
             # Assert
+            $result.Name | Should -Be $vmhost.Name
+            $result.Server | Should -Be $script:resourceProperties.Server
             $result.Motd | Should -Be 'Hello World!'
             $result.Issue | Should -Be 'Hello World!'
         }

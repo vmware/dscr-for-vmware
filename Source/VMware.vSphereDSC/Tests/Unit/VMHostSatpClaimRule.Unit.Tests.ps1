@@ -935,7 +935,7 @@ Describe 'VMHostSatpClaimRule' {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.Vim.VMHost] @{ Name = '10.23.82.112' }
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -1004,7 +1004,7 @@ Describe 'VMHostSatpClaimRule' {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.Vim.VMHost] @{ Name = '10.23.82.112' }
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
