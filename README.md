@@ -79,10 +79,16 @@ the [Desired State Configuration Resources for VMware wiki](https://github.com/v
 
 ### master
 
+[![Build Status](https://travis-ci.org/vmware/dscr-for-vmware.svg?branch=master)](https://travis-ci.org/vmware/dscr-for-vmware)
+![Coverage](https://img.shields.io/badge/coverage.svg)
+
 This is the branch containing the latest release - no contributions should be made
 directly to this branch.
 
 ### dev
+
+[![Build Status](https://travis-ci.org/vmware/dscr-for-vmware.svg?branch=dev)](https://travis-ci.org/vmware/dscr-for-vmware)
+![Coverage](https://img.shields.io/badge/coverage.svg)
 
 This is the development branch to which contributions should be proposed by contributors
 as pull requests. This development branch will periodically be merged to the master
