@@ -207,3 +207,16 @@ function Compare-Settings
     }
     return $false
 }
+
+function Set-HostPowerPolicy {
+    [CmdletBinding()]
+    param (
+        $vmHost,
+        [System.Int32] $PowerPolicy
+    )
+    
+    $powerSystem = Get-View $vmhost.ExtensionData.ConfigManager.PowerSystem
+    $powerSystem.ConfigurePowerPolicy($PowerPolicy)
+
+    return $vmHost
+}

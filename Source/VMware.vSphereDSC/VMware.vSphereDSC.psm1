@@ -856,6 +856,66 @@ class VMHostNtpSettings : VMHostBaseDSC {
 }
 
 [DscResource()]
+class VMHostPowerPolicySettings : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Host setting for power policy
+    #>
+    [DscProperty(Mandatory)]
+    [System.Int32] $PowerPolicy = 2
+
+    [void] Set()
+    {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $vmHostCurrentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
+        $shouldUpdateVMHostPowerPolicy = $this.ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
+
+        if ($shouldUpdateVMHostPowerPolicy)
+        {
+            Set-HostPowerPolicy -vmHost $vmHost -PowerPolicy $this.PowerPolicy
+        }
+    }
+
+    [bool] Test()
+    {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
+
+        return !$this.ShouldUpdateVMHostPowerPolicy($vmHostPowerPolicy)
+    }
+
+    [VMHostPowerPolicySettings] Get()
+    {
+        $result = [VMHostPowerPolicySettings]::new()
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $result.Name = $this.Name
+        $result.Server = $this.Server
+        $result.PowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy.Key
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the VMHost Power policy should be updated.
+    #>
+    [bool] ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
+    {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Host Power Policy - Should Update from/to [{0}/{1}]" -f $vmHostCurrentPowerPolicy.Key, $this.PowerPolicy)"
+
+        return ($this.PowerPolicy -ne $vmHostCurrentPowerPolicy.Key)
+    }
+}
+
+[DscResource()]
 class VMHostSatpClaimRule : VMHostBaseDSC {
     <#
     .DESCRIPTION
@@ -1461,67 +1521,3 @@ class VMHostTpsSettings : VMHostBaseDSC {
         }
     }
 }
-<<<<<<< HEAD
-
-[DscResource()]
-class VMHostPowerPolicySettings : VMHostBaseDSC
-{
-    <#
-    .DESCRIPTION
-
-    Host setting for power policy
-    #>
-    [DscProperty(Mandatory)]
-    [System.Int32] $PowerPolicy = 2
-
-    [void] Set()
-    {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-
-        $vmHostCurrentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
-        $shouldUpdateVMHostPowerPolicy = $this.ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
-
-        if ($shouldUpdateVMHostPowerPolicy)
-        {
-            Set-HostPowerPolicy -vmHost $vmHost -PowerPolicy $this.PowerPolicy
-        }
-    }
-
-    [bool] Test()
-    {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
-
-        return !$this.ShouldUpdateVMHostPowerPolicy($vmHostPowerPolicy)
-    }
-
-    [VMHostPowerPolicySettings] Get()
-    {
-        $result = [VMHostPowerPolicySettings]::new()
-
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-
-        $result.Name = $this.Name
-        $result.Server = $this.Server
-        $result.PowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy.Key
-
-        return $result
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the VMHost Power policy should be updated.
-    #>
-    [bool] ShouldUpdateVMHostPowerPolicy($vmHostCurrentPowerPolicy)
-    {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Host Power Policy - Should Update from/to [{0}/{1}]" -f $vmHostCurrentPowerPolicy.Key, $this.PowerPolicy)"
-
-        return ($this.PowerPolicy -ne $vmHostCurrentPowerPolicy.Key)
-    }
-}
-=======
->>>>>>> dev
