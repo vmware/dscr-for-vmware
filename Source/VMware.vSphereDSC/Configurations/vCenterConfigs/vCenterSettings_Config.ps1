@@ -53,8 +53,8 @@ Configuration vCenterSettings_Config {
             EventMaxAge = 40
             TaskMaxAgeEnabled = $false
             TaskMaxAge = 40
-            Motd = 'Motd new content!'
-            Issue = 'Issue new content!'
+            Motd = 'Hello World from motd!'
+            Issue = 'Hello World from issue!'
         }
     }
 }

@@ -63,8 +63,8 @@ Configuration VMHostSettings_Config {
             Name = $Name
             Server = $Server
             Credential = $Credential
-            Motd = 'Motd new content!'
-            Issue = 'Issue new content!'
+            Motd = 'Hello World from motd!'
+            Issue = 'Hello World from issue!'
         }
     }
 }
