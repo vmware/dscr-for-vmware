@@ -173,7 +173,7 @@ class vCenterSettings : BaseDSC {
     <#
     .DESCRIPTION
 
-    Motd value.
+    Motd Advanced Setting value.
     #>
     [DscProperty()]
     [string] $Motd
@@ -181,7 +181,7 @@ class vCenterSettings : BaseDSC {
     <#
     .DESCRIPTION
 
-    Clear the Motd content
+    Indicates whether the Motd content should be cleared.
     #>
     [DscProperty()]
     [bool] $MotdClear
@@ -189,7 +189,7 @@ class vCenterSettings : BaseDSC {
     <#
     .DESCRIPTION
 
-    Issue value.
+    Issue Advanced Setting value.
     #>
     [DscProperty()]
     [string] $Issue
@@ -197,7 +197,7 @@ class vCenterSettings : BaseDSC {
     <#
     .DESCRIPTION
 
-    Clear the Issue content
+    Indicates whether the Issue content should be cleared.
     #>
     [DscProperty()]
     [bool] $IssueClear
@@ -1200,7 +1200,7 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Motd value.
+    Motd Advanced Setting value.
     #>
     [DscProperty()]
     [string] $Motd
@@ -1208,7 +1208,7 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Clear the Motd content
+    Indicates whether the Motd content should be cleared.
     #>
     [DscProperty()]
     [bool] $MotdClear
@@ -1216,7 +1216,7 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Issue value.
+    Issue Advanced Setting value.
     #>
     [DscProperty()]
     [string] $Issue
@@ -1224,7 +1224,7 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Clear the Issue content
+    Indicates whether the Issue content should be cleared.
     #>
     [DscProperty()]
     [bool] $IssueClear
