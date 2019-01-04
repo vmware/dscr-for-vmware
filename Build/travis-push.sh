@@ -6,7 +6,7 @@ setup_git() {
 }
 
 commit_updated_module_files() {
-    git checkout dev
+    git checkout master
 
     # Stage the modified module files
     git add -f .
@@ -23,7 +23,7 @@ upload_files() {
 
     # Add new "origin" with the access token
     git remote add origin https://${GH_TOKEN}@github.com/vmware/dscr-for-vmware.git > /dev/null 2>&1
-    git push origin dev --quiet
+    git push origin master --quiet
 }
 
 setup_git
