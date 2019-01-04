@@ -24,4 +24,4 @@ before_install:
 script:
   - pwsh -File './Build/build.ps1'
 after_success:
-  - '[ "${TRAVIS_EVENT_TYPE}" = "push" ] && [ "${TRAVIS_BRANCH}" = "dev" ] && Build/travis-push.sh'
+  - '[ "${TRAVIS_EVENT_TYPE}" = "push" ] && [ "${TRAVIS_BRANCH}" = "master" ] && Build/travis-push.sh'
