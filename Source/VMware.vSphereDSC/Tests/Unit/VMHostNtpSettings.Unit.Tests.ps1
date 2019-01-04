@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -38,8 +38,7 @@ Describe 'VMHostNtpSettings' {
         # Arrange
         $env:PSModulePath = $script:mockModuleLocation
         $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
-        if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers')
-        {
+        if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
             throw 'The Original VMware.VimAutomation.Core Module is loaded in the current session. If you want to run the unit tests please open a new PowerShell session.'
         }
 
@@ -65,7 +64,7 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo `
                          = [VMware.Vim.HostDateTimeConfig] @{ NtpConfig = [VMware.Vim.HostNtpConfig] @{} } } } }
                 }
@@ -103,20 +102,20 @@ Describe 'VMHostNtpSettings' {
                 # Arrange
                 $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 $dateTimeInfoObject = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{} }
-                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } 
+                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
 
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo `
                          = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{} } } } }
                 }
-                $dateTimeConfigMock = { 
-                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig' } 
+                $dateTimeConfigMock = {
+                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig' }
                 }
-                $dateTimeSystemMock = { 
-                    return [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } 
+                $dateTimeSystemMock = {
+                    return [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -166,22 +165,22 @@ Describe 'VMHostNtpSettings' {
                 # Arrange
                 $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 $dateTimeInfoObject = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org') } }
-                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } 
+                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
 
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                          = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org') } } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
-                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } } 
+                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } }
                 }
-                $dateTimeConfigMock = { 
-                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org') } } 
+                $dateTimeConfigMock = {
+                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org') } }
                 }
-                $dateTimeSystemMock = { 
-                    return [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } 
+                $dateTimeSystemMock = {
+                    return [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
                 }
 
                 $script:resourceProperties.NtpServer = @()
@@ -236,21 +235,21 @@ Describe 'VMHostNtpSettings' {
                 # Arrange
                 $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 $dateTimeInfoObject = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('1.bg.pool.ntp.org') } }
-                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } 
+                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
 
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                          = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org') } } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
-                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } } 
+                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } }
                 }
-                $dateTimeConfigMock = { 
-                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('1.bg.pool.ntp.org') } } 
+                $dateTimeConfigMock = {
+                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('1.bg.pool.ntp.org') } }
                 }
-                $dateTimeSystemMock = { 
+                $dateTimeSystemMock = {
                     return [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
                 }
 
@@ -306,21 +305,21 @@ Describe 'VMHostNtpSettings' {
                 # Arrange
                 $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 $dateTimeInfoObject = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('1.bg.pool.ntp.org') } }
-                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } 
+                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
 
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                          = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org') } } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
-                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } } 
+                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } }
                 }
-                $dateTimeConfigMock = { 
-                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('1.bg.pool.ntp.org') } } 
+                $dateTimeConfigMock = {
+                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('1.bg.pool.ntp.org') } }
                 }
-                $dateTimeSystemMock = { 
+                $dateTimeSystemMock = {
                     return [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
                 }
 
@@ -377,21 +376,21 @@ Describe 'VMHostNtpSettings' {
                 $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 $dateTimeInfoObject = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                                     = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org') } }
-                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } 
+                $dateTimeSystemObject = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
 
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                          = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org') } } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
-                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } } 
+                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } }
                 }
-                $dateTimeConfigMock = { 
-                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org') } } 
+                $dateTimeConfigMock = {
+                    return [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org') } }
                 }
-                $dateTimeSystemMock = { 
+                $dateTimeSystemMock = {
                     return [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' }
                 }
 
@@ -451,16 +450,16 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig' }; Service `
                          = [VMware.Vim.HostServiceInfo] @{ Service = @([VMware.Vim.HostService] @{ Key = 'ntpd'; Policy = 'automatic' }) } }; ConfigManager `
-                         = [VMware.Vim.HostConfigManager] @{ ServiceSystem = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } } 
+                         = [VMware.Vim.HostConfigManager] @{ ServiceSystem = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } }
                 }
-                $serviceSystemMock = { 
+                $serviceSystemMock = {
                     return [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' }
                 }
-                
+
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
                 Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
                 Mock -CommandName Get-View -MockWith $serviceSystemMock `
@@ -504,18 +503,18 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig' }; Service `
                          = [VMware.Vim.HostServiceInfo] @{ Service = @([VMware.Vim.HostService] @{ Key = 'ntpd'; Policy = 'automatic' }) } }; ConfigManager `
-                         = [VMware.Vim.HostConfigManager] @{ ServiceSystem = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } } 
+                         = [VMware.Vim.HostConfigManager] @{ ServiceSystem = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } }
                 }
-                $serviceSystemMock = { 
+                $serviceSystemMock = {
                     return [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' }
                 }
 
                 $script:resourceProperties.NtpServicePolicy = 'automatic'
-                
+
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
                 Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
                 Mock -CommandName Get-View -MockWith $serviceSystemMock `
@@ -559,18 +558,18 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig' }; Service `
                          = [VMware.Vim.HostServiceInfo] @{ Service = @([VMware.Vim.HostService] @{ Key = 'ntpd'; Policy = 'automatic' }) } }; ConfigManager `
-                         = [VMware.Vim.HostConfigManager] @{ ServiceSystem = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } } 
+                         = [VMware.Vim.HostConfigManager] @{ ServiceSystem = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } }
                 }
-                $serviceSystemMock = { 
+                $serviceSystemMock = {
                     return [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' }
                 }
 
                 $script:resourceProperties.NtpServicePolicy = 'on'
-                
+
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
                 Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
                 Mock -CommandName Get-View -MockWith $serviceSystemMock `
@@ -620,7 +619,7 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo `
                          = [VMware.Vim.HostDateTimeConfig] @{ NtpConfig = [VMware.Vim.HostNtpConfig] @{} } } } }
                 }
@@ -659,11 +658,11 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo `
                          = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig = [VMware.Vim.HostNtpConfig] @{} } } } }
                 }
-                
+
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
                 Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
             }
@@ -685,11 +684,11 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                          = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org') } } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
-                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } } 
+                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } }
                 }
 
                 $script:resourceProperties.NtpServer = @()
@@ -715,11 +714,11 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                          = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org') } } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
-                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } } 
+                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } }
                 }
 
                 $script:resourceProperties.NtpServer = @('1.bg.pool.ntp.org')
@@ -745,11 +744,11 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                          = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org') } } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
-                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } } 
+                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } }
                 }
 
                 $script:resourceProperties.NtpServer = @('1.bg.pool.ntp.org')
@@ -775,11 +774,11 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                          = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org') } } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
-                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } } 
+                         = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } }
                 }
 
                 $script:resourceProperties.NtpServer = @('1.bg.pool.ntp.org', '0.bg.pool.ntp.org')
@@ -805,11 +804,11 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig' }; Service `
                          = [VMware.Vim.HostServiceInfo] @{ Service = @([VMware.Vim.HostService] @{ Key = 'ntpd'; Policy = 'automatic' }) } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ ServiceSystem `
-                         = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } } 
+                         = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } }
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -833,11 +832,11 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig' }; Service `
                          = [VMware.Vim.HostServiceInfo] @{ Service = @([VMware.Vim.HostService] @{ Key = 'ntpd'; Policy = 'automatic' }) } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ ServiceSystem `
-                         = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } } 
+                         = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } }
                 }
 
                 $script:resourceProperties.NtpServicePolicy = 'automatic'
@@ -863,11 +862,11 @@ Describe 'VMHostNtpSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ ExtensionData `
                          = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig' }; Service `
                          = [VMware.Vim.HostServiceInfo] @{ Service = @([VMware.Vim.HostService] @{ Key = 'ntpd'; Policy = 'automatic' }) } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ ServiceSystem `
-                         = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } } 
+                         = [VMware.Vim.HostServiceSystem] @{ Id = 'HostServiceSystem' } } } }
                 }
 
                 $script:resourceProperties.NtpServicePolicy = 'on'
@@ -897,12 +896,12 @@ Describe 'VMHostNtpSettings' {
             $viServerMock = {
                 return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
             }
-            $vmHostMock = { 
-                return [VMware.Vim.VMHost] @{ ExtensionData `
+            $vmHostMock = {
+                return [VMware.Vim.VMHost] @{ Name = '10.23.82.112'; ExtensionData `
                      = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ DateTimeInfo = [VMware.Vim.HostDateTimeConfig] @{ Id = 'HostDateTimeConfig'; NtpConfig `
                      = [VMware.Vim.HostNtpConfig] @{ Server = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org') } }; Service = [VMware.Vim.HostServiceInfo] @{ Service `
                      = @([VMware.Vim.HostService] @{ Key = 'ntpd'; Policy = 'automatic' }) } }; ConfigManager = [VMware.Vim.HostConfigManager] @{ DateTimeSystem `
-                     = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } } 
+                     = [VMware.Vim.HostDateTimeSystem] @{ Id = 'HostDateTimeSystem' } } } }
             }
 
             Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName

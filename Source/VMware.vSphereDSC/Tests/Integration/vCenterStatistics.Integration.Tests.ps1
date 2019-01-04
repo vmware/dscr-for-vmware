@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -15,21 +15,27 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Name,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
+#Mandatore Integration Parameter unused so set to null
+$Name = $null
+
 $script:dscResourceName = 'vCenterStatistics'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -75,7 +81,7 @@ $script:mofFileWithoutEnabledPropertyPath = "$script:integrationTestsFolderPath\
 function BeforeAllTests {
     $script:performanceManager = Get-View -Server $script:vCenter $script:vCenter.ExtensionData.Content.PerfManager
     $script:currentPerformanceInterval = $script:performanceManager.HistoricalInterval | Where-Object { $_.Name -Match $script:period }
-    
+
     $script:currentLevel = $script:currentPerformanceInterval.Level
     $script:currentEnabled = $script:currentPerformanceInterval.Enabled
     $script:currentSamplingPeriod = $script:currentPerformanceInterval.SamplingPeriod
@@ -115,25 +121,34 @@ Describe "$($script:dscResourceName)_Integration" {
                 Wait = $true
                 Force = $true
             }
-            
+
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithPassedEnabledPropertyPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithPassedEnabledProperty = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithPassedEnabledProperty 
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithPassedEnabledProperty } | Should -Not -Throw
-
             $configuration.Server | Should -Be $script:resourceWithPassedEnabledProperty.Server
             $configuration.Period | Should -Be $script:resourceWithPassedEnabledProperty.Period
             $configuration.Level | Should -Be $script:resourceWithPassedEnabledProperty.Level
@@ -165,25 +180,34 @@ Describe "$($script:dscResourceName)_Integration" {
                 Wait = $true
                 Force = $true
             }
-            
+
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithoutEnabledPropertyPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
             # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange && Act
-            $script:dscConfigWithoutEnabledProperty = Get-DscConfiguration
+            $configuration = Get-DscConfiguration
 
-            $configuration = $script:dscConfigWithoutEnabledProperty
-            
             # Assert
-            { $script:dscConfigWithoutEnabledProperty } | Should -Not -Throw
-
             $configuration.Server | Should -Be $script:resourceWithoutEnabledProperty.Server
             $configuration.Period | Should -Be $script:resourceWithoutEnabledProperty.Period
             $configuration.Level | Should -Be $script:resourceWithoutEnabledProperty.Level

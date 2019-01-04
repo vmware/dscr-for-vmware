@@ -12,7 +12,7 @@ For any other resource you need to inherit from BaseDSC.
   [DscResource()]
   MyResource : BaseDSC
  ```
-You need to implement your new resource in the [VMware.vSphereDSC Module File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/VMware.vSphereDSC.psm1). In the Set(), Test() and Get() methods of your resource, you need to call ConnectVIServer() method from the base class to establish a connection either to  a vCenter or an ESXi. 
+You need to implement your new resource in separate file in the [DSCResources Folder](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/DSCResources). In the Set(), Test() and Get() methods of your resource, you need to call ConnectVIServer() method from the base class to establish a connection either to  a vCenter or an ESXi.
  ```powershell
   [void] Set()
   {
@@ -42,11 +42,7 @@ For every property and helper method in your resource, you need to add brief des
   #>
  ```
 
-After you implement it, you need to add it to the [Module Manifest File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/VMware.vSphereDSC.psd1) (in the DscResourcesToExport array).
- ```powershell
-  # DSC resources to export from this module
-  DscResourcesToExport = @()
- ```
+After you implement it, you need to run the build script [VMware.vSphereDSC.build.ps1](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/VMware.vSphereDSC.build.ps1), which updates the psm1 and psd1 content with your new resource (**When submitting a pull request you do not need to do it as Travis CI will run it for you. This step is only needed if you test it locally**).
 
 You need to write example configuration to show how your resource works. You can look at the [Configurations Folder](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Configurations) to see other example configurations.
 
@@ -70,7 +66,10 @@ Tests should currently be structured like so:
                 * MyResource
                     * MyResource_Config.ps1
 
-Basically for the unit tests, you need to test the Set(), Test() and Get() methods of your resource with the different usecases.
+Basically for the unit tests, you need to test the Set(), Test() and Get() methods of your resource with the different use cases.
+
+Currently the coverage of the module should be at least **90 percent**, so when writing the unit tests, keep in mind for different use cases (for example if a value is passed/not passed, for array values - null, empty or with multiple elements and so on.).
+
  ```powershell
   Describe 'MyResource' {
       Describe 'MyResource\Set' {
@@ -78,7 +77,7 @@ Basically for the unit tests, you need to test the Set(), Test() and Get() metho
       }
 
       Describe 'MyResource\Test' {
-          ...   
+          ...
       }
 
       Describe 'MyResource\Get' {
@@ -147,9 +146,14 @@ In your unit test file you need to replace VMware PowerCLI modules with the scri
               ...
           }
 
-          It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
+          It 'Should be able to call Get-DscConfiguration without throwing' {
+              # Make sure getting the configuration did not fail.
+              ...
+          }
+
+          It 'Should be able to call Get-DscConfiguration and all parameters should match' {
               # Make sure the returned configuration is the desired one.
-              ... 
+              ...
           }
 
           It 'Should return $true when Test-DscConfiguration is run' {
@@ -168,7 +172,7 @@ Running the tests:
   cd (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests')
  ```
 
-2. The [Test Runner](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/TestRunner.ps1) script gives you the ability to:  
+2. The [Test Runner](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/TestRunner.ps1) script gives you the ability to:
    Run both Unit and Integration Tests:
     ```powershell
      .\TestRunner.ps1 -Integration -Unit
@@ -184,3 +188,14 @@ Running the tests:
     ```powershell
     .\TestRunner.ps1 -Integration
     ```
+
+### Write Documentation
+
+For every developed resource, there should be a documentation showing how to use the resource and **at least 1** example configuration.
+Documentation for every resource should currently be structured like so:
+
+* Root folder of repository
+    * Documentation
+        * DSCResources
+            * MyResource
+                * `MyResources.md`

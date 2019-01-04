@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -14,8 +14,7 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-DateTimeConfig
-{
+function New-DateTimeConfig {
     [CmdletBinding()]
     [OutputType([VMware.Vim.HostDateTimeConfig])]
     param(
@@ -29,8 +28,7 @@ function New-DateTimeConfig
     return $dateTimeConfig
 }
 
-function Update-DateTimeConfig
-{
+function Update-DateTimeConfig {
     [CmdletBinding()]
     param(
         [VMware.Vim.HostDateTimeSystem] $DateTimeSystem,
@@ -40,8 +38,7 @@ function Update-DateTimeConfig
     $DateTimeSystem.UpdateDateTimeConfig($DateTimeConfig)
 }
 
-function Update-ServicePolicy
-{
+function Update-ServicePolicy {
     [CmdletBinding()]
     param(
         [VMware.Vim.HostServiceSystem] $ServiceSystem,
@@ -52,8 +49,7 @@ function Update-ServicePolicy
     $ServiceSystem.UpdateServicePolicy($ServiceId, $ServicePolicyValue)
 }
 
-function New-DNSConfig
-{
+function New-DNSConfig {
     [CmdletBinding()]
     [OutputType([VMware.Vim.HostDnsConfig])]
     param(
@@ -70,27 +66,23 @@ function New-DNSConfig
     $dnsConfig.HostName = $HostName
     $dnsConfig.DomainName = $DomainName
 
-        if (!$Dhcp)
-        {
-            $dnsConfig.Address = $Address
-            $dnsConfig.SearchDomain = $SearchDomain
+    if (!$Dhcp) {
+        $dnsConfig.Address = $Address
+        $dnsConfig.SearchDomain = $SearchDomain
+    }
+    else {
+        $dnsConfig.Dhcp = $Dhcp
+        $dnsConfig.VirtualNicDevice = $VirtualNicDevice
+
+    	if ($Ipv6VirtualNicDevice -ne [string]::Empty) {
+            $dnsConfig.Ipv6VirtualNicDevice = $Ipv6VirtualNicDevice
         }
-        else
-        {
-            $dnsConfig.Dhcp = $Dhcp
-            $dnsConfig.VirtualNicDevice = $VirtualNicDevice
-            
-			if ($Ipv6VirtualNicDevice -ne [string]::Empty)
-			{
-			    $dnsConfig.Ipv6VirtualNicDevice = $Ipv6VirtualNicDevice
-			}
-        }
+    }
 
     return $dnsConfig
 }
 
-function Update-DNSConfig
-{
+function Update-DNSConfig {
     [CmdletBinding()]
     param(
         [VMware.Vim.HostNetworkSystem] $NetworkSystem,
@@ -100,8 +92,7 @@ function Update-DNSConfig
     $NetworkSystem.UpdateDnsConfig($DnsConfig)
 }
 
-function Get-SATPClaimRules
-{
+function Get-SATPClaimRules {
     [CmdletBinding()]
     [OutputType([Object[]])]
     param(
@@ -112,8 +103,7 @@ function Get-SATPClaimRules
     return $satpClaimRules
 }
 
-function Add-CreateArgs
-{
+function Add-CreateArgs {
     [CmdletBinding()]
     [OutputType([Hashtable])]
     param(
@@ -124,8 +114,7 @@ function Add-CreateArgs
     return $satpArgs
 }
 
-function Add-SATPClaimRule
-{
+function Add-SATPClaimRule {
     [CmdletBinding()]
     param(
         [PSObject] $EsxCli,
@@ -135,8 +124,7 @@ function Add-SATPClaimRule
     $EsxCli.storage.nmp.satp.rule.add.Invoke($SatpArgs)
 }
 
-function Remove-CreateArgs
-{
+function Remove-CreateArgs {
     [CmdletBinding()]
     [OutputType([Hashtable])]
     param(
@@ -147,8 +135,7 @@ function Remove-CreateArgs
     return $satpArgs
 }
 
-function Remove-SATPClaimRule
-{
+function Remove-SATPClaimRule {
     [CmdletBinding()]
     param(
         [PSObject] $EsxCli,
@@ -158,8 +145,7 @@ function Remove-SATPClaimRule
     $EsxCli.storage.nmp.satp.rule.remove.Invoke($SatpArgs)
 }
 
-function New-PerformanceInterval
-{
+function New-PerformanceInterval {
     [CmdletBinding()]
     [OutputType([VMware.Vim.PerfInterval])]
     param(
@@ -172,7 +158,7 @@ function New-PerformanceInterval
     )
 
     $performanceInterval = New-Object VMware.Vim.PerfInterval
-    
+
     $performanceInterval.Key = $Key
     $performanceInterval.Name = $Name
     $performanceInterval.Enabled = $Enabled
@@ -183,8 +169,7 @@ function New-PerformanceInterval
     return $performanceInterval
 }
 
-function Update-PerfInterval
-{
+function Update-PerfInterval {
     [CmdletBinding()]
     param(
         [VMware.Vim.PerformanceManager] $PerformanceManager,
@@ -192,4 +177,32 @@ function Update-PerfInterval
     )
 
     $PerformanceManager.UpdatePerfInterval($PerformanceInterval)
+}
+
+function Compare-Settings {
+    <#
+    .SYNOPSIS
+    Compare settings between current and desired states
+    .DESCRIPTION
+    This compares the current and desired states by comparing the configuration values specified in the desired state to the current state.
+    If a value is not specified in the desired state it is not assessed against the current state.
+
+    .PARAMETER DesiredState
+    Desired state configuration object.
+
+    .PARAMETER CurrentState
+    Current state configuration object.
+    #>
+    [CmdletBinding()]
+    param(
+        $DesiredState,
+        $CurrentState
+    )
+
+    foreach ($key in $DesiredState.Keys) {
+        if ($CurrentState.$key -ne $DesiredState.$key ){
+            return $true
+        }
+    }
+    return $false
 }
