@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -15,17 +15,17 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
 $script:dscResourceName = 'vCenterSettings'
@@ -111,7 +111,7 @@ Describe "$($script:dscResourceName)_Integration" {
                 Wait = $true
                 Force = $true
             }
-            
+
             # Act
             $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
         }
@@ -161,7 +161,7 @@ Describe "$($script:dscResourceName)_Integration" {
                 Wait = $true
                 Force = $true
             }
-            
+
             # Act
             $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
         }
@@ -176,7 +176,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $script:dscConfigWithEventMaxAge = Get-DscConfiguration
 
             $configuration = $script:dscConfigWithEventMaxAge
-            
+
             # Assert
             { $script:dscConfigWithEventMaxAge } | Should -Not -Throw
 
@@ -186,7 +186,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.EventMaxAge | Should -Be $script:resourceWithEventMaxAge.EventMaxAge
             $configuration.TaskMaxAgeEnabled | Should -Be ($script:currentTaskMaxAgeEnabled).Value
             $configuration.TaskMaxAge | Should -Be ($script:currentTaskMaxAge).Value
-            
+
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {
@@ -212,7 +212,7 @@ Describe "$($script:dscResourceName)_Integration" {
                 Wait = $true
                 Force = $true
             }
-            
+
             # Act
             $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
         }
@@ -227,7 +227,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $script:dscConfigWithTaskMaxAge = Get-DscConfiguration
 
             $configuration = $script:dscConfigWithTaskMaxAge
-            
+
             # Assert
             { $script:dscConfigWithTaskMaxAge } | Should -Not -Throw
 
@@ -237,7 +237,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.EventMaxAge | Should -Be ($script:currentEventMaxAge).Value
             $configuration.TaskMaxAgeEnabled | Should -Be $script:resourceWithTaskMaxAge.TaskMaxAgeEnabled
             $configuration.TaskMaxAge | Should -Be $script:resourceWithTaskMaxAge.TaskMaxAge
-            
+
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {

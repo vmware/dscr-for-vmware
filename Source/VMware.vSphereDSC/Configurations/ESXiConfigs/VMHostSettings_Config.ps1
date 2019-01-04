@@ -41,22 +41,22 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostNtpSettings_Config {
+Configuration VMHostSettings_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostNtpSettings vmHostNtpSettings
+        VMHostSettings vmHostSettings
         {
             Name = $Name
             Server = $Server
             Credential = $Credential
-            NtpServer = @("0.bg.pool.ntp.org", "1.bg.pool.ntp.org", "2.bg.pool.ntp.org")
-            NtpServicePolicy = "automatic"
-        }
+            Motd = 'Hello World from motd!'
+            Issue = 'Hello World from issue!'
+          }
     }
 }
 
-VMHostNtpSettings_Config -ConfigurationData $script:configurationData
+VMHostSettings_Config -ConfigurationData $script:configurationData

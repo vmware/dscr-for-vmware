@@ -14,49 +14,9 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-param(
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Name,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Server,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $User,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Password
-)
-
-$script:configurationData = @{
-    AllNodes = @(
-        @{
-            NodeName = 'localhost'
-            PSDscAllowPlainTextPassword = $true
-        }
-    )
+enum Period {
+    Day = 86400
+    Week = 604800
+    Month = 2629800
+    Year = 31556926
 }
-
-Configuration VMHostNtpSettings_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-        VMHostNtpSettings vmHostNtpSettings
-        {
-            Name = $Name
-            Server = $Server
-            Credential = $Credential
-            NtpServer = @("0.bg.pool.ntp.org", "1.bg.pool.ntp.org", "2.bg.pool.ntp.org")
-            NtpServicePolicy = "automatic"
-        }
-    }
-}
-
-VMHostNtpSettings_Config -ConfigurationData $script:configurationData

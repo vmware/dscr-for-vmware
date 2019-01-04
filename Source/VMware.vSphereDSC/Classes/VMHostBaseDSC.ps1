@@ -14,49 +14,27 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-param(
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Name,
+class VMHostBaseDSC : BaseDSC {
+    <#
+    .DESCRIPTION
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Server,
+    Name of the VMHost to configure.
+    #>
+    [DscProperty(Key)]
+    [string] $Name
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $User,
+    <#
+    .DESCRIPTION
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Password
-)
-
-$script:configurationData = @{
-    AllNodes = @(
-        @{
-            NodeName = 'localhost'
-            PSDscAllowPlainTextPassword = $true
+    Returns the VMHost with the specified Name on the specified Server.
+    If the VMHost is not found, the method writes an error.
+    #>
+    [PSObject] GetVMHost() {
+        $vmHost = Get-VMHost -Server $this.Connection -Name $this.Name -ErrorAction SilentlyContinue
+        if ($null -eq $vmHost) {
+            Write-Error "VMHost with name $($this.Name) was not found. For more information: $($PSItem.ToString())."
         }
-    )
-}
 
-Configuration VMHostNtpSettings_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-        VMHostNtpSettings vmHostNtpSettings
-        {
-            Name = $Name
-            Server = $Server
-            Credential = $Credential
-            NtpServer = @("0.bg.pool.ntp.org", "1.bg.pool.ntp.org", "2.bg.pool.ntp.org")
-            NtpServicePolicy = "automatic"
-        }
+        return $vmHost
     }
 }
-
-VMHostNtpSettings_Config -ConfigurationData $script:configurationData

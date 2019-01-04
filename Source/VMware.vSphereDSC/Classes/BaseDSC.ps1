@@ -14,49 +14,60 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-param(
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Name,
+class BaseDSC {
+    <#
+    .DESCRIPTION
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Server,
+    Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi.
+    #>
+    [DscProperty(Key)]
+    [string] $Server
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $User,
+    <#
+    .DESCRIPTION
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Password
-)
+    Credentials needed for connection to the specified Server.
+    #>
+    [DscProperty(Mandatory)]
+    [PSCredential] $Credential
 
-$script:configurationData = @{
-    AllNodes = @(
-        @{
-            NodeName = 'localhost'
-            PSDscAllowPlainTextPassword = $true
-        }
-    )
-}
+    <#
+    .DESCRIPTION
 
-Configuration VMHostNtpSettings_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
+    Established connection to the specified vSphere Server.
+    #>
+    hidden [PSObject] $Connection
 
-    Node localhost {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+    <#
+    .DESCRIPTION
 
-        VMHostNtpSettings vmHostNtpSettings
-        {
-            Name = $Name
-            Server = $Server
-            Credential = $Credential
-            NtpServer = @("0.bg.pool.ntp.org", "1.bg.pool.ntp.org", "2.bg.pool.ntp.org")
-            NtpServicePolicy = "automatic"
+    Imports the needed VMware Modules.
+    #>
+    [void] ImportRequiredModules() {
+        $savedVerbosePreference = $global:VerbosePreference
+        $global:VerbosePreference = 'SilentlyContinue'
+
+        Import-Module -Name VMware.VimAutomation.Core
+
+        $global:VerbosePreference = $savedVerbosePreference
+    }
+
+    <#
+    .DESCRIPTION
+
+    Connects to the specified Server with the passed Credentials.
+    The method sets the Connection property to the established connection.
+    If connection cannot be established, the method writes an error.
+    #>
+    [void] ConnectVIServer() {
+        $this.ImportRequiredModules()
+
+        if ($null -eq $this.Connection) {
+      	    $this.Connection = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction SilentlyContinue
+
+            if ($null -eq $this.Connection) {
+                Write-Error "Cannot establish connection to server $($this.Server). For more information: $($PSItem.ToString())."
+            }
         }
     }
 }
-
-VMHostNtpSettings_Config -ConfigurationData $script:configurationData

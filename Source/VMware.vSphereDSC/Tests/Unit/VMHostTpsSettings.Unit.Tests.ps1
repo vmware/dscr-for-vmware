@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -37,8 +37,7 @@ Describe 'VMHostTpsSettings' {
     BeforeAll {
         $env:PSModulePath = $script:mockModuleLocation
         $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
-        if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers')
-        {
+        if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
             throw 'The Original VMware.VimAutomation.Core Module is loaded in the current session. If you want to run the unit tests please open a new PowerShell session.'
         }
 
@@ -67,7 +66,7 @@ Describe 'VMHostTpsSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
 
@@ -82,17 +81,17 @@ Describe 'VMHostTpsSettings' {
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
-    
+
             It 'Should call Get-VMHost mock with the passed server and name once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHost `
                                   -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
@@ -102,7 +101,7 @@ Describe 'VMHostTpsSettings' {
             It 'Should call Get-AdvancedSetting mock with the passed server and vmhost once' {
                 # Act
                 $resource.Set()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-AdvancedSetting `
                                   -ParameterFilter { $Server -eq $viServer -and $Entity -eq $vmhost -and $Name -eq 'Mem.Sh*' } `
@@ -118,7 +117,7 @@ Describe 'VMHostTpsSettings' {
                 $script:resourceProperties.ShareRateMax = 41
                 $script:resourceProperties.ShareForceSalting = 51
 
-                $advancedSettings = @( 
+                $advancedSettings = @(
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
@@ -128,11 +127,11 @@ Describe 'VMHostTpsSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
@@ -177,7 +176,7 @@ Describe 'VMHostTpsSettings' {
                 $script:resourceProperties.ShareRateMax = 40
                 $script:resourceProperties.ShareForceSalting = 50
 
-                $advancedSettings = @( 
+                $advancedSettings = @(
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
@@ -187,11 +186,11 @@ Describe 'VMHostTpsSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
@@ -246,7 +245,7 @@ Describe 'VMHostTpsSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
 
@@ -261,17 +260,17 @@ Describe 'VMHostTpsSettings' {
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
-    
+
             It 'Should call Get-VMHost mock with the passed server and name once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHost `
                                   -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
@@ -281,7 +280,7 @@ Describe 'VMHostTpsSettings' {
             It 'Should call Get-AdvancedSetting mock with the passed server and vmhost once' {
                 # Act
                 $resource.Test()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-AdvancedSetting `
                                   -ParameterFilter { $Server -eq $viServer -and $Entity -eq $vmhost -and $Name -eq 'Mem.Sh*' } `
@@ -300,11 +299,11 @@ Describe 'VMHostTpsSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
@@ -340,11 +339,11 @@ Describe 'VMHostTpsSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
@@ -383,7 +382,7 @@ Describe 'VMHostTpsSettings' {
                 # Arrange
                 $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
-                $advancedSettings = @( 
+                $advancedSettings = @(
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
                     [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
@@ -393,11 +392,11 @@ Describe 'VMHostTpsSettings' {
                 $viServerMock = {
                     return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
                 }
-                $vmHostMock = { 
+                $vmHostMock = {
                     return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
-                    return @( 
+                    return @(
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
                         [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
@@ -416,17 +415,17 @@ Describe 'VMHostTpsSettings' {
             It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
                 # Act
                 $resource.Get()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Connect-VIServer `
                                   -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
-    
+
             It 'Should call Get-VMHost mock with the passed server and name once' {
                 # Act
                 $resource.Get()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHost `
                                   -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
@@ -436,7 +435,7 @@ Describe 'VMHostTpsSettings' {
             It 'Should call Get-AdvancedSetting mock with the passed server and vmhost once' {
                 # Act
                 $resource.Get()
-    
+
                 # Assert
                 Assert-MockCalled -CommandName Get-AdvancedSetting `
                                   -ParameterFilter { $Server -eq $viServer -and $Entity -eq $vmhost -and $Name -eq 'Mem.Sh*' } `
