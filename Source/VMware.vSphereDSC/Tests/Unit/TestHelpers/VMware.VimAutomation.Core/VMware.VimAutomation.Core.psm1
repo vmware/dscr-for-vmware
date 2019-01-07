@@ -17,7 +17,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 <#
 Mock types of VMware.Vim assembly for the purpose of unit testing.
 #>
-
 Add-Type -TypeDefinition @"
  namespace VMware.Vim
  {
@@ -508,6 +507,53 @@ Add-Type -TypeDefinition @"
         }
     }
 }
+
+    public class SyslogConfig : System.IEquatable<VMHostService>
+    {
+        public SyslogConfig()
+        {
+        }
+
+        public string LogHost { get; set; }
+
+        public string LogDir { get; set; }
+
+        public bool LogDirUnique { get; set; }
+
+        public bool CheckSslCerts { get; set; }
+
+        public long DefaultRotate { get; set; }
+
+        public long DefaultSize { get; set; }
+
+        public long DefaultTimeout { get; set; }
+
+        public long QueueDropMark { get; set; }
+
+        public long DropLogRotate { get; set; }
+
+        public long DropLogSize { get; set; }
+
+        public bool Equals(SyslogConfig syslogConfig)
+        {
+            return syslogConfig != null && this.LogHost == syslogConfig.LogHost && this.CheckSslCerts == syslogConfig.CheckSslCerts &&
+                this.DefaultRotate == syslogConfig.DefaultRotate && this.DefaultSize == syslogConfig.DefaultSize &&
+                this.DefaultTimeout == syslogConfig.DefaultTimeout && this.DropLogRotate == syslogConfig.DropLogRotate &&
+                this.DropLogSize == syslogConfig.DropLogSize && this.LogDir == syslogConfig.LogDir &&
+                this.LogDirUnique == syslogConfig.LogDirUnique && this.QueueDropMark == syslogConfig.QueueDropMark;
+        }
+
+        public override bool Equals(object syslogConfig)
+        {
+            return this.Equals(syslogConfig as SyslogConfig);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.Key.GetHashCode();
+        }
+    }
+ }
 "@
 
 function Connect-VIServer {
