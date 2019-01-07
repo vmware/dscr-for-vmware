@@ -179,8 +179,7 @@ function Update-PerfInterval {
     $PerformanceManager.UpdatePerfInterval($PerformanceInterval)
 }
 
-function Compare-Settings
-{
+function Compare-Settings {
     <#
     .SYNOPSIS
     Compare settings between current and desired states

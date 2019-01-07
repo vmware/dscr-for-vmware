@@ -32,7 +32,7 @@ param(
     $Password
 )
 
-$script:dscResourceName = 'VMHostTpsSettings'
+$script:dscResourceName = 'VMHostSettings'
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -42,19 +42,17 @@ $script:config = "$($script:dscResourceName)_Config"
 $script:connection = Connect-VIServer -Server $Server -User $User -Password $Password
 $script:vmHost = $null
 
-$script:shareScanTime = $null
-$script:shareScanGHz = $null
-$script:shareRateMax = $null
-$script:shareForceSalting = $null
+$script:motd = $null
+$script:issue = $null
 
-$script:shareScanTimeTestValue = 50
-$script:shareForceSaltingTestValue = 1
+$script:motdValue = 'VMHostSettings motd test'
+$script:issueValue = 'VMHostSettings issue test'
 
 $script:resourceProperties = @{
     Name = $Name
     Server = $Server
-    ShareScanTime = $script:shareScanTimeTestValue
-    ShareForceSalting = $script:shareForceSaltingTestValue
+    Motd = $script:motdValue
+    Issue = $script:issueValue
 }
 
 . $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
@@ -64,17 +62,15 @@ $script:mofFilePath = "$script:integrationTestsFolderPath\$($script:config)\"
 function BeforeAllTests {
     $script:vmHost = Get-VMHost -Server $script:connection -Name $script:resourceProperties.Name
 
-    $script:shareScanTime = Get-AdvancedSetting -Server $script:connection -Entity $script:vmHost -Name "Mem.ShareScanTime"
-    $script:shareScanGHz = Get-AdvancedSetting -Server $script:connection -Entity $script:vmHost -Name "Mem.ShareScanGHz"
-    $script:shareRateMax = Get-AdvancedSetting -Server $script:connection -Entity $script:vmHost -Name "Mem.ShareRateMax"
-    $script:shareForceSalting = Get-AdvancedSetting -Server $script:connection -Entity $script:vmHost -Name "Mem.ShareForceSalting"
+    $script:motd = Get-AdvancedSetting -Server $script:connection -Entity $script:vmHost -Name "Config.Etc.motd"
+    $script:issue = Get-AdvancedSetting -Server $script:connection -Entity $script:vmHost -Name "Config.Etc.issue"
 }
 
 function AfterAllTests {
     $script:vmHost = Get-VMHost -Server $script:connection -Name $script:resourceProperties.Name
 
-    Set-AdvancedSetting -AdvancedSetting $script:shareScanTime -Value $script:shareScanTime.Value -Confirm:$false
-    Set-AdvancedSetting -AdvancedSetting $script:shareForceSalting -Value $script:shareForceSalting.Value -Confirm:$false
+    Set-AdvancedSetting -AdvancedSetting $script:motd -Value $script:motd.Value -Confirm:$false
+    Set-AdvancedSetting -AdvancedSetting $script:issue -Value $script:issue.Value -Confirm:$false
 }
 
 Describe "$($script:dscResourceName)_Integration" {
@@ -109,7 +105,7 @@ Describe "$($script:dscResourceName)_Integration" {
                 Force = $true
             }
 
-            # Act && Assert
+            # Assert
             { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
@@ -125,10 +121,8 @@ Describe "$($script:dscResourceName)_Integration" {
             # Assert
             $configuration.Name | Should -Be $script:resourceProperties.Name
             $configuration.Server | Should -Be $script:resourceProperties.Server
-            $configuration.ShareScanTime | Should -Be $script:shareScanTimeTestValue
-            $configuration.ShareScanGHz | Should -Be $script:shareScanGHz.Value
-            $configuration.ShareRateMax | Should -Be $script:shareRateMax.Value
-            $configuration.ShareForceSalting | Should -Be $script:shareForceSaltingTestValue
+            $configuration.Motd | Should -Be $script:resourceProperties.Motd
+            $configuration.Issue | Should -Be $script:resourceProperties.Issue
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {

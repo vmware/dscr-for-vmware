@@ -53,8 +53,7 @@ Configuration vCenterSettings_WithLoggingLevel_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        vCenterSettings vCenterSettings
-        {
+        vCenterSettings vCenterSettings {
             Server = $Server
             Credential = $script:vCenterCredential
             LoggingLevel = $script:loggingLevel
@@ -66,8 +65,7 @@ Configuration vCenterSettings_WithEventMaxAge_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        vCenterSettings vCenterSettings
-        {
+        vCenterSettings vCenterSettings {
             Server = $Server
             Credential = $script:vCenterCredential
             EventMaxAgeEnabled = $script:eventMaxAgeEnabled
@@ -80,8 +78,7 @@ Configuration vCenterSettings_WithTaskMaxAge_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        vCenterSettings vCenterSettings
-        {
+        vCenterSettings vCenterSettings {
             Server = $Server
             Credential = $script:vCenterCredential
             TaskMaxAgeEnabled = $script:taskMaxAgeEnabled
@@ -90,6 +87,21 @@ Configuration vCenterSettings_WithTaskMaxAge_Config {
     }
 }
 
+Configuration vCenterSettings_WithMotdAndIssue_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost
+    {
+        vCenterSettings vCenterSettings {
+            Server = $Server
+            Credential = $script:vCenterCredential
+            Motd = $script:motd
+            Issue = $script:issue
+        }
+    }
+}
+
 vCenterSettings_WithLoggingLevel_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithLoggingLevel_Config" -ConfigurationData $script:configurationData
 vCenterSettings_WithEventMaxAge_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithEventMaxAge_Config" -ConfigurationData $script:configurationData
 vCenterSettings_WithTaskMaxAge_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithTaskMaxAge_Config" -ConfigurationData $script:configurationData
+vCenterSettings_WithMotdAndIssue_Config -OutputPath "$integrationTestsFolderPath\vCenterSettings_WithMotdAndIssue_Config" -ConfigurationData $script:configurationData

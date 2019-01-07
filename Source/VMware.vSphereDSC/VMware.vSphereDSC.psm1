@@ -173,7 +173,7 @@ class vCenterSettings : BaseDSC {
     <#
     .DESCRIPTION
 
-    Motd value.
+    Motd Advanced Setting value.
     #>
     [DscProperty()]
     [string] $Motd
@@ -181,7 +181,7 @@ class vCenterSettings : BaseDSC {
     <#
     .DESCRIPTION
 
-    Clear the Motd content
+    Indicates whether the Motd content should be cleared.
     #>
     [DscProperty()]
     [bool] $MotdClear
@@ -189,7 +189,7 @@ class vCenterSettings : BaseDSC {
     <#
     .DESCRIPTION
 
-    Issue value.
+    Issue Advanced Setting value.
     #>
     [DscProperty()]
     [string] $Issue
@@ -197,7 +197,7 @@ class vCenterSettings : BaseDSC {
     <#
     .DESCRIPTION
 
-    Clear the Issue content
+    Indicates whether the Issue content should be cleared.
     #>
     [DscProperty()]
     [bool] $IssueClear
@@ -616,7 +616,7 @@ class VMHostDnsSettings : VMHostBaseDSC {
         $vmHost = $this.GetVMHost()
         $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
-        $result.Name = $this.Name
+        $result.Name = $vmHost.Name
         $result.Server = $this.Server
         $result.Address = $vmHostDnsConfig.Address
         $result.Dhcp = $vmHostDnsConfig.Dhcp
@@ -760,7 +760,7 @@ class VMHostNtpSettings : VMHostBaseDSC {
         $vmHostServices = $vmHost.ExtensionData.Config.Service
         $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
 
-        $result.Name = $this.Name
+        $result.Name = $vmHost.Name
         $result.Server = $this.Server
         $result.NtpServer = $vmHostNtpConfig.Server
         $result.NtpServicePolicy = $vmHostNtpService.Policy
@@ -1074,7 +1074,6 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
     [VMHostSatpClaimRule] Get() {
         $result = [VMHostSatpClaimRule]::new()
 
-        $result.Name = $this.Name
         $result.Server = $this.Server
         $result.RuleName = $this.RuleName
         $result.Boot = $this.Boot
@@ -1083,6 +1082,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
+        $result.Name = $vmHost.Name
         $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
         $satpClaimRule = $this.GetSatpClaimRule($esxCli)
         $satpClaimRulePresent = ($null -ne $satpClaimRule)
@@ -1260,7 +1260,7 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Motd value.
+    Motd Advanced Setting value.
     #>
     [DscProperty()]
     [string] $Motd
@@ -1268,7 +1268,7 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Clear the Motd content
+    Indicates whether the Motd content should be cleared.
     #>
     [DscProperty()]
     [bool] $MotdClear
@@ -1276,7 +1276,7 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Issue value.
+    Issue Advanced Setting value.
     #>
     [DscProperty()]
     [string] $Issue
@@ -1284,7 +1284,7 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Clear the Issue content
+    Indicates whether the Issue content should be cleared.
     #>
     [DscProperty()]
     [bool] $IssueClear
@@ -1313,7 +1313,8 @@ class VMHostSettings : VMHostBaseDSC {
     [VMHostSettings] Get() {
     	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-    	$result = [VMHostSettings]::new()
+        $result = [VMHostSettings]::new()
+        $result.Server = $this.Server
 
     	$this.ConnectVIServer()
     	$vmHost = $this.GetVMHost()
@@ -1342,13 +1343,13 @@ class VMHostSettings : VMHostBaseDSC {
 
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
-    [bool] ShouldUpdateVMHostSettings($VMHost) {
+    [bool] ShouldUpdateVMHostSettings($vmHost) {
     	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-    	$VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
+    	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
-    	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+    	$currentMotd = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    	$currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
     	$shouldUpdateVMHostSettings = @()
     	$shouldUpdateVMHostSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
@@ -1382,13 +1383,13 @@ class VMHostSettings : VMHostBaseDSC {
 
     Performs update on those Advanced Settings values that needs to be updated.
     #>
-    [void] UpdateVMHostSettings($VMHost) {
+    [void] UpdateVMHostSettings($vmHost) {
     	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-    	$VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
+    	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
-    	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+    	$currentMotd = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    	$currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
     	$this.SetAdvancedSetting($currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
         $this.SetAdvancedSetting($currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
@@ -1399,14 +1400,15 @@ class VMHostSettings : VMHostBaseDSC {
 
     Populates the result returned from the Get() method with the values of the advanced settings from the server.
     #>
-    [void] PopulateResult($VMHost, $result) {
+    [void] PopulateResult($vmHost, $result) {
     	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-    	$VMHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $VMHost
+    	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
-    	$currentMotd = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $VMHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+    	$currentMotd = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
+    	$currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
+        $result.Name = $vmHost.Name
     	$result.Motd = $currentMotd.Value
         $result.Issue = $currentIssue.Value
     }
@@ -1466,12 +1468,11 @@ class VMHostTpsSettings : VMHostBaseDSC {
 
     [VMHostTpsSettings] Get() {
         $result = [VMHostTpsSettings]::new()
-
-        $result.Name = $this.Name
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
+        $result.Name = $vmHost.Name
         $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
 
         foreach ($tpsSetting in $tpsSettings) {

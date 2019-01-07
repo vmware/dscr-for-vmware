@@ -33,7 +33,6 @@ param(
 )
 
 $script:dscResourceName = 'VMHostDnsSettings'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -128,23 +127,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithDhcpDisabledPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithDhcpDisabled = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithDhcpDisabled
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithDhcpDisabled } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithDhcpDisabled.Name
             $configuration.Server | Should -Be $script:resourceWithDhcpDisabled.Server
             $configuration.HostName | Should -Be $script:resourceWithDhcpDisabled.HostName
@@ -192,23 +200,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithoutAddressAndSearchDomainPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithoutAddressAndSearchDomain = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithoutAddressAndSearchDomain
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithoutAddressAndSearchDomain } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithoutAddressAndSearchDomain.Name
             $configuration.Server | Should -Be $script:resourceWithoutAddressAndSearchDomain.Server
             $configuration.HostName | Should -Be $script:resourceWithoutAddressAndSearchDomain.HostName
@@ -256,23 +273,32 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
         It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWithDhcpEnabledPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithDhcpEnabled = Get-DscConfiguration
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
 
-            $configuration = $script:dscConfigWithDhcpEnabled
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
             # Assert
-            { $script:dscConfigWithDhcpEnabled } | Should -Not -Throw
-
             $configuration.Name | Should -Be $script:resourceWithDhcpEnabled.Name
             $configuration.Server | Should -Be $script:resourceWithDhcpEnabled.Server
             $configuration.HostName | Should -Be $script:resourceWithDhcpEnabled.HostName

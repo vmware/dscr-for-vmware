@@ -303,11 +303,13 @@ Add-Type -TypeDefinition @"
         // Property used only for comparing VMHost objects.
         public string Id { get; set; }
 
+        public string Name { get; set; }
+
         public HostExtensionData ExtensionData { get; set; }
 
         public bool Equals(VMHost vmhost)
         {
-            return vmhost != null && this.Id == vmhost.Id;
+            return vmhost != null && this.Id == vmhost.Id && this.Name == vmhost.Name;
         }
 
         public override bool Equals(object vmhost)
