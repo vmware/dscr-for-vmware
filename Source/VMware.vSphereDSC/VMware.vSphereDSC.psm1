@@ -1196,6 +1196,148 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 }
 
 [DscResource()]
+class VMHostService : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    The key value of the service.
+    #>
+    [DscProperty(Mandatory)]
+    [string] $Key
+
+    <#
+    .DESCRIPTION
+
+    The state of the service after a VMHost reboot.
+    #>
+    [DscProperty()]
+    [ServicePolicy] $Policy
+
+    <#
+    .DESCRIPTION
+
+    The current state of the service.
+    #>
+    [DscProperty()]
+    [bool] $Running
+
+    <#
+    .DESCRIPTION
+
+    Host Service Label.
+    #>
+    [DscProperty(NotConfigurable)]
+    [string] $Label
+
+    <#
+    .DESCRIPTION
+
+    Host Service Required flag.
+    #>
+    [DscProperty(NotConfigurable)]
+    [bool] $Required
+
+    <#
+    .DESCRIPTION
+
+    Firewall rules for the service.
+    #>
+    [DscProperty(NotConfigurable)]
+    [string[]] $Ruleset
+
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $this.UpdateVMHostService($vmHost)
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        return !$this.ShouldUpdateVMHostService($vmHost)
+    }
+
+    [VMHostService] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostService]::new()
+        $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $this.PopulateResult($vmHost, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the VMHostService should to be updated.
+    #>
+    [bool] ShouldUpdateVMHostService($vmHost) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object {$_.Key -eq $this.Key}
+
+        $shouldUpdateVMHostService = @()
+        $shouldUpdateVMHostService += $this.Policy -ne $vmHostCurrentService.Policy
+        $shouldUpdateVMHostService += $this.Running -ne $vmHostCurrentService.Running
+
+        return ($shouldUpdateVMHostService -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the configuration of the VMHostService.
+    #>
+    [void] UpdateVMHostService($vmHost) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object {$_.Key -eq $this.Key}
+
+        if ($vmHostCurrentService.Policy -ne $this.Policy) {
+            Set-VMHostService -HostService $vmHostCurrentService -Policy $this.Policy.ToString() -Confirm:$false
+        }
+
+        if ($vmHostCurrentService.Running -ne $this.Running) {
+            if ($vmHostCurrentService.Running) {
+                Stop-VMHostService -HostService $vmHostCurrentService -Confirm:$false
+            }
+            else {
+                Start-VMHostService -HostService $vmHostCurrentService -Confirm:$false
+            }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the VMHostService from the server.
+    #>
+    [void] PopulateResult($vmHost, $vmHostService) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object {$_.Key -eq $this.Key}
+        $vmHostService.Name = $vmHost.Name
+        $vmHostService.Server = $this.Server
+        $vmHostService.Key = $vmHostCurrentService.Key
+        $vmHostService.Policy = $vmHostCurrentService.Policy
+        $vmHostService.Running = $vmHostCurrentService.Running
+        $vmHostService.Label = $vmHostCurrentService.Label
+        $vmHostService.Required = $vmHostCurrentService.Required
+        $vmHostService.Ruleset = $vmHostCurrentService.Ruleset
+    }
+}
+
+[DscResource()]
 class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
