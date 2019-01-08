@@ -1497,6 +1497,195 @@ class VMHostSettings : VMHostBaseDSC {
 }
 
 [DscResource()]
+class VMHostSyslog : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    The remote host(s) to send logs to.
+    #>
+    [DscProperty()]
+    [string] $Loghost
+
+    <#
+    .DESCRIPTION
+
+    Verify remote SSL certificates against the local CA Store.
+    #>
+    [DscProperty()]
+    [bool] $CheckSslCerts = $true
+
+    <#
+    .DESCRIPTION
+
+    Default network retry timeout in seconds if a remote server fails to respond.
+    #>
+    [DscProperty()]
+    [long] $DefaultTimeout = 180
+
+    <#
+    .DESCRIPTION
+
+    Message queue capacity after which messages are dropped.
+    #>
+    [DscProperty()]
+    [long] $QueueDropMark = 90
+
+    <#
+    .DESCRIPTION
+
+    The directory to output local logs to.
+    #>
+    [DscProperty()]
+    [string] $Logdir = '/scratch/log'
+
+    <#
+    .DESCRIPTION
+
+    Place logs in a unique subdirectory of logdir, based on hostname.
+    #>
+    [DscProperty()]
+    [bool] $LogdirUnique = $false
+
+    <#
+    .DESCRIPTION
+
+    Default number of rotated local logs to keep.
+    #>
+    [DscProperty()]
+    [long] $DefaultRotate = 8
+
+    <#
+    .DESCRIPTION
+
+    Default size of local logs before rotation, in KiB.
+    #>
+    [DscProperty()]
+    [long] $DefaultSize = 1024
+
+    <#
+    .DESCRIPTION
+
+    Number of rotated dropped log files to keep.
+    #>
+    [DscProperty()]
+    [long] $DropLogRotate = 10
+
+    <#
+    .DESCRIPTION
+
+    Size of dropped log file before rotation, in KiB.
+    #>
+    [DscProperty()]
+    [long] $DropLogSize = 100
+
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $this.UpdateVMHostSyslog($vmHost)
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        return !$this.ShouldUpdateVMHostSyslog($vmHost)
+    }
+
+    [VMHostSyslog] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostSyslog]::new()
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $this.PopulateResult($vmHost, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if VMHostSyslog needs to be updated.
+    #>
+    [bool] ShouldUpdateVMHostSyslog($VMHost) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
+        $current = Get-VMHostSyslogConfig -EsxCLi $esxcli
+
+        $shouldUpdateVMHostSyslog = @()
+
+        $shouldUpdateVMHostSyslog += $this.LogHost -ne $current.LogHost
+        $shouldUpdateVMHostSyslog += $this.CheckSslCerts -ne $current.EnforceSSLCertificates
+        $shouldUpdateVMHostSyslog += $this.DefaultTimeout -ne $current.DefaultNetworkRetryTimeout
+        $shouldUpdateVMHostSyslog += $this.QueueDropMark -ne $current.MessageQueueDropMark
+        $shouldUpdateVMHostSyslog += $this.Logdir -ne $current.LocalLogOutput
+        $shouldUpdateVMHostSyslog += $this.LogdirUnique -ne $current.LogToUniqueSubdirectory
+        $shouldUpdateVMHostSyslog += $this.DefaultRotate -ne $current.LocalLoggingDefaultRotations
+        $shouldUpdateVMHostSyslog += $this.DefaultSize -ne $current.LocalLoggingDefaultRotationSize
+        $shouldUpdateVMHostSyslog += $this.DropLogRotate -ne $current.DroppedLogFileRotations
+        $shouldUpdateVMHostSyslog += $this.DropLogSize -ne $current.DroppedLogFileRotationSize
+
+        return ($shouldUpdateVMHostSyslog -contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the configuration of the VMHostSyslog
+    #>
+    [void] UpdateVMHostSyslog($VMHost) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
+
+        $VMHostSyslogConfig = @{
+            loghost = $this.Loghost
+            checksslcerts = $this.CheckSslCerts
+            defaulttimeout = $this.DefaultTimeout
+            queuedropmark = $this.QueueDropMark
+            logdir = $this.Logdir
+            logdirunique = $this.LogdirUnique
+            defaultrotate = $this.DefaultRotate
+            defaultsize = $this.DefaultSize
+            droplogrotate = $this.DropLogRotate
+            droplogsize = $this.DropLogSize
+        }
+        Set-VMHostSyslogConfig -EsxCli $esxcli -VMHostSyslogConfig $VMHostSyslogConfig
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the VMHostService.
+    #>
+    [void] PopulateResult($VMHost, $syslog) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
+        $currentVMHostSyslog = Get-VMHostSyslogConfig -EsxCLi $esxcli
+        $syslog.Server = $this.Server
+        $syslog.Name = $VMHost.Name
+        $syslog.Loghost = $currentVMHostSyslog.LogHost
+        $syslog.CheckSslCerts = $currentVMHostSyslog.CheckSslCerts
+        $syslog.DefaultTimeout = $currentVMHostSyslog.DefaultTimeout
+        $syslog.QueueDropMark = $currentVMHostSyslog.QueueDropMark
+        $syslog.Logdir = $currentVMHostSyslog.Logdir
+        $syslog.LogdirUnique = $currentVMHostSyslog.LogdirUnique
+        $syslog.DefaultRotate = $currentVMHostSyslog.DefaultRotate
+        $syslog.DefaultSize = $currentVMHostSyslog.DefaultSize
+        $syslog.DropLogRotate = $currentVMHostSyslog.DropLogRotate
+        $syslog.DropLogSize = $currentVMHostSyslog.DropLogSize
+    }
+}
+
+[DscResource()]
 class VMHostTpsSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION

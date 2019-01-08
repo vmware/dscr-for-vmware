@@ -56,6 +56,10 @@ VariablesToExport = '*'
 AliasesToExport = @()
 
 # DSC resources to export from this module
+<<<<<<< Updated upstream
 DscResourcesToExport = @('vCenterSettings', 'vCenterStatistics', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostTpsSettings')
+=======
+DscResourcesToExport = @('vCenterSettings', 'vCenterStatistics', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostSatpClaimRule', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings')
+>>>>>>> Stashed changes
 
 }
