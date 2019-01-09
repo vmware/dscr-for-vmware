@@ -74,7 +74,7 @@ function New-DNSConfig {
         $dnsConfig.Dhcp = $Dhcp
         $dnsConfig.VirtualNicDevice = $VirtualNicDevice
 
-    	if ($Ipv6VirtualNicDevice -ne [string]::Empty) {
+        if ($Ipv6VirtualNicDevice -ne [string]::Empty) {
             $dnsConfig.Ipv6VirtualNicDevice = $Ipv6VirtualNicDevice
         }
     }
@@ -200,9 +200,33 @@ function Compare-Settings {
     )
 
     foreach ($key in $DesiredState.Keys) {
-        if ($CurrentState.$key -ne $DesiredState.$key ){
+        if ($CurrentState.$key -ne $DesiredState.$key ) {
             return $true
         }
     }
     return $false
+}
+
+function Get-VMHostSyslogConfig {
+    [CmdletBinding()]
+    [OutputType([Object])]
+    param(
+        [PSObject] $EsxCli
+    )
+
+    $syslogConfig = $EsxCli.system.syslog.config.get.Invoke()
+
+    return $syslogConfig
+}
+
+function Set-VMHostSyslogConfig {
+    [CmdletBinding()]
+    [OutputType([Object[]])]
+    param(
+        [PSObject] $EsxCli,
+        [Hashtable] $VMHostSyslogConfig
+    )
+
+    $esxcli.system.syslog.config.set.Invoke($VMHostSyslogConfig)
+    $esxcli.system.syslog.reload.Invoke()
 }
