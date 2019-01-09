@@ -86,10 +86,15 @@ class PowerCLISettings {
         $this.ImportRequiredModules()
         $powerCLIConfigurationProperties = $this.GetPowerCLIConfigurationProperties()
 
-        Set-PowerCLIConfiguration @powerCLIConfigurationProperties
+        $commandName = 'Set-PowerCLIConfiguration'
+        $namesOfPowerCLIConfigurationProperties = $powerCLIConfigurationProperties.Keys
+
+        $constructedCommand = $this.ConstructCommandWithParameters($commandName, $powerCLIConfigurationProperties, $namesOfPowerCLIConfigurationProperties)
+        Invoke-Expression -Command $constructedCommand
     }
 
     [bool] Test() {
+        $this.ImportRequiredModules()
         $powerCLICurrentConfiguration = Get-PowerCLIConfiguration -Scope $this.Scope
         $powerCLIDesiredConfiguration = $this.GetPowerCLIConfigurationProperties()
 
@@ -97,6 +102,7 @@ class PowerCLISettings {
     }
 
     [PowerCLISettings] Get() {
+        $this.ImportRequiredModules()
         $result = [PowerCLISettings]::new()
         $powerCLICurrentConfiguration = Get-PowerCLIConfiguration -Scope $this.Scope
 
@@ -159,6 +165,28 @@ class PowerCLISettings {
         }
 
         return $powerCLIConfigurationProperties
+    }
+
+    <#
+    .DESCRIPTION
+
+    Constructs the Set-PowerCLIConfiguration cmdlet with the passed properties.
+    #>
+    [string] ConstructCommandWithParameters($commandName, $properties, $namesOfProperties) {
+        $constructedCommand = ''
+
+        # Adds the command name to the constructed command.
+        $constructedCommand += "$commandName "
+
+        # For every property name we add the property value with the following syntax: '-Property Value'.
+        foreach ($propertyName in $namesOfProperties) {
+            $constructedCommand += "-$propertyName $($properties.$propertyName) "
+        }
+
+        # Trim trailing whitespaces at the end of the command.
+        $constructedCommand = $constructedCommand.TrimEnd()
+
+        return $constructedCommand
     }
 
     <#
