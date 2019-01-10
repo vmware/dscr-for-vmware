@@ -173,14 +173,23 @@ class PowerCLISettings {
     Constructs the Set-PowerCLIConfiguration cmdlet with the passed properties.
     #>
     [string] ConstructCommandWithParameters($commandName, $properties, $namesOfProperties) {
-        $constructedCommand = ''
+        $constructedCommand = ""
 
         # Adds the command name to the constructed command.
         $constructedCommand += "$commandName "
 
         # For every property name we add the property value with the following syntax: '-Property Value'.
         foreach ($propertyName in $namesOfProperties) {
-            $constructedCommand += "-$propertyName $($properties.$propertyName) "
+            $propertyValue = $properties.$propertyName
+
+            # For bool values we need to add another '$' sign so the value can be evaluated to bool.
+            if ($propertyValue.GetType().Name -eq 'Boolean') {
+                $constructedCommand += "-$propertyName $"
+                $constructedCommand += "$propertyValue "
+            }
+            else {
+                $constructedCommand += "-$propertyName $propertyValue "
+            }
         }
 
         # Trim trailing whitespaces at the end of the command.
