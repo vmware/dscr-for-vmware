@@ -76,7 +76,7 @@ foreach ($folder in $script:ImportFolders) {
     $currentFolder = Join-Path -Path $script:ModuleRoot -ChildPath $folder
 
     if (Test-Path -Path $currentFolder) {
-        $files = Get-ChildItem -Path $currentFolder -File -Filter '*.ps1'
+        $files = Get-ChildItem -Path $currentFolder  -File -Filter *.ps1 -Recurse
 
         foreach ($file in $files) {
             $fileContent = Get-Content -Path $file.FullName
@@ -93,7 +93,7 @@ foreach ($folder in $script:ImportFolders) {
 
 # Updating VMware.vSphereDSC.psd1 content with DSC Resources to export.
 if (Test-Path -Path $script:DSCResourcesFolder) {
-    $resources = (Get-ChildItem -Path $script:DSCResourcesFolder | Select-Object -ExpandProperty BaseName) -join "', '"
+    $resources = (Get-ChildItem -Path $script:DSCResourcesFolder -File -Filter *.ps1 -Recurse | Select-Object -ExpandProperty BaseName) -join "', '"
     $resources = "'{0}'" -f $resources
     $dscResourcesToExport = "DscResourcesToExport = @($resources)"
 
