@@ -230,3 +230,41 @@ function Set-VMHostSyslogConfig {
     $esxcli.system.syslog.config.set.Invoke($VMHostSyslogConfig)
     $esxcli.system.syslog.reload.Invoke()
 }
+
+function New-VSSConfig {
+    [CmdletBinding()]
+    [OutputType([VMware.Vim.HostVirtualSwitchConfig])]
+    param(
+        [string]$Name,
+        [int] $NumPorts,
+        [int] $Mtu,
+        [string]$Operation
+    )
+
+    $vssConfig = New-Object VMware.Vim.HostVirtualSwitchConfig
+    $vssConfig.Name = $Name
+    $vssConfig.ChangeOperation = $Operation
+    $vssConfig.Spec = New-Object VMware.Vim.HostVirtualSwitchSpec
+    $vssConfig.Spec.NumPorts = $NumPorts
+    $vssConfig.Spec.Mtu = $Mtu
+
+    return $vssConfig
+}
+
+function Update-Network {
+    [CmdletBinding()]
+    param(
+        [VMware.Vim.HostNetworkSystem] $NetworkSystem,
+        [string]$Type,
+        [switch]$Modify,
+        [VMware.Vim.HostVirtualSwitchConfig] $VssConfig
+    )
+
+    $config = New-Object VMware.Vim.HostNetworkConfig
+    switch ($Type) {
+        'VSS' {
+            $config.Vswitch += $VssConfig
+        }
+    }
+    $NetworkSystem.UpdateNetworkConfig($config, [VMware.Vim.HostConfigChangeMode]::modify)
+}

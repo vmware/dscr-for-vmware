@@ -1794,3 +1794,362 @@ class VMHostTpsSettings : VMHostBaseDSC {
         }
     }
 }
+
+[DscResource()]
+class VMHostVss : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Value indicating if the VSS should be Present or Absent.
+    #>
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    The name of the VSS.
+    #>
+    [DscProperty(Key)]
+    [string] $VssName
+
+    <#
+    .DESCRIPTION
+
+    The maximum transmission unit (MTU) associated with this virtual switch in bytes.
+    #>
+    [DscProperty()]
+    [int] $Mtu
+
+    <#
+    .DESCRIPTION
+
+    The number of ports that this virtual switch currently has.
+    #>
+    [DscProperty()]
+    [int] $NumPorts
+
+    <#
+    .DESCRIPTION
+
+    The virtual switch key.
+    #>
+    [DscProperty(NotConfigurable)]
+    [string] $Key
+
+    <#
+    .DESCRIPTION
+
+    The number of ports that are available on this virtual switch.
+    #>
+    [DscProperty(NotConfigurable)]
+    [int] $NumPortsAvailable
+
+    <#
+    .DESCRIPTION
+
+    The set of physical network adapters associated with this bridge.
+    #>
+    [DscProperty(NotConfigurable)]
+    [string[]] $Pnic
+
+    <#
+    .DESCRIPTION
+
+    The list of port groups configured for this virtual switch.
+    #>
+    [DscProperty(NotConfigurable)]
+    [string[]] $PortGroup
+
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $this.UpdateVss($vmHost)
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vss = $this.GetVssFullMatch($vmHost)
+        $vssPresent = ($null -ne $vss)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            return $vssPresent
+        }
+        else {
+            return -not $vssPresent
+        }
+    }
+
+    [VMHostVss] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostVss]::new()
+        $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $this.PopulateResult($vmHost, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the VMHostService should to be updated.
+    #>
+    [bool] Equals($vss) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $vssTest = @()
+        $vssTest += ($vss.Spec.MTU -eq $this.MTU)
+        $vssTest += ($vss.Spec.NumPorts -eq $this.NumPorts)
+
+        return ($vssTest -notcontains $false)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the desired virtual switch if it is present on the server otherwise returns $null.
+    #>
+    [PSObject]GetVss($vmHost) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $hostNetSys = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
+        $vss = $hostNetSys.NetworkInfo.Vswitch |
+            Where-Object {$_.Name -eq $this.VssName}
+
+        return $vss
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the desired virtual switch if it is present on the server and all properties match,
+    otherwise returns $null.
+    #>
+    [PSObject] GetVssFullMatch($vmHost) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $vss = $this.GetVss($vmHost)
+        if ($this.Equals($vss)) {
+            return $vss
+        }
+        else {
+            return $null
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the configuration of the virtual switch.
+    #>
+    [void] UpdateVSS($vmHost) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $vssConfigArgs = @{
+            Name = $this.VssName
+            Mtu = $this.Mtu
+            NumPorts = $this.NumPorts
+            Operation = 'add'
+        }
+        if ($this.Ensure -eq 'Present') {
+            $vss = $this.GetVss($vmHost)
+            if ($null -ne $vss) {
+                $vssFull = $this.GetVssFullMatch($vmHost)
+                if ($null -eq $vssFull) {
+                    $vssConfigArgs.Operation = 'edit'
+                }
+                else {
+                    return
+                }
+            }
+        }
+        else {
+            $vssConfigArgs.Operation = 'remove'
+        }
+
+        $vssConfig = New-VSSConfig @vssConfigArgs
+        $hostNetSys = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
+        try {
+            Update-Network -NetworkSystem $hostNetSys -Type 'VSS' -VssConfig $vssConfig
+        }
+        catch {
+            Write-Error "The virtual switch Config could not be updated: $($PSItem.ToString())"
+        }
+
+        return
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the virtual switch.
+    #>
+    [void] PopulateResult($vmHost, $vmHostVSS) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $currentVss = $this.GetVss($this.VMHost)
+        $vmHostVSS.Name = $currentVss.Name
+        $vmHostVSS.Numports = $currentVss.NumPorts
+        $vmHostVSS.NumPortsAvailable = $currentVss.NumPortsAvailable
+        $vmHostVSS.Pnic = $currentVss.Pnic
+        $vmHostVSS.Portgroup = $currentVss.Portgroup
+        $vmHostVSS.Key = $currentVss.Key
+    }
+}
+
+[DscResource()]
+class VMHostVssOffload : VMHostBaseDSC {
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        return $true
+    }
+
+    [VMHostVssOffload] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostVssOffload]::new()
+        return $result
+    }
+}
+
+[DscResource()]
+class VMHostVssSecurity : VMHostBaseDSC {
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        return $true
+    }
+
+    [VMHostVssSecurity] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostVssSecurity]::new()
+        return $result
+    }
+}
+
+[DscResource()]
+class VMHostVssShaping : VMHostBaseDSC {
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        return $true
+    }
+
+    [VMHostVssShaping] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostVssShaping]::new()
+        return $result
+    }
+}
+
+[DscResource()]
+class VMHostVssTeaming : VMHostBaseDSC {
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        return $true
+    }
+
+    [VMHostVssTeaming] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostVssTeaming]::new()
+        return $result
+    }
+}
+
+[DscResource()]
+class VMHostVssAutoBridge : VMHostBaseDSC {
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        return $true
+    }
+
+    [VMHostVssAutoBridge] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostVssAutoBridge]::new()
+        return $result
+    }
+}
+
+[DscResource()]
+class VMHostVssBondBridge : VMHostBaseDSC {
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        return $true
+    }
+
+    [VMHostVssBondBridge] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostVssBondBridge]::new()
+        return $result
+    }
+}
+
+[DscResource()]
+class VMHostVssSimpleBridge : VMHostBaseDSC {
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        return $true
+    }
+
+    [VMHostVssSimpleBridge] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostVssSimpleBridge]::new()
+        return $result
+    }
+}
