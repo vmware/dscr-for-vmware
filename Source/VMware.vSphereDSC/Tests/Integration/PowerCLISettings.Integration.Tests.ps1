@@ -32,7 +32,6 @@ Describe "$($script:dscResourceName)_Integration" {
                 ComputerName = 'localhost'
                 Wait = $true
                 Force = $true
-                Verbose = $true
             }
 
             # Act
@@ -46,7 +45,6 @@ Describe "$($script:dscResourceName)_Integration" {
                 ComputerName = 'localhost'
                 Wait = $true
                 Force = $true
-                Verbose = $true
             }
 
             # Assert

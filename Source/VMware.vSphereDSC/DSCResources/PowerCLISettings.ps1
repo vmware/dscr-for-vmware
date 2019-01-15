@@ -209,7 +209,7 @@ class PowerCLISettings {
     #>
     [bool] Equals($powerCLICurrentConfiguration, $powerCLIDesiredConfiguration) {
         foreach ($key in $powerCLIDesiredConfiguration.Keys) {
-            if ($powerCLIDesiredConfiguration.$key -ne $powerCLICurrentConfiguration.$key) {
+            if ($powerCLIDesiredConfiguration.$key.ToString() -ne $powerCLICurrentConfiguration.$key.ToString()) {
                 return $false
             }
         }
@@ -224,12 +224,12 @@ class PowerCLISettings {
     #>
     [void] PopulateResult($powerCLICurrentConfiguration, $result) {
         $result.SettingsScope = $this.SettingsScope
-        $result.CEIPDataTransferProxyPolicy = if ($null -ne $powerCLICurrentConfiguration.CEIPDataTransferProxyPolicy) { $powerCLICurrentConfiguration.CEIPDataTransferProxyPolicy } else { [ProxyPolicy]::Unset }
-        $result.DefaultVIServerMode = if ($null -ne $powerCLICurrentConfiguration.DefaultVIServerMode) { $powerCLICurrentConfiguration.DefaultVIServerMode } else { [DefaultVIServerMode]::Unset }
+        $result.CEIPDataTransferProxyPolicy = if ($null -ne $powerCLICurrentConfiguration.CEIPDataTransferProxyPolicy) { $powerCLICurrentConfiguration.CEIPDataTransferProxyPolicy.ToString() } else { [ProxyPolicy]::Unset }
+        $result.DefaultVIServerMode = if ($null -ne $powerCLICurrentConfiguration.DefaultVIServerMode) { $powerCLICurrentConfiguration.DefaultVIServerMode.ToString() } else { [DefaultVIServerMode]::Unset }
         $result.DisplayDeprecationWarnings = $powerCLICurrentConfiguration.DisplayDeprecationWarnings
-        $result.InvalidCertificateAction = if ($null -ne $powerCLICurrentConfiguration.InvalidCertificateAction) { $powerCLICurrentConfiguration.InvalidCertificateAction } else { [BadCertificateAction]::Unset }
+        $result.InvalidCertificateAction = if ($null -ne $powerCLICurrentConfiguration.InvalidCertificateAction) { $powerCLICurrentConfiguration.InvalidCertificateAction.ToString() } else { [BadCertificateAction]::Unset }
         $result.ParticipateInCeip = $powerCLICurrentConfiguration.ParticipateInCEIP
-        $result.ProxyPolicy = if ($null -ne $powerCLICurrentConfiguration.ProxyPolicy) { $powerCLICurrentConfiguration.ProxyPolicy } else { [ProxyPolicy]::Unset }
+        $result.ProxyPolicy = if ($null -ne $powerCLICurrentConfiguration.ProxyPolicy) { $powerCLICurrentConfiguration.ProxyPolicy.ToString() } else { [ProxyPolicy]::Unset }
         $result.WebOperationTimeoutSeconds = $powerCLICurrentConfiguration.WebOperationTimeoutSeconds
     }
 }
