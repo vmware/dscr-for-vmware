@@ -6,14 +6,15 @@
 
 The **VMware.vSphereDSC** module is a collection of DSC Resources. This module includes DSC resources that simplify the management of vCenter and ESXi settings, with a simple declarative language.
 
-The **VMware.vSphereDSC** module contains the following resources:
+The **VMware.vSphereDSC** module contains resources which are configuring:
 
-- **VMHostNtpSettings**: Used to configure NTP Server property and the Service Policy of the 'ntpd' Service of a ESXi host.
-- **VMHostDnsSettings**: Used to configure the DNS Settings of a ESXi host.
-- **VMHostSatpClaimRule**: Used to create or remove SATP Claim Rules of a ESXi host.
-- **VMHostTpsSettings**: Used to configure TPS Settings of a ESXi host.
-- **vCenterStatistics**: Used to configure the Statistics Settings of a vCenter.
-- **vCenterSettings**: Used to update EventMaxAge Settings, TaskMaxAge Settings and the Logging Level of a vCenter.
+- **NTP**, **DNS**, **TPS** and **Syslog** settings of VMHosts.
+- **Motd** and **Issue** Advanced Settings of VMHosts.
+- **Host services** of VMHosts.
+- **SATP Claim Rules** of VMHosts.
+- **Statistics** and **Advanced Settings** of vCenters.
+
+For more information about all available **Resources**, please visit the **wiki** page of the repository: [Wiki](https://github.com/vmware/dscr-for-vmware/wiki).
 
 ## Getting Started
 ## Requirements
