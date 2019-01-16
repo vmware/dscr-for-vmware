@@ -20,6 +20,37 @@ Mock types of VMware.Vim assembly for the purpose of unit testing.
 Add-Type -TypeDefinition @"
  namespace VMware.Vim
  {
+    public enum ServicePolicy
+    {
+        Unset = 0,
+        On = 1,
+        Off = 2,
+        Automatic = 3
+    }
+
+    public enum BadCertificateAction
+    {
+        Ignore,
+        Warn,
+        Prompt,
+        Fail,
+        Unset
+    }
+
+    public enum DefaultVIServerMode
+    {
+        Single,
+        Multiple,
+        Unset
+    }
+
+    public enum ProxyPolicy
+    {
+        NoProxy,
+        UseSystemProxy,
+        Unset
+    }
+
     public class VIServer : System.IEquatable<VIServer>
     {
         public string Name { get; set; }
@@ -463,14 +494,6 @@ Add-Type -TypeDefinition @"
         }
     }
 
-     public enum ServicePolicy
-     {
-         Unset = 0,
-         On = 1,
-         Off = 2,
-         Automatic = 3
-     }
-
     public class VMHostService : System.IEquatable<VMHostService>
     {
         public VMHostService()
@@ -557,6 +580,51 @@ Add-Type -TypeDefinition @"
                     this.QueueDropMark + "_" +
                     this.DropLogRotate + "_" +
                     this.DropLogSize).GetHashCode();
+        }
+    }
+
+    public class PowerCLIConfiguration : System.IEquatable<PowerCLIConfiguration>
+    {
+        public PowerCLIConfiguration()
+        {
+        }
+
+        public int Id { get; set; }
+
+        public string Scope { get; set; }
+
+        public ProxyPolicy CEIPDataTransferProxyPolicy { get; set; }
+
+        public DefaultVIServerMode DefaultVIServerMode { get; set; }
+
+        public bool DisplayDeprecationWarnings { get; set; }
+
+        public BadCertificateAction InvalidCertificateAction { get; set; }
+
+        public bool ParticipateInCeip { get; set; }
+
+        public ProxyPolicy ProxyPolicy { get; set; }
+
+        public int WebOperationTimeoutSeconds { get; set; }
+
+        public bool Equals(PowerCLIConfiguration powerCLIConfiguration)
+        {
+            return (powerCLIConfiguration != null && this.Id == powerCLIConfiguration.Id && this.Scope == powerCLIConfiguration.Scope &&
+                    this.CEIPDataTransferProxyPolicy == powerCLIConfiguration.CEIPDataTransferProxyPolicy && this.DefaultVIServerMode == powerCLIConfiguration.DefaultVIServerMode &&
+                    this.DisplayDeprecationWarnings == powerCLIConfiguration.DisplayDeprecationWarnings && this.InvalidCertificateAction == powerCLIConfiguration.InvalidCertificateAction &&
+                    this.ParticipateInCeip == powerCLIConfiguration.ParticipateInCeip && this.ProxyPolicy == powerCLIConfiguration.ProxyPolicy &&
+                    this.WebOperationTimeoutSeconds == powerCLIConfiguration.WebOperationTimeoutSeconds);
+        }
+
+        public override bool Equals(object powerCLIConfiguration)
+        {
+            return this.Equals(powerCLIConfiguration as PowerCLIConfiguration);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Id + "_" + this.Scope + "_" + this.CEIPDataTransferProxyPolicy.ToString() + "_" + this.DefaultVIServerMode.ToString() + "_" +
+                    this.InvalidCertificateAction.ToString() + "_" + this.ProxyPolicy.ToString() + this.WebOperationTimeoutSeconds).GetHashCode();
         }
     }
  }
@@ -656,4 +724,27 @@ function Stop-VMHostService {
     )
 
     return @( [VMware.Vim.VMHostService] @{} )
+}
+
+function Get-PowerCLIConfiguration {
+    param(
+        [string] $Scope
+    )
+
+    return New-Object VMware.Vim.PowerCLIConfiguration
+}
+
+function Set-PowerCLIConfiguration {
+    param(
+        [string] $Scope,
+        [VMware.Vim.ProxyPolicy] $CEIPDataTransferProxyPolicy,
+        [VMware.Vim.DefaultVIServerMode] $DefaultVIServerMode,
+        [bool] $DisplayDeprecationWarnings,
+        [VMware.Vim.BadCertificateAction] $InvalidCertificateAction,
+        [bool] $ParticipateInCeip,
+        [VMware.Vim.ProxyPolicy] $ProxyPolicy,
+        [int] $WebOperationTimeoutSeconds
+    )
+
+    return $null
 }
