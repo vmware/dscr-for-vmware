@@ -20,6 +20,7 @@ class PowerCLISettings {
     .DESCRIPTION
 
     Specifies the scope on which the PowerCLI Settings will be applied.
+    LCM is the only possible value for the Settings Scope.
     #>
     [DscProperty(Key)]
     [PowerCLISettingsScope] $SettingsScope
@@ -89,6 +90,7 @@ class PowerCLISettings {
         $commandName = 'Set-PowerCLIConfiguration'
         $namesOfPowerCLIConfigurationProperties = $powerCLIConfigurationProperties.Keys
 
+        # For testability we use this function to construct the Set-PowerCLIConfiguration cmdlet instead of using splatting and passing the cmdlet parameters as hashtable.
         $constructedCommand = $this.ConstructCommandWithParameters($commandName, $powerCLIConfigurationProperties, $namesOfPowerCLIConfigurationProperties)
         Invoke-Expression -Command $constructedCommand
     }
@@ -171,35 +173,38 @@ class PowerCLISettings {
     .DESCRIPTION
 
     Constructs the Set-PowerCLIConfiguration cmdlet with the passed properties.
+    This function is used instead of splatting because at the moment Pester does not allow to pass hashtable in the ParameterFilter property of the Assert-MockCalled function.
+    So with this function we can successfully test which properties are passed to the Set-PowerCLIConfiguration cmdlet.
     #>
     [string] ConstructCommandWithParameters($commandName, $properties, $namesOfProperties) {
-        $constructedCommand = ''
+        $constructedCommand = [System.Text.StringBuilder]::new()
 
         # Adds the command name to the constructed command.
-        $constructedCommand += "$commandName "
+        [void]$constructedCommand.Append("$commandName ")
 
         # For every property name we add the property value with the following syntax: '-Property Value'.
         foreach ($propertyName in $namesOfProperties) {
             $propertyValue = $properties.$propertyName
 
-            # For bool values we need to add another '$' sign so the value can be evaluated to bool.
+            <#
+            For bool values we need to add another '$' sign so the value can be evaluated to bool.
+            So we check the type of the value and if it is a boolean we add another '$' sign, because without it the value will
+            not be evaluated to boolean and instead it will be evaluated to string which will cause an exception of mismatching types.
+            #>
             if ($propertyValue.GetType().Name -eq 'Boolean') {
-                $constructedCommand += "-$propertyName $"
-                $constructedCommand += "$propertyValue "
+                [void]$constructedCommand.Append("-$propertyName $")
+                [void]$constructedCommand.Append("$propertyValue ")
             }
             else {
-                $constructedCommand += "-$propertyName $propertyValue "
+                [void]$constructedCommand.Append("-$propertyName $propertyValue ")
             }
         }
 
-        # Add the confirm:$false to the command to ignore the confirmation.
-        $constructedCommand += "-Confirm:$"
-        $constructedCommand += "$false "
+        # Adds the confirm:$false to the command to ignore the confirmation.
+        [void]$constructedCommand.Append("-Confirm:`$false")
 
-        # Trim trailing whitespaces at the end of the command.
-        $constructedCommand = $constructedCommand.TrimEnd()
-
-        return $constructedCommand
+        # Converts the StringBuilder to String and returns the result.
+        return $constructedCommand.ToString()
     }
 
     <#
@@ -209,6 +214,10 @@ class PowerCLISettings {
     #>
     [bool] Equals($powerCLICurrentConfiguration, $powerCLIDesiredConfiguration) {
         foreach ($key in $powerCLIDesiredConfiguration.Keys) {
+            <#
+            Currently works only for properties which are numbers, strings and enums. For more complex types like
+            Hashtable the logic needs to be modified to work correctly.
+            #>
             if ($powerCLIDesiredConfiguration.$key.ToString() -ne $powerCLICurrentConfiguration.$key.ToString()) {
                 return $false
             }

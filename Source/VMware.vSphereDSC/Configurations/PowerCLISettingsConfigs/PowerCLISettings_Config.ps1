@@ -20,7 +20,7 @@ Configuration PowerCLISettings_Config {
     Node localhost {
         PowerCLISettings powerCLISettings
         {
-            SettingsScope = 'LCM'
+            SettingsScope = 'LCM' # LCM is the only possible value for the Settings Scope.
             ParticipateInCeip = $false
             InvalidCertificateAction = 'Warn'
             DefaultVIServerMode = 'Multiple'

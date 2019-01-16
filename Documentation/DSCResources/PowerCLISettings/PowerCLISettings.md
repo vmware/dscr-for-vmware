@@ -16,7 +16,7 @@
 
 ## Description
 
-The resource is used to Update the PowerCLI Configuration settings.
+The resource is used to Update the PowerCLI Configuration settings of the LCM. **User Scope** PowerCLI Configuration settings are updated with this resource. The LCM runs with Windows System account, so the settings will be stored for the user that runs LCM PowerShell. If a user runs a Configuration with this resource, the settings will be preserved for all future Configurations that run on that LCM.
 
 ## Examples
 
