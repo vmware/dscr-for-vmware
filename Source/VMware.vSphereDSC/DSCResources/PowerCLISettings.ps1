@@ -90,7 +90,11 @@ class PowerCLISettings {
         $commandName = 'Set-PowerCLIConfiguration'
         $namesOfPowerCLIConfigurationProperties = $powerCLIConfigurationProperties.Keys
 
-        # For testability we use this function to construct the Set-PowerCLIConfiguration cmdlet instead of using splatting and passing the cmdlet parameters as hashtable.
+        <#
+        For testability we use this function to construct the Set-PowerCLIConfiguration cmdlet instead of using splatting and passing the cmdlet parameters as hashtable.
+        At the moment Pester does not allow to pass hashtable in the ParameterFilter property of the Assert-MockCalled function.
+        There is an open issue in GitHub: (https://github.com/pester/Pester/issues/862) describing the problem in details.
+        #>
         $constructedCommand = $this.ConstructCommandWithParameters($commandName, $powerCLIConfigurationProperties, $namesOfPowerCLIConfigurationProperties)
         Invoke-Expression -Command $constructedCommand
     }
@@ -174,6 +178,7 @@ class PowerCLISettings {
 
     Constructs the Set-PowerCLIConfiguration cmdlet with the passed properties.
     This function is used instead of splatting because at the moment Pester does not allow to pass hashtable in the ParameterFilter property of the Assert-MockCalled function.
+    There is an open issue in GitHub: (https://github.com/pester/Pester/issues/862) describing the problem in details.
     So with this function we can successfully test which properties are passed to the Set-PowerCLIConfiguration cmdlet.
     #>
     [string] ConstructCommandWithParameters($commandName, $properties, $namesOfProperties) {
