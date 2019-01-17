@@ -181,7 +181,7 @@ class vCenterStatistics : BaseDSC {
             Update-PerfInterval -PerformanceManager $performanceManager -PerformanceInterval $desiredPerformanceInterval
         }
         catch {
-            Write-Error "Server operation failed with the following error: $($PSItem.ToString())"
+            throw "Server operation failed with the following error: $($_.Exception.Message)"
         }
     }
 }

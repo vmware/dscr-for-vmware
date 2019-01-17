@@ -63,10 +63,11 @@ class BaseDSC {
         $this.ImportRequiredModules()
 
         if ($null -eq $this.Connection) {
-      	    $this.Connection = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction SilentlyContinue
-
-            if ($null -eq $this.Connection) {
-                Write-Error "Cannot establish connection to server $($this.Server). For more information: $($PSItem.ToString())."
+            try {
+                $this.Connection = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction Stop
+            }
+            catch {
+                throw "Cannot establish connection to server $($this.Server). For more information: $($_.Exception.Message)"
             }
         }
     }
