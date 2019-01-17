@@ -118,10 +118,11 @@ class BaseDSC {
         $this.ImportRequiredModules()
 
         if ($null -eq $this.Connection) {
-      	    $this.Connection = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction SilentlyContinue
-
-            if ($null -eq $this.Connection) {
-                Write-Error "Cannot establish connection to server $($this.Server). For more information: $($PSItem.ToString())."
+            try {
+                $this.Connection = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction Stop
+            }
+            catch {
+                throw "Cannot establish connection to server $($this.Server). For more information: $($_.Exception.Message)"
             }
         }
     }
@@ -143,12 +144,13 @@ class VMHostBaseDSC : BaseDSC {
     If the VMHost is not found, the method writes an error.
     #>
     [PSObject] GetVMHost() {
-        $vmHost = Get-VMHost -Server $this.Connection -Name $this.Name -ErrorAction SilentlyContinue
-        if ($null -eq $vmHost) {
-            Write-Error "VMHost with name $($this.Name) was not found. For more information: $($PSItem.ToString())."
+        try {
+            $vmHost = Get-VMHost -Server $this.Connection -Name $this.Name -ErrorAction Stop
+            return $vmHost
         }
-
-        return $vmHost
+        catch {
+            throw "VMHost with name $($this.Name) was not found. For more information: $($_.Exception.Message)"
+        }
     }
 }
 
@@ -788,7 +790,7 @@ class vCenterStatistics : BaseDSC {
             Update-PerfInterval -PerformanceManager $performanceManager -PerformanceInterval $desiredPerformanceInterval
         }
         catch {
-            Write-Error "Server operation failed with the following error: $($PSItem.ToString())"
+            throw "Server operation failed with the following error: $($_.Exception.Message)"
         }
     }
 }
@@ -957,7 +959,7 @@ class VMHostDnsSettings : VMHostBaseDSC {
             Update-DNSConfig -NetworkSystem $networkSystem -DnsConfig $dnsConfig
         }
         catch {
-            Write-Error "The DNS Config could not be updated: $($PSItem.ToString())"
+            throw "The DNS Config could not be updated: $($_.Exception.Message)"
         }
     }
 }
@@ -1430,7 +1432,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
             Add-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
         }
         catch {
-            Write-Error "EsxCLI command for adding satp rule failed with the following exception: $($PSItem.ToString())"
+            throw "EsxCLI command for adding satp rule failed with the following exception: $($_.Exception.Message)"
         }
     }
 
@@ -1448,7 +1450,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
             Remove-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
         }
         catch {
-            Write-Error "EsxCLI command for removing satp rule failed with the following exception: $($PSItem.ToString())"
+            throw "EsxCLI command for removing satp rule failed with the following exception: $($_.Exception.Message)"
         }
     }
 }
