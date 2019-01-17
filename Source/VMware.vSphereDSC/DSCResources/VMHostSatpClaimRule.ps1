@@ -331,7 +331,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
             Add-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
         }
         catch {
-            Write-Error "EsxCLI command for adding satp rule failed with the following exception: $($PSItem.ToString())"
+            throw "EsxCLI command for adding satp rule failed with the following exception: $($_.Exception.Message)"
         }
     }
 
@@ -349,7 +349,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
             Remove-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
         }
         catch {
-            Write-Error "EsxCLI command for removing satp rule failed with the following exception: $($PSItem.ToString())"
+            throw "EsxCLI command for removing satp rule failed with the following exception: $($_.Exception.Message)"
         }
     }
 }

@@ -14,20 +14,17 @@ For any other resource you need to inherit from BaseDSC.
  ```
 You need to implement your new resource in separate file in the [DSCResources Folder](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/DSCResources). In the Set(), Test() and Get() methods of your resource, you need to call ConnectVIServer() method from the base class to establish a connection either to  a vCenter or an ESXi.
  ```powershell
-  [void] Set()
-  {
+  [void] Set() {
       $this.ConnectVIServer()
       ...
   }
 
-  [bool] Test()
-  {
+  [bool] Test() {
       $this.ConnectVIServer()
       ...
   }
 
-  [MyResource] Get()
-  {
+  [MyResource] Get() {
       $this.ConnectVIServer()
       ...
   }
@@ -66,30 +63,31 @@ Tests should currently be structured like so:
                 * MyResource
                     * MyResource_Config.ps1
 
-Basically for the unit tests, you need to test the Set(), Test() and Get() methods of your resource with the different use cases.
+Basically for the unit tests, you need to test the Set(), Test() and Get() methods of your resource with the different use cases. When developing the unit tests you can run only the tests for a specific method of the **Resource** - for example if you want to run the tests for the **Set** method of **MyResource** you can do the following:
+
+```
+ Invoke-Pester -Path ./MyResource.Unit.Tests.ps1 -Tag 'Set'
+```
 
 Currently the coverage of the module should be at least **90 percent**, so when writing the unit tests, keep in mind for different use cases (for example if a value is passed/not passed, for array values - null, empty or with multiple elements and so on.).
 
  ```powershell
-  Describe 'MyResource' {
-      Describe 'MyResource\Set' {
-          ...
-      }
+  Describe 'MyResource\Set' -Tag 'Set' {
+    ...
+  }
 
-      Describe 'MyResource\Test' {
-          ...
-      }
+  Describe 'MyResource\Test' -Tag 'Test' {
+    ...
+  }
 
-      Describe 'MyResource\Get' {
-          ...
-      }
+  Describe 'MyResource\Get' -Tag 'Get' {
+    ...
   }
  ```
 
 For every PowerCLI cmdlet you use, you need to create mock implementation in the [VMware.VimAutomation.Core Test Module](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMware.VimAutomation.Core.psm1).
  ```powershell
-  function <PowerCLI cmdlet>
-  {
+  function <PowerCLI cmdlet> {
      param(
         [<Type of parameter>] $<Parameter of cmdlet>,
      )
@@ -115,20 +113,38 @@ In your unit test file you need to replace VMware PowerCLI modules with the scri
   $script:unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
   $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
 
-  Describe 'MyResource' {
-      BeforeAll {
-          # Arrange
-          $env:PSModulePath = $script:mockModuleLocation
-          Import-Module -Name VMware.VimAutomation.Core
-          ...
-      }
+  function BeforeAllTests {
+    $env:PSModulePath = $script:mockModuleLocation
+    $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
+    if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
+        throw 'The Original VMware.VimAutomation.Core Module is loaded in the current session. If you want to run the unit tests please open a new PowerShell session.'
+    }
 
-      AfterAll {
-          Remove-Module -Name VMware.VimAutomation.Core
-          $env:PSModulePath = $script:modulePath
-          ...
-      }
-  }
+    Import-Module -Name VMware.VimAutomation.Core
+   }
+
+   function AfterAllTests {
+    Remove-Module -Name VMware.VimAutomation.Core
+    $env:PSModulePath = $script:modulePath
+   }
+
+   # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
+   BeforeAllTests
+
+   Describe 'MyResource\Set' -Tag 'Set' {
+     ...
+   }
+
+   Describe 'MyResource\Test' -Tag 'Test' {
+     ...
+   }
+
+   Describe 'MyResource\Get' -Tag 'Get' {
+     ...
+   }
+
+   # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
+   AfterAllTests
  ```
 
  Basically for the integration tests, you need to test that when invoking [Start-DscConfiguration](https://docs.microsoft.com/en-us/powershell/module/psdesiredstateconfiguration/start-dscconfiguration?view=powershell-5.1) your configuration is applied, [Test-DscConfiguration](https://docs.microsoft.com/en-us/powershell/module/psdesiredstateconfiguration/test-dscconfiguration?view=powershell-5.1) to check if the configuration is in the desired state and [Get-DscConfiguration](https://docs.microsoft.com/en-us/powershell/module/psdesiredstateconfiguration/get-dscconfiguration?view=powershell-5.1) to check the currently applied configuration on the machine.

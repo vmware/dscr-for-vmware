@@ -7,6 +7,7 @@ There are a few different ways you can contribute:
 * [Submit an issue](#submitting-an-issue)
 * [Fix an issue](#fixing-an-issue)
 * [Review pull requests](#reviewing-pull-requests)
+* [Proposing DSC Resources](#proposing-dsc-resources)
 
 ## Submitting an Issue
 Submitting an issue to Desired State Configuration Resources for VMware is easy!
@@ -132,3 +133,14 @@ Some things to pay attention to while reviewing:
 * Does every function have a help comment?
 * Does the code follow the [Coding Guidelines](https://github.com/vmware/dscr-for-vmware/blob/master/CODING_GUIDELINES.md)?
 * Has the author included test coverage for their changes?
+
+## Proposing DSC Resources
+Each proposed new **DSC Resource** should be announced via an **Issue**. The proposed resources will be reviewed by the maintainers of the repository. The person who proposes the new resource can start developing it right after it is approved by the maintainers of the repository or leave it to other contributors who want to work on the new resource.
+
+For more complex resources it may be neccessary to have more than one contributor working on it - this will be reviewed by the maintainers: how many people are needed for the development of the resource.
+
+Everyone who wants to contribute to new resources can volunteer - For example if the person who submitted the issue needs assistance or does not have time to continue working on the resource.
+
+If the assignee of the **Issue** has any questions, they can ask a maintainer or other members from the community.
+
+When the assignee is ready with the new Resource, **PR** should be opened which will then be reviewed by the maintainers.
