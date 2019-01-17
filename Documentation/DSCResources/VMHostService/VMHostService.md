@@ -8,7 +8,7 @@
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Key** | Mandatory | string | The key value of the service. ||
-| **Policy** | Optional | ServicePolicy | The state of the service after a VMHost reboot. ||
+| **Policy** | Optional | ServicePolicy | The state of the service after a VMHost reboot. |Unset, On, Off, Automatic|
 | **Running** | Optional | bool | The current state of the service. ||
 
 
