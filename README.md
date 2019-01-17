@@ -46,6 +46,9 @@ You also need to configure the DSC LCM on a Windows machine where the resources 
    ```
 
 ## Applying VMware.vSphereDSC Resource Configuration
+# Configuring PowerCLI
+To configure PowerCLI you can use the **PowerCLISettings DSC Resource** and specify which settings you want to be configured. For more information on the available settings, please visit the wiki page of the [PowerCLISettings DSC Resource](https://github.com/vmware/dscr-for-vmware/wiki/PowerCLISettings).
+
 # Example
 The following example uses [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) and configures the NTP Server and the 'ntpd' Service Policy.
 
