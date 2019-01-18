@@ -21,8 +21,7 @@ Configuration PowerCLISettings_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        PowerCLISettings powerCLISettings
-        {
+        PowerCLISettings powerCLISettings {
             SettingsScope = 'LCM'
             ParticipateInCeip = $false
             InvalidCertificateAction = 'Warn'

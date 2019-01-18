@@ -62,8 +62,7 @@ Configuration VMHostSyslog_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostSyslog vmHostSyslogSettings 
-        {
+        VMHostSyslog vmHostSyslogSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential

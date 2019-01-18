@@ -50,12 +50,10 @@ $script:configurationData = @{
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-Configuration VMHostSettings_Config
-{
+Configuration VMHostSettings_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
+    Node localhost {
         VMHostSettings vmHostSettings {
             Name = $Name
             Server = $Server

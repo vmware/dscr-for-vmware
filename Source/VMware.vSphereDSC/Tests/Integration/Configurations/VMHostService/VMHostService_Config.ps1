@@ -58,8 +58,7 @@ Configuration VMHostService_WithServicePolicyUnset_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostService vmHostServiceSettings
-        {
+        VMHostService vmHostServiceSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -74,8 +73,7 @@ Configuration VMHostService_WithServicePolicyOn_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostService vmHostServiceSettings
-        {
+        VMHostService vmHostServiceSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -90,8 +88,7 @@ Configuration VMHostService_WithServicePolicyOff_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostService vmHostServiceSettings
-        {
+        VMHostService vmHostServiceSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -106,8 +103,7 @@ Configuration VMHostService_WithServicePolicyOnAndRunning_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostService vmHostServiceSettings
-        {
+        VMHostService vmHostServiceSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential

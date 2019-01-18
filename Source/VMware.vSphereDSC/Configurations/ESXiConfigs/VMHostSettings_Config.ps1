@@ -48,14 +48,13 @@ Configuration VMHostSettings_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostSettings vmHostSettings
-        {
+        VMHostSettings vmHostSettings {
             Name = $Name
             Server = $Server
             Credential = $Credential
             Motd = 'Hello World from motd!'
             Issue = 'Hello World from issue!'
-          }
+        }
     }
 }
 

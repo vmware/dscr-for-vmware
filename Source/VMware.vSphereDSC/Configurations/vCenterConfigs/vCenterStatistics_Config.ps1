@@ -44,8 +44,7 @@ Configuration vCenterStatistics_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        vCenterStatistics vCenterStatistics
-        {
+        vCenterStatistics vCenterStatistics {
             Server = $Server
             Credential = $Credential
             Period = "Day"

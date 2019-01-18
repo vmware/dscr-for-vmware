@@ -58,8 +58,7 @@ Configuration VMHostNtpSettings_WithoutNtpServerAndNtpServicePolicy_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostNtpSettings vmHostNtpSettings
-        {
+        VMHostNtpSettings vmHostNtpSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -71,8 +70,7 @@ Configuration VMHostNtpSettings_WithEmptyArrayNtpServer_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostNtpSettings vmHostNtpSettings
-        {
+        VMHostNtpSettings vmHostNtpSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -85,8 +83,7 @@ Configuration VMHostNtpSettings_WithNtpServerAddUseCase_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostNtpSettings vmHostNtpSettings
-        {
+        VMHostNtpSettings vmHostNtpSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -99,8 +96,7 @@ Configuration VMHostNtpSettings_WithNtpServerRemoveUseCase_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostNtpSettings vmHostNtpSettings
-        {
+        VMHostNtpSettings vmHostNtpSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -113,8 +109,7 @@ Configuration VMHostNtpSettings_WithTheSameNtpServicePolicy_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostNtpSettings vmHostNtpSettings
-        {
+        VMHostNtpSettings vmHostNtpSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -127,8 +122,7 @@ Configuration VMHostNtpSettings_WithNtpServicePolicy_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostNtpSettings vmHostNtpSettings
-        {
+        VMHostNtpSettings vmHostNtpSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
