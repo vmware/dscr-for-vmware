@@ -48,8 +48,7 @@ Configuration VMHostTpsSettings_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostTpsSettings vmHostTpsSettings
-        {
+        VMHostTpsSettings vmHostTpsSettings {
             Name = $Name
             Server = $Server
             Credential = $Credential

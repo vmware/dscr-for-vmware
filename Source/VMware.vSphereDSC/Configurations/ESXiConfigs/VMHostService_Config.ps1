@@ -48,8 +48,7 @@ Configuration VMHostServices_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostService vmHostService
-        {
+        VMHostService vmHostService {
             Name = $Name
             Server = $Server
             Credential = $Credential

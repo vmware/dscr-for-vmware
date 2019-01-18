@@ -55,8 +55,7 @@ Configuration VMHostNtpSettings_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostNtpSettings vmHostNtpSettings
-        {
+        VMHostNtpSettings vmHostNtpSettings {
             Name = $Name
             Server = $Server
             Credential = $Credential
