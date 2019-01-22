@@ -38,7 +38,7 @@ class InventoryBaseDSC : BaseDSC {
     Returns the Datacenter we will use from the Inventory.
     #>
     [PSObject] GetDatacenterFromPath() {
-        if ($this.Path -eq [string]::Empty) {
+        if ($this.DatacenterPath -eq [string]::Empty) {
             throw "You have passed an empty path which is not a valid value."
         }
 
@@ -49,17 +49,17 @@ class InventoryBaseDSC : BaseDSC {
         This is a special case where only the Datacenter name is passed.
         So we check if there is a Datacenter with that name at root folder.
         #>
-        if ($this.Path -NotContains '/') {
+        if ($this.DatacenterPath -NotContains '/') {
             try {
-                $datacenter = Get-Datacenter -Server $this.Connection -Name $this.Path -Location $rootFolder -ErrorAction Stop
+                $datacenter = Get-Datacenter -Server $this.Connection -Name $this.DatacenterPath -Location $rootFolder -ErrorAction Stop
                 return $datacenter
             }
             catch {
-                throw "Datacenter with name $($this.Path) was not found at $rootFolder. For more inforamtion: $($_.Exception.Message)"
+                throw "Datacenter with name $($this.DatacenterPath) was not found at $rootFolder. For more inforamtion: $($_.Exception.Message)"
             }
         }
 
-        $pathItems = $this.Path -Split '/'
+        $pathItems = $this.DatacenterPath -Split '/'
         $datacenterName = $pathItems[$pathItems.Length - 1]
 
         # Removes the Datacenter name from the path items array as we already retrieved it.
