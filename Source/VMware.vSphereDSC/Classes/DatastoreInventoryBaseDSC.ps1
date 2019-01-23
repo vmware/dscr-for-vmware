@@ -56,7 +56,7 @@ class DatastoreInventoryBaseDSC : InventoryBaseDSC {
             }
 
             # If the found path item is Folder and not Datastore we start looking in the items of this Folder.
-            if ($foundPathItem -is [VMware.Vim.Folder]) {
+            if ($foundPathItem.GetType().Name -eq 'Folder') {
                 $childEntities = Get-View -Server $this.Connection $foundPathItem.ChildEntity
             }
         }

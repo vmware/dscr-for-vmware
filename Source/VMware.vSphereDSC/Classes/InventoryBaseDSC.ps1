@@ -76,7 +76,7 @@ class InventoryBaseDSC : BaseDSC {
             }
 
             # If the found path item is Folder and not Datacenter we start looking in the items of this Folder.
-            if ($foundPathItem -is [VMware.Vim.Folder]) {
+            if ($foundPathItem.GetType().Name -eq 'Folder') {
                 $childEntities = Get-View -Server $this.Connection $foundPathItem.ChildEntity
             }
         }
