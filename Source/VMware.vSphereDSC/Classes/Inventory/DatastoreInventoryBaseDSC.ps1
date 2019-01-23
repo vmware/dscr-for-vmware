@@ -52,7 +52,7 @@ class DatastoreInventoryBaseDSC : InventoryBaseDSC {
             $foundPathItem = $childEntities | Where-Object -Property Name -eq $pathItem
 
             if ($null -eq $foundPathItem) {
-                throw "$pathItem could not be found in the Inventory. Please verify you have passed a valid path."
+                throw "$pathItem could not be found in the Datastore Folder of Datacenter $($datacenter.Name). Please verify you have passed a valid path."
             }
 
             # If the found path item is Folder and not Datastore we start looking in the items of this Folder.
