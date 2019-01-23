@@ -460,9 +460,28 @@ Add-Type -TypeDefinition @"
         }
     }
 
+    public class Folder
+    {
+        public string Name { get; set; }
+
+        public Folder[] ChildEntity { get; set; }
+    }
+
+    public class ServiceInstance
+    {
+        public Folder DatastoreFolder { get; set; }
+    }
+
+    public class Datacenter
+    {
+        public ServiceInstance ExtensionData { get; set; }
+    }
+
     public class ServiceContent
     {
         public PerformanceManager PerfManager { get; set; }
+
+        public Folder RootFolder { get; set; }
     }
 
     public class VCenterExtensionData
@@ -744,6 +763,26 @@ function Set-PowerCLIConfiguration {
         [bool] $ParticipateInCeip,
         [VMware.Vim.ProxyPolicy] $ProxyPolicy,
         [int] $WebOperationTimeoutSeconds
+    )
+
+    return $null
+}
+
+function Get-Datacenter {
+    param(
+        [PSObject] $Server,
+        [string] $Name,
+        [VMware.Vim.Folder] $Location
+    )
+
+    return New-Object VMware.Vim.Datacenter
+}
+
+function Get-Folder {
+    param(
+        [PSObject] $Server,
+        [string] $Name,
+        [VMware.Vim.Folder] $Location
     )
 
     return $null
