@@ -54,8 +54,7 @@ Configuration VMHostTpsSettings_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostTpsSettings vmHostTpsSettings
-        {
+        VMHostTpsSettings vmHostTpsSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential

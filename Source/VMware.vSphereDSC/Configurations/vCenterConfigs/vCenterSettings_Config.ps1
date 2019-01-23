@@ -44,8 +44,7 @@ Configuration vCenterSettings_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        vCenterSettings vCenterSettings
-        {
+        vCenterSettings vCenterSettings {
             Server = $Server
             Credential = $Credential
             LoggingLevel = 'Warning'

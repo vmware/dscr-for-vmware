@@ -52,8 +52,7 @@ Configuration vCenterStatistics_WithPassedEnabledProperty_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        vCenterStatistics vCenterStatistics
-        {
+        vCenterStatistics vCenterStatistics {
             Server = $Server
             Credential = $script:vCenterCredential
             Period = $script:period
@@ -69,8 +68,7 @@ Configuration vCenterStatistics_WithoutEnabledProperty_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        vCenterStatistics vCenterStatistics
-        {
+        vCenterStatistics vCenterStatistics {
             Server = $Server
             Credential = $script:vCenterCredential
             Period = $script:period

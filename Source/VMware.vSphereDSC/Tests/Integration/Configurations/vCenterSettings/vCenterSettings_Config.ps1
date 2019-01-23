@@ -90,8 +90,7 @@ Configuration vCenterSettings_WithTaskMaxAge_Config {
 Configuration vCenterSettings_WithMotdAndIssue_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
+    Node localhost {
         vCenterSettings vCenterSettings {
             Server = $Server
             Credential = $script:vCenterCredential
