@@ -50,6 +50,11 @@ Add-Type -TypeDefinition @"
         UseSystemProxy,
         Unset
     }
+    public class ManagedObjectReference
+    {
+        public string Type { get; set; }
+        public string Value { get; set; }
+    }
 
     public class VIServer : System.IEquatable<VIServer>
     {
@@ -224,6 +229,8 @@ Add-Type -TypeDefinition @"
     public class HostNetworkInfo
     {
         public HostDnsConfig DnsConfig { get; set; }
+
+        public HostVirtualSwitch[] vSwitch { get; set; }
     }
 
     public class HostConfig
@@ -264,6 +271,8 @@ Add-Type -TypeDefinition @"
     {
         // Property used only for comparing HostNetworkSystem objects.
         public string Id { get; set; }
+
+        public HostNetworkInfo NetworkInfo { get; set; }
 
         public void UpdateDnsConfig(HostDnsConfig dnsConfig)
         {
@@ -314,7 +323,7 @@ Add-Type -TypeDefinition @"
     {
         public HostDateTimeSystem DateTimeSystem { get; set; }
 
-        public HostNetworkSystem NetworkSystem { get; set; }
+        public ManagedObjectReference NetworkSystem { get; set; }
 
         public HostServiceSystem ServiceSystem { get; set; }
     }
@@ -627,7 +636,48 @@ Add-Type -TypeDefinition @"
                     this.InvalidCertificateAction.ToString() + "_" + this.ProxyPolicy.ToString() + this.WebOperationTimeoutSeconds).GetHashCode();
         }
     }
- }
+
+    public class HostVirtualSwitch : System.IEquatable<HostVirtualSwitch>
+    {
+        public HostVirtualSwitch()
+        {
+        }
+
+        public string Key { get; set; }
+
+        public int Mtu { get; set; }
+
+        public string Name { get; set; }
+
+        public int NumPorts { get; set; }
+
+        public int NumPortsAvailable { get; set; }
+
+        public string Pnic { get; set; }
+
+        public string Portgroup { get; set; }
+
+        public bool Equals(HostVirtualSwitch hostVirtualSwitch)
+        {
+            return hostVirtualSwitch != null && this.Name == hostVirtualSwitch.Name && this.NumPorts == hostVirtualSwitch.NumPorts &&
+                this.Mtu == hostVirtualSwitch.Mtu;
+        }
+
+        public override bool Equals(object hostVirtualSwitch)
+        {
+            return this.Equals(hostVirtualSwitch as HostVirtualSwitch);
+        }
+
+         public override int GetHashCode()
+        {
+            return (this.Key + "_" +
+                    this.Mtu + "_" +
+                    this.Name + "_" +
+                    this.NumPorts + "_" +
+                    this.NumPortsAvailable).GetHashCode();
+        }
+    }
+  }
 "@
 
 function Connect-VIServer {
