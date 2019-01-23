@@ -95,13 +95,12 @@ class VMHostVss : VMHostBaseDSC {
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
         $vss = $this.GetVss($vmHost)
-        $vssPresent = ($null -ne $vss -and $this.Equals($vss))
 
         if ($this.Ensure -eq [Ensure]::Present) {
-            return $vssPresent
+            return ($null -ne $vss -and $this.Equals($vss))
         }
         else {
-            return -not $vssPresent
+            return ($null -eq $vss)
         }
     }
 
@@ -110,6 +109,9 @@ class VMHostVss : VMHostBaseDSC {
 
         $result = [VMHostVss]::new()
         $result.Server = $this.Server
+        $result.Credential = $this.Credential
+        $result.Name = $this.Name
+        $result.Ensure = $this.Ensure
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -127,8 +129,9 @@ class VMHostVss : VMHostBaseDSC {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
         $vssTest = @()
-        $vssTest += ($vss.Spec.MTU -eq $this.MTU)
-        $vssTest += ($vss.Spec.NumPorts -eq $this.NumPorts)
+        $vssTest += ($vss.Name -eq $this.VssName)
+        $vssTest += ($vss.MTU -eq $this.MTU)
+        $vssTest += ($vss.NumPorts -eq $this.NumPorts)
 
         return ($vssTest -notcontains $false)
     }
@@ -162,8 +165,8 @@ class VMHostVss : VMHostBaseDSC {
             NumPorts = $this.NumPorts
             Operation = 'add'
         }
+        $vss = $this.GetVss($vmHost)
         if ($this.Ensure -eq 'Present') {
-            $vss = $this.GetVss($vmHost)
             if ($null -ne $vss) {
                 if ($this.Equals($vss)) {
                     return
@@ -175,10 +178,13 @@ class VMHostVss : VMHostBaseDSC {
             }
         }
         else {
+            if ($null -eq $vss) {
+                return
+            }
             $vssConfigArgs.Operation = 'remove'
         }
 
-        $vssConfig = New-VSSConfig @vssConfigArgs
+        $vssConfig = New-VssConfig @vssConfigArgs
         $hostNetSys = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
         try {
             Update-Network -NetworkSystem $hostNetSys -Type 'VSS' -VssConfig $vssConfig
@@ -201,7 +207,7 @@ class VMHostVss : VMHostBaseDSC {
         $currentVss = $this.GetVss($vmHost)
         $vmHostVSS.Key = $currentVss.Key
         $vmHostVSS.Mtu = $currentVss.Mtu
-        $vmHostVSS.Name = $currentVss.Name
+        $vmHostVSS.VssName = $currentVss.Name
         $vmHostVSS.Numports = $currentVss.NumPorts
         $vmHostVSS.NumPortsAvailable = $currentVss.NumPortsAvailable
         $vmHostVSS.Pnic = $currentVss.Pnic

@@ -64,8 +64,7 @@ Configuration VMHostSyslog_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostSyslog vmHostSyslog
-        {
+        VMHostSyslog vmHostSyslog {
             Name = $Name
             Server = $Server
             Credential = $Credential

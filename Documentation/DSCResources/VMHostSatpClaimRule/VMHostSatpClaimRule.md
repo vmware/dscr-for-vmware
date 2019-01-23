@@ -61,17 +61,14 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostSatpClaimRule_Config
-{
+Configuration VMHostSatpClaimRule_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
+    Node localhost {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostSatpClaimRule vmHostSatpClaimRule
-        {
+        VMHostSatpClaimRule vmHostSatpClaimRule {
             Name = $Name
             Server = $Server
             Credential = $Credential
@@ -125,8 +122,7 @@ Configuration VMHostSatpClaimRule_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostSatpClaimRule vmHostSatpClaimRule
-        {
+        VMHostSatpClaimRule vmHostSatpClaimRule {
             Name = $Name
             Server = $Server
             Credential = $Credential

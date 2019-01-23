@@ -231,7 +231,7 @@ function Set-VMHostSyslogConfig {
     $esxcli.system.syslog.reload.Invoke()
 }
 
-function New-VSSConfig {
+function New-VssConfig {
     [CmdletBinding()]
     [OutputType([VMware.Vim.HostVirtualSwitchConfig])]
     param(
@@ -256,7 +256,6 @@ function Update-Network {
     param(
         [VMware.Vim.HostNetworkSystem] $NetworkSystem,
         [string]$Type,
-        [switch]$Modify,
         [VMware.Vim.HostVirtualSwitchConfig] $VssConfig
     )
 

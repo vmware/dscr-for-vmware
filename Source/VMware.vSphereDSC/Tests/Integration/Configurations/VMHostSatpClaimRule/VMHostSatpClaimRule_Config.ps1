@@ -59,8 +59,7 @@ Configuration VMHostSatpClaimRule_WithClaimRuleToAdd_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostSatpClaimRule vmHostSatpClaimRule
-        {
+        VMHostSatpClaimRule vmHostSatpClaimRule {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -80,8 +79,7 @@ Configuration VMHostSatpClaimRule_WithClaimRuleToRemove_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostSatpClaimRule vmHostSatpClaimRule
-        {
+        VMHostSatpClaimRule vmHostSatpClaimRule {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential

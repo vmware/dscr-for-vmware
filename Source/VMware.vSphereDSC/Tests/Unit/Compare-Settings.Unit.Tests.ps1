@@ -16,8 +16,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 Using module '..\..\VMware.vSphereDSC.Helper.psm1'
 
-Describe 'Compare-Settings'{
-    Context 'Desired and current settings match'{
+Describe 'Compare-Settings' {
+    Context 'Desired and current settings match' {
         $desiredState = @{
             key1 = "value 1"
             key2 = "value 2"
@@ -31,11 +31,12 @@ Describe 'Compare-Settings'{
 
         $result = Compare-Settings -DesiredState $desiredState -CurrentState $currentState
 
-        it 'should return false' {
-            $result | should be $false
+        it 'Should return false' {
+            $result | Should -Be $false
         }
     }
-    Context 'Desired and current settings match'{
+
+    Context 'Desired and current settings match' {
         $desiredState = @{
             key1 = "value 1"
             key2 = "value 2"
@@ -49,11 +50,12 @@ Describe 'Compare-Settings'{
 
         $result = Compare-Settings -DesiredState $desiredState -CurrentState $currentState
 
-        it 'should return true' {
-            $result | should be $true
+        it 'Should return true' {
+            $result | Should -Be $true
         }
     }
-    Context 'Desired state has additional setting'{
+
+    Context 'Desired state has additional setting' {
         $desiredState = @{
             key1 = "value 1"
             key2 = "value 2"
@@ -68,11 +70,12 @@ Describe 'Compare-Settings'{
 
         $result = Compare-Settings -DesiredState $desiredState -CurrentState $currentState
 
-        it 'should return true' {
-            $result | should be $true
+        it 'Should return true' {
+            $result | Should -Be $true
         }
     }
-    Context 'Current state has additional setting'{
+
+    Context 'Current state has additional setting' {
         $desiredState = @{
             key1 = "value 1"
             key2 = "value 2"
@@ -87,11 +90,12 @@ Describe 'Compare-Settings'{
 
         $result = Compare-Settings -DesiredState $desiredState -CurrentState $currentState
 
-        it 'should return false' {
-            $result | should be $false
+        it 'Should return false' {
+            $result | Should -Be $false
         }
     }
-    Context 'Current state not supplied'{
+
+    Context 'Current state not supplied' {
         $desiredState = @{
             key1 = "value 1"
             key2 = "value 2"
@@ -100,11 +104,12 @@ Describe 'Compare-Settings'{
 
         $result = Compare-Settings -DesiredState $desiredState
 
-        it 'should return true' {
-            $result | should be $true
+        it 'Should return true' {
+            $result | Should -Be $true
         }
     }
-    Context 'Desired state not supplied'{
+
+    Context 'Desired state not supplied' {
         $currentState = @{
             key1 = "value 1"
             key2 = "value 2"
@@ -113,8 +118,8 @@ Describe 'Compare-Settings'{
 
         $result = Compare-Settings -CurrentState $currentState
 
-        it 'should return false' {
-            $result | should be $false
+        it 'Should return false' {
+            $result | Should -Be $false
         }
     }
 }

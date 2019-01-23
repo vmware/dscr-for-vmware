@@ -30,11 +30,12 @@ class VMHostBaseDSC : BaseDSC {
     If the VMHost is not found, the method writes an error.
     #>
     [PSObject] GetVMHost() {
-        $vmHost = Get-VMHost -Server $this.Connection -Name $this.Name -ErrorAction SilentlyContinue
-        if ($null -eq $vmHost) {
-            Write-Error "VMHost with name $($this.Name) was not found. For more information: $($PSItem.ToString())."
+        try {
+            $vmHost = Get-VMHost -Server $this.Connection -Name $this.Name -ErrorAction Stop
+            return $vmHost
         }
-
-        return $vmHost
+        catch {
+            throw "VMHost with name $($this.Name) was not found. For more information: $($_.Exception.Message)"
+        }
     }
 }

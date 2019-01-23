@@ -20,10 +20,56 @@ Mock types of VMware.Vim assembly for the purpose of unit testing.
 Add-Type -TypeDefinition @"
  namespace VMware.Vim
  {
-    public class ManagedObjectReference
+    public enum ServicePolicy
+    {
+        Unset = 0,
+        On = 1,
+        Off = 2,
+        Automatic = 3
+    }
+
+    public enum BadCertificateAction
+    {
+        Ignore,
+        Warn,
+        Prompt,
+        Fail,
+        Unset
+    }
+
+    public enum DefaultVIServerMode
+    {
+        Single,
+        Multiple,
+        Unset
+    }
+
+    public enum ProxyPolicy
+    {
+        NoProxy,
+        UseSystemProxy,
+        Unset
+    }
+    public class ManagedObjectReference : System.IEquatable<ManagedObjectReference>
     {
         public string Type { get; set; }
+
         public string Value { get; set; }
+
+        public bool Equals(ManagedObjectReference moRef)
+        {
+            return moRef != null && this.Type == moRef.Type && this.Value == moRef.Value;
+        }
+
+        public override bool Equals(object moRef)
+        {
+            return this.Equals(moRef as ManagedObjectReference);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Type + "_" + this.Value).GetHashCode();
+        }
     }
 
     public class VIServer : System.IEquatable<VIServer>
@@ -473,14 +519,6 @@ Add-Type -TypeDefinition @"
         }
     }
 
-     public enum ServicePolicy
-     {
-         Unset = 0,
-         On = 1,
-         Off = 2,
-         Automatic = 3
-     }
-
     public class VMHostService : System.IEquatable<VMHostService>
     {
         public VMHostService()
@@ -570,6 +608,51 @@ Add-Type -TypeDefinition @"
         }
     }
 
+    public class PowerCLIConfiguration : System.IEquatable<PowerCLIConfiguration>
+    {
+        public PowerCLIConfiguration()
+        {
+        }
+
+        public int Id { get; set; }
+
+        public string Scope { get; set; }
+
+        public ProxyPolicy CEIPDataTransferProxyPolicy { get; set; }
+
+        public DefaultVIServerMode DefaultVIServerMode { get; set; }
+
+        public bool DisplayDeprecationWarnings { get; set; }
+
+        public BadCertificateAction InvalidCertificateAction { get; set; }
+
+        public bool ParticipateInCeip { get; set; }
+
+        public ProxyPolicy ProxyPolicy { get; set; }
+
+        public int WebOperationTimeoutSeconds { get; set; }
+
+        public bool Equals(PowerCLIConfiguration powerCLIConfiguration)
+        {
+            return (powerCLIConfiguration != null && this.Id == powerCLIConfiguration.Id && this.Scope == powerCLIConfiguration.Scope &&
+                    this.CEIPDataTransferProxyPolicy == powerCLIConfiguration.CEIPDataTransferProxyPolicy && this.DefaultVIServerMode == powerCLIConfiguration.DefaultVIServerMode &&
+                    this.DisplayDeprecationWarnings == powerCLIConfiguration.DisplayDeprecationWarnings && this.InvalidCertificateAction == powerCLIConfiguration.InvalidCertificateAction &&
+                    this.ParticipateInCeip == powerCLIConfiguration.ParticipateInCeip && this.ProxyPolicy == powerCLIConfiguration.ProxyPolicy &&
+                    this.WebOperationTimeoutSeconds == powerCLIConfiguration.WebOperationTimeoutSeconds);
+        }
+
+        public override bool Equals(object powerCLIConfiguration)
+        {
+            return this.Equals(powerCLIConfiguration as PowerCLIConfiguration);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Id + "_" + this.Scope + "_" + this.CEIPDataTransferProxyPolicy.ToString() + "_" + this.DefaultVIServerMode.ToString() + "_" +
+                    this.InvalidCertificateAction.ToString() + "_" + this.ProxyPolicy.ToString() + this.WebOperationTimeoutSeconds).GetHashCode();
+        }
+    }
+
     public class HostVirtualSwitch : System.IEquatable<HostVirtualSwitch>
     {
         public HostVirtualSwitch()
@@ -586,9 +669,9 @@ Add-Type -TypeDefinition @"
 
         public int NumPortsAvailable { get; set; }
 
-        public string Pnic { get; set; }
+        public string[] Pnic { get; set; }
 
-        public string Portgroup { get; set; }
+        public string[] Portgroup { get; set; }
 
         public bool Equals(HostVirtualSwitch hostVirtualSwitch)
         {
@@ -601,16 +684,154 @@ Add-Type -TypeDefinition @"
             return this.Equals(hostVirtualSwitch as HostVirtualSwitch);
         }
 
-        public override int GetHashCode()
+         public override int GetHashCode()
         {
             return (this.Key + "_" +
                     this.Mtu + "_" +
                     this.Name + "_" +
-                    this.NumPorts + "_" +
-                    this.NumPortsAvailable).GetHashCode();
+                    this.NumPorts + "_").GetHashCode();
         }
     }
-}
+
+    public class HostVirtualSwitchBridge
+    {}
+
+    public class HostVirtualSwitchAutoBridge : HostVirtualSwitchBridge
+    {
+        public string[] ExcludedNicDevice { get; set; }
+    }
+
+    public class HostVirtualSwitchBeaconConfig
+    {
+        public int Interval { get; set; }
+    }
+
+    public class LinkDiscoveryProtocolConfig
+    {
+        public string Operation { get; set; }
+
+        public string Protocol { get; set; }
+    }
+
+    public class HostVirtualSwitchBondBridge : HostVirtualSwitchBridge
+    {
+        public HostVirtualSwitchBeaconConfig Beacon { get; set; }
+
+        public LinkDiscoveryProtocolConfig LinkDiscoveryProtocolConfig { get; set; }
+
+        public string[] NicDevice { get; set; }
+    }
+
+    public class HostVirtualSwitchSimpleBridge : HostVirtualSwitchBridge
+    {
+        public string[] NicDevice { get; set; }
+    }
+
+    public class HostNicFailureCriteria
+    {
+        public bool CheckBeacon { get; set; }
+
+        public bool CheckDuplex { get; set; }
+
+        public bool CheckErrorPercent { get; set; }
+
+        public string CheckSpeed { get; set; }
+
+        public bool FullDuplex { get; set; }
+
+        public int Percentage { get; set; }
+
+        public int Speed { get; set; }
+    }
+
+    public class HostNicOrderPolicy
+    {
+        public string[] ActiveNic { get; set; }
+
+        public string[] StandbyNic { get; set; }
+    }
+
+    public class HostNicTeamingPolicy
+    {
+        public HostNicFailureCriteria FailureCriteria { get; set; }
+
+        public HostNicOrderPolicy NicOrder { get; set; }
+
+        public bool NotifySwitches { get; set; }
+
+        public string Policy { get; set; }
+
+        public bool ReversePolicy { get; set; }
+
+        public bool RollingOrder { get; set; }
+    }
+
+    public class HostNetOffloadCapabilities
+    {
+        public bool CsumOffload { get; set; }
+
+        public bool TcpSegmentation { get; set; }
+
+        public bool ZeroCopyXmit { get; set; }
+    }
+
+    public class HostNetworkSecurityPolicy
+    {
+        public bool AllowPromiscuous { get; set; }
+
+        public bool ForgedTransmits { get; set; }
+
+        public bool MacChanges{ get; set; }
+    }
+
+    public class HostNetworkTrafficShapingPolicy
+    {
+        public long AverageBandwidth { get; set; }
+
+        public long BurstSize { get; set; }
+
+        public bool Enabled{ get; set; }
+
+        public long PeakBandwidth { get; set; }
+    }
+
+    public class HostNetworkPolicy
+    {
+        public HostNicTeamingPolicy NicTeaming { get; set; }
+
+        public HostNetOffloadCapabilities OffloadPolicy { get; set; }
+
+        public HostNetworkSecurityPolicy Security { get; set; }
+
+        public HostNetworkTrafficShapingPolicy ShapingPolicy { get; set; }
+    }
+
+    public class HostVirtualSwitchSpec
+    {
+        public HostVirtualSwitchBridge Bridge { get; set; }
+
+        public int Mtu { get; set; }
+
+        public int NumPorts { get; set; }
+
+        public HostNetworkPolicy Policy { get; set; }
+    }
+    public class HostVirtualSwitchConfig
+    {
+        public string ChangeOperation { get; set; }
+
+        public string Name { get; set; }
+
+        public HostVirtualSwitchSpec Spec { get; set; }
+    }
+
+    public class HostNetworkConfigResult
+    {
+        public string[] ConsoleVnicDevice { get; set; }
+
+        public string[] VnicDevice { get; set; }
+    }
+  }
 "@
 
 function Connect-VIServer {
@@ -634,9 +855,15 @@ function Get-VMHost {
 function Get-View {
     param(
         [PSObject] $Server,
-        [PSObject] $VIObject
+        [Parameter(ParameterSetName = 'GetViewByVIObject')]
+        [PSObject] $VIObject,
+        [Parameter(ParameterSetName = 'GetView')]
+        [VMware.Vim.ManagedObjectReference] $Id,
+        [Parameter(ParameterSetName = 'GetView')]
+        [string[]] $Property
     )
 
+    Write-Host "In TestHelper module"
     return $null
 }
 
@@ -707,4 +934,27 @@ function Stop-VMHostService {
     )
 
     return @( [VMware.Vim.VMHostService] @{} )
+}
+
+function Get-PowerCLIConfiguration {
+    param(
+        [string] $Scope
+    )
+
+    return New-Object VMware.Vim.PowerCLIConfiguration
+}
+
+function Set-PowerCLIConfiguration {
+    param(
+        [string] $Scope,
+        [VMware.Vim.ProxyPolicy] $CEIPDataTransferProxyPolicy,
+        [VMware.Vim.DefaultVIServerMode] $DefaultVIServerMode,
+        [bool] $DisplayDeprecationWarnings,
+        [VMware.Vim.BadCertificateAction] $InvalidCertificateAction,
+        [bool] $ParticipateInCeip,
+        [VMware.Vim.ProxyPolicy] $ProxyPolicy,
+        [int] $WebOperationTimeoutSeconds
+    )
+
+    return $null
 }

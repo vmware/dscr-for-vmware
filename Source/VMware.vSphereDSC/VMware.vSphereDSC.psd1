@@ -56,6 +56,6 @@ VariablesToExport = '*'
 AliasesToExport = @()
 
 # DSC resources to export from this module
-DscResourcesToExport = @('vCenterSettings', 'vCenterStatistics', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'VMHostVss', 'VMHostVssOffload', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'VMHostVssAutoBridge', 'VMHostVssBondBridge', 'VMHostVssSimpleBridge')
+DscResourcesToExport = @('PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'VMHostVss', 'VMHostVssOffload', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'VMHostVssAutoBridge', 'VMHostVssBondBridge', 'VMHostVssSimpleBridge')
 
 }

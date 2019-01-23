@@ -178,7 +178,7 @@ class VMHostDnsSettings : VMHostBaseDSC {
             Update-DNSConfig -NetworkSystem $networkSystem -DnsConfig $dnsConfig
         }
         catch {
-            Write-Error "The DNS Config could not be updated: $($PSItem.ToString())"
+            throw "The DNS Config could not be updated: $($_.Exception.Message)"
         }
     }
 }

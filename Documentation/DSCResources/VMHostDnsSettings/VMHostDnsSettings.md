@@ -60,8 +60,7 @@ Configuration VMHostDnsSettings_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostDnsSettings vmHostDnsSettings
-        {
+        VMHostDnsSettings vmHostDnsSettings {
             Name = $Name
             Server = $Server
             Credential = $Credential

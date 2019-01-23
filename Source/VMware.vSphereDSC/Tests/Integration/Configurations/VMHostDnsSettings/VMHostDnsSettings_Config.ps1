@@ -54,8 +54,7 @@ Configuration VMHostDnsSettings_WithDhcpDisabled_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostDnsSettings vmHostDnsSettings
-        {
+        VMHostDnsSettings vmHostDnsSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -68,14 +67,11 @@ Configuration VMHostDnsSettings_WithDhcpDisabled_Config {
     }
 }
 
-Configuration VMHostDnsSettings_WithoutAddressAndSearchDomain_Config
-{
+Configuration VMHostDnsSettings_WithoutAddressAndSearchDomain_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
-        VMHostDnsSettings vmHostDnsSettings
-        {
+    Node localhost {
+        VMHostDnsSettings vmHostDnsSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -86,14 +82,11 @@ Configuration VMHostDnsSettings_WithoutAddressAndSearchDomain_Config
     }
 }
 
-Configuration VMHostDnsSettings_WithDhcpEnabled_Config
-{
+Configuration VMHostDnsSettings_WithDhcpEnabled_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
-        VMHostDnsSettings vmHostDnsSettings
-        {
+    Node localhost {
+        VMHostDnsSettings vmHostDnsSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
