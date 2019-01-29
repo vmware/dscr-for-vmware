@@ -26,8 +26,99 @@ $script:LicensePath = Join-Path -Path $script:ProjectRoot -ChildPath "LICENSE.tx
 $script:LicenseSkipLines = 2
 $script:LicenseFileContent = Get-Content -Path $script:LicensePath | Select-Object -Skip $script:LicenseSkipLines
 
-$script:ImportFolders = @('Enums', 'Classes', 'DSCResources')
+$script:EnumsFolder = Join-Path -Path $script:ModuleRoot -ChildPath "Enums"
+$script:ClassesFolder = Join-Path -Path $script:ModuleRoot -ChildPath "Classes"
+$script:ClassesFiles = Get-ChildItem -Path $script:ClassesFolder -File -Filter *.ps1 -Recurse
 $script:DSCResourcesFolder = Join-Path -Path $script:ModuleRoot -ChildPath "DSCResources"
+
+function Update-OrderOfFiles {
+    [CmdletBinding()]
+    [OutputType([System.Object[]])]
+    param (
+        [System.Object[]] $Files
+    )
+
+    $orderedFiles = @()
+
+    foreach ($file in $Files) {
+        $fileContent = Get-Content -Path $file.FullName
+        $errors = $null
+
+        $fileTokens = [System.Management.Automation.PSParser]::Tokenize($fileContent, [ref] $errors)
+        $classToken = $fileTokens | Where-Object -Property Content -eq 'class'
+        $classTokenIndex = $fileTokens.IndexOf($classToken)
+        $tokensCount = 3
+
+        <#
+        Here we modify the tokens array to contain only the tokens of the line which contains the 'class' keyword.
+        The class line could be one of the following:
+        1. class <ChildClass> : <ParentClass>
+        2. class <ChildClass>
+        #>
+        $fileTokens = $fileTokens[($classTokenIndex + 1)..($classTokenIndex + $tokensCount)]
+
+        $childClassToken = $fileTokens[0]
+        $inheritanceOperatorToken = $fileTokens[1]
+        $parentClassToken = $fileTokens[2]
+
+        # Here we check if the tokens array contains tokens that tackle the case when the class is inheriting from another class.
+        if ($childClassToken.Type -eq 'Type' -and $inheritanceOperatorToken.Type -eq 'Unknown' -and $parentClassToken.Type -eq 'Type') {
+            $parentFileName = "$($parentClassToken.Content).ps1"
+            $childFileName = "$($childClassToken.Content).ps1"
+
+            $parentFile = $Files | Where-Object -Property Name -eq $parentFileName
+            $childFile = $Files | Where-Object -Property Name -eq $childFileName
+
+            <#
+            If the parent and child classes already exists in the ordered files we do not add anything.
+            Otherwise we first add the parent class, and then the child class to avoid exceptions when
+            the child class is defined before the parent class.
+            #>
+
+            $existingParentClassFile = $orderedFiles | Where-Object -Property Name -eq $parentFileName
+            if ($null -eq $existingParentClassFile) {
+
+                <#
+                If the parent class does not exist, there are two options:
+                1. The child class is already in the array, so we need to put the parent class before the child class.
+                2. The child class is not in the array, so we first add the parent class and then the child class.
+                #>
+                $existingChildClassFile = $orderedFiles | Where-Object -Property Name -eq $childFileName
+                if ($null -ne $existingChildClassFile) {
+                    $childClassFilePosition = $orderedFiles.IndexOf($existingChildClassFile)
+                    $childClassFile = $orderedFiles[$childClassFilePosition]
+
+                    $orderedFiles[$childClassFilePosition] = $parentFile
+                    $orderedFiles += $childClassFile
+                }
+                else {
+                    $orderedFiles += $parentFile
+                    $orderedFiles += $childFile
+                }
+            }
+
+            <#
+            We need to check again if the child class is in the array in the case the parent class already exists
+            in the array and the child class was not added via the above logic.
+            #>
+            $existingChildClassFile = $orderedFiles | Where-Object -Property Name -eq $childFileName
+            if ($null -eq $existingChildClassFile) {
+                $orderedFiles += $childFile
+            }
+        }
+        else {
+            $childFileName = "$($childClassToken.Content).ps1"
+            $childFile = $Files | Where-Object -Property Name -eq $childFileName
+
+            $existingChildClass = $orderedFiles | Where-Object -Property Name -eq $childFileName
+            if ($null -eq $existingChildClass) {
+                $orderedFiles += $childFile
+            }
+        }
+    }
+
+    return $orderedFiles
+}
 
 function Get-LinesRange {
     [CmdletBinding()]
@@ -63,22 +154,19 @@ function Get-LinesRange {
     return $range
 }
 
-# Add License to psm1 file.
-"<#" | Out-File -FilePath $script:PsmPath -Encoding Default
-$script:LicenseFileContent | ForEach-Object { $_ | Out-File -FilePath $script:PsmPath -Encoding Default -Append }
-"#>" + [System.Environment]::NewLine | Out-File -FilePath $script:PsmPath -Encoding Default -Append
+function Update-ContentOfModuleFile {
+    [CmdletBinding()]
+    param(
+        [string] $Folder,
+        [System.Object[]] $Files
+    )
 
-# Add helper module to psm1 file.
-"Using module '.\VMware.vSphereDSC.Helper.psm1'" | Out-File -FilePath $script:PsmPath -Encoding Default -Append
+    if (Test-Path -Path $Folder) {
+        if ($null -eq $Files) {
+            $Files = Get-ChildItem -Path $Folder -File -Filter *.ps1 -Recurse
+        }
 
-# Updating VMware.vSphereDSC.psm1 content with enums, classes and DSC Resources.
-foreach ($folder in $script:ImportFolders) {
-    $currentFolder = Join-Path -Path $script:ModuleRoot -ChildPath $folder
-
-    if (Test-Path -Path $currentFolder) {
-        $files = Get-ChildItem -Path $currentFolder  -File -Filter *.ps1 -Recurse
-
-        foreach ($file in $files) {
+        foreach ($file in $Files) {
             $fileContent = Get-Content -Path $file.FullName
 
             $range = Get-LinesRange -FileContent $fileContent -StartLinePattern '*Copyright*' -EndLinePattern '#>'
@@ -90,6 +178,24 @@ foreach ($folder in $script:ImportFolders) {
         }
     }
 }
+
+# Add License to psm1 file.
+"<#" | Out-File -FilePath $script:PsmPath -Encoding Default
+$script:LicenseFileContent | ForEach-Object { $_ | Out-File -FilePath $script:PsmPath -Encoding Default -Append }
+"#>" + [System.Environment]::NewLine | Out-File -FilePath $script:PsmPath -Encoding Default -Append
+
+# Add helper module to psm1 file.
+"Using module '.\VMware.vSphereDSC.Helper.psm1'" | Out-File -FilePath $script:PsmPath -Encoding Default -Append
+
+# Updating VMware.vSphereDSC.psm1 content with enums.
+Update-ContentOfModuleFile -Folder $script:EnumsFolder
+
+# Updating VMware.vSphereDSC.psm1 content with classes.
+$orderedClassesFiles = Update-OrderOfFiles -Files $script:ClassesFiles
+Update-ContentOfModuleFile -Folder $script:ClassesFolder -Files $orderedClassesFiles
+
+# Updating VMware.vSphereDSC.psm1 content with DSC Resources.
+Update-ContentOfModuleFile -Folder $script:DSCResourcesFolder
 
 # Updating VMware.vSphereDSC.psd1 content with DSC Resources to export.
 if (Test-Path -Path $script:DSCResourcesFolder) {
