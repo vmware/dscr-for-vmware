@@ -102,7 +102,7 @@ class vCenterStatistics : BaseDSC {
     #>
     [PSObject] GetPerformanceManager() {
         $vCenter = $this.Connection
-        $performanceManager = Get-View -Server $this.Connection $vCenter.ExtensionData.Content.PerfManager
+        $performanceManager = Get-View -Server $this.Connection -Id $vCenter.ExtensionData.Content.PerfManager
 
         return $performanceManager
     }

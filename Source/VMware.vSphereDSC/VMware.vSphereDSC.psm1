@@ -711,7 +711,7 @@ class vCenterStatistics : BaseDSC {
     #>
     [PSObject] GetPerformanceManager() {
         $vCenter = $this.Connection
-        $performanceManager = Get-View -Server $this.Connection $vCenter.ExtensionData.Content.PerfManager
+        $performanceManager = Get-View -Server $this.Connection -Id $vCenter.ExtensionData.Content.PerfManager
 
         return $performanceManager
     }
@@ -953,7 +953,7 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
 
         $dnsConfig = New-DNSConfig @dnsConfigArgs
-        $networkSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.NetworkSystem
+        $networkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
 
         try {
             Update-DNSConfig -NetworkSystem $networkSystem -DnsConfig $dnsConfig
@@ -1093,7 +1093,7 @@ class VMHostNtpSettings : VMHostBaseDSC {
         }
 
         $dateTimeConfig = New-DateTimeConfig -NtpServer $this.NtpServer
-        $dateTimeSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.DateTimeSystem
+        $dateTimeSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.DateTimeSystem
 
         Update-DateTimeConfig -DateTimeSystem $dateTimeSystem -DateTimeConfig $dateTimeConfig
     }
@@ -1110,7 +1110,7 @@ class VMHostNtpSettings : VMHostBaseDSC {
             return
         }
 
-        $serviceSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.ServiceSystem
+        $serviceSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.ServiceSystem
         Update-ServicePolicy -ServiceSystem $serviceSystem -ServiceId $this.ServiceId -ServicePolicyValue $this.NtpServicePolicy.ToString().ToLower()
     }
 }

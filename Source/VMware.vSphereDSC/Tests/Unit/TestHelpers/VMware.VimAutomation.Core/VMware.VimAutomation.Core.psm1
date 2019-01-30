@@ -51,6 +51,28 @@ Add-Type -TypeDefinition @"
         Unset
     }
 
+    public class ManagedObjectReference : System.IEquatable<ManagedObjectReference>
+    {
+        public string Type { get; set; }
+
+        public string Value { get; set; }
+
+        public bool Equals(ManagedObjectReference moRef)
+        {
+            return moRef != null && this.Type == moRef.Type && this.Value == moRef.Value;
+        }
+
+        public override bool Equals(object moRef)
+        {
+            return this.Equals(moRef as ManagedObjectReference);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Type + "_" + this.Value).GetHashCode();
+        }
+    }
+
     public class VIServer : System.IEquatable<VIServer>
     {
         public string Name { get; set; }
@@ -312,11 +334,11 @@ Add-Type -TypeDefinition @"
 
     public class HostConfigManager
     {
-        public HostDateTimeSystem DateTimeSystem { get; set; }
+        public ManagedObjectReference DateTimeSystem { get; set; }
 
-        public HostNetworkSystem NetworkSystem { get; set; }
+        public ManagedObjectReference NetworkSystem { get; set; }
 
-        public HostServiceSystem ServiceSystem { get; set; }
+        public ManagedObjectReference ServiceSystem { get; set; }
     }
 
     public class HostExtensionData
@@ -473,7 +495,7 @@ Add-Type -TypeDefinition @"
 
     public class ServiceContent
     {
-        public PerformanceManager PerfManager { get; set; }
+        public ManagedObjectReference PerfManager { get; set; }
 
         public Folder RootFolder { get; set; }
     }
@@ -662,9 +684,25 @@ function Get-VMHost {
 }
 
 function Get-View {
+    [CmdletBinding()]
     param(
         [PSObject] $Server,
-        [PSObject] $VIObject
+        [Parameter(ParameterSetName = 'GetViewByVIObject')]
+        [PSObject] $VIObject,
+        [Parameter(ParameterSetName = 'GetView')]
+        [VMware.Vim.ManagedObjectReference] $Id,
+        [Parameter(ParameterSetName = 'GetView')]
+        [Parameter(ParameterSetName = 'GetEntity')]
+        [Parameter(ParameterSetName = 'GetViewByRelatedObject')]
+        [string[]] $Property,
+        [Parameter(ParameterSetName = 'GetEntity')]
+        [string[]] $ViewType,
+        [Parameter(ParameterSetName = 'GetEntity')]
+        [VMware.Vim.ManagedObjectReference[]] $SearchRoot,
+        [Parameter(ParameterSetName = 'GetEntity')]
+        [hashtable] $Filter,
+        [Parameter(ParameterSetName = 'GetViewByRelatedObject')]
+        [PSObject] $RelatedObject
     )
 
     return $null

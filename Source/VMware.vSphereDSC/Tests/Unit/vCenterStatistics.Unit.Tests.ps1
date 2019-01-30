@@ -62,6 +62,7 @@ Describe 'vCenterStatistics\Set' -Tag 'Set' {
     Context 'Invoking with default resource properties' {
         BeforeAll {
             $vCenter = [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user' }
+            $perfManagerMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' }
             $perfManager = [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' }
             $perfInterval = [VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; SamplingPeriod = 600; Length = 2629800; Level = 1 }
 
@@ -69,7 +70,7 @@ Describe 'vCenterStatistics\Set' -Tag 'Set' {
             $vCenterMock = {
                 return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
                 [VMware.Vim.VCenterExtensionData] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
-                [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' } } } }
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
             }
             $performanceManagerMock = {
                 return [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id'; HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
@@ -104,7 +105,7 @@ Describe 'vCenterStatistics\Set' -Tag 'Set' {
 
             # Assert
             Assert-MockCalled -CommandName Get-View `
-                              -ParameterFilter { $Server -eq $vCenter -and $VIObject -eq $perfManager } `
+                              -ParameterFilter { $Server -eq $vCenter -and $Id -eq $perfManagerMoRef } `
                               -ModuleName $script:moduleName -Exactly 1 -Scope It
         }
 
@@ -145,7 +146,7 @@ Describe 'vCenterStatistics\Set' -Tag 'Set' {
             $vCenterMock = {
                 return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
                 [VMware.Vim.VCenterExtensionData] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
-                [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' } } } }
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
             }
             $performanceManagerMock = {
                 return [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id'; HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
@@ -198,13 +199,14 @@ Describe 'vCenterStatistics\Test' -Tag 'Test' {
     Context 'Invoking with default resource properties' {
         BeforeAll {
             $vCenter = [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user' }
+            $perfManagerMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' }
             $perfManager = [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' }
 
             # Arrange
             $vCenterMock = {
                 return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
                 [VMware.Vim.VCenterExtensionData] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
-                [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' } } } }
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
             }
             $performanceManagerMock = {
                 return [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id'; HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
@@ -234,7 +236,7 @@ Describe 'vCenterStatistics\Test' -Tag 'Test' {
 
             # Assert
             Assert-MockCalled -CommandName Get-View `
-                              -ParameterFilter { $Server -eq $vCenter -and $VIObject -eq $perfManager } `
+                              -ParameterFilter { $Server -eq $vCenter -and $Id -eq $perfManagerMoRef } `
                               -ModuleName $script:moduleName -Exactly 1 -Scope It
         }
 
@@ -258,7 +260,7 @@ Describe 'vCenterStatistics\Test' -Tag 'Test' {
             $vCenterMock = {
                 return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
                 [VMware.Vim.VCenterExtensionData] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
-                [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' } } } }
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
             }
             $performanceManagerMock = {
                 return [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id'; HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
@@ -292,7 +294,7 @@ Describe 'vCenterStatistics\Test' -Tag 'Test' {
             $vCenterMock = {
                 return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
                 [VMware.Vim.VCenterExtensionData] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
-                [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' } } } }
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
             }
             $performanceManagerMock = {
                 return [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id'; HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
@@ -326,7 +328,7 @@ Describe 'vCenterStatistics\Test' -Tag 'Test' {
             $vCenterMock = {
                 return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
                 [VMware.Vim.VCenterExtensionData] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
-                [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' } } } }
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
             }
             $performanceManagerMock = {
                 return [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id'; HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
@@ -360,7 +362,7 @@ Describe 'vCenterStatistics\Test' -Tag 'Test' {
             $vCenterMock = {
                 return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
                 [VMware.Vim.VCenterExtensionData] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
-                [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' } } } }
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
             }
             $performanceManagerMock = {
                 return [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id'; HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
@@ -394,7 +396,7 @@ Describe 'vCenterStatistics\Test' -Tag 'Test' {
             $vCenterMock = {
                 return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
                 [VMware.Vim.VCenterExtensionData] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
-                [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' } } } }
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
             }
             $performanceManagerMock = {
                 return [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id'; HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
@@ -428,6 +430,7 @@ Describe 'vCenterStatistics\Get' -Tag 'Get' {
 
     BeforeAll {
         $vCenter = [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user' }
+        $perfManagerMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' }
         $perfManager = [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' }
         $perfInterval = [VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; SamplingPeriod = 600; Length = 2629800; Level = 1 }
 
@@ -435,7 +438,7 @@ Describe 'vCenterStatistics\Get' -Tag 'Get' {
         $vCenterMock = {
             return [VMware.Vim.VCenter] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
             [VMware.Vim.VCenterExtensionData] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
-            [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id' } } } }
+            [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
         }
         $performanceManagerMock = {
             return [VMware.Vim.PerformanceManager] @{ Id = 'PerfManager Id'; HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
@@ -465,7 +468,7 @@ Describe 'vCenterStatistics\Get' -Tag 'Get' {
 
         # Assert
         Assert-MockCalled -CommandName Get-View `
-                          -ParameterFilter { $Server -eq $vCenter -and $VIObject -eq $perfManager } `
+                          -ParameterFilter { $Server -eq $vCenter -and $Id -eq $perfManagerMoRef } `
                           -ModuleName $script:moduleName -Exactly 1 -Scope It
     }
 
