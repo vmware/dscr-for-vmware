@@ -19,7 +19,10 @@ class InventoryBaseDSC : BaseDSC {
     .DESCRIPTION
 
     The full path to the Datacenter we will use from the Inventory.
+    The path consists of 0 or more folders and the Datacenter name.
+	Root folder of the Inventory is not part of the path.
     The parts of the path are separated with "/" where the last part of the path is the Datacenter name.
+    Example path: "<Folder Name>/<Folder Name>/<Datacenter Name>".
     #>
     [DscProperty(Key)]
     [string] $DatacenterPath
@@ -50,12 +53,13 @@ class InventoryBaseDSC : BaseDSC {
         So we check if there is a Datacenter with that name at root folder.
         #>
         if ($this.DatacenterPath -NotContains '/') {
+            $datacentersFolder = Get-Inventory -Server $this.Connection | Where-Object { ($_.Name -eq 'Datacenters') -and ($_.Type -eq 'Datacenter') }
             try {
-                $datacenter = Get-Datacenter -Server $this.Connection -Name $this.DatacenterPath -Location $rootFolder -ErrorAction Stop
+                $datacenter = Get-Datacenter -Server $this.Connection -Name $this.DatacenterPath -Location $datacentersFolder -ErrorAction Stop
                 return $datacenter
             }
             catch {
-                throw "Datacenter with name $($this.DatacenterPath) was not found at $rootFolder. For more inforamtion: $($_.Exception.Message)"
+                throw "Datacenter with name $($this.DatacenterPath) was not found at $($datacentersFolder.Name). For more inforamtion: $($_.Exception.Message)"
             }
         }
 
@@ -72,13 +76,17 @@ class InventoryBaseDSC : BaseDSC {
             $foundPathItem = $childEntities | Where-Object -Property Name -eq $pathItem
 
             if ($null -eq $foundPathItem) {
-                throw "$pathItem could not be found in the Inventory. Please verify you have passed a valid path."
+                throw "Datacenter with path $($this.DatacenterPath) was not found because $pathItem folder cannot be found under."
+            }
+
+            # If the found path item does not have 'ChildEntity' member, the item is a Datacenter.
+            $childEntityMember = $foundPathItem | Get-Member -Name 'ChildEnity'
+            if ($null -eq $childEntityMember) {
+                throw "The path $($this.DatacenterPath) contains another Datacenter $pathItem."
             }
 
             # If the found path item is Folder and not Datacenter we start looking in the items of this Folder.
-            if ($foundPathItem.GetType().Name -eq 'Folder') {
-                $childEntities = Get-View -Server $this.Connection $foundPathItem.ChildEntity
-            }
+            $childEntities = Get-View -Server $this.Connection $foundPathItem.ChildEntity
         }
 
         try {

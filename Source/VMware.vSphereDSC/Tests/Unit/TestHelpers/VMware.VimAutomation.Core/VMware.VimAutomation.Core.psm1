@@ -486,11 +486,12 @@ Add-Type -TypeDefinition @"
     {
         public string Name { get; set; }
 
-        public Folder[] ChildEntity { get; set; }
+        public ManagedObjectReference[] ChildEntity { get; set; }
     }
 
     public class Datacenter
     {
+        public string Name { get; set; }
     }
 
     public class ServiceContent
