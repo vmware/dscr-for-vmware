@@ -70,7 +70,7 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
             }
             $vmHostMock = {
                 return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
-                     = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' } } } }
+                     = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
             }
             $networkSystemMock = {
                 return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
@@ -109,6 +109,7 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
         BeforeAll {
             # Arrange
             $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+            $networkSystemMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' }
             $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
 
             $viServerMock = {
@@ -116,7 +117,7 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
             }
             $vmHostMock = {
                 return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
-                     = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' } } } }
+                     = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
             }
             $dnsConfigMock = {
                 return [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name' }
@@ -154,7 +155,7 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
 
             # Assert
             Assert-MockCalled -CommandName Get-View `
-                              -ParameterFilter { $Server -eq $viServer -and $VIObject -eq $networkSystemObject } `
+                              -ParameterFilter { $Server -eq $viServer -and $Id -eq $networkSystemMoRef } `
                               -ModuleName $script:moduleName -Exactly 1 -Scope It
         }
 
@@ -173,6 +174,7 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
         BeforeAll {
             # Arrange
             $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+            $networkSystemMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' }
             $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
 
             $viServerMock = {
@@ -180,7 +182,7 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
             }
             $vmHostMock = {
                 return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
-                     = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' } } } }
+                     = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
             }
             $dnsConfigMock = {
                 return [VMware.Vim.HostDnsConfig] @{ Dhcp = $true; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'VirtualNicDevice' }
@@ -221,7 +223,7 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
 
             # Assert
             Assert-MockCalled -CommandName Get-View `
-                              -ParameterFilter { $Server -eq $viServer -and $VIObject -eq $networkSystemObject } `
+                              -ParameterFilter { $Server -eq $viServer -and $Id -eq $networkSystemMoRef } `
                               -ModuleName $script:moduleName -Exactly 1 -Scope It
         }
 
@@ -255,7 +257,7 @@ Describe 'VMHostDnsSettings\Test' -Tag 'Test' {
             }
             $vmHostMock = {
                 return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
-                     = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' } } } }
+                     = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
             }
             $networkSystemMock = {
                 return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }

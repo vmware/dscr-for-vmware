@@ -143,7 +143,7 @@ class VMHostNtpSettings : VMHostBaseDSC {
         }
 
         $dateTimeConfig = New-DateTimeConfig -NtpServer $this.NtpServer
-        $dateTimeSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.DateTimeSystem
+        $dateTimeSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.DateTimeSystem
 
         Update-DateTimeConfig -DateTimeSystem $dateTimeSystem -DateTimeConfig $dateTimeConfig
     }
@@ -160,7 +160,7 @@ class VMHostNtpSettings : VMHostBaseDSC {
             return
         }
 
-        $serviceSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.ServiceSystem
+        $serviceSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.ServiceSystem
         Update-ServicePolicy -ServiceSystem $serviceSystem -ServiceId $this.ServiceId -ServicePolicyValue $this.NtpServicePolicy.ToString().ToLower()
     }
 }
