@@ -182,10 +182,7 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
             }
             $vmHostMock = {
                 return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
-                                = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' }
-                        }
-                    }
-                }
+                     = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
             }
             $dnsConfigMock = {
                 return [VMware.Vim.HostDnsConfig] @{ Dhcp = $true; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'VirtualNicDevice' }
