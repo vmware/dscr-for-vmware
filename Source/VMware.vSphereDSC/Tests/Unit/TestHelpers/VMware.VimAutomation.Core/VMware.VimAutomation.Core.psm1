@@ -482,9 +482,23 @@ Add-Type -TypeDefinition @"
         }
     }
 
+    public class Folder
+    {
+        public string Name { get; set; }
+
+        public ManagedObjectReference[] ChildEntity { get; set; }
+    }
+
+    public class Datacenter
+    {
+        public string Name { get; set; }
+    }
+
     public class ServiceContent
     {
         public ManagedObjectReference PerfManager { get; set; }
+
+        public Folder RootFolder { get; set; }
     }
 
     public class VCenterExtensionData
@@ -785,4 +799,14 @@ function Set-PowerCLIConfiguration {
     )
 
     return $null
+}
+
+function Get-Datacenter {
+    param(
+        [PSObject] $Server,
+        [string] $Name,
+        [VMware.Vim.Folder] $Location
+    )
+
+    return New-Object VMware.Vim.Datacenter
 }
