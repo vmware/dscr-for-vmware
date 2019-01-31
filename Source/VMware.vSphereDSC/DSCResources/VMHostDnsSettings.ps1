@@ -172,7 +172,7 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
 
         $dnsConfig = New-DNSConfig @dnsConfigArgs
-        $networkSystem = Get-View -Server $this.Connection $vmHost.ExtensionData.ConfigManager.NetworkSystem
+        $networkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
 
         try {
             Update-DNSConfig -NetworkSystem $networkSystem -DnsConfig $dnsConfig
