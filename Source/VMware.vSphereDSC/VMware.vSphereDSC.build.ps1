@@ -26,8 +26,124 @@ $script:LicensePath = Join-Path -Path $script:ProjectRoot -ChildPath "LICENSE.tx
 $script:LicenseSkipLines = 2
 $script:LicenseFileContent = Get-Content -Path $script:LicensePath | Select-Object -Skip $script:LicenseSkipLines
 
-$script:ImportFolders = @('Enums', 'Classes', 'DSCResources')
+$script:EnumsFolder = Join-Path -Path $script:ModuleRoot -ChildPath "Enums"
+$script:ClassesFolder = Join-Path -Path $script:ModuleRoot -ChildPath "Classes"
+$script:ClassesFiles = Get-ChildItem -Path $script:ClassesFolder -File -Filter *.ps1 -Recurse
 $script:DSCResourcesFolder = Join-Path -Path $script:ModuleRoot -ChildPath "DSCResources"
+
+class Node {
+    [string] $Name
+
+    [string] $BaseName
+
+    [string] $FileName
+
+    [Node[]] $Edge
+
+    [void] AddEdge($edge) {
+        if ($null -eq $this.Edge) {
+            $this.Edge = @()
+        }
+
+        $this.Edge += $edge
+    }
+}
+
+function Add-DependenciesBetweenClasses {
+    [CmdletBinding()]
+    param (
+        [System.Object[]] $Files
+    )
+
+    $allClasses = @()
+
+    foreach ($file in $Files) {
+        $fileContent = Get-Content -Path $file.FullName
+        $errors = $null
+
+        $tokens = [System.Management.Automation.PSParser]::Tokenize($fileContent, [ref] $errors)
+        $classTokens = $tokens | Where-Object { $_.Content -eq 'class' }
+
+        foreach ($classToken in $classTokens) {
+            $classLine = $fileContent[$classToken.StartLine - 1]
+            $classLine = $classLine.Substring('class '.Length)
+            $classLineBaseInheritor = $classLine.Split(':{') | ForEach-Object { $_.Trim() }
+            $baseName = $null
+            $name = $null
+
+            # If the class does not have a base class that inherits from, the array will contain only two values: <class name> and <empty string>
+            if ($classLineBaseInheritor.Length -gt 2) {
+                $name = $classLineBaseInheritor[0]
+                $baseName = $classLineBaseInheritor[1]
+            }
+            else {
+                $name = $classLineBaseInheritor[0]
+            }
+
+            $currentClass = [Node]::new()
+            $currentClass.Name = $name
+            $currentClass.BaseName = $baseName
+            $currentClass.FileName = $file.Name
+
+            $allClasses += $currentClass
+        }
+    }
+
+    foreach ($class in $allClasses) {
+        if (![string]::IsNullOrEmpty($class.BaseName)) {
+            $baseClass = $allClasses | Where-Object { $_.Name -eq $class.BaseName }
+            $class.AddEdge($baseClass)
+        }
+    }
+
+    return $allClasses
+}
+
+function Get-OrderedClasses {
+    [CmdletBinding()]
+    param (
+        [Node] $Class,
+        [ref] $ResolvedClasses
+    )
+
+    foreach ($edge in $Class.Edge) {
+        $containedEdge = $ResolvedClasses.Value | Where-Object { $_.Name -eq $edge.Name }
+        if ($null -eq $containedEdge) {
+            Get-OrderedClasses -Class $edge -ResolvedClasses ([ref] $ResolvedClasses.Value)
+        }
+    }
+
+    $containedClass = $ResolvedClasses.Value | Where-Object { $_.Name -eq $Class.Name }
+    if ($null -eq $containedClass) {
+        $ResolvedClasses.Value.Add($Class)
+    }
+}
+
+function Get-OrderedFiles {
+    [CmdletBinding()]
+    param (
+        [System.Object[]] $Files
+    )
+
+    $classes = Add-DependenciesBetweenClasses -Files $Files
+    $resolvedClasses = New-Object System.Collections.Generic.List[Node]
+
+    foreach ($class in $classes) {
+        Get-OrderedClasses -Class $class -ResolvedClasses ([ref] $resolvedClasses)
+    }
+
+    $orderedFiles = @()
+
+    foreach ($class in $resolvedClasses) {
+        $containedFile = $orderedFiles | Where-Object { $_.Name -eq $class.FileName }
+        if ($null -eq $containedFile) {
+            $file = $Files | Where-Object { $_.Name -eq $class.FileName }
+            $orderedFiles += $file
+        }
+    }
+
+    return $orderedFiles
+}
 
 function Get-LinesRange {
     [CmdletBinding()]
@@ -63,22 +179,19 @@ function Get-LinesRange {
     return $range
 }
 
-# Add License to psm1 file.
-"<#" | Out-File -FilePath $script:PsmPath -Encoding Default
-$script:LicenseFileContent | ForEach-Object { $_ | Out-File -FilePath $script:PsmPath -Encoding Default -Append }
-"#>" + [System.Environment]::NewLine | Out-File -FilePath $script:PsmPath -Encoding Default -Append
+function Update-ContentOfModuleFile {
+    [CmdletBinding()]
+    param(
+        [string] $Folder,
+        [System.Object[]] $Files
+    )
 
-# Add helper module to psm1 file.
-"Using module '.\VMware.vSphereDSC.Helper.psm1'" | Out-File -FilePath $script:PsmPath -Encoding Default -Append
+    if (Test-Path -Path $Folder) {
+        if ($null -eq $Files) {
+            $Files = Get-ChildItem -Path $Folder -File -Filter *.ps1 -Recurse
+        }
 
-# Updating VMware.vSphereDSC.psm1 content with enums, classes and DSC Resources.
-foreach ($folder in $script:ImportFolders) {
-    $currentFolder = Join-Path -Path $script:ModuleRoot -ChildPath $folder
-
-    if (Test-Path -Path $currentFolder) {
-        $files = Get-ChildItem -Path $currentFolder  -File -Filter *.ps1 -Recurse
-
-        foreach ($file in $files) {
+        foreach ($file in $Files) {
             $fileContent = Get-Content -Path $file.FullName
 
             $range = Get-LinesRange -FileContent $fileContent -StartLinePattern '*Copyright*' -EndLinePattern '#>'
@@ -90,6 +203,41 @@ foreach ($folder in $script:ImportFolders) {
         }
     }
 }
+
+# Add License to psm1 file.
+"<#" | Out-File -FilePath $script:PsmPath -Encoding Default
+$script:LicenseFileContent | ForEach-Object { $_ | Out-File -FilePath $script:PsmPath -Encoding Default -Append }
+"#>" + [System.Environment]::NewLine | Out-File -FilePath $script:PsmPath -Encoding Default -Append
+
+# Add helper module to psm1 file.
+"Using module '.\VMware.vSphereDSC.Helper.psm1'" | Out-File -FilePath $script:PsmPath -Encoding Default -Append
+
+# Updating VMware.vSphereDSC.psm1 content with enums.
+Update-ContentOfModuleFile -Folder $script:EnumsFolder
+
+<#
+Updating VMware.vSphereDSC.psm1 content with classes.
+The files need to be ordered by the inheritance of the classes inside and not alphabetically.
+Because we can have cases where the child class is defined before the parent class which will result in an exception.
+Example:
+class DatastoreInventory : Inventory {
+}
+
+class Inventory {
+}
+
+So with this function we first order the classes based on the inheritance(the first classes in the array are the ones that do not inherit from anything and then
+after them we order the classes that inherit from them and so on). And the last classes in the array are the ones that are not base classes to any other class.
+After we order the classes, we order the files based on the classes defined inside. With this step we guarantee that when a class is placed in the psm1 file, if the file has a
+class it inherits from, that class will be already defined and no exception will be thrown like the above example.
+
+After ordering the files we pass them to the Update-ContentOfModuleFile function to place the content in the module file.
+#>
+$orderedClassesFiles = Get-OrderedFiles -Files $script:ClassesFiles
+Update-ContentOfModuleFile -Folder $script:ClassesFolder -Files $orderedClassesFiles
+
+# Updating VMware.vSphereDSC.psm1 content with DSC Resources.
+Update-ContentOfModuleFile -Folder $script:DSCResourcesFolder
 
 # Updating VMware.vSphereDSC.psd1 content with DSC Resources to export.
 if (Test-Path -Path $script:DSCResourcesFolder) {
