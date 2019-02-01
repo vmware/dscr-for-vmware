@@ -215,7 +215,24 @@ $script:LicenseFileContent | ForEach-Object { $_ | Out-File -FilePath $script:Ps
 # Updating VMware.vSphereDSC.psm1 content with enums.
 Update-ContentOfModuleFile -Folder $script:EnumsFolder
 
-# Updating VMware.vSphereDSC.psm1 content with classes.
+<#
+Updating VMware.vSphereDSC.psm1 content with classes.
+The files need to be ordered by the inheritance of the classes inside and not alphabetically.
+Because we can have cases where the child class is defined before the parent class which will result in an exception.
+Example:
+class DatastoreInventory : Inventory {
+}
+
+class Inventory {
+}
+
+So with this function we first order the classes based on the inheritance(the first classes in the array are the ones that do not inherit from anything and then
+after them we order the classes that inherit from them and so on). And the last classes in the array are the ones that are not base classes to any other class.
+After we order the classes, we order the files based on the classes defined inside. With this step we guarantee that when a class is placed in the psm1 file, if the file has a
+class it inherits from, that class will be already defined and no exception will be thrown like the above example.
+
+After ordering the files we pass them to the Update-ContentOfModuleFile function to place the content in the module file.
+#>
 $orderedClassesFiles = Get-OrderedFiles -Files $script:ClassesFiles
 Update-ContentOfModuleFile -Folder $script:ClassesFolder -Files $orderedClassesFiles
 
