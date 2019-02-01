@@ -31,89 +31,114 @@ $script:ClassesFolder = Join-Path -Path $script:ModuleRoot -ChildPath "Classes"
 $script:ClassesFiles = Get-ChildItem -Path $script:ClassesFolder -File -Filter *.ps1 -Recurse
 $script:DSCResourcesFolder = Join-Path -Path $script:ModuleRoot -ChildPath "DSCResources"
 
-function Update-OrderOfFiles {
+class Node {
+    [string] $Name
+
+    [string] $BaseName
+
+    [string] $FileName
+
+    [Node[]] $Edge
+
+    [void] AddEdge($edge) {
+        if ($null -eq $this.Edge) {
+            $this.Edge = @()
+        }
+
+        $this.Edge += $edge
+    }
+}
+
+function Add-DependenciesBetweenClasses {
     [CmdletBinding()]
-    [OutputType([System.Object[]])]
     param (
         [System.Object[]] $Files
     )
 
-    $orderedFiles = @()
+    $allClasses = @()
 
     foreach ($file in $Files) {
         $fileContent = Get-Content -Path $file.FullName
         $errors = $null
 
-        $fileTokens = [System.Management.Automation.PSParser]::Tokenize($fileContent, [ref] $errors)
-        $classToken = $fileTokens | Where-Object -Property Content -eq 'class'
-        $classTokenIndex = $fileTokens.IndexOf($classToken)
-        $tokensCount = 3
+        $tokens = [System.Management.Automation.PSParser]::Tokenize($fileContent, [ref] $errors)
+        $classTokens = $tokens | Where-Object { $_.Content -eq 'class' }
 
-        <#
-        Here we modify the tokens array to contain only the tokens of the line which contains the 'class' keyword.
-        The class line could be one of the following:
-        1. class <ChildClass> : <ParentClass>
-        2. class <ChildClass>
-        #>
-        $fileTokens = $fileTokens[($classTokenIndex + 1)..($classTokenIndex + $tokensCount)]
+        foreach ($classToken in $classTokens) {
+            $classLine = $fileContent[$classToken.StartLine - 1]
+            $classLine = $classLine.Substring('class '.Length)
+            $classLineBaseInheritor = $classLine.Split(':{') | ForEach-Object { $_.Trim() }
+            $baseName = $null
+            $name = $null
 
-        $childClassToken = $fileTokens[0]
-        $inheritanceOperatorToken = $fileTokens[1]
-        $parentClassToken = $fileTokens[2]
-
-        # Here we check if the tokens array contains tokens that tackle the case when the class is inheriting from another class.
-        if ($childClassToken.Type -eq 'Type' -and $inheritanceOperatorToken.Type -eq 'Unknown' -and $parentClassToken.Type -eq 'Type') {
-            $parentFileName = "$($parentClassToken.Content).ps1"
-            $childFileName = "$($childClassToken.Content).ps1"
-
-            $parentFile = $Files | Where-Object -Property Name -eq $parentFileName
-            $childFile = $Files | Where-Object -Property Name -eq $childFileName
-
-            <#
-            If the parent and child classes already exists in the ordered files we do not add anything.
-            Otherwise we first add the parent class, and then the child class to avoid exceptions when
-            the child class is defined before the parent class.
-            #>
-
-            $existingParentClassFile = $orderedFiles | Where-Object -Property Name -eq $parentFileName
-            if ($null -eq $existingParentClassFile) {
-
-                <#
-                If the parent class does not exist, there are two options:
-                1. The child class is already in the array, so we need to put the parent class before the child class.
-                2. The child class is not in the array, so we first add the parent class and then the child class.
-                #>
-                $existingChildClassFile = $orderedFiles | Where-Object -Property Name -eq $childFileName
-                if ($null -ne $existingChildClassFile) {
-                    $childClassFilePosition = $orderedFiles.IndexOf($existingChildClassFile)
-                    $childClassFile = $orderedFiles[$childClassFilePosition]
-
-                    $orderedFiles[$childClassFilePosition] = $parentFile
-                    $orderedFiles += $childClassFile
-                }
-                else {
-                    $orderedFiles += $parentFile
-                    $orderedFiles += $childFile
-                }
+            # If the class does not have a base class that inherits from, the array will contain only two values: <class name> and <empty string>
+            if ($classLineBaseInheritor.Length -gt 2) {
+                $name = $classLineBaseInheritor[0]
+                $baseName = $classLineBaseInheritor[1]
+            }
+            else {
+                $name = $classLineBaseInheritor[0]
             }
 
-            <#
-            We need to check again if the child class is in the array in the case the parent class already exists
-            in the array and the child class was not added via the above logic.
-            #>
-            $existingChildClassFile = $orderedFiles | Where-Object -Property Name -eq $childFileName
-            if ($null -eq $existingChildClassFile) {
-                $orderedFiles += $childFile
-            }
+            $currentClass = [Node]::new()
+            $currentClass.Name = $name
+            $currentClass.BaseName = $baseName
+            $currentClass.FileName = $file.Name
+
+            $allClasses += $currentClass
         }
-        else {
-            $childFileName = "$($childClassToken.Content).ps1"
-            $childFile = $Files | Where-Object -Property Name -eq $childFileName
+    }
 
-            $existingChildClass = $orderedFiles | Where-Object -Property Name -eq $childFileName
-            if ($null -eq $existingChildClass) {
-                $orderedFiles += $childFile
-            }
+    foreach ($class in $allClasses) {
+        if (![string]::IsNullOrEmpty($class.BaseName)) {
+            $baseClass = $allClasses | Where-Object { $_.Name -eq $class.BaseName }
+            $class.AddEdge($baseClass)
+        }
+    }
+
+    return $allClasses
+}
+
+function Get-OrderedClasses {
+    [CmdletBinding()]
+    param (
+        [Node] $Class,
+        [ref] $ResolvedClasses
+    )
+
+    foreach ($edge in $Class.Edge) {
+        $containedEdge = $ResolvedClasses.Value | Where-Object { $_.Name -eq $edge.Name }
+        if ($null -eq $containedEdge) {
+            Get-OrderedClasses -Class $edge -ResolvedClasses ([ref] $ResolvedClasses.Value)
+        }
+    }
+
+    $containedClass = $ResolvedClasses.Value | Where-Object { $_.Name -eq $Class.Name }
+    if ($null -eq $containedClass) {
+        $ResolvedClasses.Value.Add($Class)
+    }
+}
+
+function Get-OrderedFiles {
+    [CmdletBinding()]
+    param (
+        [System.Object[]] $Files
+    )
+
+    $classes = Add-DependenciesBetweenClasses -Files $Files
+    $resolvedClasses = New-Object System.Collections.Generic.List[Node]
+
+    foreach ($class in $classes) {
+        Get-OrderedClasses -Class $class -ResolvedClasses ([ref] $resolvedClasses)
+    }
+
+    $orderedFiles = @()
+
+    foreach ($class in $resolvedClasses) {
+        $containedFile = $orderedFiles | Where-Object { $_.Name -eq $class.FileName }
+        if ($null -eq $containedFile) {
+            $file = $Files | Where-Object { $_.Name -eq $class.FileName }
+            $orderedFiles += $file
         }
     }
 
@@ -191,7 +216,7 @@ $script:LicenseFileContent | ForEach-Object { $_ | Out-File -FilePath $script:Ps
 Update-ContentOfModuleFile -Folder $script:EnumsFolder
 
 # Updating VMware.vSphereDSC.psm1 content with classes.
-$orderedClassesFiles = Update-OrderOfFiles -Files $script:ClassesFiles
+$orderedClassesFiles = Get-OrderedFiles -Files $script:ClassesFiles
 Update-ContentOfModuleFile -Folder $script:ClassesFolder -Files $orderedClassesFiles
 
 # Updating VMware.vSphereDSC.psm1 content with DSC Resources.
