@@ -180,6 +180,16 @@ In your unit test file you need to replace VMware PowerCLI modules with the scri
   }
  ```
 
+ Additionally if you have [DependsOn](https://docs.microsoft.com/en-us/powershell/dsc/configurations/resource-depends-on) in your Configurations, it is recommended to add this test:
+ ```powershell
+  It 'Should depend on resource <resource name>' {
+      # Make sure that the current resource is depending on the right resource.
+      $currentResource = Get-DscConfiguration | Where-Object { $_.Name -eq '<current resource name>' }
+
+      $currentResource.DependsOn | Should -Be '<resource name>'
+  }
+ ```
+
 The needed Configurations for the Integration Tests should be located in the [Configurations Folder](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Tests/Integration/Configurations)
 
 Running the tests:
