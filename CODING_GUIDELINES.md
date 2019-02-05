@@ -96,7 +96,7 @@ For every PowerCLI cmdlet you use, you need to create mock implementation in the
   }
  ```
 
-For every VMware.Vim type you use, you need to provide .NET implementation of that type in the [VMware.VimAutomation.Core Types File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMwareVimAutomationCoreTypes.cs).
+For every VMware.Vim type you use, you need to provide .NET implementation of that type in the [VMware.Vim Types File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMwareVimTypes.cs).
  ```cs
   namespace VMware.Vim
   {

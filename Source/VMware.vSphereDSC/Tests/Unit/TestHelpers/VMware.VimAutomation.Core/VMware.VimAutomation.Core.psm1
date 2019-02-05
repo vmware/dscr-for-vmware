@@ -17,7 +17,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 <#
 Mock types of VMware.Vim assembly for the purpose of unit testing.
 #>
-Add-Type -Path "$($env:PSModulePath)/VMware.VimAutomation.Core/VMwareVimAutomationCoreTypes.cs"
+Add-Type -Path "$($env:PSModulePath)/VMware.VimAutomation.Core/VMwareVimTypes.cs"
 
 function Connect-VIServer {
     param(
