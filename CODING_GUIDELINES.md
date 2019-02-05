@@ -96,15 +96,14 @@ For every PowerCLI cmdlet you use, you need to create mock implementation in the
   }
  ```
 
-For every VMware.Vim type you use, you need to provide .NET implementation of that type in the [VMware.VimAutomation.Core Test Module File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMware.VimAutomation.Core.psm1).
- ```powershell
-  <#
-  Mock types of VMware.Vim assembly for the purpose of unit testing.
-  #>
-
-  Add-Type -TypeDefinition @"
-   <Add your type here>
-  "
+For every VMware.Vim type you use, you need to provide .NET implementation of that type in the [VMware.VimAutomation.Core Types File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMwareVimAutomationCoreTypes.cs).
+ ```cs
+  namespace VMware.Vim
+  {
+      public class <Type Name>
+      {
+      }
+  }
  ```
 
 In your unit test file you need to replace VMware PowerCLI modules with the script modules that allows PowerCLI cmdlets and types to be mocked.
