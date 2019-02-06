@@ -67,7 +67,7 @@ function Add-DependenciesBetweenClasses {
         foreach ($classToken in $classTokens) {
             $classLine = $fileContent[$classToken.StartLine - 1]
             $classLine = $classLine.Substring('class '.Length)
-            $classLineBaseInheritor = $classLine.Split(':{') | ForEach-Object { $_.Trim() }
+            $classLineBaseInheritor = $classLine.Split(':').Split('{') | ForEach-Object { $_.Trim() }
             $baseName = $null
             $name = $null
 
@@ -234,7 +234,6 @@ class it inherits from, that class will be already defined and no exception will
 After ordering the files we pass them to the Update-ContentOfModuleFile function to place the content in the module file.
 #>
 $orderedClassesFiles = Get-OrderedFiles -Files $script:ClassesFiles
-$orderedClassesFiles | ForEach-Object { Write-Host "$($_.Name)...............name" }
 Update-ContentOfModuleFile -Folder $script:ClassesFolder -Files $orderedClassesFiles
 
 # Updating VMware.vSphereDSC.psm1 content with DSC Resources.
