@@ -20,7 +20,7 @@ class InventoryBaseDSC : BaseDSC {
 
     The full path to the Datacenter we will use from the Inventory.
     The path consists of 0 or more folders and the Datacenter name.
-	Root folder of the Inventory is not part of the path.
+    Root folder of the Inventory is not part of the path.
     The parts of the path are separated with "/" where the last part of the path is the Datacenter name.
     Example path: "<Folder Name>/<Folder Name>/<Datacenter Name>".
     #>
@@ -46,7 +46,7 @@ class InventoryBaseDSC : BaseDSC {
         }
 
         $vCenter = $this.Connection
-        $rootFolder = Get-View -Server $this.Connection $vCenter.ExtensionData.Content.RootFolder
+        $rootFolder = Get-View -Server $this.Connection -Id $vCenter.ExtensionData.Content.RootFolder
 
         <#
         This is a special case where only the Datacenter name is passed.
@@ -55,8 +55,7 @@ class InventoryBaseDSC : BaseDSC {
         if ($this.DatacenterPath -NotContains '/') {
             $datacentersFolder = Get-Inventory -Server $this.Connection | Where-Object { ($_.Name -eq 'Datacenters') -and ($_.Type -eq 'Datacenter') }
             try {
-                $datacenter = Get-Datacenter -Server $this.Connection -Name $this.DatacenterPath -Location $datacentersFolder -ErrorAction Stop
-                return $datacenter
+                return Get-Datacenter -Server $this.Connection -Name $this.DatacenterPath -Location $datacentersFolder -ErrorAction Stop
             }
             catch {
                 throw "Datacenter with name $($this.DatacenterPath) was not found at $($datacentersFolder.Name). For more inforamtion: $($_.Exception.Message)"
@@ -69,7 +68,7 @@ class InventoryBaseDSC : BaseDSC {
         # Removes the Datacenter name from the path items array as we already retrieved it.
         $pathItems = $pathItems[0..($pathItems.Length - 2)]
 
-        $childEntities = Get-View -Server $this.Connection $rootFolder.ChildEntity
+        $childEntities = Get-View -Server $this.Connection -Id $rootFolder.ChildEntity
         $foundPathItem = $null
 
         foreach ($pathItem in $pathItems) {
@@ -86,12 +85,12 @@ class InventoryBaseDSC : BaseDSC {
             }
 
             # If the found path item is Folder and not Datacenter we start looking in the items of this Folder.
-            $childEntities = Get-View -Server $this.Connection $foundPathItem.ChildEntity
+            $childEntities = Get-View -Server $this.Connection -Id $foundPathItem.ChildEntity
         }
 
         try {
-            $datacenter = Get-Datacenter -Server $this.Connection -Name $datacenterName -Location $foundPathItem -ErrorAction Stop
-            return $datacenter
+            $datacenterLocation = Get-Inventory -Server $this.Connection -Id $foundPathItem.MoRef
+            return Get-Datacenter -Server $this.Connection -Name $datacenterName -Location $datacenterLocation -ErrorAction Stop
         }
         catch {
             throw "Datacenter with name $datacenterName was not found. For more inforamtion: $($_.Exception.Message)"
