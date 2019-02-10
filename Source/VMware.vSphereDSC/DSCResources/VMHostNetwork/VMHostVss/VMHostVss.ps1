@@ -15,23 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostVss : VMHostBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Value indicating if the VSS should be Present or Absent.
-    #>
-    [DscProperty(Mandatory)]
-    [Ensure] $Ensure
-
-    <#
-    .DESCRIPTION
-
-    The name of the VSS.
-    #>
-    [DscProperty(Key)]
-    [string] $VssName
-
+class VMHostVss : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
 
@@ -85,6 +69,7 @@ class VMHostVss : VMHostBaseDSC {
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
+        $this.GetNetworkSystem($vmHost)
 
         $this.UpdateVss($vmHost)
     }
@@ -94,6 +79,7 @@ class VMHostVss : VMHostBaseDSC {
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
+        $this.GetNetworkSystem($vmHost)
         $vss = $this.GetVss($vmHost)
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -107,15 +93,14 @@ class VMHostVss : VMHostBaseDSC {
     [VMHostVss] Get() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-
         $result = [VMHostVss]::new()
         $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $this.GetNetworkSystem($vmHost)
         $result.Name = $vmHost.Name
-
         $this.PopulateResult($vmHost, $result)
-
         if ($null -ne $result.Key) {
             $result.Ensure = 'Present'
         }
@@ -140,19 +125,6 @@ class VMHostVss : VMHostBaseDSC {
         $vssTest += ($vss.NumPorts -eq $this.NumPorts)
 
         return ($vssTest -notcontains $false)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns the desired virtual switch if it is present on the server otherwise returns $null.
-    #>
-    [PSObject] GetVss($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
-
-        $vmHostNetworkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
-
-        return ($vmHostNetworkSystem.NetworkInfo.Vswitch | Where-Object { $_.Name -eq $this.VssName })
     }
 
     <#
@@ -188,10 +160,8 @@ class VMHostVss : VMHostBaseDSC {
             $vssConfigArgs.Add('Operation', 'remove')
         }
 
-        $vssConfig = New-VssConfig @vssConfigArgs
-        $vmHostNetworkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
         try {
-            Update-Network -NetworkSystem $vmHostNetworkSystem -Type 'VSS' -VssConfig $vssConfig
+            Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssConfig $vssConfigArgs
         }
         catch {
             Write-Error "The virtual switch Config could not be updated: $($_.Exception.Message)"
