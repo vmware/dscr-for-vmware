@@ -23,54 +23,58 @@ $script:config = "$($script:dscResourceName)_Config"
 . $script:configurationFile
 $script:mofFilePath = "$script:integrationTestsFolderPath\$($script:config)\"
 
-Describe "$($script:dscResourceName)_Integration" {
-    Context "When using configuration $($script:config)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFilePath
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+try {
+    Describe "$($script:dscResourceName)_Integration" {
+        Context "When using configuration $($script:config)" {
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFilePath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
             }
 
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFilePath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFilePath
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
-            # Assert
-            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-        }
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
 
-        It 'Should be able to call Get-DscConfiguration without throwing' {
-            # Arrange && Act && Assert
-            { Get-DscConfiguration } | Should -Not -Throw
-        }
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
 
-        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-            # Arrange && Act
-            $configuration = Get-DscConfiguration
+                # Assert
+                $configuration.SettingsScope | Should -Be 'LCM'
+                $configuration.ParticipateInCeip | Should -Be $false
+                $configuration.InvalidCertificateAction | Should -Be 'Warn'
+                $configuration.DefaultVIServerMode | Should -Be 'Multiple'
+                $configuration.DisplayDeprecationWarnings | Should -Be $false
+            }
 
-            # Assert
-            $configuration.SettingsScope | Should -Be 'LCM'
-            $configuration.ParticipateInCeip | Should -Be $false
-            $configuration.InvalidCertificateAction | Should -Be 'Warn'
-            $configuration.DefaultVIServerMode | Should -Be 'Multiple'
-            $configuration.DisplayDeprecationWarnings | Should -Be $false
-        }
-
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
     }
+}
+finally {
 }
