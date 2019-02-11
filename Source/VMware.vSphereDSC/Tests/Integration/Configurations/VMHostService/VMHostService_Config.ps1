@@ -35,7 +35,7 @@ param(
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
 $script:vmHostCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-$script:ServiceKey = 'TMS-SSH'
+$script:ServiceKey = 'TSM-SSH'
 $script:ServicePolicyUnset = 'Unset'
 $script:ServicePolicyOn = 'On'
 $script:ServicePolicyOff = 'Off'
