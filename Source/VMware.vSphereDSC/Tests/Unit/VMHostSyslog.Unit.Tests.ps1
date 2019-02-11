@@ -58,7 +58,7 @@ function Invoke-TestCleanup {
     $env:PSModulePath = $script:modulePath
 }
 
-Try {
+try {
     # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
     Invoke-TestSetup
 
@@ -868,7 +868,7 @@ Try {
         }
     }
 }
-Finally {
+finally {
     # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
     Invoke-TestCleanup
 }
