@@ -16,7 +16,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 using module VMware.vSphereDSC
 
-function BeforeAllTests {
+function Invoke-TestSetup {
     $script:modulePath = $env:PSModulePath
     $script:unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
     $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
@@ -181,14 +181,14 @@ function BeforeAllTests {
     }
 }
 
-function AfterAllTests {
+function Invoke-TestCleanup {
     Remove-Module -Name VMware.VimAutomation.Core
     $env:PSModulePath = $script:modulePath
 }
 
 Try {
     # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
-    BeforeAllTests
+    Invoke-TestSetup
 
     Describe 'VMHostVss\Set'  -Tag 'Set' {
         Context 'Present and VSS does not exist' {
@@ -711,5 +711,5 @@ Try {
 }
 Finally {
     # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
-    AfterAllTests
+    Invoke-TestCleanup
 }

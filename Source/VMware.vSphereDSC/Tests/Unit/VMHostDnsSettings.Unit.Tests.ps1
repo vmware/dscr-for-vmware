@@ -36,7 +36,7 @@ $script:resourceProperties = @{
     HostName = 'Host Name'
 }
 
-function BeforeAllTests {
+function Invoke-TestSetup {
     $env:PSModulePath = $script:mockModuleLocation
     $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
     if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
@@ -46,21 +46,344 @@ function BeforeAllTests {
     Import-Module -Name VMware.VimAutomation.Core
 }
 
-function AfterAllTests {
+function Invoke-TestCleanup {
     Remove-Module -Name VMware.VimAutomation.Core
     $env:PSModulePath = $script:modulePath
 }
 
-# Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
-BeforeAllTests
+Try {
+    # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
+    Invoke-TestSetup
 
-Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
-    AfterEach {
-        $script:resourceProperties.Dhcp = $false
-        $script:resourceProperties.VirtualNicDevice = [string]::Empty
+    Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
+        AfterEach {
+            $script:resourceProperties.Dhcp = $false
+            $script:resourceProperties.VirtualNicDevice = [string]::Empty
+        }
+
+        Context 'Invoking with default resource properties' {
+            BeforeAll {
+                # Arrange
+                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = {
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
+                         = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
+                }
+                $networkSystemMock = {
+                    return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                }
+
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName Connect-VIServer `
+                                  -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+
+            It 'Should call Get-VMHost mock with the passed server and name once' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName Get-VMHost `
+                                  -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+        }
+
+        Context 'Invoking with Dhcp set to $false' {
+            BeforeAll {
+                # Arrange
+                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                $networkSystemMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' }
+                $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = {
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
+                         = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
+                }
+                $dnsConfigMock = {
+                    return [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name' }
+                }
+                $networkSystemMock = {
+                    return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                }
+
+                $dnsConfigObject = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name' }
+
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+                Mock -CommandName New-DNSConfig -MockWith $dnsConfigMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
+                Mock -CommandName Update-DNSConfig -MockWith { return $null } -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should call New-DNSConfig mock once with the passed parameters' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName New-DNSConfig `
+                                  -ParameterFilter { $Dhcp -eq $script:resourceProperties.Dhcp -and $DomainName -eq $script:resourceProperties.DomainName -and `
+                                                     $HostName -eq $script:resourceProperties.HostName } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+
+            It 'Should call Get-View mock once' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName Get-View `
+                                  -ParameterFilter { $Server -eq $viServer -and $Id -eq $networkSystemMoRef } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+
+            It 'Should call Update-DNSConfig mock once' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName Update-DNSConfig `
+                                  -ParameterFilter { $NetworkSystem -eq $networkSystemObject -and $DnsConfig -eq $dnsConfigObject } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+        }
+
+        Context 'Invoking with Dhcp set to $true' {
+            BeforeAll {
+                # Arrange
+                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                $networkSystemMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' }
+                $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = {
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
+                         = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
+                }
+                $dnsConfigMock = {
+                    return [VMware.Vim.HostDnsConfig] @{ Dhcp = $true; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'VirtualNicDevice' }
+                }
+                $networkSystemMock = {
+                    return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                }
+
+                $script:resourceProperties.Dhcp = $true
+                $script:resourceProperties.VirtualNicDevice = 'VirtualNicDevice'
+
+                $dnsConfigObject = [VMware.Vim.HostDnsConfig] @{ Dhcp = $true; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'VirtualNicDevice' }
+
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+                Mock -CommandName New-DNSConfig -MockWith $dnsConfigMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
+                Mock -CommandName Update-DNSConfig -MockWith { return $null } -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should call New-DNSConfig mock once with the passed parameters' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName New-DNSConfig `
+                                  -ParameterFilter { $Dhcp -eq $script:resourceProperties.Dhcp -and $DomainName -eq $script:resourceProperties.DomainName -and `
+                                                     $HostName -eq $script:resourceProperties.HostName -and $VirtualNicDevice -eq $script:resourceProperties.VirtualNicDevice } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+
+            It 'Should call Get-View mock once' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName Get-View `
+                                  -ParameterFilter { $Server -eq $viServer -and $Id -eq $networkSystemMoRef } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+
+            It 'Should call Update-DNSConfig mock once' {
+                # Act
+                $resource.Set()
+
+                # Assert
+                Assert-MockCalled -CommandName Update-DNSConfig `
+                                  -ParameterFilter { $NetworkSystem -eq $networkSystemObject -and $DnsConfig -eq $dnsConfigObject } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+        }
     }
 
-    Context 'Invoking with default resource properties' {
+    Describe 'VMHostDnsSettings\Test' -Tag 'Test' {
+        AfterEach {
+            $script:resourceProperties.Dhcp = $false
+            $script:resourceProperties.VirtualNicDevice = [string]::Empty
+            $script:resourceProperties.Address = $null
+            $script:resourceProperties.SearchDomain = $null
+        }
+
+        Context 'Invoking with default resource properties' {
+            BeforeAll {
+                # Arrange
+                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = {
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
+                         = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
+                }
+                $networkSystemMock = {
+                    return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                }
+
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
+                # Act
+                $resource.Test()
+
+                # Assert
+                Assert-MockCalled -CommandName Connect-VIServer `
+                                  -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+
+            It 'Should call Get-VMHost mock with the passed server and name once' {
+                # Act
+                $resource.Test()
+
+                # Assert
+                Assert-MockCalled -CommandName Get-VMHost `
+                                  -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
+                                  -ModuleName $script:moduleName -Exactly 1 -Scope It
+            }
+        }
+
+        Context 'Invoking with equal DNS Configs' {
+            BeforeAll {
+                # Arrange
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = {
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
+                         = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('search domain 1') } } } } }
+                }
+
+                $script:resourceProperties.Address = @('address 2', 'address 1')
+                $script:resourceProperties.SearchDomain = @('search domain 1')
+
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should return $true (The DNS Configs are equal)' {
+                # Act
+                $result = $resource.Test()
+
+                # Assert
+                $result | Should -Be $true
+            }
+        }
+
+        Context 'Invoking with different DNS Addresses' {
+            BeforeAll {
+                # Arrange
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = {
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
+                         = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('search domain 1') } } } } }
+                }
+
+                $script:resourceProperties.Address = @('address 1')
+                $script:resourceProperties.SearchDomain = @('search domain 1')
+
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should return $false (The DNS Configs are not equal)' {
+                # Act
+                $result = $resource.Test()
+
+                # Assert
+                $result | Should -Be $false
+            }
+        }
+
+        Context 'Invoking with different DNS VirtualNicDevice' {
+            BeforeAll {
+                # Arrange
+                $viServerMock = {
+                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                }
+                $vmHostMock = {
+                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
+                         = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'Fake Virtual Nic Device' } } } } }
+                }
+
+                $script:resourceProperties.VirtualNicDevice = "Virtual Nic Device"
+
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+            }
+
+            # Arrange
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should return $false (The DNS Configs are not equal)' {
+                # Act
+                $result = $resource.Test()
+
+                # Assert
+                $result | Should -Be $false
+            }
+        }
+    }
+
+    Describe 'VMHostDnsSettings\Get' -Tag 'Get' {
         BeforeAll {
             # Arrange
             $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
@@ -69,16 +392,12 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
                 return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
             }
             $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
-                     = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
-            }
-            $networkSystemMock = {
-                return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                return [VMware.Vim.VMHost] @{ Name = '10.23.82.112'; ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
+                     = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('Search Domain 1'); VirtualNicDevice = 'Virtual Nic Device'; Ipv6VirtualNicDevice = 'Ipv6' } } } } }
             }
 
             Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
             Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
         }
 
         # Arrange
@@ -86,7 +405,7 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
 
         It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
             # Act
-            $resource.Set()
+            $resource.Get()
 
             # Assert
             Assert-MockCalled -CommandName Connect-VIServer `
@@ -96,348 +415,32 @@ Describe 'VMHostDnsSettings\Set' -Tag 'Set' {
 
         It 'Should call Get-VMHost mock with the passed server and name once' {
             # Act
-            $resource.Set()
+            $resource.Get()
 
             # Assert
             Assert-MockCalled -CommandName Get-VMHost `
                               -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
                               -ModuleName $script:moduleName -Exactly 1 -Scope It
         }
-    }
 
-    Context 'Invoking with Dhcp set to $false' {
-        BeforeAll {
-            # Arrange
-            $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            $networkSystemMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' }
-            $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
-
-            $viServerMock = {
-                return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            }
-            $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
-                     = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
-            }
-            $dnsConfigMock = {
-                return [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name' }
-            }
-            $networkSystemMock = {
-                return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
-            }
-
-            $dnsConfigObject = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name' }
-
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
-            Mock -CommandName New-DNSConfig -MockWith $dnsConfigMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
-            Mock -CommandName Update-DNSConfig -MockWith { return $null } -ModuleName $script:moduleName
-        }
-
-        # Arrange
-        $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-        It 'Should call New-DNSConfig mock once with the passed parameters' {
+        It 'Should match the properties retrieved from the server' {
             # Act
-            $resource.Set()
+            $result = $resource.Get()
 
             # Assert
-            Assert-MockCalled -CommandName New-DNSConfig `
-                              -ParameterFilter { $Dhcp -eq $script:resourceProperties.Dhcp -and $DomainName -eq $script:resourceProperties.DomainName -and `
-                                                 $HostName -eq $script:resourceProperties.HostName } `
-                              -ModuleName $script:moduleName -Exactly 1 -Scope It
-        }
-
-        It 'Should call Get-View mock once' {
-            # Act
-            $resource.Set()
-
-            # Assert
-            Assert-MockCalled -CommandName Get-View `
-                              -ParameterFilter { $Server -eq $viServer -and $Id -eq $networkSystemMoRef } `
-                              -ModuleName $script:moduleName -Exactly 1 -Scope It
-        }
-
-        It 'Should call Update-DNSConfig mock once' {
-            # Act
-            $resource.Set()
-
-            # Assert
-            Assert-MockCalled -CommandName Update-DNSConfig `
-                              -ParameterFilter { $NetworkSystem -eq $networkSystemObject -and $DnsConfig -eq $dnsConfigObject } `
-                              -ModuleName $script:moduleName -Exactly 1 -Scope It
-        }
-    }
-
-    Context 'Invoking with Dhcp set to $true' {
-        BeforeAll {
-            # Arrange
-            $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            $networkSystemMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' }
-            $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
-
-            $viServerMock = {
-                return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            }
-            $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
-                     = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
-            }
-            $dnsConfigMock = {
-                return [VMware.Vim.HostDnsConfig] @{ Dhcp = $true; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'VirtualNicDevice' }
-            }
-            $networkSystemMock = {
-                return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
-            }
-
-            $script:resourceProperties.Dhcp = $true
-            $script:resourceProperties.VirtualNicDevice = 'VirtualNicDevice'
-
-            $dnsConfigObject = [VMware.Vim.HostDnsConfig] @{ Dhcp = $true; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'VirtualNicDevice' }
-
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
-            Mock -CommandName New-DNSConfig -MockWith $dnsConfigMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
-            Mock -CommandName Update-DNSConfig -MockWith { return $null } -ModuleName $script:moduleName
-        }
-
-        # Arrange
-        $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-        It 'Should call New-DNSConfig mock once with the passed parameters' {
-            # Act
-            $resource.Set()
-
-            # Assert
-            Assert-MockCalled -CommandName New-DNSConfig `
-                              -ParameterFilter { $Dhcp -eq $script:resourceProperties.Dhcp -and $DomainName -eq $script:resourceProperties.DomainName -and `
-                                                 $HostName -eq $script:resourceProperties.HostName -and $VirtualNicDevice -eq $script:resourceProperties.VirtualNicDevice } `
-                              -ModuleName $script:moduleName -Exactly 1 -Scope It
-        }
-
-        It 'Should call Get-View mock once' {
-            # Act
-            $resource.Set()
-
-            # Assert
-            Assert-MockCalled -CommandName Get-View `
-                              -ParameterFilter { $Server -eq $viServer -and $Id -eq $networkSystemMoRef } `
-                              -ModuleName $script:moduleName -Exactly 1 -Scope It
-        }
-
-        It 'Should call Update-DNSConfig mock once' {
-            # Act
-            $resource.Set()
-
-            # Assert
-            Assert-MockCalled -CommandName Update-DNSConfig `
-                              -ParameterFilter { $NetworkSystem -eq $networkSystemObject -and $DnsConfig -eq $dnsConfigObject } `
-                              -ModuleName $script:moduleName -Exactly 1 -Scope It
+            $result.Name | Should -Be $script:resourceProperties.Name
+            $result.Server | Should -Be $script:resourceProperties.Server
+            $result.Dhcp | Should -Be $false
+            $result.DomainName | Should -Be 'Domain Name'
+            $result.HostName | Should -Be 'Host Name'
+            $result.Address | Should -Be @('address 1', 'address 2')
+            $result.SearchDomain | Should -Be @('Search Domain 1')
+            $result.VirtualNicDevice | Should -Be 'Virtual Nic Device'
+            $result.Ipv6VirtualNicDevice | Should -Be 'Ipv6'
         }
     }
 }
-
-Describe 'VMHostDnsSettings\Test' -Tag 'Test' {
-    AfterEach {
-        $script:resourceProperties.Dhcp = $false
-        $script:resourceProperties.VirtualNicDevice = [string]::Empty
-        $script:resourceProperties.Address = $null
-        $script:resourceProperties.SearchDomain = $null
-    }
-
-    Context 'Invoking with default resource properties' {
-        BeforeAll {
-            # Arrange
-            $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-
-            $viServerMock = {
-                return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            }
-            $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
-                     = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
-            }
-            $networkSystemMock = {
-                return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
-            }
-
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
-        }
-
-        # Arrange
-        $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-        It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
-            # Act
-            $resource.Test()
-
-            # Assert
-            Assert-MockCalled -CommandName Connect-VIServer `
-                              -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
-                              -ModuleName $script:moduleName -Exactly 1 -Scope It
-        }
-
-        It 'Should call Get-VMHost mock with the passed server and name once' {
-            # Act
-            $resource.Test()
-
-            # Assert
-            Assert-MockCalled -CommandName Get-VMHost `
-                              -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
-                              -ModuleName $script:moduleName -Exactly 1 -Scope It
-        }
-    }
-
-    Context 'Invoking with equal DNS Configs' {
-        BeforeAll {
-            # Arrange
-            $viServerMock = {
-                return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            }
-            $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
-                     = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('search domain 1') } } } } }
-            }
-
-            $script:resourceProperties.Address = @('address 2', 'address 1')
-            $script:resourceProperties.SearchDomain = @('search domain 1')
-
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
-        }
-
-        # Arrange
-        $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-        It 'Should return $true (The DNS Configs are equal)' {
-            # Act
-            $result = $resource.Test()
-
-            # Assert
-            $result | Should -Be $true
-        }
-    }
-
-    Context 'Invoking with different DNS Addresses' {
-        BeforeAll {
-            # Arrange
-            $viServerMock = {
-                return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            }
-            $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
-                     = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('search domain 1') } } } } }
-            }
-
-            $script:resourceProperties.Address = @('address 1')
-            $script:resourceProperties.SearchDomain = @('search domain 1')
-
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
-        }
-
-        # Arrange
-        $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-        It 'Should return $false (The DNS Configs are not equal)' {
-            # Act
-            $result = $resource.Test()
-
-            # Assert
-            $result | Should -Be $false
-        }
-    }
-
-    Context 'Invoking with different DNS VirtualNicDevice' {
-        BeforeAll {
-            # Arrange
-            $viServerMock = {
-                return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            }
-            $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
-                     = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'Fake Virtual Nic Device' } } } } }
-            }
-
-            $script:resourceProperties.VirtualNicDevice = "Virtual Nic Device"
-
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
-        }
-
-        # Arrange
-        $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-        It 'Should return $false (The DNS Configs are not equal)' {
-            # Act
-            $result = $resource.Test()
-
-            # Assert
-            $result | Should -Be $false
-        }
-    }
+Finally {
+    # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
+    Invoke-TestCleanup
 }
-
-Describe 'VMHostDnsSettings\Get' -Tag 'Get' {
-    BeforeAll {
-        # Arrange
-        $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-
-        $viServerMock = {
-            return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-        }
-        $vmHostMock = {
-            return [VMware.Vim.VMHost] @{ Name = '10.23.82.112'; ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
-                 = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('Search Domain 1'); VirtualNicDevice = 'Virtual Nic Device'; Ipv6VirtualNicDevice = 'Ipv6' } } } } }
-        }
-
-        Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-        Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
-    }
-
-    # Arrange
-    $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-    It 'Should call the Connect-VIServer mock with the passed server and credentials once' {
-        # Act
-        $resource.Get()
-
-        # Assert
-        Assert-MockCalled -CommandName Connect-VIServer `
-                          -ParameterFilter { $Server -eq $script:resourceProperties.Server -and $Credential -eq $script:resourceProperties.Credential } `
-                          -ModuleName $script:moduleName -Exactly 1 -Scope It
-    }
-
-    It 'Should call Get-VMHost mock with the passed server and name once' {
-        # Act
-        $resource.Get()
-
-        # Assert
-        Assert-MockCalled -CommandName Get-VMHost `
-                          -ParameterFilter { $Server -eq $viServer -and $Name -eq $script:resourceProperties.Name } `
-                          -ModuleName $script:moduleName -Exactly 1 -Scope It
-    }
-
-    It 'Should match the properties retrieved from the server' {
-        # Act
-        $result = $resource.Get()
-
-        # Assert
-        $result.Name | Should -Be $script:resourceProperties.Name
-        $result.Server | Should -Be $script:resourceProperties.Server
-        $result.Dhcp | Should -Be $false
-        $result.DomainName | Should -Be 'Domain Name'
-        $result.HostName | Should -Be 'Host Name'
-        $result.Address | Should -Be @('address 1', 'address 2')
-        $result.SearchDomain | Should -Be @('Search Domain 1')
-        $result.VirtualNicDevice | Should -Be 'Virtual Nic Device'
-        $result.Ipv6VirtualNicDevice | Should -Be 'Ipv6'
-    }
-}
-
-# Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
-AfterAllTests
