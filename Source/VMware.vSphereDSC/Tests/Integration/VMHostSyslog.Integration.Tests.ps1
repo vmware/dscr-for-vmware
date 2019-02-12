@@ -41,7 +41,6 @@ $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$
 $script:configWithDefaultSettings = "$($script:dscResourceName)_WithDefaultSettings_Config"
 $script:configWithNotDefaultSettings = "$($script:dscResourceName)_WithNotDefaultSettings_Config"
 
-$script:connection = Connect-VIServer -Server $Server -User $User -Password $Password
 $script:vmHost = $null
 
 $script:LogHost = 'udp://vli.eng.vmware.com:516'
@@ -91,116 +90,120 @@ $script:resource_WithNotDefaultSettings = @{
 $script:mofFileWithDefaultSettings = "$script:integrationTestsFolderPath\$($script:configWithDefaultSettings)\"
 $script:mofFileWithNotDefaultSettings = "$script:integrationTestsFolderPath\$($script:configWithNotDefaultSettings)\"
 
-Describe "$($script:dscResourceName)_Integration" {
-    Context "When using configuration $($script:configWithDefaultSettings)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithDefaultSettings
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+try {
+    Describe "$($script:dscResourceName)_Integration" {
+        Context "When using configuration $($script:configWithDefaultSettings)" {
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithDefaultSettings
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
             }
 
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
+            It 'Should compile and apply the MOF without throwing' {
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithDefaultSettings
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithDefaultSettings
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
-            }
-            Start-DscConfiguration @startDscConfigurationParameters | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration without throwing' {
-            # Assert
-            { Get-DscConfiguration } | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
-            # Arrange && Act
-            $configuration = Get-DscConfiguration
-
-            # Assert
-            $configuration.Name | Should -Be $script:resourceProperties.Name
-            $configuration.Server | Should -Be $script:resourceProperties.Server
-            $configuration.LogHost | Should -Be $script:resource_WithDefaultSettings.LogHost
-            $configuration.CheckSslCerts = $script:resource_WithDefaultSettings.CheckSslCerts
-            $configuration.DefaultRotate = $script:resource_WithDefaultSettings.DefaultRotate
-            $configuration.DefaultSize = $script:resource_WithDefaultSettings.DefaultSize
-            $configuration.DefaultTimeout = $script:resource_WithDefaultSettings.DefaultTimeout
-            $configuration.DropLogRotate = $script:resource_WithDefaultSettings.DropLogRotate
-            $configuration.DropLogSize = $script:resource_WithDefaultSettings.DropLogSize
-            $configuration.Logdir = $script:resource_WithDefaultSettings.Logdir
-            $configuration.LogdirUnique = $script:resource_WithDefaultSettings.LogdirUnique
-            $configuration.QueueDropMark = $script:resource_WithDefaultSettings.QueueDropMark
-        }
-
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
-        }
-    }
-
-    Context "When using configuration $($script:configWithNotDefaultSettings)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithNotDefaultSettings
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
-
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithNotDefaultSettings
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Assert
+                { Get-DscConfiguration } | Should -Not -Throw
             }
-            Start-DscConfiguration @startDscConfigurationParameters | Should -Not -Throw
+
+            It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Name | Should -Be $script:resourceProperties.Name
+                $configuration.Server | Should -Be $script:resourceProperties.Server
+                $configuration.LogHost | Should -Be $script:resource_WithDefaultSettings.LogHost
+                $configuration.CheckSslCerts = $script:resource_WithDefaultSettings.CheckSslCerts
+                $configuration.DefaultRotate = $script:resource_WithDefaultSettings.DefaultRotate
+                $configuration.DefaultSize = $script:resource_WithDefaultSettings.DefaultSize
+                $configuration.DefaultTimeout = $script:resource_WithDefaultSettings.DefaultTimeout
+                $configuration.DropLogRotate = $script:resource_WithDefaultSettings.DropLogRotate
+                $configuration.DropLogSize = $script:resource_WithDefaultSettings.DropLogSize
+                $configuration.Logdir = $script:resource_WithDefaultSettings.Logdir
+                $configuration.LogdirUnique = $script:resource_WithDefaultSettings.LogdirUnique
+                $configuration.QueueDropMark = $script:resource_WithDefaultSettings.QueueDropMark
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing' {
-            # Assert
-            { Get-DscConfiguration } | Should -Not -Throw
-        }
+        Context "When using configuration $($script:configWithNotDefaultSettings)" {
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithNotDefaultSettings
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
-            # Arrange && Act
-            $configuration = Get-DscConfiguration
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
 
-            # Assert
-            $configuration.Name | Should -Be $script:resourceProperties.Name
-            $configuration.Server | Should -Be $script:resourceProperties.Server
-            $configuration.LogHost | Should -Be $script:resource_WithNotDefaultSettings.LogHost
-            $configuration.CheckSslCerts = $script:resource_WithNotDefaultSettings.CheckSslCerts
-            $configuration.DefaultRotate = $script:resource_WithDefaultSettings.DefaultRotate
-            $configuration.DefaultSize = $script:resource_WithDefaultSettings.DefaultSize
-            $configuration.DefaultTimeout = $script:resource_WithDefaultSettings.DefaultTimeout
-            $configuration.DropLogRotate = $script:resource_WithNotDefaultSettings.DropLogRotate
-            $configuration.DropLogSize = $script:resource_WithNotDefaultSettings.DropLogSize
-            $configuration.Logdir = $script:resource_WithNotDefaultSettings.Logdir
-            $configuration.LogdirUnique = $script:resource_WithNotDefaultSettings.LogdirUnique
-            $configuration.QueueDropMark = $script:resource_WithNotDefaultSettings.QueueDropMark
-        }
+            It 'Should compile and apply the MOF without throwing' {
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithNotDefaultSettings
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Name | Should -Be $script:resourceProperties.Name
+                $configuration.Server | Should -Be $script:resourceProperties.Server
+                $configuration.LogHost | Should -Be $script:resource_WithNotDefaultSettings.LogHost
+                $configuration.CheckSslCerts = $script:resource_WithNotDefaultSettings.CheckSslCerts
+                $configuration.DefaultRotate = $script:resource_WithDefaultSettings.DefaultRotate
+                $configuration.DefaultSize = $script:resource_WithDefaultSettings.DefaultSize
+                $configuration.DefaultTimeout = $script:resource_WithDefaultSettings.DefaultTimeout
+                $configuration.DropLogRotate = $script:resource_WithNotDefaultSettings.DropLogRotate
+                $configuration.DropLogSize = $script:resource_WithNotDefaultSettings.DropLogSize
+                $configuration.Logdir = $script:resource_WithNotDefaultSettings.Logdir
+                $configuration.LogdirUnique = $script:resource_WithNotDefaultSettings.LogdirUnique
+                $configuration.QueueDropMark = $script:resource_WithNotDefaultSettings.QueueDropMark
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
     }
 }
-
-Disconnect-VIServer -Server $Server -Confirm:$false
+finally {
+}
