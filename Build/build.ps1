@@ -64,7 +64,7 @@ Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck
 # Runs all unit tests in the module.
 $script:ModuleFolderPath = (Get-Module $script:ModuleName -ListAvailable).ModuleBase
 $script:UnitTestsFolderPath = Join-Path (Join-Path $script:ModuleFolderPath 'Tests') 'Unit'
-$script:ModuleUnitTestsResult = Invoke-Pester -Path "$script:UnitTestsFolderPath\*.Tests.ps1" `
+$script:ModuleUnitTestsResult = Invoke-Pester -Path "$script:UnitTestsFolderPath\*" `
               -CodeCoverage @{ Path = "$script:ModuleFolderPath\$script:ModuleName.psm1" } `
               -PassThru `
               -EnableExit
