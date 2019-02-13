@@ -35,18 +35,13 @@ param(
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
 $script:vmHostCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-$script:LogHost = 'udp://vli.local.lab:514'    # RemoteHost
-$script:LogHost2 = 'udp://vli2.local.lab:514'  # RemoteHost
-$script:CheckSslCerts = $true                  # EnforceSSLCertificates
-$script:DefaultRotate = 10                     # LocalLoggingDefaultRotation
-$script:DefaultSize = 100                      # LocalLoggingDefaultRotationSize
-$script:DefaultTimeout = 180                   # DefaultNetworkRetryTimeout
-$script:Logdir = '/scratch/log'                # LocalLogOutput
-$script:Logdir2 = '/scratch/log2'              # LocalLogOutput
-$script:LogdirUnique = $false                  # LogToUniqueSubdirectory
-$script:DropLogRotate = 10                     # DroppedLogFileRotations
-$script:DropLogSize = 100                      # DroppedLogFileRotationSize
-$script:QueueDropMark = 90                     # MessageQueueDropMark
+$script:VssName = 'VSSDSC'
+$script:Mtu = 1500
+$script:EnsurePresent = 'Present'
+$script:EnsureAbsent = 'Absent'
+$script:AllowPromiscuous = $false
+$script:ForgedTransmits = $true
+$script:MacChanges = $true
 
 $script:configurationData = @{
     AllNodes = @(
@@ -60,49 +55,53 @@ $script:configurationData = @{
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-Configuration VMHostSyslog_WithDefaultSettings_Config {
+Configuration VMHostVssSecurity_Modify_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostSyslog vmHostSyslogSettings {
+        VMHostVss vmHostVssSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
-            Loghost = $script:LogHost
-            CheckSslCerts = $script:CheckSslCerts
-            DefaultRotate = $script:DefaultRotate
-            DefaultSize = $script:DefaultSize
-            DefaultTimeout = $script:DefaultTimeout
-            Logdir = $script:Logdir
-            LogdirUnique = $script:LogdirUnique
-            DropLogRotate = $script:DropLogRotate
-            DropLogSize = $script:DropLogSize
-            QueueDropMark = $script:QueueDropMark
+            VssName = $script:VssName
+            Ensure = $script:EnsurePresent
+            Mtu = $script:Mtu
+        }
+        VMHostVssSecurity vmHostVssSecuritySettings {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            VssName = $script:VssName
+            Ensure = $script:EnsurePresent
+            AllowPromiscuous = -not $script:AllowPromiscuous
+            ForgedTransmits = -not $script:ForgedTransmits
+            MacChanges = -not $script:MacChanges
+            DependsOn = "[VMHostVss]vmHostVssSettings"       }
+    }
+}
+
+Configuration VMHostVssSecurity_Remove_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostVss vmHostVssSettings {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            VssName = $script:VssName
+            Ensure = $script:EnsurePresent
+            Mtu = $script:Mtu
+        }
+        VMHostVssSecurity vmHostVssSecuritySettings {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            VssName = $script:VssName
+            Ensure = $script:Absent
+            DependsOn = "[VMHostVss]vmHostVssSettings"
         }
     }
 }
 
-Configuration VMHostSyslog_WithNotDefaultSettings_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        VMHostSyslog vmHostSyslogSettings {
-            Name = $Name
-            Server = $Server
-            Credential = $script:vmHostCredential
-            Loghost = $script:LogHost2
-            CheckSslCerts = -not $script:CheckSslCerts
-            DefaultRotate = $script:DefaultRotate + 1
-            DefaultSize = $script:DefaultSize + 1
-            DefaultTimeout = $script:DefaultTimeout + 1
-            Logdir = $script:Logdir2
-            LogdirUnique = -not $script:LogdirUnique
-            DropLogRotate = $script:DropLogRotate + 1
-            DropLogSize = $script:DropLogSize + 1
-            QueueDropMark = $script:QueueDropMark + 1
-        }
-    }
-}
-
-VMHostSyslog_WithDefaultSettings_Config -OutputPath "$integrationTestsFolderPath\VMHostSyslog_WithDefaultSettings_Config" -ConfigurationData $script:configurationData
-VMHostSyslog_WithNotDefaultSettings_Config -OutputPath "$integrationTestsFolderPath\VMHostSyslog_WithNotDefaultSettings_Config" -ConfigurationData $script:configurationData
+VMHostVssSecurity_Modify_Config -OutputPath "$integrationTestsFolderPath\VMHostVssSecurity_Modify_Config" -ConfigurationData $script:configurationData
+VMHostVssSecurity_Remove_Config -OutputPath "$integrationTestsFolderPath\VMHostVssSecurity_Remove_Config" -ConfigurationData $script:configurationData

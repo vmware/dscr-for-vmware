@@ -31,7 +31,7 @@ $script:resourceProperties = @{
     Name = '10.23.82.112'
     Server = '10.23.82.112'
     Credential = $credential
-    LogHost = 'udp://vli.local.lab:516'
+    LogHost = 'udp://vli.local.lab:514'
     CheckSslCerts = $true
     DefaultRotate = 10
     DefaultSize = 100
@@ -805,8 +805,8 @@ try {
                     $esxcli.system.syslog | Add-Member -MemberType NoteProperty -Name 'config' -Value (New-Object PSObject)
                     $esxcli.system.syslog.config | Add-Member -MemberType NoteProperty -Name 'get' -Value (New-Object PSObject)
                     $esxcli.system.syslog.config | Add-Member -MemberType NoteProperty -Name 'set' -Value (New-Object PSObject)
-                    $syslogConfig = [VMware.Vim.SyslogConfig] @{
-                        LogHost = 'udp://vli.local.lab:516'
+                    $syslogConfigOut = [VMware.Vim.SyslogConfigOut] @{
+                        RemoteHost = 'udp://vli.local.lab:514'
                         CheckSslCerts = $true
                         DefaultRotate = 10
                         DefaultSize = 100
@@ -817,15 +817,14 @@ try {
                         LogDirUnique = $false
                         QueueDropMark = 90
                     }
-
-                    $esxcli.system.syslog.config.get | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { $syslogConfig }
+                    $esxcli.system.syslog.config.get | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { $syslogConfigOut }
                     $esxcli.system.syslog.config.set | Add-Member -MemberType ScriptMethod -Name 'Invoke' -Value { $true }
 
                     return $esxcli
                 }
                 $getSyslogConfigMock = {
-                    return ([VMware.Vim.SyslogConfig] @{
-                            LogHost = 'udp://vli.local.lab:516'
+                    return ([VMware.Vim.SyslogConfigOut] @{
+                            RemoteHost = 'udp://vli.local.lab:514'
                             CheckSslCerts = $true
                             DefaultRotate = 10
                             DefaultSize = 100

@@ -32,66 +32,56 @@ param(
     $Password
 )
 
-<#
-Integration test environment information
-
-Requirements
-
-None
-#>
-
-$script:moduleName = 'VMware.vSphereDSC'
-$script:dscResourceName = 'VMHostVss'
-$script:moduleFolderPath = (Get-Module -Name $script:moduleName -ListAvailable).ModuleBase
+$script:dscResourceName = 'VMHostVssSecurity'
+$script:dscDependResourceName = 'VMHostVss'
+$script:dscConfig = $null
+$script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
-$script:configWithNewVss = "$($script:dscResourceName)_New_Config"
-$script:configWithModifyVss = "$($script:dscResourceName)_Modify_Config"
-$script:configWithRemoveVss = "$($script:dscResourceName)_Remove_Config"
+$script:configWithModifyVssSecurity = "$($script:dscResourceName)_Modify_Config"
+$script:configWithRemoveVssSecurity = "$($script:dscResourceName)_Remove_Config"
 
 $script:vmHost = $null
 
 $script:VssName = 'VSSDSC'
-$script:Mtu = 1500
+$script:AllowPromiscuous = $false
+$script:ForgedTransmits = $true
+$script:MacChanges = $true
 $script:Present = 'Present'
 $script:Absent = 'Absent'
 
-$script:resourceWithNewVss = @{
+$script:resourceWithModifyVssSecurity = @{
     Name = $Name
     Server = $Server
     Ensure = $script:Present
     VssName = $script:VssName
-    Mtu = $script:Mtu
+    AllowPromiscuous = -not $script:AllowPromiscuous
+    ForgedTransmits = -not $script:ForgedTransmits
+    MacChanges = -not $script:MacChanges
 }
-$script:resourceWithModifyVss = @{
-    Name = $Name
-    Server = $Server
-    Ensure = $script:Present
-    VssName = $script:VssName
-    Mtu = $script:Mtu + 1
-}
-$script:resourceWithRemoveVss = @{
+$script:resourceWithRemoveVssSecurity = @{
     Name = $Name
     Server = $Server
     Ensure = $script:Absent
     VssName = $script:VssName
-    Mtu = $script:Mtu
+    AllowPromiscuous = $script:AllowPromiscuous
+    ForgedTransmits = $script:ForgedTransmits
+    MacChanges = $script:MacChanges
 }
 
 . $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
 
-$script:mofFileWithNewVss = "$script:integrationTestsFolderPath\$($script:configWithNewVss)\"
-$script:mofFileWithModifyVss = "$script:integrationTestsFolderPath\$($script:configWithModifyVss)\"
-$script:mofFileWithRemoveVss = "$script:integrationTestsFolderPath\$($script:configWithRemoveVss)\"
+$script:mofFileWithModifyVssSecurity = "$script:integrationTestsFolderPath\$($script:configWithModifyVssSecurity)\"
+$script:mofFileWithRemoveVssSecurity = "$script:integrationTestsFolderPath\$($script:configWithRemoveVssSecurity)\"
 
 try {
     Describe "$($script:dscResourceName)_Integration" {
-        Context "When using configuration $($script:configWithNewVss)" {
+        Context "When using configuration $($script:configWithModifyVssSecurity)" {
             BeforeEach {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithNewVss
+                    Path = $script:mofFileWithModifyVssSecurity
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -103,7 +93,7 @@ try {
 
             It 'Should compile and apply the MOF without throwing' {
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithNewVss
+                    Path = $script:mofFileWithModifyVssSecurity
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -120,28 +110,35 @@ try {
 
             It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
                 # Act
-                $configuration = Get-DscConfiguration
+                $configuration = Get-DscConfiguration | where-object { $_.ResourceId -match $script:dscResourceName }
 
                 # Assert
-                $configuration.Server | Should -Be $script:resourceWithNewVss.Server
-                $configuration.Name | Should -Be $script:resourceWithNewVss.Name
-                $configuration.Ensure | Should -Be $script:resourceWithNewVss.Ensure
-                $configuration.VssName | Should -Be $script:resourceWithNewVss.VssName
-                $configuration.Mtu | Should -Be $script:resourceWithNewVss.Mtu
-                $configuration.Ensure | Should -Be $script:resourceWithNewVss.Ensure
+                $configuration.Server | Should -Be $script:resourceWithModifyVssSecurity.Server
+                $configuration.Name | Should -Be $script:resourceWithModifyVssSecurity.Name
+                $configuration.Ensure | Should -Be $script:resourceWithModifyVssSecurity.Ensure
+                $configuration.VssName | Should -Be $script:resourceWithModifyVssSecurity.VssName
+                $configuration.AllowPromiscuous | Should -Be $script:resourceWithModifyVssSecurity.AllowPromiscuous
+                $configuration.ForgedTransmits | Should -Be $script:resourceWithModifyVssSecurity.ForgedTransmits
+                $configuration.MacChanges | Should -Be $script:resourceWithModifyVssSecurity.MacChanges
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
                 # Arrange && Act && Assert
                 Test-DscConfiguration | Should -Be $true
+            }
+
+            It 'Should depend on resource VMHostVss' {
+                $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
+
+                $currentResource.DependsOn | Should -Match $script:dscDependResourceName
             }
         }
 
-        Context "When using configuration $($script:configWithModifyVss)" {
+        Context "When using configuration $($script:configWithRemoveVssSecurity)" {
             BeforeEach {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithModifyVss
+                    Path = $script:mofFileWithRemoveVssSecurity
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -152,8 +149,9 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
+                # Assert
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithModifyVss
+                    Path = $script:mofFileWithRemoveVssSecurity
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -170,66 +168,27 @@ try {
 
             It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
                 # Act
-                $configuration = Get-DscConfiguration
+                $configuration = Get-DscConfiguration | where-object { $_.ResourceId -match $script:dscResourceName }
 
                 # Assert
-                $configuration.Server | Should -Be $script:resourceWithModifyVss.Server
-                $configuration.Name | Should -Be $script:resourceWithModifyVss.Name
-                $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
-                $configuration.VssName | Should -Be $script:resourceWithModifyVss.VssName
-                $configuration.Mtu | Should -Be $script:resourceWithModifyVss.Mtu
-                $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
+                $configuration.Server | Should -Be $script:resourceWithRemoveVssSecurity.Server
+                $configuration.Name | Should -Be $script:resourceWithRemoveVssSecurity.Name
+                $configuration.Ensure | Should -Be $script:Present
+                $configuration.VssName | Should -Be $script:resourceWithRemoveVssSecurity.VssName
+                $configuration.AllowPromiscuous | Should -Be $script:resourceWithRemoveVssSecurity.AllowPromiscuous
+                $configuration.ForgedTransmits | Should -Be $script:resourceWithRemoveVssSecurity.ForgedTransmits
+                $configuration.MacChanges | Should -Be $script:resourceWithRemoveVssSecurity.MacChanges
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
                 # Arrange && Act && Assert
                 Test-DscConfiguration | Should -Be $true
             }
-        }
 
-        Context "When using configuration $($script:configWithRemoveVss)" {
-            BeforeEach {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithRemoveVss
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
+            It 'Should depend on resource VMHostVss' {
+                $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
 
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithRemoveVss
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
-                { Get-DscConfiguration } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
-                # Act
-                $configuration = Get-DscConfiguration
-
-                # Assert
-                $configuration.Ensure | Should -Be $script:resourceWithRemoveVss.Ensure
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
+                $currentResource.DependsOn | Should -Match $script:dscDependResourceName
             }
         }
     }

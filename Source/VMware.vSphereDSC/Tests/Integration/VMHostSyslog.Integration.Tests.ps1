@@ -32,6 +32,22 @@ param(
     $Password
 )
 
+<#
+Integration test environment information
+
+Requirements
+
+A) Syslog server
+1) a working syslog server should be present
+2) the URI for the syslog server shall be specified in $script:LogHost
+3) a 2nd syslog server can be defined via a DNS CName, pointing to the working syslog server from earlier (1)
+4) the URI for the 2nd syslog server needs to be specified in $script:LogHost2
+
+B) Scratch folder
+1) the scratch folder ($script:Logdir) shall exist on the targetted ESXi node
+2) a 2nd scratch folder ($script:Logdir2) shall exist on the targetted ESXi node
+#>
+
 $script:dscResourceName = 'VMHostSyslog'
 $script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
@@ -43,8 +59,8 @@ $script:configWithNotDefaultSettings = "$($script:dscResourceName)_WithNotDefaul
 
 $script:vmHost = $null
 
-$script:LogHost = 'udp://vli.eng.vmware.com:516'
-$script:LogHost2 = 'udp://vli2.eng.vmware.com:516'
+$script:LogHost = 'udp://vli.eng.vmware.com:514'
+$script:LogHost2 = 'udp://vli2.eng.vmware.com:514'
 $script:CheckSslCerts = $true
 $script:DefaultRotate = 10
 $script:DefaultSize = 100

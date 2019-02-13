@@ -223,6 +223,13 @@ namespace VMware.Vim
         public HostService[] Service { get; set; }
     }
 
+    public class HostNetworkConfig
+    {
+        public HostDnsConfig DnsConfig { get; set; }
+
+        public HostVirtualSwitchConfig[] vSwitch { get; set; }
+    }
+
     public class HostNetworkInfo
     {
         public HostDnsConfig DnsConfig { get; set; }
@@ -269,9 +276,15 @@ namespace VMware.Vim
         // Property used only for comparing HostNetworkSystem objects.
         public string Id { get; set; }
 
+        public HostNetworkConfig NetworkConfig { get; set; }
+
         public HostNetworkInfo NetworkInfo { get; set; }
 
         public void UpdateDnsConfig(HostDnsConfig dnsConfig)
+        {
+        }
+
+        public void UpdateViewData(string[] properties)
         {
         }
 
@@ -603,6 +616,33 @@ namespace VMware.Vim
         }
     }
 
+    public class SyslogConfigOut
+    {
+        public SyslogConfigOut()
+        {
+        }
+
+        public string RemoteHost { get; set; }
+
+        public string LogDir { get; set; }
+
+        public bool LogDirUnique { get; set; }
+
+        public bool CheckSslCerts { get; set; }
+
+        public long DefaultRotate { get; set; }
+
+        public long DefaultSize { get; set; }
+
+        public long DefaultTimeout { get; set; }
+
+        public long QueueDropMark { get; set; }
+
+        public long DropLogRotate { get; set; }
+
+        public long DropLogSize { get; set; }
+    }
+
     public class PowerCLIConfiguration : System.IEquatable<PowerCLIConfiguration>
     {
         public PowerCLIConfiguration()
@@ -668,6 +708,8 @@ namespace VMware.Vim
 
         public string[] Portgroup { get; set; }
 
+        public HostVirtualSwitchSpec Spec { get; set; }
+
         public bool Equals(HostVirtualSwitch hostVirtualSwitch)
         {
             return (hostVirtualSwitch != null && this.Name == hostVirtualSwitch.Name && this.NumPorts == hostVirtualSwitch.NumPorts &&
@@ -688,11 +730,128 @@ namespace VMware.Vim
         }
     }
 
+    public class HostVirtualSwitchBridge
+    { }
+
+    public class HostVirtualSwitchAutoBridge : HostVirtualSwitchBridge
+    {
+        public string[] ExcludedNicDevice { get; set; }
+    }
+
+    public class HostVirtualSwitchBeaconConfig
+    {
+        public int Interval { get; set; }
+    }
+
+    public class LinkDiscoveryProtocolConfig
+    {
+        public string Operation { get; set; }
+
+        public string Protocol { get; set; }
+    }
+
+    public class HostVirtualSwitchBondBridge : HostVirtualSwitchBridge
+    {
+        public HostVirtualSwitchBeaconConfig Beacon { get; set; }
+
+        public LinkDiscoveryProtocolConfig LinkDiscoveryProtocolConfig { get; set; }
+
+        public string[] NicDevice { get; set; }
+    }
+
+    public class HostVirtualSwitchSimpleBridge : HostVirtualSwitchBridge
+    {
+        public string[] NicDevice { get; set; }
+    }
+
+    public class HostNicFailureCriteria
+    {
+        public bool CheckBeacon { get; set; }
+
+        public bool CheckDuplex { get; set; }
+
+        public bool CheckErrorPercent { get; set; }
+
+        public string CheckSpeed { get; set; }
+
+        public bool FullDuplex { get; set; }
+
+        public int Percentage { get; set; }
+
+        public int Speed { get; set; }
+    }
+
+    public class HostNicOrderPolicy
+    {
+        public string[] ActiveNic { get; set; }
+
+        public string[] StandbyNic { get; set; }
+    }
+
+    public class HostNicTeamingPolicy
+    {
+        public HostNicFailureCriteria FailureCriteria { get; set; }
+
+        public HostNicOrderPolicy NicOrder { get; set; }
+
+        public bool NotifySwitches { get; set; }
+
+        public string Policy { get; set; }
+
+        public bool ReversePolicy { get; set; }
+
+        public bool RollingOrder { get; set; }
+    }
+
+    public class HostNetOffloadCapabilities
+    {
+        public bool CsumOffload { get; set; }
+
+        public bool TcpSegmentation { get; set; }
+
+        public bool ZeroCopyXmit { get; set; }
+    }
+
+    public class HostNetworkSecurityPolicy
+    {
+        public bool AllowPromiscuous { get; set; }
+
+        public bool ForgedTransmits { get; set; }
+
+        public bool MacChanges { get; set; }
+    }
+
+    public class HostNetworkTrafficShapingPolicy
+    {
+        public long AverageBandwidth { get; set; }
+
+        public long BurstSize { get; set; }
+
+        public bool Enabled { get; set; }
+
+        public long PeakBandwidth { get; set; }
+    }
+
+    public class HostNetworkPolicy
+    {
+        public HostNicTeamingPolicy NicTeaming { get; set; }
+
+        public HostNetOffloadCapabilities OffloadPolicy { get; set; }
+
+        public HostNetworkSecurityPolicy Security { get; set; }
+
+        public HostNetworkTrafficShapingPolicy ShapingPolicy { get; set; }
+    }
+
     public class HostVirtualSwitchSpec
     {
+        public HostVirtualSwitchBridge Bridge { get; set; }
+
         public int Mtu { get; set; }
 
         public int NumPorts { get; set; }
+
+        public HostNetworkPolicy Policy { get; set; }
     }
     public class HostVirtualSwitchConfig
     {

@@ -32,6 +32,14 @@ param(
     $Password
 )
 
+$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+$script:vmHostCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
+$script:VssName = 'VSSDSC'
+$script:EnsurePresent = 'Present'
+$script:EnsureAbsent = 'Absent'
+$script:Mtu = 1500
+
 $script:configurationData = @{
     AllNodes = @(
         @{
@@ -41,22 +49,53 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostVss_Config {
+$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
+$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
+
+Configuration VMHostVss_New_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-        VMHostVss vmHostVSS {
+        VMHostVss vmHostVssSettings {
             Name = $Name
             Server = $Server
-            Credential = $Credential
-            Ensure = [Ensure]::Present
-            VssName = 'VSS1'
-            Mtu = 1500
+            Credential = $script:vmHostCredential
+            VssName = $script:VssName
+            Ensure = $script:EnsurePresent
+            Mtu = $script:Mtu
         }
     }
 }
 
-VMHostVss_Config -ConfigurationData $script:configurationData
+Configuration VMHostVss_Modify_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostVss vmHostVssSettings {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            VssName = $script:VssName
+            Ensure = $script:EnsurePresent
+            Mtu = $script:Mtu + 1
+        }
+    }
+}
+
+Configuration VMHostVss_Remove_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostVss vmHostVssSettings {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            VssName = $script:VssName
+            Ensure = $script:EnsureAbsent
+        }
+    }
+}
+
+VMHostVss_New_Config -OutputPath "$integrationTestsFolderPath\VMHostVss_New_Config" -ConfigurationData $script:configurationData
+VMHostVss_Modify_Config -OutputPath "$integrationTestsFolderPath\VMHostVss_Modify_Config" -ConfigurationData $script:configurationData
+VMHostVss_Remove_Config -OutputPath "$integrationTestsFolderPath\VMHostVss_Remove_Config" -ConfigurationData $script:configurationData
