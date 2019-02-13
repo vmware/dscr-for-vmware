@@ -78,134 +78,138 @@ $script:resourceWithClaimRuleToRemove = @{
 $script:mofFileWithClaimRuleToAdd = "$script:integrationTestsFolderPath\$($script:configWithClaimRuleToAdd)\"
 $script:mofFileWithClaimRuleToRemove = "$script:integrationTestsFolderPath\$($script:configWithClaimRuleToRemove)\"
 
-Describe "$($script:dscResourceName)_Integration" {
-    Context "When using configuration $($script:configWithClaimRuleToAdd)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithClaimRuleToAdd
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+try {
+    Describe "$($script:dscResourceName)_Integration" {
+        Context "When using configuration $($script:configWithClaimRuleToAdd)" {
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithClaimRuleToAdd
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
             }
 
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithClaimRuleToAdd
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithClaimRuleToAdd
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
-            # Assert
-            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange
+                $emptyProperty = [string]::Empty
+
+                # Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Name | Should -Be $script:resourceWithClaimRuleToAdd.Name
+                $configuration.Server | Should -Be $script:resourceWithClaimRuleToAdd.Server
+                $configuration.Ensure | Should -Be $script:resourceWithClaimRuleToAdd.Ensure
+                $configuration.RuleName | Should -Be $script:resourceWithClaimRuleToAdd.RuleName
+                $configuration.PSPOptions | Should -Be $script:resourceWithClaimRuleToAdd.PSPOptions
+                $configuration.Transport | Should -Be $script:resourceWithClaimRuleToAdd.Transport
+                $configuration.Description | Should -Be $script:resourceWithClaimRuleToAdd.Description
+                $configuration.Vendor | Should -Be $emptyProperty
+                $configuration.Boot | Should -Be $false
+                $configuration.Type | Should -Be $script:resourceWithClaimRuleToAdd.Type
+                $configuration.Device | Should -Be $emptyProperty
+                $configuration.Driver | Should -Be $emptyProperty
+                $configuration.ClaimOptions | Should -Be $emptyProperty
+                $configuration.Psp | Should -Be $script:resourceWithClaimRuleToAdd.Psp
+                $configuration.Options | Should -Be $script:resourceWithClaimRuleToAdd.Options
+                $configuration.Model | Should -Be $emptyProperty
+                $configuration.Force | Should -Be $false
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing' {
-            # Arrange && Act && Assert
-            { Get-DscConfiguration } | Should -Not -Throw
-        }
+        Context "When using configuration $($script:configWithClaimRuleToRemove)" {
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithClaimRuleToRemove
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-            # Arrange
-            $emptyProperty = [string]::Empty
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
 
-            # Act
-            $configuration = Get-DscConfiguration
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithClaimRuleToRemove
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-            # Assert
-            $configuration.Name | Should -Be $script:resourceWithClaimRuleToAdd.Name
-            $configuration.Server | Should -Be $script:resourceWithClaimRuleToAdd.Server
-            $configuration.Ensure | Should -Be $script:resourceWithClaimRuleToAdd.Ensure
-            $configuration.RuleName | Should -Be $script:resourceWithClaimRuleToAdd.RuleName
-            $configuration.PSPOptions | Should -Be $script:resourceWithClaimRuleToAdd.PSPOptions
-            $configuration.Transport | Should -Be $script:resourceWithClaimRuleToAdd.Transport
-            $configuration.Description | Should -Be $script:resourceWithClaimRuleToAdd.Description
-            $configuration.Vendor | Should -Be $emptyProperty
-            $configuration.Boot | Should -Be $false
-            $configuration.Type | Should -Be $script:resourceWithClaimRuleToAdd.Type
-            $configuration.Device | Should -Be $emptyProperty
-            $configuration.Driver | Should -Be $emptyProperty
-            $configuration.ClaimOptions | Should -Be $emptyProperty
-            $configuration.Psp | Should -Be $script:resourceWithClaimRuleToAdd.Psp
-            $configuration.Options | Should -Be $script:resourceWithClaimRuleToAdd.Options
-            $configuration.Model | Should -Be $emptyProperty
-            $configuration.Force | Should -Be $false
-        }
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
 
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange
+                $emptyProperty = [string]::Empty
+
+                # Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Name | Should -Be $script:resourceWithClaimRuleToRemove.Name
+                $configuration.Server | Should -Be $script:resourceWithClaimRuleToRemove.Server
+                $configuration.Ensure | Should -Be $script:resourceWithClaimRuleToRemove.Ensure
+                $configuration.RuleName | Should -Be $script:resourceWithClaimRuleToRemove.RuleName
+                $configuration.PSPOptions | Should -Be $script:resourceWithClaimRuleToRemove.PSPOptions
+                $configuration.Transport | Should -Be $script:resourceWithClaimRuleToRemove.Transport
+                $configuration.Description | Should -Be $script:resourceWithClaimRuleToRemove.Description
+                $configuration.Vendor | Should -Be $emptyProperty
+                $configuration.Boot | Should -Be $false
+                $configuration.Type | Should -Be $script:resourceWithClaimRuleToRemove.Type
+                $configuration.Device | Should -Be $emptyProperty
+                $configuration.Driver | Should -Be $emptyProperty
+                $configuration.ClaimOptions | Should -Be $emptyProperty
+                $configuration.Psp | Should -Be $script:resourceWithClaimRuleToRemove.Psp
+                $configuration.Options | Should -Be $script:resourceWithClaimRuleToRemove.Options
+                $configuration.Model | Should -Be $emptyProperty
+                $configuration.Force | Should -Be $false
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
     }
-
-    Context "When using configuration $($script:configWithClaimRuleToRemove)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithClaimRuleToRemove
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
-            }
-
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
-
-        It 'Should compile and apply the MOF without throwing' {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithClaimRuleToRemove
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
-            }
-
-            # Assert
-            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration without throwing' {
-            # Arrange && Act && Assert
-            { Get-DscConfiguration } | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-            # Arrange
-            $emptyProperty = [string]::Empty
-
-            # Act
-            $configuration = Get-DscConfiguration
-
-            # Assert
-            $configuration.Name | Should -Be $script:resourceWithClaimRuleToRemove.Name
-            $configuration.Server | Should -Be $script:resourceWithClaimRuleToRemove.Server
-            $configuration.Ensure | Should -Be $script:resourceWithClaimRuleToRemove.Ensure
-            $configuration.RuleName | Should -Be $script:resourceWithClaimRuleToRemove.RuleName
-            $configuration.PSPOptions | Should -Be $script:resourceWithClaimRuleToRemove.PSPOptions
-            $configuration.Transport | Should -Be $script:resourceWithClaimRuleToRemove.Transport
-            $configuration.Description | Should -Be $script:resourceWithClaimRuleToRemove.Description
-            $configuration.Vendor | Should -Be $emptyProperty
-            $configuration.Boot | Should -Be $false
-            $configuration.Type | Should -Be $script:resourceWithClaimRuleToRemove.Type
-            $configuration.Device | Should -Be $emptyProperty
-            $configuration.Driver | Should -Be $emptyProperty
-            $configuration.ClaimOptions | Should -Be $emptyProperty
-            $configuration.Psp | Should -Be $script:resourceWithClaimRuleToRemove.Psp
-            $configuration.Options | Should -Be $script:resourceWithClaimRuleToRemove.Options
-            $configuration.Model | Should -Be $emptyProperty
-            $configuration.Force | Should -Be $false
-        }
-
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
-        }
-    }
+}
+finally {
 }

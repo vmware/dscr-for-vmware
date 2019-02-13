@@ -45,8 +45,10 @@ $script:configWithServicePolicyOnAndRunning = "$($script:dscResourceName)_WithSe
 
 $script:connection = Connect-VIServer -Server $Server -User $User -Password $Password
 $script:vmHost = $null
+$script:vmHostService = $null
+$script:vmHostServicePolicy = $null
 
-$script:Key = 'TMS-SSH'
+$script:Key = 'TSM-SSH'
 $script:PolicyUnset = 'Unset'
 $script:PolicyOff = 'Off'
 $script:PolicyOn = 'On'
@@ -89,78 +91,100 @@ $script:mofFileWithServicePolicyOn = "$script:integrationTestsFolderPath\$($scri
 $script:mofFileWithServicePolicyOff = "$script:integrationTestsFolderPath\$($script:configWithServicePolicyOff)\"
 $script:mofFileWithServicePolicyOnAndRunning = "$script:integrationTestsFolderPath\$($script:configWithServicePolicyOnAndRunning)\"
 
-Describe "$($script:dscResourceName)_Integration" {
-    Context "When using configuration $($script:configWithServicePolicyUnset)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithServicePolicyUnset
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+function Invoke-TestSetup {
+    $script:vmHost = Get-VMHost -Server $script:connection -Name $script:resourceWithServicePolicyUnset.Name
+    $script:vmHostService = Get-VMHostService -Server $script:connection -VMHost $script:vmHost | Where-Object { $_.Key -eq $script:resourceWithServicePolicyUnset.Key }
+    $script:vmHostServicePolicy = $script:vmHostService.Policy
+}
+
+function Invoke-TestCleanup {
+    $script:vmHost = Get-VMHost -Server $script:connection -Name $script:resourceWithServicePolicyUnset.Name
+    $script:vmHostService = Get-VMHostService -Server $script:connection -VMHost $script:vmHost | Where-Object { $_.Key -eq $script:resourceWithServicePolicyUnset.Key }
+
+    Set-VMHostService -HostService $script:vmHostService -Policy $script:vmHostServicePolicy -Confirm:$false
+}
+
+try {
+    Describe "$($script:dscResourceName)_Integration" {
+        Context "When using configuration $($script:configWithServicePolicyUnset)" {
+            BeforeAll {
+                Invoke-TestSetup
+            }
+            AfterAll {
+                Invoke-TestCleanup
             }
 
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithServicePolicyUnset
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithServicePolicyUnset
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
-            }
-            Start-DscConfiguration @startDscConfigurationParameters | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration without throwing' {
-            # Assert
-            { Get-DscConfiguration } | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
-            # Act
-            $configuration = Get-DscConfiguration
-
-            # Assert
-            $configuration.Name | Should -Be $script:resourceWithServicePolicyUnset.Name
-            $configuration.Server | Should -Be $script:resourceWithServicePolicyUnset.Server
-            $configuration.Key | Should -Be $script:resourceWithServicePolicyUnset.Key
-            $configuration.Policy | Should -Be $script:resourceWithServicePolicyUnset.Policy
-        }
-
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
-        }
-    }
-
-    Context "When using configuration $($script:configWithServicePolicyOn)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithServicePolicyOn
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
             }
 
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
+            It 'Should compile and apply the MOF without throwing' {
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithServicePolicyUnset
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
+                # Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Name | Should -Be $script:resourceWithServicePolicyUnset.Name
+                $configuration.Server | Should -Be $script:resourceWithServicePolicyUnset.Server
+                $configuration.Key | Should -Be $script:resourceWithServicePolicyUnset.Key
+                $configuration.Policy | Should -Be $script:vmHostServicePolicy
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            {
+        Context "When using configuration $($script:configWithServicePolicyOn)" {
+            BeforeEach {
+                # Arrange
                 $startDscConfigurationParameters = @{
                     Path = $script:mofFileWithServicePolicyOn
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-                Start-DscConfiguration @startDscConfigurationParameters | Should -Not -Throw
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithServicePolicyOn
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
@@ -184,32 +208,31 @@ Describe "$($script:dscResourceName)_Integration" {
                 Test-DscConfiguration | Should -Be $true
             }
         }
-    }
 
-    Context "When using configuration $($script:configWithServicePolicyOff)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithServicePolicyOff
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
-            }
-
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
-
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            {
+        Context "When using configuration $($script:configWithServicePolicyOff)" {
+            BeforeEach {
+                # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithServicePolicyPolicyOff
+                    Path = $script:mofFileWithServicePolicyOff
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-                Start-DscConfiguration @startDscConfigurationParameters | Should -Not -Throw
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithServicePolicyOff
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
@@ -233,32 +256,31 @@ Describe "$($script:dscResourceName)_Integration" {
                 Test-DscConfiguration | Should -Be $true
             }
         }
-    }
 
-    Context "When using configuration $($script:configWithServicePolicyOnAndRunning)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithServicePolicyOnAndRunning
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
-            }
-
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
-
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            {
+        Context "When using configuration $($script:configWithServicePolicyOnAndRunning)" {
+            BeforeEach {
+                # Arrange
                 $startDscConfigurationParameters = @{
                     Path = $script:mofFileWithServicePolicyOnAndRunning
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-                Start-DscConfiguration @startDscConfigurationParameters | Should -Not -Throw
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithServicePolicyOnAndRunning
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
@@ -284,4 +306,7 @@ Describe "$($script:dscResourceName)_Integration" {
             }
         }
     }
+}
+finally {
+    Disconnect-VIServer -Server $Server -Confirm:$false
 }

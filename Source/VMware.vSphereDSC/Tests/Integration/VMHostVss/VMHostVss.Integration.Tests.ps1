@@ -36,6 +36,7 @@ $script:dscResourceName = 'VMHostVss'
 $script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration') $script:dscResourceName
+$script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
 $script:configWithNewVss = "$($script:dscResourceName)_New_Config"
 $script:configWithModifyVss = "$($script:dscResourceName)_Modify_Config"
@@ -80,81 +81,83 @@ $script:mofFileWithNewVss = "$script:integrationTestsFolderPath\$($script:config
 $script:mofFileWithModifyVss = "$script:integrationTestsFolderPath\$($script:configWithModifyVss)\"
 $script:mofFileWithRemoveVss = "$script:integrationTestsFolderPath\$($script:configWithRemoveVss)\"
 
-Describe "$($script:dscResourceName)_Integration" {
-    Context "When using configuration $($script:configWithNewVss)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithNewVss
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+try {
+    Describe "$($script:dscResourceName)_Integration" {
+        Context "When using configuration $($script:configWithNewVss)" {
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithNewVss
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
             }
 
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
+            It 'Should compile and apply the MOF without throwing' {
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithNewVss
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithNewVss
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
-            }
-            Start-DscConfiguration @startDscConfigurationParameters | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration without throwing' {
-            # Assert
-            { Get-DscConfiguration } | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
-            # Act
-            $configuration = Get-DscConfiguration
-
-            # Assert
-            $configuration.Server | Should -Be $script:resourceWithNewVss.Server
-            $configuration.Name | Should -Be $script:resourceWithNewVss.Name
-            $configuration.Ensure | Should -Be $script:resourceWithNewVss.Ensure
-            $configuration.VssName | Should -Be $script:resourceWithNewVss.VssName
-            $configuration.NumPorts | Should -Be $script:resourceWithNewVss.NumPorts
-            $configuration.Mtu | Should -Be $script:resourceWithNewVss.Mtu
-            $configuration.Ensure | Should -Be $script:resourceWithNewVss.Ensure
-        }
-
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
-        }
-    }
-
-    Context "When using configuration $($script:configWithModifyVss)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithModifyVss
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
+                # Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Server | Should -Be $script:resourceWithNewVss.Server
+                $configuration.Name | Should -Be $script:resourceWithNewVss.Name
+                $configuration.Ensure | Should -Be $script:resourceWithNewVss.Ensure
+                $configuration.VssName | Should -Be $script:resourceWithNewVss.VssName
+                $configuration.NumPorts | Should -Be $script:resourceWithNewVss.NumPorts
+                $configuration.Mtu | Should -Be $script:resourceWithNewVss.Mtu
+                $configuration.Ensure | Should -Be $script:resourceWithNewVss.Ensure
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            {
+        Context "When using configuration $($script:configWithModifyVss)" {
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithModifyVss
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
                 $startDscConfigurationParameters = @{
                     Path = $script:mofFileWithWithModifyVss
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-                Start-DscConfiguration @startDscConfigurationParameters | Should -Not -Throw
+
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
@@ -181,32 +184,31 @@ Describe "$($script:dscResourceName)_Integration" {
                 Test-DscConfiguration | Should -Be $true
             }
         }
-    }
 
-    Context "When using configuration $($script:configWithRemoveVss)" {
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithRemoveVss
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
-            }
-
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-        }
-
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            {
+        Context "When using configuration $($script:configWithRemoveVss)" {
+            BeforeEach {
+                # Arrange
                 $startDscConfigurationParameters = @{
                     Path = $script:mofFileWithRemoveVss
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-                Start-DscConfiguration @startDscConfigurationParameters | Should -Not -Throw
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithRemoveVss
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
@@ -234,4 +236,6 @@ Describe "$($script:dscResourceName)_Integration" {
             }
         }
     }
+}
+finally {
 }

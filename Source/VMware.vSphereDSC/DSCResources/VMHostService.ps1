@@ -103,10 +103,10 @@ class VMHostService : VMHostBaseDSC {
     [bool] ShouldUpdateVMHostService($vmHost) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object {$_.Key -eq $this.Key}
+        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
         $shouldUpdateVMHostService = @()
-        $shouldUpdateVMHostService += $this.Policy -ne $vmHostCurrentService.Policy
+        $shouldUpdateVMHostService += ($this.Policy -ne [ServicePolicy]::Unset -and $this.Policy -ne $vmHostCurrentService.Policy)
         $shouldUpdateVMHostService += $this.Running -ne $vmHostCurrentService.Running
 
         return ($shouldUpdateVMHostService -Contains $true)
@@ -120,9 +120,9 @@ class VMHostService : VMHostBaseDSC {
     [void] UpdateVMHostService($vmHost) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object {$_.Key -eq $this.Key}
+        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
-        if ($vmHostCurrentService.Policy -ne $this.Policy) {
+        if ($this.Policy -ne [ServicePolicy]::Unset -and $this.Policy -ne $vmHostCurrentService.Policy) {
             Set-VMHostService -HostService $vmHostCurrentService -Policy $this.Policy.ToString() -Confirm:$false
         }
 
@@ -144,7 +144,7 @@ class VMHostService : VMHostBaseDSC {
     [void] PopulateResult($vmHost, $vmHostService) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object {$_.Key -eq $this.Key}
+        $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
         $vmHostService.Name = $vmHost.Name
         $vmHostService.Server = $this.Server
         $vmHostService.Key = $vmHostCurrentService.Key

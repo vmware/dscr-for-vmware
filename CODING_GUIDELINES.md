@@ -112,7 +112,7 @@ In your unit test file you need to replace VMware PowerCLI modules with the scri
   $script:unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
   $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
 
-  function BeforeAllTests {
+  function Invoke-TestSetup {
     $env:PSModulePath = $script:mockModuleLocation
     $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
     if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
@@ -122,60 +122,68 @@ In your unit test file you need to replace VMware PowerCLI modules with the scri
     Import-Module -Name VMware.VimAutomation.Core
    }
 
-   function AfterAllTests {
+   function Invoke-TestCleanup {
     Remove-Module -Name VMware.VimAutomation.Core
     $env:PSModulePath = $script:modulePath
    }
 
-   # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
-   BeforeAllTests
+   try {
+       # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
+       Invoke-TestSetup
 
-   Describe 'MyResource\Set' -Tag 'Set' {
-     ...
+       Describe 'MyResource\Set' -Tag 'Set' {
+         ...
+       }
+
+       Describe 'MyResource\Test' -Tag 'Test' {
+         ...
+       }
+
+       Describe 'MyResource\Get' -Tag 'Get' {
+         ...
+       }
    }
-
-   Describe 'MyResource\Test' -Tag 'Test' {
-     ...
+   finally {
+       # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
+       Invoke-TestCleanup
    }
-
-   Describe 'MyResource\Get' -Tag 'Get' {
-     ...
-   }
-
-   # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
-   AfterAllTests
  ```
 
  Basically for the integration tests, you need to test that when invoking [Start-DscConfiguration](https://docs.microsoft.com/en-us/powershell/module/psdesiredstateconfiguration/start-dscconfiguration?view=powershell-5.1) your configuration is applied, [Test-DscConfiguration](https://docs.microsoft.com/en-us/powershell/module/psdesiredstateconfiguration/test-dscconfiguration?view=powershell-5.1) to check if the configuration is in the desired state and [Get-DscConfiguration](https://docs.microsoft.com/en-us/powershell/module/psdesiredstateconfiguration/get-dscconfiguration?view=powershell-5.1) to check the currently applied configuration on the machine.
  ```powershell
-  Describe 'MyResource' {
-      Context 'Testing one use case' {
-          BeforeEach {
-              ...
-              Start-DscConfiguration <DSC Config parameters>
-              ...
-          }
+  try {
+      Describe 'MyResource' {
+          Context 'Testing one use case' {
+              BeforeEach {
+                  ...
+                  Start-DscConfiguration <DSC Config parameters>
+                  ...
+              }
 
-          It 'Should compile and apply the MOF without throwing' {
-              # Make sure the configuration did not fail when being applied.
-              ...
-          }
+              It 'Should compile and apply the MOF without throwing' {
+                  # Make sure the configuration did not fail when being applied.
+                  ...
+              }
 
-          It 'Should be able to call Get-DscConfiguration without throwing' {
-              # Make sure getting the configuration did not fail.
-              ...
-          }
+              It 'Should be able to call Get-DscConfiguration without throwing' {
+                  # Make sure getting the configuration did not fail.
+                  ...
+              }
 
-          It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-              # Make sure the returned configuration is the desired one.
-              ...
-          }
+              It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                  # Make sure the returned configuration is the desired one.
+                  ...
+              }
 
-          It 'Should return $true when Test-DscConfiguration is run' {
-              # Make sure the configuration is in the desired state.
-              ...
+              It 'Should return $true when Test-DscConfiguration is run' {
+                  # Make sure the configuration is in the desired state.
+                  ...
+              }
           }
       }
+  }
+  finally {
+      # Perform some cleanup like disconnecting from a server.
   }
  ```
 
