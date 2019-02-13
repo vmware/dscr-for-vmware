@@ -67,7 +67,7 @@ function Add-DependenciesBetweenClasses {
         foreach ($classToken in $classTokens) {
             $classLine = $fileContent[$classToken.StartLine - 1]
             $classLine = $classLine.Substring('class '.Length)
-            $classLineBaseInheritor = $classLine.Split(':{') | ForEach-Object { $_.Trim() }
+            $classLineBaseInheritor = $classLine.Split(':').Split('{') | ForEach-Object { $_.Trim() }
             $baseName = $null
             $name = $null
 
