@@ -14,49 +14,20 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-param(
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Name,
+class VMHostNetworkBaseDSC : VMHostBaseDSC {
+    hidden [PSObject] $VMHostNetworkSystem
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Server,
+    <#
+    .DESCRIPTION
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $User,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Password
-)
-
-$script:configurationData = @{
-    AllNodes = @(
-        @{
-            NodeName = 'localhost'
-            PSDscAllowPlainTextPassword = $true
+    Retrieves the Network System from the specified VMHost.
+    #>
+    [void] GetNetworkSystem($vmHost) {
+        try {
+            $this.VMHostNetworkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
         }
-    )
-}
-
-Configuration VMHostVss_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-        VMHostVss vmHostVSS {
-            Name = $Name
-            Server = $Server
-            Credential = $Credential
-            Ensure = [Ensure]::Present
-            VssName = 'VSS1'
-            Mtu = 1500
+        catch {
+            throw "Could not retrieve NetworkSystem on VMHost with name $($this.Name). For more information: $($_.Exception.Message)"
         }
     }
 }
-
-VMHostVss_Config -ConfigurationData $script:configurationData

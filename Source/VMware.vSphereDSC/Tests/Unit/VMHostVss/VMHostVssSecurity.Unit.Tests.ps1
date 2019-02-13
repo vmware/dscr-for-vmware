@@ -22,7 +22,7 @@ function Invoke-TestSetup {
     $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
 
     $script:moduleName = 'VMware.vSphereDSC'
-    $script:resourceName = 'VMHostVss'
+    $script:resourceName = 'VMHostVssSecurity'
 
     $user = 'user'
     $password = 'password' | ConvertTo-SecureString -AsPlainText -Force
@@ -39,26 +39,20 @@ function Invoke-TestSetup {
         Credential = $credential
         Ensure = 'Present'
         VssName = 'DSCTest'
+        AllowPromiscuous = $false
+        ForgedTransmits = $true
+        MacChanges = $true
+    }
+    $script:resourcePropertiesAbsent = $script:resourceProperties.Clone()
+    $script:resourcePropertiesAbsent.Ensure = 'Absent'
+    $script:netObjectEdit = 'edit'
+    $script:vssProperties = @{
         NumPorts = 1
         Mtu = 1500
         Key = 'VSS'
         NumPortsAvailable = 1
         Pnic = @('vmnic1', 'vmnic2')
         Portgroup = @('Portgroup1', 'Portgroup2')
-    }
-    $script:resourcePropertiesAbsent = $script:resourceProperties.Clone()
-    $script:resourcePropertiesAbsent.Ensure = 'Absent'
-    $script:netObjectAdd = @{
-        Type = 'VSS'
-        Operation = 'add'
-    }
-    $script:netObjectEdit = @{
-        Type = 'VSS'
-        Operation = 'edit'
-    }
-    $script:netObjectRemove = @{
-        Type = 'VSS'
-        Operation = 'remove'
     }
     $script:viServerCode = @'
         return [VMware.Vim.VIServer] @{
@@ -88,73 +82,49 @@ function Invoke-TestSetup {
             }
         )
 '@
-    $script:networkSystemDiffVssCode = @'
+    $script:networkSystemDiffVssSecurityCode = @'
         return (
             [VMware.Vim.HostNetworkSystem] @{
                 NetworkInfo = [VMware.Vim.HostNetworkInfo] @{
                     vswitch = @(
                         [VMware.Vim.HostVirtualSwitch]@{
-                            Key = '$($script:resourceProperties.Key)'
-                            Mtu = $($script:resourceProperties.Mtu + 1)
                             Name = '$($script:resourceProperties.VssName)'
-                            NumPorts = $($script:resourceProperties.NumPorts + 1)
-                            NumPortsAvailable = $($script:resourceProperties.NumPortsAvailable)
-                            Pnic = $(($script:resourceProperties.Pnic | %{"'$_'"}) -join ',')
-                            PortGroup = $(($script:resourceProperties.Portgroup | %{"'$_'"}) -join ',')
+                            Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
+                                Policy = [VMware.Vim.HostNetworkPolicy] @{
+                                    Security = [VMware.Vim.HostNetworkSecurityPolicy] @{
+                                        AllowPromiscuous = `$$(-not $script:resourceProperties.AllowPromiscuous)
+                                        ForgedTransmits = `$$(-not $script:resourceProperties.ForgedTransmits)
+                                        MacChanges = `$$(-not $script:resourceProperties.MacChanges)
+                                    }
+                                }
+                            }
                         }
                     )
                 }
             }
         )
 '@
-    $script:networkSystemSameVssCode = @'
+    $script:networkSystemSameVssSecurityCode = @'
         return (
             [VMware.Vim.HostNetworkSystem] @{
                 NetworkInfo = [VMware.Vim.HostNetworkInfo] @{
                     vswitch = @(
                         [VMware.Vim.HostVirtualSwitch]@{
-                            Key = '$($script:resourceProperties.Key)'
-                            Mtu = $($script:resourceProperties.Mtu)
                             Name = '$($script:resourceProperties.VssName)'
-                            NumPorts = $($script:resourceProperties.NumPorts)
-                            NumPortsAvailable = $($script:resourceProperties.NumPortsAvailable)
-                            Pnic = $(($script:resourceProperties.Pnic | %{"'$_'"}) -join ',')
-                            PortGroup = $(($script:resourceProperties.Portgroup | %{"'$_'"}) -join ',')
+                            Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
+                                Policy = [VMware.Vim.HostNetworkPolicy] @{
+                                    Security = [VMware.Vim.HostNetworkSecurityPolicy] @{
+                                        AllowPromiscuous = `$$($script:resourceProperties.AllowPromiscuous)
+                                        ForgedTransmits = `$$($script:resourceProperties.ForgedTransmits)
+                                        MacChanges = `$$($script:resourceProperties.MacChanges)
+                                    }
+                                }
+                            }
                         }
                     )
                 }
             }
         )
-'@
-    $script:vssConfigAddVssCode = @'
-        return [VMware.Vim.HostVirtualSwitchConfig] @{
-            Name = '$($script:resourceProperties.VssName)'
-            ChangeOperation = '$($script:netObjectAdd.Operation)'
-            Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
-                Mtu = $($script:resourceProperties.Mtu)
-                NumPorts = $($script:resourceProperties.NumPorts)
-            }
-        }
-'@
-    $script:vssConfigEditVssCode = @'
-        return [VMware.Vim.HostVirtualSwitchConfig] @{
-            Name = '$($script:resourceProperties.VssName)'
-            ChangeOperation = '$($script:netObjectEdit.Operation)'
-            Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
-                Mtu = $($script:resourceProperties.Mtu)
-                NumPorts = $($script:resourceProperties.NumPorts)
-            }
-        }
-'@
-    $script:vssConfigRemoveVssCode = @'
-        return [VMware.Vim.HostVirtualSwitchConfig] @{
-            Name = '$($script:resourceProperties.VssName)'
-            ChangeOperation = '$($script:netObjectRemove.Operation)'
-            Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
-                Mtu = $($script:resourceProperties.Mtu)
-                NumPorts = $($script:resourceProperties.NumPorts)
-            }
-        }
 '@
     $script:updateNetworkCode = @'
         return [VMware.Vim.HostNetworkConfigResult] @{
@@ -190,13 +160,12 @@ try {
     # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
     Invoke-TestSetup
 
-    Describe 'VMHostVss\Set'  -Tag 'Set' {
-        Context 'Present and VSS does not exist' {
+    Describe 'VMHostVssSecurity\Set'  -Tag 'Set' {
+        Context 'Present and default Security properties' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemNoVssCode))
-                $vssConfigMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vssConfigAddVssCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssSecurityCode))
                 $updateNetworkMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:updateNetworkCode))
             }
 
@@ -204,7 +173,6 @@ try {
             Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
             Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
-            Mock -CommandName New-VssConfig -MockWith $vssConfigMock -ModuleName $script:moduleName
             Mock -CommandName Update-Network -MockWith $updateNetworkMock -ModuleName $script:moduleName
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
@@ -251,51 +219,34 @@ try {
                     ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:networkSystemMoRef }
                     ModuleName = $script:moduleName
                     Exactly = $true
-                    Times = 2
-                    Scope = 'It'
-                }
-                Assert-MockCalled @assertMockCalledParams
-            }
-
-            It 'Should call New-VssConfig once with operation Add' {
-                # Act
-                $result = $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'New-VssConfig'
-                    ParameterFilter = { $Name -eq $script:resourceProperties.VssName -and $Operation -eq $script:netObjectAdd.Operation }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
                     Times = 1
                     Scope = 'It'
                 }
                 Assert-MockCalled @assertMockCalledParams
             }
 
-            It 'Should call Update-Network once with type Add' {
+            It 'Should not call Update-Network' {
                 # Act
                 $result = $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Update-Network'
-                    ParameterFilter = { $Type -eq $script:netObjectAdd.Type -and $VssConfig.ChangeOperation -eq $script:netObjectAdd.Operation }
+                    ParameterFilter = { $VssSecurityConfig -ne $null -and $VssSecurityConfig.Operation -eq $script:netObjectEdit.Operation }
                     ModuleName = $script:moduleName
                     Exactly = $true
-                    Times = 1
+                    Times = 0
                     Scope = 'It'
                 }
                 Assert-MockCalled @assertMockCalledParams
             }
         }
 
-        Context 'Present and VSS does exist with different properties' {
+        Context 'Present and different security properties' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssCode))
-                $vssConfigMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vssConfigEditVssCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssSecurityCode))
                 $updateNetworkMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:updateNetworkCode))
             }
 
@@ -303,35 +254,18 @@ try {
             Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
             Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
-            Mock -CommandName New-VssConfig -MockWith $vssConfigMock -ModuleName $script:moduleName
             Mock -CommandName Update-Network -MockWith $updateNetworkMock -ModuleName $script:moduleName
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
-            It 'Should call New-VssConfig once with operation Edit' {
-                # Act
-                $result = $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'New-VssConfig'
-                    ParameterFilter = { $Name -eq $script:resourceProperties.VssName -and $Operation -eq $script:netObjectEdit.Operation }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-                Assert-MockCalled @assertMockCalledParams
-            }
-
-            It 'Should call Update-Network once with type Edit' {
+            It 'Should call Update-Network once with VssConfigSecurity and operation Edit' {
                 # Act
                 $result = $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Update-Network'
-                    ParameterFilter = { $Type -eq $script:netObjectEdit.Type -and $VssConfig.ChangeOperation -eq $script:netObjectEdit.Operation }
+                    ParameterFilter = { $null -ne $VssSecurityConfig -and $VssSecurityConfig.Operation -eq $script:netObjectEdit  }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -345,8 +279,7 @@ try {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssCode))
-                $vssConfigMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vssConfigRemoveVssCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssSecurityCode))
                 $updateNetworkMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:updateNetworkCode))
             }
 
@@ -354,35 +287,18 @@ try {
             Mock -CommandName Connect-VIServer -MockWith $viserverMock -ModuleName $script:moduleName
             Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
-            Mock -CommandName New-VssConfig -MockWith $vssConfigMock -ModuleName $script:moduleName
             Mock -CommandName Update-Network -MockWith $updateNetworkMock -ModuleName $script:moduleName
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourcePropertiesAbsent
 
-            It 'Should call New-VssConfig once with operation Remove' {
-                # Act
-                $result = $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'New-VssConfig'
-                    ParameterFilter = { $Name -eq $script:resourceProperties.VssName -and $Operation -eq $script:netObjectRemove.Operation }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-                Assert-MockCalled @assertMockCalledParams
-            }
-
-            It 'Should call Update-Network once with type Remove' {
+            It 'Should call Update-Network once  with VssConfigSecurity and operation Edit' {
                 # Act
                 $result = $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Update-Network'
-                    ParameterFilter = { $Type -eq $script:netObjectRemove.Type -and $VssConfig.ChangeOperation -eq $script:netObjectRemove.Operation }
+                    ParameterFilter = { $null -ne $VssSecurityConfig -and $VssSecurityConfig.Operation -eq $script:netObjectEdit  }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -393,7 +309,7 @@ try {
         }
     }
 
-    Describe 'VMHostVss\Test' -Tag 'Test' {
+    Describe 'VMHostVssSecurity\Test' -Tag 'Test' {
         Context 'Present and VSS does not exist' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
@@ -465,11 +381,11 @@ try {
             }
         }
 
-        Context 'Present and VSS does exist with different properties' {
+        Context 'Present, VSS exists and security with different properties' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssSecurityCode))
             }
 
             # Arrange
@@ -488,11 +404,11 @@ try {
             }
         }
 
-        Context 'Present and VSS does exist with the same properties' {
+        Context 'Present, VSS exists and security with the same properties' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssSecurityCode))
             }
 
             # Arrange
@@ -543,7 +459,7 @@ try {
 
             It 'Should call Get-VMHost with the passed server and name once' {
                 # Act
-                $resource.Get()
+                $resource.Test()
 
                 # Assert
                 $assertMockCalledParams = @{
@@ -559,7 +475,7 @@ try {
 
             It 'Should call Get-View with the passed server and id once' {
                 # Act
-                $resource.Get()
+                $resource.Test()
 
                 # Assert
                 $assertMockCalledParams = @{
@@ -582,11 +498,11 @@ try {
             }
         }
 
-        Context 'Absent and VSS does exist with different properties' {
+        Context 'Absent, VSS exists and not default security properties' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssSecurityCode))
             }
 
             # Arrange
@@ -605,11 +521,11 @@ try {
             }
         }
 
-        Context 'Absent and VSS does exist with the same properties' {
+        Context 'Absent, VSS exists and default security properties' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssSecurityCode))
             }
 
             # Arrange
@@ -619,21 +535,21 @@ try {
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourcePropertiesAbsent
 
-            It 'Should return $false (The VSS exists)' {
+            It 'Should return $true (The VSS exists, but Security settings are defaults)' {
                 # Act
                 $result = $resource.Test()
 
                 # Assert
-                $result | Should -Be $false
+                $result | Should -Be $true
             }
         }
     }
 
-    Describe 'VMHostVss\Get' -Tag 'Get' {
+    Describe 'VMHostVssSecurity\Get' -Tag 'Get' {
         BeforeAll {
             $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
             $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-            $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssCode))
+            $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssSecurityCode))
         }
 
         # Arrange
@@ -700,12 +616,9 @@ try {
             $result.Name | Should -Be $script:resourceProperties.Name
             $result.Ensure | Should -Be $script:resourceProperties.Ensure
             $result.VssName | Should -Be $script:resourceProperties.VssName
-            $result.NumPorts | Should -Be $script:resourceProperties.NumPorts
-            $result.Mtu | Should -Be $script:resourceProperties.Mtu
-            $result.Key | Should -Be $script:resourceProperties.Key
-            $result.NumPortsAvailable | Should -Be $script:resourceProperties.NumPortsAvailable
-            Compare-Object -ReferenceObject ($result.Pnic | ConvertTo-Json) -DifferenceObject ($script:resourceProperties.Pnic | ConvertTo-Json) | Should -Be $null
-            Compare-Object -ReferenceObject ($result.PortGroup | ConvertTo-Json) -DifferenceObject ($script:resourceProperties.Portgroup | ConvertTo-Json) | Should -Be $null
+            $result.AllowPromiscuous | Should -Be $script:resourceProperties.AllowPromiscuous
+            $result.ForgedTransmits | Should -Be $script:resourceProperties.ForgedTransmits
+            $result.MacChanges | Should -Be $script:resourceProperties.MacChanges
         }
     }
 }

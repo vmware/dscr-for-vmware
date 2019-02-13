@@ -191,7 +191,7 @@ class VMHostSyslog : VMHostBaseDSC {
 
         $syslog.Server = $this.Server
         $syslog.Name = $VMHost.Name
-        $syslog.Loghost = $currentVMHostSyslog.LogHost
+        $syslog.Loghost = $currentVMHostSyslog.RemoteHost
         $syslog.CheckSslCerts = $currentVMHostSyslog.CheckSslCerts
         $syslog.DefaultTimeout = $currentVMHostSyslog.DefaultTimeout
         $syslog.QueueDropMark = $currentVMHostSyslog.QueueDropMark
