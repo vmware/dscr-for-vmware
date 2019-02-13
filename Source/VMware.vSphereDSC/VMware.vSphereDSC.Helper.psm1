@@ -238,13 +238,13 @@ function Update-Network {
         [Parameter(ParameterSetName = 'VSS')]
         [Hashtable] $VssConfig,
         [Parameter(ParameterSetName = 'VSSSecurity')]
-        [Hashtable] $VssSecurityConfig
+        [Hashtable] $VssSecurityConfig,
+        [Parameter(ParameterSetName = 'VSSShaping')]
+        [Hashtable] $VssShapingConfig
     )
 
     Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
     Write-Verbose -Message "$(Get-Date) Parameterset $($PSCmdlet.ParameterSetName)"
-    Write-Host -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
-    Write-Host -Message "$(Get-Date) Parameterset $($PSCmdlet.ParameterSetName)"
 
     <#
     $configNet is the parameter object we pass to the UpdateNetworkConfig method.
@@ -284,6 +284,17 @@ function Update-Network {
             $hostVirtualSwitchConfig.Spec.Policy.Security.AllowPromiscuous = $VssSecurityConfig.AllowPromiscuous
             $hostVirtualSwitchConfig.Spec.Policy.Security.ForgedTransmits = $VssSecurityConfig.ForgedTransmits
             $hostVirtualSwitchConfig.Spec.Policy.Security.MacChanges = $VssSecurityConfig.MacChanges
+
+            $configNet.Vswitch += $hostVirtualSwitchConfig
+        }
+        'VSSShaping' {
+            $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssSecurityConfig.Name }
+
+            $hostVirtualSwitchConfig.ChangeOperation = $VssSecurityConfig.Operation
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.AverageBandwidth = $VssShapingConfig.AverageBandwidth
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.BurstSize = $VssShapingConfig.BurstSize
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.Enabled = $VssShapingConfig.Enabled
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.PeakBandwidth = $VssShapingConfig.PeakBandwidth
 
             $configNet.Vswitch += $hostVirtualSwitchConfig
         }
