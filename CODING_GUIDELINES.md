@@ -232,3 +232,7 @@ Documentation for every resource should currently be structured like so:
         * DSCResources
             * MyResource
                 * `MyResources.md`
+
+### Style Guidelines
+
+It is recommended to read the [Style Guidelines](https://github.com/vmware/dscr-for-vmware/blob/master/STYLE_GUIDELINES.md) before writing new DSC Resources.
