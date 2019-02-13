@@ -84,7 +84,7 @@ the [Desired State Configuration Resources for VMware wiki](https://github.com/v
 ### master
 
 [![Build Status](https://travis-ci.org/vmware/dscr-for-vmware.svg?branch=master)](https://travis-ci.org/vmware/dscr-for-vmware)
-![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg?maxAge=60)
+![Coverage](https://img.shields.io/badge/coverage-87%25-yellow.svg?maxAge=60)
 
 This is the branch to which contributions should be proposed by contributors as pull requests. The content of the module releases will be from the master branch.
 
