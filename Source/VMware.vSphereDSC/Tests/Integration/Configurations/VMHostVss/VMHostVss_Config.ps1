@@ -35,17 +35,11 @@ param(
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
 $script:vmHostCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-$script:LogHost = 'udp://vli.local.lab:514'    # RemoteHost
-$script:CheckSslCerts = $true                  # EnforceSSLCertificates
-$script:DefaultRotate = 10                     # LocalLoggingDefaultRotation
-$script:DefaultSize = 100                      # LocalLoggingDefaultRotationSize
-$script:DefaultTimeout = 180                   # DefaultNetworkRetryTimeout
-$script:Logdir = '/scratch/log'                # LocalLogOutput
-$script:Logdir2 = '/scratch/log2'              # LocalLogOutput
-$script:LogdirUnique = $false                  # LogToUniqueSubdirectory
-$script:DropLogRotate = 10                     # DroppedLogFileRotations
-$script:DropLogSize = 100                      # DroppedLogFileRotationSize
-$script:QueueDropMark = 90                     # MessageQueueDropMark
+$script:VssName = 'VSSDSC'
+$script:EnsurePresent = 'Present'
+$script:EnsureAbsent = 'Absent'
+$script:Mtu = 1500
+$script:NumPorts = 1
 
 $script:configurationData = @{
     AllNodes = @(
@@ -59,49 +53,52 @@ $script:configurationData = @{
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-Configuration VMHostSyslog_WithDefaultSettings_Config {
+Configuration VMHostVss_New_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostSyslog vmHostSyslogSettings {
+        VMHostVss vmHostVssSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
-            Loghost = $script:LogHost
-            CheckSslCerts = $script:CheckSslCerts
-            DefaultRotate = $script:DefaultRotate
-            DefaultSize = $script:DefaultSize
-            DefaultTimeout = $script:DefaultTimeout
-            Logdir = $script:Logdir
-            LogdirUnique = $script:LogdirUnique
-            DropLogRotate = $script:DropLogRotate
-            DropLogSize = $script:DropLogSize
-            QueueDropMark = $script:QueueDropMark
+            VssName = $script:VssName
+            Ensure = $script:EnsurePresent
+            Mtu = $script:Mtu
+            NumPorts = $script:NumPorts
         }
     }
 }
 
-Configuration VMHostSyslog_WithNotDefaultSettings_Config {
+Configuration VMHostVss_Modify_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostSyslog vmHostSyslogSettings {
+        VMHostVss vmHostVssSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
-            Loghost = $script:LogHost
-            CheckSslCerts = -not $script:CheckSslCerts
-            DefaultRotate = $script:DefaultRotate + 1
-            DefaultSize = $script:DefaultSize + 1
-            DefaultTimeout = $script:DefaultTimeout + 1
-            Logdir = $script:Logdir2
-            LogdirUnique = -not $script:LogdirUnique
-            DropLogRotate = $script:DropLogRotate + 1
-            DropLogSize = $script:DropLogSize + 1
-            QueueDropMark = $script:QueueDropMark + 1
+            VssName = $script:VssName
+            Ensure = $script:EnsurePresent
+            Mtu = $script:Mtu + 1
+            NumPorts = $script:NumPorts + 1
         }
     }
 }
 
-VMHostSyslog_WithDefaultSettings_Config -OutputPath "$integrationTestsFolderPath\VMHostSyslog_WithDefaultSettings_Config" -ConfigurationData $script:configurationData
-VMHostSyslog_WithNotDefaultSettings_Config -OutputPath "$integrationTestsFolderPath\VMHostSyslog_WithNotDefaultSettings_Config" -ConfigurationData $script:configurationData
+Configuration VMHostVss_Remove_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostVss vmHostVssSettings {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            VssName = $script:VssName
+            Ensure = $script:EnsureAbsent
+        }
+    }
+}
+
+VMHostVss_New_Config -OutputPath "$integrationTestsFolderPath\VMHostVss_New_Config" -ConfigurationData $script:configurationData
+VMHostVss_Modify_Config -OutputPath "$integrationTestsFolderPath\VMHostVss_Modify_Config" -ConfigurationData $script:configurationData
+VMHostVss_Remove_Config -OutputPath "$integrationTestsFolderPath\VMHostVss_Remove_Config" -ConfigurationData $script:configurationData

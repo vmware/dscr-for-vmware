@@ -36,7 +36,6 @@ $script:dscResourceName = 'VMHostVss'
 $script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration') $script:dscResourceName
-$script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
 $script:configWithNewVss = "$($script:dscResourceName)_New_Config"
 $script:configWithModifyVss = "$($script:dscResourceName)_Modify_Config"
@@ -98,14 +97,13 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
+                # Assert
                 $startDscConfigurationParameters = @{
                     Path = $script:mofFileWithNewVss
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-
-                # Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
@@ -149,39 +147,40 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithWithModifyVss
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
+                # Assert
+                {
+                    $startDscConfigurationParameters = @{
+                        Path = $script:mofFileWithWithModifyVss
+                        ComputerName = 'localhost'
+                        Wait = $true
+                        Force = $true
+                    }
+                    { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
                 }
 
-                # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
+                It 'Should be able to call Get-DscConfiguration without throwing' {
+                    # Assert
+                    { Get-DscConfiguration} | Should -Not -Throw
+                }
 
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
-                { Get-DscConfiguration} | Should -Not -Throw
-            }
+                It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
+                    # Act
+                    $configuration = Get-DscConfiguration
 
-            It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
-                # Act
-                $configuration = Get-DscConfiguration
+                    # Assert
+                    $configuration.Server | Should -Be $script:resourceWithModifyVss.Server
+                    $configuration.Name | Should -Be $script:resourceWithModifyVss.Name
+                    $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
+                    $configuration.VssName | Should -Be $script:resourceWithModifyVss.VssName
+                    $configuration.NumPorts | Should -Be $script:resourceWithModifyVss.NumPorts
+                    $configuration.Mtu | Should -Be $script:resourceWithModifyVss.Mtu
+                    $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
+                }
 
-                # Assert
-                $configuration.Server | Should -Be $script:resourceWithModifyVss.Server
-                $configuration.Name | Should -Be $script:resourceWithModifyVss.Name
-                $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
-                $configuration.VssName | Should -Be $script:resourceWithModifyVss.VssName
-                $configuration.NumPorts | Should -Be $script:resourceWithModifyVss.NumPorts
-                $configuration.Mtu | Should -Be $script:resourceWithModifyVss.Mtu
-                $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
+                It 'Should return $true when Test-DscConfiguration is run' {
+                    # Arrange && Act && Assert
+                    Test-DscConfiguration | Should -Be $true
+                }
             }
         }
 
@@ -200,39 +199,40 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithRemoveVss
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
+                # Assert
+                {
+                    $startDscConfigurationParameters = @{
+                        Path = $script:mofFileWithRemoveVss
+                        ComputerName = 'localhost'
+                        Wait = $true
+                        Force = $true
+                    }
+                    { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
                 }
 
-                # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
+                It 'Should be able to call Get-DscConfiguration without throwing' {
+                    # Assert
+                    { Get-DscConfiguration } | Should -Not -Throw
+                }
 
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
-                { Get-DscConfiguration } | Should -Not -Throw
-            }
+                It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
+                    # Act
+                    $configuration = Get-DscConfiguration
 
-            It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
-                # Act
-                $configuration = Get-DscConfiguration
+                    # Assert
+                    $configuration.Server | Should -Be $script:resourceWithRemoveVss.Server
+                    $configuration.Name | Should -Be $script:resourceWithRemoveVss.Name
+                    $configuration.Ensure | Should -Be $script:resourceWithRemoveVss.Ensure
+                    $configuration.VssName | Should -Be $script:resourceWithRemoveVss.VssName
+                    $configuration.NumPorts | Should -Be $script:resourceWithRemoveVss.NumPorts
+                    $configuration.Mtu | Should -Be $script:resourceWithRemoveVss.Mtu
+                    $configuration.Ensure | Should -Be $script:resourceWithRemoveVss.Ensure
+                }
 
-                # Assert
-                $configuration.Server | Should -Be $script:resourceWithRemoveVss.Server
-                $configuration.Name | Should -Be $script:resourceWithRemoveVss.Name
-                $configuration.Ensure | Should -Be $script:resourceWithRemoveVss.Ensure
-                $configuration.VssName | Should -Be $script:resourceWithRemoveVss.VssName
-                $configuration.NumPorts | Should -Be $script:resourceWithRemoveVss.NumPorts
-                $configuration.Mtu | Should -Be $script:resourceWithRemoveVss.Mtu
-                $configuration.Ensure | Should -Be $script:resourceWithRemoveVss.Ensure
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
+                It 'Should return $true when Test-DscConfiguration is run' {
+                    # Arrange && Act && Assert
+                    Test-DscConfiguration | Should -Be $true
+                }
             }
         }
     }
