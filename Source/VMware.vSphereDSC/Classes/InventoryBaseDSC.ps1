@@ -18,7 +18,7 @@ class InventoryBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
-    Name of the Inventory Item from the Datacenter we will use.
+    Name of the resource under the Datacenter of 'Datacenter' key property.
     #>
     [DscProperty(Key)]
     [string] $Name
@@ -26,11 +26,13 @@ class InventoryBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
-    The full path to the Inventory Item in the Datacenter we will use from the Inventory.
+    Inventory folder path location of the resource with name specified in 'Name' key property in
+    the Datacenter specified in the 'Datacenter' key property.
     The path consists of 0 or more folders.
+    Empty path means the resource is in the root inventory folder.
     The Root folders of the Datacenter are not part of the path.
-    The parts of the path are separated with "/".
-    Example path: "<Folder Name>/<Folder Name>"
+    Folder names in path are separated by "/".
+    Example path for a VM resource: "Discovered Virtual Machines/My Ubuntu VMs".
     #>
     [DscProperty(Key)]
     [string] $InventoryPath
@@ -39,10 +41,10 @@ class InventoryBaseDSC : BaseDSC {
     .DESCRIPTION
 
     The full path to the Datacenter we will use from the Inventory.
-    The path consists of 0 or more folders and the Datacenter name.
-    Root folder of the Inventory is not part of the path.
-    The parts of the path are separated with "/" where the last part of the path is the Datacenter name.
-    Example path: "<Folder Name>/<Folder Name>/<Datacenter Name>".
+    Root 'datacenters' folder is not part of the path. Path can't be empty.
+    Last item in the path is the Datacenter Name. If only the Datacenter Name is specified, Datacenter will be searched under the root 'datacenters' folder.
+    The parts of the path are separated with "/".
+    Example path: "MyDatacentersFolder/MyDatacenter".
     #>
     [DscProperty(Key)]
     [string] $Datacenter
@@ -50,7 +52,7 @@ class InventoryBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
-    Value indicating if the Inventory Item should be Present or Absent.
+    Value indicating if the Resource should be Present or Absent.
     #>
     [DscProperty(Mandatory)]
     [Ensure] $Ensure
@@ -58,7 +60,8 @@ class InventoryBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
-    The type of Datacenter Folder in which the Inventory Item is located.
+    The type of Datacenter Folder in which the Resource is located.
+    Possible values are VM, Network, Datastore, Host.
     #>
     hidden [DatacenterFolderType] $DatacenterFolderType
 
