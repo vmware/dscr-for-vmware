@@ -14,32 +14,54 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-class VMHostVssBaseDSC : VMHostNetworkBaseDSC {
-    <#
-    .DESCRIPTION
+param(
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Name,
 
-    Value indicating if the VSS should be Present or Absent.
-    #>
-    [DscProperty(Mandatory)]
-    [Ensure] $Ensure
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-    <#
-    .DESCRIPTION
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-    The name of the VSS.
-    #>
-    [DscProperty(Key)]
-    [string] $VssName
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
+)
 
-    <#
-    .DESCRIPTION
+$script:configurationData = @{
+    AllNodes = @(
+        @{
+            NodeName = 'localhost'
+            PSDscAllowPlainTextPassword = $true
+        }
+    )
+}
 
-    Returns the desired virtual switch if it is present on the server otherwise returns $null.
-    #>
-    [PSObject] GetVss() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+Configuration VMHostVssTeaming_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
 
-        $this.vmHostNetworkSystem.UpdateViewData('NetworkInfo.Vswitch')
-        return ($this.vmHostNetworkSystem.NetworkInfo.Vswitch | Where-Object { $_.Name -eq $this.VssName })
+    Node localhost {
+        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
+        VMHostVssTeaming vmHostVSSTeaming {
+            Name = $Name
+            Server = $Server
+            Credential = $Credential
+            VssName = 'VSS1'
+            CheckBeacon = $false
+            ActiveNic = @('vmnic0','vmnic1')
+            StandbyNic = @()
+            NotifySwitches = $true
+            Policy = [NicTeamingPolicy]::LoadBalance_SrcId
+            RollingOrder = $false
+            DependsOn = "[VMHostVss]VVS1"
+        }
     }
 }
+
+VMHostVssTeaming_Config -ConfigurationData $script:configurationData

@@ -32,54 +32,79 @@ param(
     $Password
 )
 
+<#
+Integration test environment information
+
+Requirements
+
+1) The VSS that is created (VSSDSC) shall have 2 pNICs connected, but unused.
+See $script:ActiveNic
+2) The Policy value (enum NicTeamingPolicy) is case-sensitive and shall be in lowercase
+#>
+
 $script:moduleName = 'VMware.vSphereDSC'
-$script:dscResourceName = 'VMHostVssSecurity'
+$script:dscResourceName = 'VMHostVssTeaming'
 $script:dscDependResourceName = 'VMHostVss'
 $script:moduleFolderPath = (Get-Module -Name $script:moduleName -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
-$script:configWithModifyVssSecurity = "$($script:dscResourceName)_Modify_Config"
-$script:configWithRemoveVssSecurity = "$($script:dscResourceName)_Remove_Config"
+$script:configWithModifyVssTeaming = "$($script:dscResourceName)_Modify_Config"
+$script:configWithRemoveVssTeaming = "$($script:dscResourceName)_Remove_Config"
 
 $script:VssName = 'VSSDSC'
-$script:AllowPromiscuous = $false
-$script:ForgedTransmits = $true
-$script:MacChanges = $true
+$script:AverageBandwidth = 100000
+$script:CheckBeacon = $false
+$script:ActiveNic = @('vmnic4', 'vmnic5')
+$script:ActiveNicAlt = @('vmnic4')
+$script:StandbyNic = @()
+$script:StandbyNicAlt = @('vmnic5')
+$script:NotifySwitches = $true
+$script:Policy = 'loadbalance_srcid'
+$script:PolicyAlt = 'loadbalance_ip'
+$script:RollingOrder = $false
 $script:Present = 'Present'
 $script:Absent = 'Absent'
 
-$script:resourceWithModifyVssSecurity = @{
+$script:resourceWithModifyVssTeaming = @{
     Name = $Name
     Server = $Server
     Ensure = $script:Present
     VssName = $script:VssName
-    AllowPromiscuous = -not $script:AllowPromiscuous
-    ForgedTransmits = -not $script:ForgedTransmits
-    MacChanges = -not $script:MacChanges
+    CheckBeacon = -not $script:CheckBeacon
+    ActiveNic = $script:ActiveNicAlt
+    StandbyNic = $script:StandbyNicAlt
+    NotifySwitches = -not $script:NotifySwitches
+    Policy = $script:PolicyAlt
+    RollingOrder = -not $script:RollingOrder
+    DependsOn = "[VMHostVss]vmHostVssSettings"
 }
-$script:resourceWithRemoveVssSecurity = @{
+$script:resourceWithRemoveVssTeaming = @{
     Name = $Name
     Server = $Server
     Ensure = $script:Absent
     VssName = $script:VssName
-    AllowPromiscuous = $script:AllowPromiscuous
-    ForgedTransmits = $script:ForgedTransmits
-    MacChanges = $script:MacChanges
+    CheckBeacon = $script:CheckBeacon
+    ActiveNic = $script:ActiveNic
+    StandbyNic = $script:StandbyNic
+    NotifySwitches = $script:NotifySwitches
+    Policy = $script:Policy
+    RollingOrder = $script:RollingOrder
+    DependsOn = "[VMHostVss]vmHostVssSettings"
 }
 
 . $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
 
-$script:mofFileWithModifyVssSecurity = "$script:integrationTestsFolderPath\$($script:configWithModifyVssSecurity)\"
-$script:mofFileWithRemoveVssSecurity = "$script:integrationTestsFolderPath\$($script:configWithRemoveVssSecurity)\"
+$script:mofFileWithModifyVssTeaming = "$script:integrationTestsFolderPath\$($script:configWithModifyVssTeaming)\"
+$script:mofFileWithRemoveVssTeaming = "$script:integrationTestsFolderPath\$($script:configWithRemoveVssTeaming)\"
 
 try {
     Describe "$($script:dscResourceName)_Integration" {
-        Context "When using configuration $($script:configWithModifyVssSecurity)" {
+        Context "When using configuration $($script:configWithModifyVssTeaming)" {
             BeforeEach {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithModifyVssSecurity
+                    Path = $script:mofFileWithModifyVssTeaming
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -90,14 +115,13 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
+                # Assert
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithModifyVssSecurity
+                    Path = $script:mofFileWithModifyVssTeaming
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-
-                # Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
@@ -111,13 +135,16 @@ try {
                 $configuration = Get-DscConfiguration | where-object { $_.ResourceId -match $script:dscResourceName }
 
                 # Assert
-                $configuration.Server | Should -Be $script:resourceWithModifyVssSecurity.Server
-                $configuration.Name | Should -Be $script:resourceWithModifyVssSecurity.Name
-                $configuration.Ensure | Should -Be $script:resourceWithModifyVssSecurity.Ensure
-                $configuration.VssName | Should -Be $script:resourceWithModifyVssSecurity.VssName
-                $configuration.AllowPromiscuous | Should -Be $script:resourceWithModifyVssSecurity.AllowPromiscuous
-                $configuration.ForgedTransmits | Should -Be $script:resourceWithModifyVssSecurity.ForgedTransmits
-                $configuration.MacChanges | Should -Be $script:resourceWithModifyVssSecurity.MacChanges
+                $configuration.Server | Should -Be $script:resourceWithModifyVssTeaming.Server
+                $configuration.Name | Should -Be $script:resourceWithModifyVssTeaming.Name
+                $configuration.Ensure | Should -Be $script:Present
+                $configuration.VssName | Should -Be $script:resourceWithModifyVssTeaming.VssName
+                $configuration.CheckBeacon | Should -Be $script:resourceWithModifyVssTeaming.CheckBeacon
+                $configuration.ActiveNic | Should -Be $script:resourceWithModifyVssTeaming.ActiveNic
+                $configuration.StandbyNic | Should -Be $script:resourceWithModifyVssTeaming.StandbyNic
+                $configuration.NotifySwitches | Should -Be $script:resourceWithModifyVssTeaming.NotifySwitches
+                $configuration.Policy | Should -Be $script:resourceWithModifyVssTeaming.Policy
+                $configuration.RollingOrder | Should -Be $script:resourceWithModifyVssTeaming.RollingOrder
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -132,11 +159,11 @@ try {
             }
         }
 
-        Context "When using configuration $($script:configWithRemoveVssSecurity)" {
+        Context "When using configuration $($script:configWithRemoveVssTeaming)" {
             BeforeEach {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithRemoveVssSecurity
+                    Path = $script:mofFileWithRemoveVssTeaming
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -149,13 +176,11 @@ try {
             It 'Should compile and apply the MOF without throwing' {
                 # Assert
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithRemoveVssSecurity
+                    Path = $script:mofFileWithRemoveVssTeaming
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-
-                # Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
@@ -168,14 +193,16 @@ try {
                 # Act
                 $configuration = Get-DscConfiguration | where-object { $_.ResourceId -match $script:dscResourceName }
 
+                <#
+                Since the Teaming part is always present, the test is for [Ensure]::Present.
+                With the [Ensure]::Absent the Teaming settings are set to the defaults (where possible)
+                #>
+
                 # Assert
-                $configuration.Server | Should -Be $script:resourceWithRemoveVssSecurity.Server
-                $configuration.Name | Should -Be $script:resourceWithRemoveVssSecurity.Name
+                $configuration.Server | Should -Be $script:resourceWithRemoveVssTeaming.Server
+                $configuration.Name | Should -Be $script:resourceWithRemoveVssTeaming.Name
                 $configuration.Ensure | Should -Be $script:Present
-                $configuration.VssName | Should -Be $script:resourceWithRemoveVssSecurity.VssName
-                $configuration.AllowPromiscuous | Should -Be $script:resourceWithRemoveVssSecurity.AllowPromiscuous
-                $configuration.ForgedTransmits | Should -Be $script:resourceWithRemoveVssSecurity.ForgedTransmits
-                $configuration.MacChanges | Should -Be $script:resourceWithRemoveVssSecurity.MacChanges
+                $configuration.VssName | Should -Be $script:resourceWithRemoveVssTeaming.VssName
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {

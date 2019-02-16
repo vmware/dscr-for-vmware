@@ -32,14 +32,6 @@ param(
     $Password
 )
 
-<#
-Integration test environment information
-
-Requirements
-
-None
-#>
-
 $script:moduleName = 'VMware.vSphereDSC'
 $script:dscResourceName = 'VMHostVss'
 $script:moduleFolderPath = (Get-Module -Name $script:moduleName -ListAvailable).ModuleBase
@@ -49,8 +41,6 @@ $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$
 $script:configWithNewVss = "$($script:dscResourceName)_New_Config"
 $script:configWithModifyVss = "$($script:dscResourceName)_Modify_Config"
 $script:configWithRemoveVss = "$($script:dscResourceName)_Remove_Config"
-
-$script:vmHost = $null
 
 $script:VssName = 'VSSDSC'
 $script:Mtu = 1500
@@ -178,7 +168,6 @@ try {
                 $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
                 $configuration.VssName | Should -Be $script:resourceWithModifyVss.VssName
                 $configuration.Mtu | Should -Be $script:resourceWithModifyVss.Mtu
-                $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -224,6 +213,9 @@ try {
                 $configuration = Get-DscConfiguration
 
                 # Assert
+                $configuration.Server | Should -Be $script:resourceWithModifyVss.Server
+                $configuration.Name | Should -Be $script:resourceWithModifyVss.Name
+                $configuration.VssName | Should -Be $script:resourceWithModifyVss.VssName
                 $configuration.Ensure | Should -Be $script:resourceWithRemoveVss.Ensure
             }
 

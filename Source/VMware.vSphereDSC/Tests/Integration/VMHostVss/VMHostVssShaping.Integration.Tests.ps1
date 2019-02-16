@@ -33,53 +33,56 @@ param(
 )
 
 $script:moduleName = 'VMware.vSphereDSC'
-$script:dscResourceName = 'VMHostVssSecurity'
+$script:dscResourceName = 'VMHostVssShaping'
 $script:dscDependResourceName = 'VMHostVss'
 $script:moduleFolderPath = (Get-Module -Name $script:moduleName -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
-$script:configWithModifyVssSecurity = "$($script:dscResourceName)_Modify_Config"
-$script:configWithRemoveVssSecurity = "$($script:dscResourceName)_Remove_Config"
+$script:configWithModifyVssShaping = "$($script:dscResourceName)_Modify_Config"
+$script:configWithRemoveVssShaping = "$($script:dscResourceName)_Remove_Config"
 
 $script:VssName = 'VSSDSC'
-$script:AllowPromiscuous = $false
-$script:ForgedTransmits = $true
-$script:MacChanges = $true
+$script:AverageBandwidth = 100000
+$script:BurstSize = 100000
+$script:Enabled = $false
+$script:PeakBandwidth = 100000
 $script:Present = 'Present'
 $script:Absent = 'Absent'
 
-$script:resourceWithModifyVssSecurity = @{
+$script:resourceWithModifyVssShaping = @{
     Name = $Name
     Server = $Server
     Ensure = $script:Present
     VssName = $script:VssName
-    AllowPromiscuous = -not $script:AllowPromiscuous
-    ForgedTransmits = -not $script:ForgedTransmits
-    MacChanges = -not $script:MacChanges
+    AverageBandwidth = $script:AverageBandwidth + 1
+    BurstSize = $script:BurstSize + 1
+    Enabled = -not $script:Enabled
+    PeakBandwidth = $script:PeakBandwidth + 1
 }
-$script:resourceWithRemoveVssSecurity = @{
+$script:resourceWithRemoveVssShaping = @{
     Name = $Name
     Server = $Server
     Ensure = $script:Absent
     VssName = $script:VssName
-    AllowPromiscuous = $script:AllowPromiscuous
-    ForgedTransmits = $script:ForgedTransmits
-    MacChanges = $script:MacChanges
+    AverageBandwidth = $script:AverageBandwidth
+    BurstSize = $script:BurstSize
+    Enabled = $script:Enabled
+    PeakBandwidth = $script:PeakBandwidth
 }
 
 . $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
 
-$script:mofFileWithModifyVssSecurity = "$script:integrationTestsFolderPath\$($script:configWithModifyVssSecurity)\"
-$script:mofFileWithRemoveVssSecurity = "$script:integrationTestsFolderPath\$($script:configWithRemoveVssSecurity)\"
+$script:mofFileWithModifyVssShaping = "$script:integrationTestsFolderPath\$($script:configWithModifyVssShaping)\"
+$script:mofFileWithRemoveVssShaping = "$script:integrationTestsFolderPath\$($script:configWithRemoveVssShaping)\"
 
 try {
     Describe "$($script:dscResourceName)_Integration" {
-        Context "When using configuration $($script:configWithModifyVssSecurity)" {
+        Context "When using configuration $($script:configWithModifyVssShaping)" {
             BeforeEach {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithModifyVssSecurity
+                    Path = $script:mofFileWithModifyVssShaping
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -90,14 +93,13 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
+                # Assert
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithModifyVssSecurity
+                    Path = $script:mofFileWithModifyVssShaping
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-
-                # Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
@@ -111,13 +113,14 @@ try {
                 $configuration = Get-DscConfiguration | where-object { $_.ResourceId -match $script:dscResourceName }
 
                 # Assert
-                $configuration.Server | Should -Be $script:resourceWithModifyVssSecurity.Server
-                $configuration.Name | Should -Be $script:resourceWithModifyVssSecurity.Name
-                $configuration.Ensure | Should -Be $script:resourceWithModifyVssSecurity.Ensure
-                $configuration.VssName | Should -Be $script:resourceWithModifyVssSecurity.VssName
-                $configuration.AllowPromiscuous | Should -Be $script:resourceWithModifyVssSecurity.AllowPromiscuous
-                $configuration.ForgedTransmits | Should -Be $script:resourceWithModifyVssSecurity.ForgedTransmits
-                $configuration.MacChanges | Should -Be $script:resourceWithModifyVssSecurity.MacChanges
+                $configuration.Server | Should -Be $script:resourceWithModifyVssShaping.Server
+                $configuration.Name | Should -Be $script:resourceWithModifyVssShaping.Name
+                $configuration.Ensure | Should -Be $script:Present
+                $configuration.VssName | Should -Be $script:resourceWithModifyVssShaping.VssName
+                $configuration.AverageBandwidth | Should -Be $script:resourceWithModifyVssShaping.AverageBandwidth
+                $configuration.BurstSize | Should -Be $script:resourceWithModifyVssShaping.BurstSize
+                $configuration.Enabled | Should -Be $script:resourceWithModifyVssShaping.Enabled
+                $configuration.PeakBandwidth | Should -Be $script:resourceWithModifyVssShaping.PeakBandwidth
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -132,11 +135,11 @@ try {
             }
         }
 
-        Context "When using configuration $($script:configWithRemoveVssSecurity)" {
+        Context "When using configuration $($script:configWithRemoveVssShaping)" {
             BeforeEach {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithRemoveVssSecurity
+                    Path = $script:mofFileWithRemoveVssShaping
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -149,13 +152,11 @@ try {
             It 'Should compile and apply the MOF without throwing' {
                 # Assert
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithRemoveVssSecurity
+                    Path = $script:mofFileWithRemoveVssShaping
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
-
-                # Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
@@ -169,13 +170,14 @@ try {
                 $configuration = Get-DscConfiguration | where-object { $_.ResourceId -match $script:dscResourceName }
 
                 # Assert
-                $configuration.Server | Should -Be $script:resourceWithRemoveVssSecurity.Server
-                $configuration.Name | Should -Be $script:resourceWithRemoveVssSecurity.Name
+                $configuration.Server | Should -Be $script:resourceWithRemoveVssShaping.Server
+                $configuration.Name | Should -Be $script:resourceWithRemoveVssShaping.Name
                 $configuration.Ensure | Should -Be $script:Present
-                $configuration.VssName | Should -Be $script:resourceWithRemoveVssSecurity.VssName
-                $configuration.AllowPromiscuous | Should -Be $script:resourceWithRemoveVssSecurity.AllowPromiscuous
-                $configuration.ForgedTransmits | Should -Be $script:resourceWithRemoveVssSecurity.ForgedTransmits
-                $configuration.MacChanges | Should -Be $script:resourceWithRemoveVssSecurity.MacChanges
+                $configuration.VssName | Should -Be $script:resourceWithRemoveVssShaping.VssName
+                $configuration.AverageBandwidth | Should -Be $script:resourceWithRemoveVssShaping.AverageBandwidth
+                $configuration.BurstSize | Should -Be $script:resourceWithRemoveVssShaping.BurstSize
+                $configuration.Enabled | Should -Be $script:resourceWithRemoveVssShaping.Enabled
+                $configuration.PeakBandwidth | Should -Be $script:resourceWithRemoveVssShaping.PeakBandwidth
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {

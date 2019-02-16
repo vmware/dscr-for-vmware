@@ -240,9 +240,12 @@ function Update-Network {
         [Parameter(ParameterSetName = 'VSSSecurity')]
         [Hashtable] $VssSecurityConfig,
         [Parameter(ParameterSetName = 'VSSShaping')]
-        [Hashtable] $VssShapingConfig
+        [Hashtable] $VssShapingConfig,
+        [Parameter(ParameterSetName = 'VSSTeaming')]
+        [Hashtable] $VssTeamingConfig
     )
 
+    Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
     <#
     $configNet is the parameter object we pass to the UpdateNetworkConfig method.
@@ -290,6 +293,44 @@ function Update-Network {
 
             $configNet.Vswitch += $hostVirtualSwitchConfig
         }
+
+        'VSSShaping' {
+            $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssShapingConfig.Name }
+
+            $hostVirtualSwitchConfig.ChangeOperation = $VssShapingConfig.Operation
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.AverageBandwidth = $VssShapingConfig.AverageBandwidth
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.BurstSize = $VssShapingConfig.BurstSize
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.Enabled = $VssShapingConfig.Enabled
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.PeakBandwidth = $VssShapingConfig.PeakBandwidth
+
+            $configNet.Vswitch += $hostVirtualSwitchConfig
+        }
+
+        'VSSTeaming' {
+            $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssTeamingConfig.Name }
+
+            if ($VssTeamingConfig.CheckBeacon -and
+                ($hostVirtualSwitchConfig.Spec.Bridge -isnot [VMware.Vim.HostVirtualSwitchBridge] -or
+                    $hostVirtualSwitchConfig.Spec.Bridge.Interval -eq 0)) {
+                throw 'CheckBeacon can only be enabled if the VirtualSwitch has been configured to use the beacon.'
+            }
+            if (-not $VssTeamingConfig.CheckBeacon -and
+                $hostVirtualSwitchConfig.Spec.Bridge -is [VMware.Vim.HostVirtualSwitchBridge] -and
+                $hostVirtualSwitchConfig.Spec.Bridge.Interval -eq 0) {
+                throw 'CheckBeacon can only be disabled if the VirtualSwitch has not been configured to use the beacon.'
+            }
+
+            $hostVirtualSwitchConfig.ChangeOperation = $VssTeamingConfig.Operation
+            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon = $VssTeamingConfig.CheckBeacon
+            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.ActiveNic = $VssTeamingConfig.ActiveNic
+            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.StandbyNic = $VssTeamingConfig.StandbyNic
+            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NotifySwitches = $VssTeamingConfig.NotifySwitches
+            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.Policy = $VssTeamingConfig.Policy
+            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.RollingOrder = $VssTeamingConfig.RollingOrder
+
+            $configNet.Vswitch += $hostVirtualSwitchConfig
+        }
     }
+
     $NetworkSystem.UpdateNetworkConfig($configNet, [VMware.Vim.HostConfigChangeMode]::modify)
 }
