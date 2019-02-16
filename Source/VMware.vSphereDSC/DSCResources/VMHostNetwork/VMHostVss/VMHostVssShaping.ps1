@@ -15,46 +15,38 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostVss : VMHostVssBaseDSC {
+class VMHostVssShaping : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
 
-    The maximum transmission unit (MTU) associated with this virtual switch in bytes.
+    The average bandwidth in bits per second if shaping is enabled on the port.
     #>
     [DscProperty()]
-    [int] $Mtu
+    [long] $AverageBandwidth
 
     <#
     .DESCRIPTION
 
-    The virtual switch key.
+    The maximum burst size allowed in bytes if shaping is enabled on the port.
     #>
-    [DscProperty(NotConfigurable)]
-    [string] $Key
+    [DscProperty()]
+    [long] $BurstSize
 
     <#
     .DESCRIPTION
 
-    The number of ports that are available on this virtual switch.
+    The flag to indicate whether or not traffic shaper is enabled on the port.
     #>
-    [DscProperty(NotConfigurable)]
-    [int] $NumPortsAvailable
+    [DscProperty()]
+    [boolean] $Enabled
 
     <#
     .DESCRIPTION
 
-    The set of physical network adapters associated with this bridge.
+    The peak bandwidth during bursts in bits per second if traffic shaping is enabled on the port.
     #>
-    [DscProperty(NotConfigurable)]
-    [string[]] $Pnic
-
-    <#
-    .DESCRIPTION
-
-    The list of port groups configured for this virtual switch.
-    #>
-    [DscProperty(NotConfigurable)]
-    [string[]] $PortGroup
+    [DscProperty()]
+    [long] $PeakBandwidth
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
@@ -63,7 +55,7 @@ class VMHostVss : VMHostVssBaseDSC {
         $vmHost = $this.GetVMHost()
         $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVss($vmHost)
+        $this.UpdateVssShaping($vmHost)
     }
 
     [bool] Test() {
@@ -78,14 +70,18 @@ class VMHostVss : VMHostVssBaseDSC {
             return ($null -ne $vss -and $this.Equals($vss))
         }
         else {
-            return ($null -eq $vss)
+            $this.AverageBandwidth = [long]100000
+            $this.BurstSize = [long]100000
+            $this.Enabled = $false
+            $this.PeakBandwidth = [long]100000
+            return ($null -eq $vss -or $this.Equals($vss))
         }
     }
 
-    [VMHostVss] Get() {
+    [VMHostVssShaping] Get() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $result = [VMHostVss]::new()
+        $result = [VMHostVssShaping]::new()
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
@@ -95,7 +91,7 @@ class VMHostVss : VMHostVssBaseDSC {
         $result.Name = $vmHost.Name
         $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.Key) { 'Present' } else { 'Absent' }
+        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
         return $result
     }
@@ -103,16 +99,18 @@ class VMHostVss : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
 
-    Returns a boolean value indicating if the VMHostVss should be updated.
+    Returns a boolean value indicating if the VMHostVssShaping should to be updated.
     #>
     [bool] Equals($vss) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $vssTest = @()
-        $vssTest += ($vss.Name -eq $this.VssName)
-        $vssTest += ($vss.MTU -eq $this.MTU)
+        $vssShapingTest = @()
+        $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.AverageBandwidth -eq $this.AverageBandwidth)
+        $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.BurstSize -eq $this.BurstSize)
+        $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.Enabled -eq $this.Enabled)
+        $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.PeakBandwidth -eq $this.PeakBandwidth)
 
-        return ($vssTest -notcontains $false)
+        return ($vssShapingTest -notcontains $false)
     }
 
     <#
@@ -120,63 +118,59 @@ class VMHostVss : VMHostVssBaseDSC {
 
     Updates the configuration of the virtual switch.
     #>
-    [void] UpdateVss($vmHost) {
+    [void] UpdateVssShaping($vmHost) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $vssConfigArgs = @{
+        $vssShapingArgs = @{
             Name = $this.VssName
-            Mtu = $this.Mtu
+            AverageBandwidth = $this.AverageBandwidth
+            BurstSize = $this.BurstSize
+            Enabled = $this.Enabled
+            PeakBandwidth = $this.PeakBandwidth
         }
         $vss = $this.GetVss()
 
         if ($this.Ensure -eq 'Present') {
-            if ($null -ne $vss) {
-                if ($this.Equals($vss)) {
-                    return
-                }
-                $vssConfigArgs.Add('Operation', 'edit')
-            }
-            else {
-                $vssConfigArgs.Add('Operation', 'add')
-            }
-        }
-        else {
-            if ($null -eq $vss) {
+            if ($this.Equals($vss)) {
                 return
             }
-            $vssConfigArgs.Add('Operation', 'remove')
+            $vssShapingArgs.Add('Operation', 'edit')
+        }
+        else {
+            $vssShapingArgs.AverageBandwidth = 100000
+            $vssShapingArgs.BurstSize = 100000
+            $vssShapingArgs.Enabled = $false
+            $vssShapingArgs.PeakBandwidth = 100000
+            $vssShapingArgs.Add('Operation', 'edit')
         }
 
         try {
-            Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssConfig $vssConfigArgs -ErrorAction Stop
+            Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssShapingConfig $vssShapingArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The Virtual Switch Config could not be updated: $($_.Exception.Message)"
+            Write-Error "The Virtual Switch Shaping Policy Config could not be updated: $($_.Exception.Message)"
         }
     }
 
     <#
     .DESCRIPTION
 
-    Populates the result returned from the Get() method with the values of the virtual switch.
+    Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
-    [void] PopulateResult($vmHost, $vmHostVSS) {
+    [void] PopulateResult($vmHost, $vmHostVSSShaping) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
         $currentVss = $this.GetVss()
 
         if ($null -ne $currentVss) {
-            $vmHostVSS.Key = $currentVss.Key
-            $vmHostVSS.Mtu = $currentVss.Mtu
-            $vmHostVSS.VssName = $currentVss.Name
-            $vmHostVSS.NumPortsAvailable = $currentVss.NumPortsAvailable
-            $vmHostVSS.Pnic = $currentVss.Pnic
-            $vmHostVSS.PortGroup = $currentVss.PortGroup
+            $vmHostVSSShaping.VssName = $currentVss.Name
+            $vmHostVSSShaping.AverageBandwidth = $currentVss.Spec.Policy.ShapingPolicy.AverageBandwidth
+            $vmHostVSSShaping.BurstSize = $currentVss.Spec.Policy.ShapingPolicy.BurstSize
+            $vmHostVSSShaping.Enabled = $currentVss.Spec.Policy.ShapingPolicy.Enabled
+            $vmHostVSSShaping.PeakBandwidth = $currentVss.Spec.Policy.ShapingPolicy.PeakBandwidth
         }
-        else{
-            $vmHostVSS.Key = [string]::Empty
-            $vmHostVSS.Mtu = $this.Mtu
-            $vmHostVSS.VssName = $this.VssName
+        else {
+            $vmHostVSSShaping.VssName = $this.Name
         }
     }
 }

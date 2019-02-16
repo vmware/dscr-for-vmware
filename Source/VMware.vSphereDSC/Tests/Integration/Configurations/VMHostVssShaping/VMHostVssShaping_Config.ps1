@@ -39,9 +39,10 @@ $script:VssName = 'VSSDSC'
 $script:Mtu = 1500
 $script:EnsurePresent = 'Present'
 $script:EnsureAbsent = 'Absent'
-$script:AllowPromiscuous = $false
-$script:ForgedTransmits = $true
-$script:MacChanges = $true
+$script:AverageBandwidth = 100000
+$script:BurstSize = 100000
+$script:Enabled = $false
+$script:PeakBandwidth = 100000
 
 $script:configurationData = @{
     AllNodes = @(
@@ -55,7 +56,7 @@ $script:configurationData = @{
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-Configuration VMHostVssSecurity_Modify_Config {
+Configuration VMHostVssShaping_Modify_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
@@ -68,21 +69,22 @@ Configuration VMHostVssSecurity_Modify_Config {
             Mtu = $script:Mtu
         }
 
-        VMHostVssSecurity vmHostVssSecuritySettings {
+        VMHostVssShaping vmHostVssShapingSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
             VssName = $script:VssName
             Ensure = $script:EnsurePresent
-            AllowPromiscuous = -not $script:AllowPromiscuous
-            ForgedTransmits = -not $script:ForgedTransmits
-            MacChanges = -not $script:MacChanges
+            AverageBandwidth = $script:AverageBandwidth + 1
+            BurstSize = $script:BurstSize + 1
+            Enabled = -not $script:Enabled
+            PeakBandwidth = $script:PeakBandwidth + 1
             DependsOn = "[VMHostVss]vmHostVssSettings"
-        }
+       }
     }
 }
 
-Configuration VMHostVssSecurity_Remove_Config {
+Configuration VMHostVssShaping_Remove_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
@@ -95,16 +97,16 @@ Configuration VMHostVssSecurity_Remove_Config {
             Mtu = $script:Mtu
         }
 
-        VMHostVssSecurity vmHostVssSecuritySettings {
+        VMHostVssShaping vmHostVssShapingSettings {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
             VssName = $script:VssName
-            Ensure = $script:Absent
+            Ensure = $script:EnsureAbsent
             DependsOn = "[VMHostVss]vmHostVssSettings"
         }
     }
 }
 
-VMHostVssSecurity_Modify_Config -OutputPath "$integrationTestsFolderPath\VMHostVssSecurity_Modify_Config" -ConfigurationData $script:configurationData
-VMHostVssSecurity_Remove_Config -OutputPath "$integrationTestsFolderPath\VMHostVssSecurity_Remove_Config" -ConfigurationData $script:configurationData
+VMHostVssShaping_Modify_Config -OutputPath "$integrationTestsFolderPath\VMHostVssShaping_Modify_Config" -ConfigurationData $script:configurationData
+VMHostVssShaping_Remove_Config -OutputPath "$integrationTestsFolderPath\VMHostVssShaping_Remove_Config" -ConfigurationData $script:configurationData

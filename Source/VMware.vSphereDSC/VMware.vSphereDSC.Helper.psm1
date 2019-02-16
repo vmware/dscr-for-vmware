@@ -290,6 +290,19 @@ function Update-Network {
 
             $configNet.Vswitch += $hostVirtualSwitchConfig
         }
+
+        'VSSShaping' {
+            $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssShapingConfig.Name }
+
+            $hostVirtualSwitchConfig.ChangeOperation = $VssShapingConfig.Operation
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.AverageBandwidth = $VssShapingConfig.AverageBandwidth
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.BurstSize = $VssShapingConfig.BurstSize
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.Enabled = $VssShapingConfig.Enabled
+            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.PeakBandwidth = $VssShapingConfig.PeakBandwidth
+
+            $configNet.Vswitch += $hostVirtualSwitchConfig
+        }
     }
+
     $NetworkSystem.UpdateNetworkConfig($configNet, [VMware.Vim.HostConfigChangeMode]::modify)
 }

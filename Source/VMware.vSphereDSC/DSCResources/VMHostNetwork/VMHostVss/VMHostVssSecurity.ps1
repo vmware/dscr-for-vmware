@@ -59,7 +59,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
         $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss($vmHost)
+        $vss = $this.GetVss()
 
         if ($this.Ensure -eq [Ensure]::Present) {
             return ($null -ne $vss -and $this.Equals($vss))
@@ -86,12 +86,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
         $result.Name = $vmHost.Name
         $this.PopulateResult($vmHost, $result)
 
-        if ('' -ne $result.VssName) {
-            $result.Ensure = 'Present'
-        }
-        else {
-            $result.Ensure = 'Absent'
-        }
+        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
         return $result
     }
@@ -126,7 +121,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
             ForgedTransmits = $this.ForgedTransmits
             MacChanges = $this.MacChanges
         }
-        $vss = $this.GetVss($vmHost)
+        $vss = $this.GetVss()
 
         if ($this.Ensure -eq 'Present') {
             if ($this.Equals($vss)) {
@@ -157,13 +152,16 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     [void] PopulateResult($vmHost, $vmHostVSSSecurity) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $currentVss = $this.GetVss($vmHost)
+        $currentVss = $this.GetVss()
 
         if ($null -ne $currentVss) {
             $vmHostVSSSecurity.VssName = $currentVss.Name
             $vmHostVSSSecurity.AllowPromiscuous = $currentVss.Spec.Policy.Security.AllowPromiscuous
             $vmHostVSSSecurity.ForgedTransmits = $currentVss.Spec.Policy.Security.ForgedTransmits
             $vmHostVSSSecurity.MacChanges = $currentVss.Spec.Policy.Security.MacChanges
+        }
+        else {
+            $vmHostVSSSecurity.VssName = $this.VssName
         }
     }
 }

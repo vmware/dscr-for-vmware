@@ -32,17 +32,15 @@ param(
     $Password
 )
 
+$script:moduleName = 'VMware.vSphereDSC'
 $script:dscResourceName = 'VMHostVssSecurity'
 $script:dscDependResourceName = 'VMHostVss'
-$script:dscConfig = $null
-$script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
+$script:moduleFolderPath = (Get-Module -Name $script:moduleName -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
 $script:configWithModifyVssSecurity = "$($script:dscResourceName)_Modify_Config"
 $script:configWithRemoveVssSecurity = "$($script:dscResourceName)_Remove_Config"
-
-$script:vmHost = $null
 
 $script:VssName = 'VSSDSC'
 $script:AllowPromiscuous = $false
