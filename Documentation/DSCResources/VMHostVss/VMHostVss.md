@@ -10,11 +10,14 @@
 | **Ensure** | Mandatory | Ensure | Value indicating if the VSS should be Present or Absent. | Present, Absent |
 | **VssName** | Mandatory | string | The name of the VSS. ||
 | **Mtu** | Optional | int | The maximum transmission unit (MTU) associated with this virtual switch in bytes. ||
-| **NumPorts** | Optional | int | The number of ports that this virtual switch is configured to use. ||
 
 ## Description
 
 The resource is used to configure the basic properties of a Virtual Switch (VSS) on an ESXi node.
+
+## Notes
+
+* The **NumPorts** property is not included. From ESXi 5.5 onwards, ports on standard virtual switches are always **elastic**. The NumPorts value is ignored.
 
 ## Examples
 
@@ -64,7 +67,6 @@ Configuration VMHostVss_Config {
             Ensure = [Ensure]::Present
             VssName = 'VSS1'
             Mtu = 1500
-            NumPorts = 1
         }
     }
 }

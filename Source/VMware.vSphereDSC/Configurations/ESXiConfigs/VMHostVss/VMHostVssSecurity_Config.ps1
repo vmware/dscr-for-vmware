@@ -41,22 +41,23 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostVss_Config {
+Configuration VMHostVssSecurity_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostVss vmHostVSS {
+        VMHostVssSecurity vmHostVSSSecurity {
             Name = $Name
             Server = $Server
             Credential = $Credential
-            Ensure = [Ensure]::Present
             VssName = 'VSS1'
-            Mtu = 1500
+            AllowPromiscuous = $true
+            ForgedTransmits = $true
+            MacChanges = $true
         }
     }
 }
 
-VMHostVss_Config -ConfigurationData $script:configurationData
+VMHostVssSecurity_Config -ConfigurationData $script:configurationData

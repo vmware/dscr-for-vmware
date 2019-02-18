@@ -231,39 +231,65 @@ function Set-VMHostSyslogConfig {
     $esxcli.system.syslog.reload.Invoke()
 }
 
-function New-VssConfig {
-    [CmdletBinding()]
-    [OutputType([VMware.Vim.HostVirtualSwitchConfig])]
-    param(
-        [string]$Name,
-        [int] $NumPorts,
-        [int] $Mtu,
-        [string]$Operation
-    )
-
-    $vssConfig = New-Object VMware.Vim.HostVirtualSwitchConfig
-    $vssConfig.Name = $Name
-    $vssConfig.ChangeOperation = $Operation
-    $vssConfig.Spec = New-Object VMware.Vim.HostVirtualSwitchSpec
-    $vssConfig.Spec.NumPorts = $NumPorts
-    $vssConfig.Spec.Mtu = $Mtu
-
-    return $vssConfig
-}
-
 function Update-Network {
     [CmdletBinding()]
     param(
         [VMware.Vim.HostNetworkSystem] $NetworkSystem,
-        [string]$Type,
-        [VMware.Vim.HostVirtualSwitchConfig] $VssConfig
+        [Parameter(ParameterSetName = 'VSS')]
+        [Hashtable] $VssConfig,
+        [Parameter(ParameterSetName = 'VSSSecurity')]
+        [Hashtable] $VssSecurityConfig,
+        [Parameter(ParameterSetName = 'VSSShaping')]
+        [Hashtable] $VssShapingConfig
     )
 
-    $config = New-Object VMware.Vim.HostNetworkConfig
-    switch ($Type) {
+
+    <#
+    $configNet is the parameter object we pass to the UpdateNetworkConfig method.
+    Since all network updates will be done via this UpdateNetworkConfig method,
+    we start with an empty VMware.Vim.HostNetworkConfig object in $configNet.
+    Depending on the Switch case, we add the required objects to $configNet.
+
+    This allows the Update-Network function to be used for all ESXi network related changes.
+    #>
+
+    $configNet = New-Object VMware.Vim.HostNetworkConfig
+
+    switch ($PSCmdlet.ParameterSetName) {
         'VSS' {
-            $config.Vswitch += $VssConfig
+            $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssConfig.Name }
+
+            if ($null -eq $hostVirtualSwitchConfig -and 'add' -ne $VssConfig.Operation) {
+                throw "Standard Virtual Switch $($this.Name) was not found"
+            }
+
+            if ($null -eq $hostVirtualSwitchConfig) {
+                $hostVirtualSwitchConfig = New-Object VMware.Vim.HostVirtualSwitchConfig
+            }
+
+            $hostVirtualSwitchConfig.ChangeOperation = $VssConfig.Operation
+            $hostVirtualSwitchConfig.Name = $VssConfig.Name
+
+            if ($null -eq $hostVirtualSwitchConfig.Spec) {
+                $hostVirtualSwitchConfig.Spec = New-Object VMware.Vim.HostVirtualSwitchSpec
+            }
+
+            $hostVirtualSwitchConfig.Spec.Mtu = $VssConfig.Mtu
+            # Although ignored since ESXi 5.5, the NumPorts property is 'required'
+            $hostVirtualSwitchConfig.Spec.NumPorts = 1
+            $configNet.Vswitch += $hostVirtualSwitchConfig
+        }
+
+        'VSSSecurity' {
+            $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssSecurityConfig.Name }
+
+            $hostVirtualSwitchConfig.ChangeOperation = $VssSecurityConfig.Operation
+            $hostVirtualSwitchConfig.Spec.Policy.Security.AllowPromiscuous = $VssSecurityConfig.AllowPromiscuous
+            $hostVirtualSwitchConfig.Spec.Policy.Security.ForgedTransmits = $VssSecurityConfig.ForgedTransmits
+            $hostVirtualSwitchConfig.Spec.Policy.Security.MacChanges = $VssSecurityConfig.MacChanges
+
+            $configNet.Vswitch += $hostVirtualSwitchConfig
         }
     }
-    $NetworkSystem.UpdateNetworkConfig($config, [VMware.Vim.HostConfigChangeMode]::modify)
+    $NetworkSystem.UpdateNetworkConfig($configNet, [VMware.Vim.HostConfigChangeMode]::modify)
 }

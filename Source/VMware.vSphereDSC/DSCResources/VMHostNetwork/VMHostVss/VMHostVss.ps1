@@ -15,23 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostVss : VMHostBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Value indicating if the VSS should be Present or Absent.
-    #>
-    [DscProperty(Mandatory)]
-    [Ensure] $Ensure
-
-    <#
-    .DESCRIPTION
-
-    The name of the VSS.
-    #>
-    [DscProperty(Key)]
-    [string] $VssName
-
+class VMHostVss : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
 
@@ -39,14 +23,6 @@ class VMHostVss : VMHostBaseDSC {
     #>
     [DscProperty()]
     [int] $Mtu
-
-    <#
-    .DESCRIPTION
-
-    The number of ports that this virtual switch is configured to use.
-    #>
-    [DscProperty()]
-    [int] $NumPorts
 
     <#
     .DESCRIPTION
@@ -85,6 +61,7 @@ class VMHostVss : VMHostBaseDSC {
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
+        $this.GetNetworkSystem($vmHost)
 
         $this.UpdateVss($vmHost)
     }
@@ -94,7 +71,8 @@ class VMHostVss : VMHostBaseDSC {
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
-        $vss = $this.GetVss($vmHost)
+        $this.GetNetworkSystem($vmHost)
+        $vss = $this.GetVss()
 
         if ($this.Ensure -eq [Ensure]::Present) {
             return ($null -ne $vss -and $this.Equals($vss))
@@ -107,21 +85,17 @@ class VMHostVss : VMHostBaseDSC {
     [VMHostVss] Get() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-
         $result = [VMHostVss]::new()
         $result.Server = $this.Server
-        $result.Name = $vmHost.Name
 
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $this.GetNetworkSystem($vmHost)
+
+        $result.Name = $vmHost.Name
         $this.PopulateResult($vmHost, $result)
 
-        if ($null -ne $result.Key) {
-            $result.Ensure = 'Present'
-        }
-        else {
-            $result.Ensure = 'Absent'
-        }
+        $result.Ensure = if ([string]::Empty -ne $result.Key) { 'Present' } else { 'Absent' }
 
         return $result
     }
@@ -137,22 +111,8 @@ class VMHostVss : VMHostBaseDSC {
         $vssTest = @()
         $vssTest += ($vss.Name -eq $this.VssName)
         $vssTest += ($vss.MTU -eq $this.MTU)
-        $vssTest += ($vss.NumPorts -eq $this.NumPorts)
 
         return ($vssTest -notcontains $false)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns the desired virtual switch if it is present on the server otherwise returns $null.
-    #>
-    [PSObject] GetVss($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
-
-        $vmHostNetworkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
-
-        return ($vmHostNetworkSystem.NetworkInfo.Vswitch | Where-Object { $_.Name -eq $this.VssName })
     }
 
     <#
@@ -166,9 +126,8 @@ class VMHostVss : VMHostBaseDSC {
         $vssConfigArgs = @{
             Name = $this.VssName
             Mtu = $this.Mtu
-            NumPorts = $this.NumPorts
         }
-        $vss = $this.GetVss($vmHost)
+        $vss = $this.GetVss()
 
         if ($this.Ensure -eq 'Present') {
             if ($null -ne $vss) {
@@ -188,13 +147,11 @@ class VMHostVss : VMHostBaseDSC {
             $vssConfigArgs.Add('Operation', 'remove')
         }
 
-        $vssConfig = New-VssConfig @vssConfigArgs
-        $vmHostNetworkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
         try {
-            Update-Network -NetworkSystem $vmHostNetworkSystem -Type 'VSS' -VssConfig $vssConfig
+            Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssConfig $vssConfigArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The virtual switch Config could not be updated: $($_.Exception.Message)"
+            Write-Error "The Virtual Switch Config could not be updated: $($_.Exception.Message)"
         }
     }
 
@@ -206,16 +163,20 @@ class VMHostVss : VMHostBaseDSC {
     [void] PopulateResult($vmHost, $vmHostVSS) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $currentVss = $this.GetVss($vmHost)
+        $currentVss = $this.GetVss()
 
         if ($null -ne $currentVss) {
             $vmHostVSS.Key = $currentVss.Key
             $vmHostVSS.Mtu = $currentVss.Mtu
             $vmHostVSS.VssName = $currentVss.Name
-            $vmHostVSS.Numports = $currentVss.NumPorts
             $vmHostVSS.NumPortsAvailable = $currentVss.NumPortsAvailable
             $vmHostVSS.Pnic = $currentVss.Pnic
-            $vmHostVSS.Portgroup = $currentVss.Portgroup
+            $vmHostVSS.PortGroup = $currentVss.PortGroup
+        }
+        else{
+            $vmHostVSS.Key = [string]::Empty
+            $vmHostVSS.Mtu = $this.Mtu
+            $vmHostVSS.VssName = $this.VssName
         }
     }
 }
