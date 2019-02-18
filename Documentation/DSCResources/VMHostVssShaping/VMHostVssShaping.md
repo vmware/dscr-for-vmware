@@ -59,16 +59,26 @@ Configuration VMHostVssShaping_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
+        VMHostVss vmHostVssSettings {
+            Name = $Name
+            Server = $Server
+            Credential = $vmHostCredential
+            VssName = 'VSS1'
+            Ensure = 'Present'
+            Mtu = 1500
+        }
+
         VMHostVssShaping vmHostVSSShaping {
             Name = $Name
             Server = $Server
             Credential = $Credential
             VssName = 'VSS1'
-            AverageBandwidth = [long]100000
-            BurstSize = [long]100000
+            Ensure = 'Present'
+            AverageBandwidth = 100000
+            BurstSize = 100000
             Enabled = $true
-            PeakBandwidth = [long]100000
-            DependsOn = "[VMHostVss]VSS1"
+            PeakBandwidth = 100000
+            DependsOn = "[VMHostVss]vmHostVssSettings"
         }
     }
 }

@@ -67,7 +67,6 @@ Configuration VMHostVss_Config {
             Ensure = [Ensure]::Present
             VssName = 'VSS1'
             Mtu = 1500
-            NumPorts = 1
         }
     }
 }

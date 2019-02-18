@@ -168,7 +168,6 @@ try {
                 $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
                 $configuration.VssName | Should -Be $script:resourceWithModifyVss.VssName
                 $configuration.Mtu | Should -Be $script:resourceWithModifyVss.Mtu
-                $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
