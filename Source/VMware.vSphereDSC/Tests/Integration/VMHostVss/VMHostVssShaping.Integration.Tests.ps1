@@ -33,55 +33,56 @@ param(
 )
 
 $script:moduleName = 'VMware.vSphereDSC'
-$script:dscResourceName = 'VMHostVss'
+$script:dscResourceName = 'VMHostVssShaping'
+$script:dscDependResourceName = 'VMHostVss'
 $script:moduleFolderPath = (Get-Module -Name $script:moduleName -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
-$script:configWithNewVss = "$($script:dscResourceName)_New_Config"
-$script:configWithModifyVss = "$($script:dscResourceName)_Modify_Config"
-$script:configWithRemoveVss = "$($script:dscResourceName)_Remove_Config"
+$script:configWithModifyVssShaping = "$($script:dscResourceName)_Modify_Config"
+$script:configWithRemoveVssShaping = "$($script:dscResourceName)_Remove_Config"
 
 $script:VssName = 'VSSDSC'
-$script:Mtu = 1500
+$script:AverageBandwidth = 100000
+$script:BurstSize = 100000
+$script:Enabled = $false
+$script:PeakBandwidth = 100000
 $script:Present = 'Present'
 $script:Absent = 'Absent'
 
-$script:resourceWithNewVss = @{
+$script:resourceWithModifyVssShaping = @{
     Name = $Name
     Server = $Server
     Ensure = $script:Present
     VssName = $script:VssName
-    Mtu = $script:Mtu
+    AverageBandwidth = $script:AverageBandwidth + 1
+    BurstSize = $script:BurstSize + 1
+    Enabled = -not $script:Enabled
+    PeakBandwidth = $script:PeakBandwidth + 1
 }
-$script:resourceWithModifyVss = @{
-    Name = $Name
-    Server = $Server
-    Ensure = $script:Present
-    VssName = $script:VssName
-    Mtu = $script:Mtu + 1
-}
-$script:resourceWithRemoveVss = @{
+$script:resourceWithRemoveVssShaping = @{
     Name = $Name
     Server = $Server
     Ensure = $script:Absent
     VssName = $script:VssName
-    Mtu = $script:Mtu
+    AverageBandwidth = $script:AverageBandwidth
+    BurstSize = $script:BurstSize
+    Enabled = $script:Enabled
+    PeakBandwidth = $script:PeakBandwidth
 }
 
 . $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
 
-$script:mofFileWithNewVss = "$script:integrationTestsFolderPath\$($script:configWithNewVss)\"
-$script:mofFileWithModifyVss = "$script:integrationTestsFolderPath\$($script:configWithModifyVss)\"
-$script:mofFileWithRemoveVss = "$script:integrationTestsFolderPath\$($script:configWithRemoveVss)\"
+$script:mofFileWithModifyVssShaping = "$script:integrationTestsFolderPath\$($script:configWithModifyVssShaping)\"
+$script:mofFileWithRemoveVssShaping = "$script:integrationTestsFolderPath\$($script:configWithRemoveVssShaping)\"
 
 try {
     Describe "$($script:dscResourceName)_Integration" {
-        Context "When using configuration $($script:configWithNewVss)" {
+        Context "When using configuration $($script:configWithModifyVssShaping)" {
             BeforeEach {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithNewVss
+                    Path = $script:mofFileWithModifyVssShaping
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -92,46 +93,57 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
+                # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithNewVss
+                    Path = $script:mofFileWithModifyVssShaping
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
 
-                # Assert
+                # Act & Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
+                # Act & Assert
                 { Get-DscConfiguration } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
                 # Act
-                $configuration = Get-DscConfiguration
+                $configuration = Get-DscConfiguration | where-object { $_.ResourceId -match $script:dscResourceName }
 
                 # Assert
-                $configuration.Server | Should -Be $script:resourceWithNewVss.Server
-                $configuration.Name | Should -Be $script:resourceWithNewVss.Name
-                $configuration.Ensure | Should -Be $script:resourceWithNewVss.Ensure
-                $configuration.VssName | Should -Be $script:resourceWithNewVss.VssName
-                $configuration.Mtu | Should -Be $script:resourceWithNewVss.Mtu
-                $configuration.Ensure | Should -Be $script:resourceWithNewVss.Ensure
+                $configuration.Server | Should -Be $script:resourceWithModifyVssShaping.Server
+                $configuration.Name | Should -Be $script:resourceWithModifyVssShaping.Name
+                $configuration.Ensure | Should -Be $script:Present
+                $configuration.VssName | Should -Be $script:resourceWithModifyVssShaping.VssName
+                $configuration.AverageBandwidth | Should -Be $script:resourceWithModifyVssShaping.AverageBandwidth
+                $configuration.BurstSize | Should -Be $script:resourceWithModifyVssShaping.BurstSize
+                $configuration.Enabled | Should -Be $script:resourceWithModifyVssShaping.Enabled
+                $configuration.PeakBandwidth | Should -Be $script:resourceWithModifyVssShaping.PeakBandwidth
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
                 # Arrange && Act && Assert
                 Test-DscConfiguration | Should -Be $true
+            }
+
+            It 'Should depend on resource VMHostVss' {
+                # Act
+                $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
+
+                # Assert
+                $currentResource.DependsOn | Should -Match $script:dscDependResourceName
             }
         }
 
-        Context "When using configuration $($script:configWithModifyVss)" {
+        Context "When using configuration $($script:configWithRemoveVssShaping)" {
             BeforeEach {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithModifyVss
+                    Path = $script:mofFileWithRemoveVssShaping
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -142,86 +154,49 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
+                # Assert
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithModifyVss
+                    Path = $script:mofFileWithRemoveVssShaping
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
 
-                # Assert
+                # Act & Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
+                # Act & Assert
                 { Get-DscConfiguration } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
                 # Act
-                $configuration = Get-DscConfiguration
+                $configuration = Get-DscConfiguration | where-object { $_.ResourceId -match $script:dscResourceName }
 
                 # Assert
-                $configuration.Server | Should -Be $script:resourceWithModifyVss.Server
-                $configuration.Name | Should -Be $script:resourceWithModifyVss.Name
-                $configuration.Ensure | Should -Be $script:resourceWithModifyVss.Ensure
-                $configuration.VssName | Should -Be $script:resourceWithModifyVss.VssName
-                $configuration.Mtu | Should -Be $script:resourceWithModifyVss.Mtu
+                $configuration.Server | Should -Be $script:resourceWithRemoveVssShaping.Server
+                $configuration.Name | Should -Be $script:resourceWithRemoveVssShaping.Name
+                $configuration.Ensure | Should -Be $script:Present
+                $configuration.VssName | Should -Be $script:resourceWithRemoveVssShaping.VssName
+                $configuration.AverageBandwidth | Should -Be $script:resourceWithRemoveVssShaping.AverageBandwidth
+                $configuration.BurstSize | Should -Be $script:resourceWithRemoveVssShaping.BurstSize
+                $configuration.Enabled | Should -Be $script:resourceWithRemoveVssShaping.Enabled
+                $configuration.PeakBandwidth | Should -Be $script:resourceWithRemoveVssShaping.PeakBandwidth
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
+                # Act && Assert
                 Test-DscConfiguration | Should -Be $true
             }
-        }
 
-        Context "When using configuration $($script:configWithRemoveVss)" {
-            BeforeEach {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithRemoveVss
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
+            It 'Should depend on resource VMHostVss' {
                 # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithRemoveVss
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
+                $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
 
                 # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
-                { Get-DscConfiguration } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
-                # Act
-                $configuration = Get-DscConfiguration
-
-                # Assert
-                $configuration.Server | Should -Be $script:resourceWithRemoveVss.Server
-                $configuration.Name | Should -Be $script:resourceWithRemoveVss.Name
-                $configuration.VssName | Should -Be $script:resourceWithRemoveVss.VssName
-                $configuration.Ensure | Should -Be $script:resourceWithRemoveVss.Ensure
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
+                $currentResource.DependsOn | Should -Match $script:dscDependResourceName
             }
         }
     }
