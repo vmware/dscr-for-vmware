@@ -2678,10 +2678,11 @@ class VMHostVssShaping : VMHostVssBaseDSC {
             return ($null -ne $vss -and $this.Equals($vss))
         }
         else {
-            $this.AverageBandwidth = [long]100000
-            $this.BurstSize = [long]100000
+            $this.AverageBandwidth = 100000
+            $this.BurstSize = 100000
             $this.Enabled = $false
-            $this.PeakBandwidth = [long]100000
+            $this.PeakBandwidth = 100000
+
             return ($null -eq $vss -or $this.Equals($vss))
         }
     }

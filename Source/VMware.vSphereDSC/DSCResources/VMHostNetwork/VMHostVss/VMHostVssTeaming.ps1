@@ -19,7 +19,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
 
-    The flag to indicate whether or not to enable this property to enable beacon probing
+    The flag to indicate whether or not to enable beacon probing
     as a method to validate the link status of a physical network adapter.
     #>
     [DscProperty()]
@@ -91,7 +91,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             $this.ActiveNic = @()
             $this.StandbyNic = @()
             $this.NotifySwitches = $true
-            $this.Policy = [NicTeamingPolicy]::LoadBalance_SrcId
+            $this.Policy = [NicTeamingPolicy]::Loadbalance_srcid
             $this.RollingOrder = $false
 
             return ($null -eq $vss -or $this.Equals($vss))
@@ -111,7 +111,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         $result.Name = $vmHost.Name
         $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ('' -ne $result.VssName) { 'Present' } else { 'Absent' }
+        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
         return $result
     }
@@ -126,30 +126,37 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 
         $vssTeamingTest = @()
         $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
-        if($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic) {
-            if($null -ne $this.ActiveNic) {
-                $false
+
+        if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic) {
+            if ($null -ne $this.ActiveNic) {
+                $vssTeamingTest += $false
             }
-            else{
-                $true
-            }
-        }
-        else {
-            $vssTeamingTest += ($null -eq (Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic -DifferenceObject $this.ActiveNic))
-        }
-        if($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic) {
-            if($null -ne $this.StandbyNic) {
-                $false
-            }
-            else{
-                $true
+            else {
+                $vssTeamingTest += $true
             }
         }
         else {
-            $vssTeamingTest += ($null -eq (Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic -DifferenceObject $this.StandbyNic))
+            $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic -DifferenceObject $this.ActiveNic
+            $areEqual = $null -eq $comparingResult
+            $vssTeamingTest += $areEqual
         }
+
+        if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic) {
+            if ($null -ne $this.StandbyNic) {
+                $vssTeamingTest += $false
+            }
+            else {
+                $vssTeamingTest += $true
+            }
+        }
+        else {
+            $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic -DifferenceObject $this.StandbyNic
+            $areEqual = $null -eq $comparingResult
+            $vssTeamingTest += $areEqual
+        }
+
         $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
-        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq $this.Policy)
+        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq ($this.Policy).ToString().ToLower())
         $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
 
         return ($vssTeamingTest -notcontains $false)
@@ -169,7 +176,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             ActiveNic = $this.ActiveNic
             StandbyNic = $this.StandbyNic
             NotifySwitches = $this.NotifySwitches
-            Policy = $this.Policy
+            Policy = ($this.Policy).ToString().ToLower()
             RollingOrder = $this.RollingOrder
         }
         $vss = $this.GetVss()
@@ -185,7 +192,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             $vssTeamingArgs.ActiveNic = @()
             $vssTeamingArgs.StandbyNic = @()
             $vssTeamingArgs.NotifySwitches = $true
-            $vssTeamingArgs.Policy = [NicTeamingPolicy]::LoadBalance_SrcId
+            $vssTeamingArgs.Policy = ([NicTeamingPolicy]::Loadbalance_srcid).ToString().ToLower()
             $vssTeamingArgs.RollingOrder = $false
             $vssTeamingArgs.Add('Operation', 'edit')
         }
@@ -214,7 +221,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             $vmHostVSSTeaming.ActiveNic = $currentVss.Spec.Policy.NicTeaming.NicOrder.ActiveNic
             $vmHostVSSTeaming.StandbyNic = $currentVss.Spec.Policy.NicTeaming.NicOrder.StandbyNic
             $vmHostVSSTeaming.NotifySwitches = $currentVss.Spec.Policy.NicTeaming.NotifySwitches
-            $vmHostVSSTeaming.Policy = $currentVss.Spec.Policy.NicTeaming.Policy
+            $vmHostVSSTeaming.Policy = [NicTeamingPolicy]$currentVss.Spec.Policy.NicTeaming.Policy
             $vmHostVSSTeaming.RollingOrder = $currentVss.Spec.Policy.NicTeaming.RollingOrder
         }
         else {

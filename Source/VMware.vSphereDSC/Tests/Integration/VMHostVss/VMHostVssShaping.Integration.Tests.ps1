@@ -93,18 +93,20 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
-                # Assert
+                # Arrange
                 $startDscConfigurationParameters = @{
                     Path = $script:mofFileWithModifyVssShaping
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
+
+                # Act & Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
+                # Act & Assert
                 { Get-DscConfiguration } | Should -Not -Throw
             }
 
@@ -129,8 +131,10 @@ try {
             }
 
             It 'Should depend on resource VMHostVss' {
+                # Act
                 $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
 
+                # Assert
                 $currentResource.DependsOn | Should -Match $script:dscDependResourceName
             }
         }
@@ -157,11 +161,13 @@ try {
                     Wait = $true
                     Force = $true
                 }
+
+                # Act & Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
+                # Act & Assert
                 { Get-DscConfiguration } | Should -Not -Throw
             }
 
@@ -181,13 +187,15 @@ try {
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
+                # Act && Assert
                 Test-DscConfiguration | Should -Be $true
             }
 
             It 'Should depend on resource VMHostVss' {
+                # Act
                 $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
 
+                # Assert
                 $currentResource.DependsOn | Should -Match $script:dscDependResourceName
             }
         }

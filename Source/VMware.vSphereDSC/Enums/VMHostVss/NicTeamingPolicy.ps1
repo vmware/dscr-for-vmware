@@ -15,8 +15,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 enum NicTeamingPolicy {
-    loadbalance_ip
-    loadbalance_srcmac
-    loadbalance_srcid
-    failover_explicit
+    Loadbalance_ip
+    Loadbalance_srcmac
+    Loadbalance_srcid
+    Failover_explicit
 }

@@ -48,18 +48,27 @@ Configuration VMHostVssTeaming_Config {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        VMHostVssTeaming vmHostVSSTeaming {
+        VMHostVss vmHostVssSettings {
+            Name = $Name
+            Server = $Server
+            Credential = $vmHostCredential
+            VssName = 'VSS1'
+            Ensure = 'Present'
+            Mtu = 1500
+        }
+
+        VMHostVssTeaming vmHostVssTeaming {
             Name = $Name
             Server = $Server
             Credential = $Credential
             VssName = 'VSS1'
             CheckBeacon = $false
-            ActiveNic = @('vmnic0','vmnic1')
+            ActiveNic = @('vmnic0', 'vmnic1')
             StandbyNic = @()
             NotifySwitches = $true
             Policy = [NicTeamingPolicy]::LoadBalance_SrcId
             RollingOrder = $false
-            DependsOn = "[VMHostVss]VVS1"
+            DependsOn = "[VMHostVss]vmHostVssSettings"
         }
     }
 }

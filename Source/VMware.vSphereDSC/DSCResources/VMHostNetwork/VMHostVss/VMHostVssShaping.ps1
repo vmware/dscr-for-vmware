@@ -70,10 +70,11 @@ class VMHostVssShaping : VMHostVssBaseDSC {
             return ($null -ne $vss -and $this.Equals($vss))
         }
         else {
-            $this.AverageBandwidth = [long]100000
-            $this.BurstSize = [long]100000
+            $this.AverageBandwidth = 100000
+            $this.BurstSize = 100000
             $this.Enabled = $false
-            $this.PeakBandwidth = [long]100000
+            $this.PeakBandwidth = 100000
+
             return ($null -eq $vss -or $this.Equals($vss))
         }
     }
@@ -91,12 +92,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
         $result.Name = $vmHost.Name
         $this.PopulateResult($vmHost, $result)
 
-        if ('' -ne $result.VssName) {
-            $result.Ensure = 'Present'
-        }
-        else {
-            $result.Ensure = 'Absent'
-        }
+        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
         return $result
     }
@@ -173,6 +169,9 @@ class VMHostVssShaping : VMHostVssBaseDSC {
             $vmHostVSSShaping.BurstSize = $currentVss.Spec.Policy.ShapingPolicy.BurstSize
             $vmHostVSSShaping.Enabled = $currentVss.Spec.Policy.ShapingPolicy.Enabled
             $vmHostVSSShaping.PeakBandwidth = $currentVss.Spec.Policy.ShapingPolicy.PeakBandwidth
+        }
+        else {
+            $vmHostVSSShaping.VssName = $this.Name
         }
     }
 }

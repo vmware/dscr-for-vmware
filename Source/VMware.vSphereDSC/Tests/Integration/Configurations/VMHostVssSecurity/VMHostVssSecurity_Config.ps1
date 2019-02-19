@@ -67,6 +67,7 @@ Configuration VMHostVssSecurity_Modify_Config {
             Ensure = $script:EnsurePresent
             Mtu = $script:Mtu
         }
+
         VMHostVssSecurity vmHostVssSecuritySettings {
             Name = $Name
             Server = $Server
@@ -76,7 +77,8 @@ Configuration VMHostVssSecurity_Modify_Config {
             AllowPromiscuous = -not $script:AllowPromiscuous
             ForgedTransmits = -not $script:ForgedTransmits
             MacChanges = -not $script:MacChanges
-            DependsOn = "[VMHostVss]vmHostVssSettings"       }
+            DependsOn = "[VMHostVss]vmHostVssSettings"
+        }
     }
 }
 
@@ -92,6 +94,7 @@ Configuration VMHostVssSecurity_Remove_Config {
             Ensure = $script:EnsurePresent
             Mtu = $script:Mtu
         }
+
         VMHostVssSecurity vmHostVssSecuritySettings {
             Name = $Name
             Server = $Server

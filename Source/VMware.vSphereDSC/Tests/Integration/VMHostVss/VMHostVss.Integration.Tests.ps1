@@ -213,9 +213,9 @@ try {
                 $configuration = Get-DscConfiguration
 
                 # Assert
-                $configuration.Server | Should -Be $script:resourceWithModifyVss.Server
-                $configuration.Name | Should -Be $script:resourceWithModifyVss.Name
-                $configuration.VssName | Should -Be $script:resourceWithModifyVss.VssName
+                $configuration.Server | Should -Be $script:resourceWithRemoveVss.Server
+                $configuration.Name | Should -Be $script:resourceWithRemoveVss.Name
+                $configuration.VssName | Should -Be $script:resourceWithRemoveVss.VssName
                 $configuration.Ensure | Should -Be $script:resourceWithRemoveVss.Ensure
             }
 

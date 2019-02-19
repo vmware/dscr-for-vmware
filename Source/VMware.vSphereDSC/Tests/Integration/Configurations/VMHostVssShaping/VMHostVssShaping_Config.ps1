@@ -68,6 +68,7 @@ Configuration VMHostVssShaping_Modify_Config {
             Ensure = $script:EnsurePresent
             Mtu = $script:Mtu
         }
+
         VMHostVssShaping vmHostVssShapingSettings {
             Name = $Name
             Server = $Server
@@ -95,6 +96,7 @@ Configuration VMHostVssShaping_Remove_Config {
             Ensure = $script:EnsurePresent
             Mtu = $script:Mtu
         }
+
         VMHostVssShaping vmHostVssShapingSettings {
             Name = $Name
             Server = $Server

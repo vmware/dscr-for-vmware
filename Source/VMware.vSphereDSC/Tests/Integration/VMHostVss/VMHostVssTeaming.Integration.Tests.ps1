@@ -115,18 +115,20 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
-                # Assert
+                # Arrange
                 $startDscConfigurationParameters = @{
                     Path = $script:mofFileWithModifyVssTeaming
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
+
+                # Act & Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
+                # Act & Assert
                 { Get-DscConfiguration } | Should -Not -Throw
             }
 
@@ -153,8 +155,10 @@ try {
             }
 
             It 'Should depend on resource VMHostVss' {
+                # Act
                 $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
 
+                # Assert
                 $currentResource.DependsOn | Should -Match $script:dscDependResourceName
             }
         }
@@ -174,29 +178,26 @@ try {
             }
 
             It 'Should compile and apply the MOF without throwing' {
-                # Assert
+                # Arrange
                 $startDscConfigurationParameters = @{
                     Path = $script:mofFileWithRemoveVssTeaming
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
                 }
+
+                # Act & Assert
                 { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Assert
+                # Act & Assert
                 { Get-DscConfiguration } | Should -Not -Throw
             }
 
             It 'Should be able to call Get-DscConfiguration and all the parameters should match' {
                 # Act
                 $configuration = Get-DscConfiguration | where-object { $_.ResourceId -match $script:dscResourceName }
-
-                <#
-                Since the Teaming part is always present, the test is for [Ensure]::Present.
-                With the [Ensure]::Absent the Teaming settings are set to the defaults (where possible)
-                #>
 
                 # Assert
                 $configuration.Server | Should -Be $script:resourceWithRemoveVssTeaming.Server
@@ -211,8 +212,10 @@ try {
             }
 
             It 'Should depend on resource VMHostVss' {
+                # Act
                 $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
 
+                # Assert
                 $currentResource.DependsOn | Should -Match $script:dscDependResourceName
             }
         }
