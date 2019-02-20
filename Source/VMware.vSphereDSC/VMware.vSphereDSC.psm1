@@ -52,6 +52,13 @@ enum ServicePolicy {
     Automatic
 }
 
+enum NicTeamingPolicy {
+    Loadbalance_ip
+    Loadbalance_srcmac
+    Loadbalance_srcid
+    Failover_explicit
+}
+
 enum BadCertificateAction {
     Ignore
     Warn
@@ -2780,6 +2787,222 @@ class VMHostVssShaping : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSShaping.VssName = $this.Name
+        }
+    }
+}
+
+[DscResource()]
+class VMHostVssTeaming : VMHostVssBaseDSC {
+    <#
+    .DESCRIPTION
+
+    The flag to indicate whether or not to enable beacon probing
+    as a method to validate the link status of a physical network adapter.
+    #>
+    [DscProperty()]
+    [boolean] $CheckBeacon
+
+    <#
+    .DESCRIPTION
+
+    List of active network adapters used for load balancing.
+    #>
+    [DscProperty()]
+    [string[]] $ActiveNic
+
+    <#
+    .DESCRIPTION
+
+    Standby network adapters used for failover.
+    #>
+    [DscProperty()]
+    [string[]] $StandbyNic
+
+    <#
+    .DESCRIPTION
+
+    Flag to specify whether or not to notify the physical switch if a link fails.
+    #>
+    [DscProperty()]
+    [boolean] $NotifySwitches
+
+    <#
+    .DESCRIPTION
+
+    Network adapter teaming policy.
+    #>
+    [DscProperty()]
+    [NicTeamingPolicy] $Policy
+
+    <#
+    .DESCRIPTION
+
+    The flag to indicate whether or not to use a rolling policy when restoring links.
+    #>
+    [DscProperty()]
+    [boolean] $RollingOrder
+
+    [void] Set() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $this.GetNetworkSystem($vmHost)
+
+        $this.UpdateVssTeaming($vmHost)
+    }
+
+    [bool] Test() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $this.GetNetworkSystem($vmHost)
+        $vss = $this.GetVss()
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            return ($null -ne $vss -and $this.Equals($vss))
+        }
+        else {
+            $this.CheckBeacon = $false
+            $this.ActiveNic = @()
+            $this.StandbyNic = @()
+            $this.NotifySwitches = $true
+            $this.Policy = [NicTeamingPolicy]::Loadbalance_srcid
+            $this.RollingOrder = $false
+
+            return ($null -eq $vss -or $this.Equals($vss))
+        }
+    }
+
+    [VMHostVssTeaming] Get() {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $result = [VMHostVssTeaming]::new()
+        $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $this.GetNetworkSystem($vmHost)
+
+        $result.Name = $vmHost.Name
+        $this.PopulateResult($vmHost, $result)
+
+        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns a boolean value indicating if the VMHostVssTeaming should to be updated.
+    #>
+    [bool] Equals($vss) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $vssTeamingTest = @()
+        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
+
+        if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic) {
+            if ($null -ne $this.ActiveNic) {
+                $vssTeamingTest += $false
+            }
+            else {
+                $vssTeamingTest += $true
+            }
+        }
+        else {
+            $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic -DifferenceObject $this.ActiveNic
+            $areEqual = $null -eq $comparingResult
+            $vssTeamingTest += $areEqual
+        }
+
+        if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic) {
+            if ($null -ne $this.StandbyNic) {
+                $vssTeamingTest += $false
+            }
+            else {
+                $vssTeamingTest += $true
+            }
+        }
+        else {
+            $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic -DifferenceObject $this.StandbyNic
+            $areEqual = $null -eq $comparingResult
+            $vssTeamingTest += $areEqual
+        }
+
+        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
+        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq ($this.Policy).ToString().ToLower())
+        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
+
+        return ($vssTeamingTest -notcontains $false)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the configuration of the virtual switch.
+    #>
+    [void] UpdateVssTeaming($vmHost) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $vssTeamingArgs = @{
+            Name = $this.VssName
+            CheckBeacon = $this.CheckBeacon
+            ActiveNic = $this.ActiveNic
+            StandbyNic = $this.StandbyNic
+            NotifySwitches = $this.NotifySwitches
+            Policy = ($this.Policy).ToString().ToLower()
+            RollingOrder = $this.RollingOrder
+        }
+        $vss = $this.GetVss()
+
+        if ($this.Ensure -eq 'Present') {
+            if ($this.Equals($vss)) {
+                return
+            }
+            $vssTeamingArgs.Add('Operation', 'edit')
+        }
+        else {
+            $vssTeamingArgs.CheckBeacon = $false
+            $vssTeamingArgs.ActiveNic = @()
+            $vssTeamingArgs.StandbyNic = @()
+            $vssTeamingArgs.NotifySwitches = $true
+            $vssTeamingArgs.Policy = ([NicTeamingPolicy]::Loadbalance_srcid).ToString().ToLower()
+            $vssTeamingArgs.RollingOrder = $false
+            $vssTeamingArgs.Add('Operation', 'edit')
+        }
+
+        try {
+            Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssTeamingConfig $vssTeamingArgs -ErrorAction Stop
+        }
+        catch {
+            Write-Error "The Virtual Switch Teaming Policy Config could not be updated: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
+    #>
+    [void] PopulateResult($vmHost, $vmHostVSSTeaming) {
+        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+
+        $currentVss = $this.GetVss()
+
+        if ($null -ne $currentVss) {
+            $vmHostVSSTeaming.VssName = $currentVss.Name
+            $vmHostVSSTeaming.CheckBeacon = $currentVss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon
+            $vmHostVSSTeaming.ActiveNic = $currentVss.Spec.Policy.NicTeaming.NicOrder.ActiveNic
+            $vmHostVSSTeaming.StandbyNic = $currentVss.Spec.Policy.NicTeaming.NicOrder.StandbyNic
+            $vmHostVSSTeaming.NotifySwitches = $currentVss.Spec.Policy.NicTeaming.NotifySwitches
+            $vmHostVSSTeaming.Policy = [NicTeamingPolicy]$currentVss.Spec.Policy.NicTeaming.Policy
+            $vmHostVSSTeaming.RollingOrder = $currentVss.Spec.Policy.NicTeaming.RollingOrder
+        }
+        else {
+            $vmHostVSSTeaming.VssName = $this.Name
         }
     }
 }
