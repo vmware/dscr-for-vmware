@@ -32,17 +32,6 @@ param(
     $Password
 )
 
-$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-$script:vmHostCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-$script:VssName = 'VSSDSC'
-$script:Mtu = 1500
-$script:EnsurePresent = 'Present'
-$script:EnsureAbsent = 'Absent'
-$script:AllowPromiscuous = $false
-$script:ForgedTransmits = $true
-$script:MacChanges = $true
-
 $script:configurationData = @{
     AllNodes = @(
         @{
@@ -52,59 +41,36 @@ $script:configurationData = @{
     )
 }
 
-$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
-$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
-
-Configuration VMHostVssSecurity_Modify_Config {
+Configuration VMHostVssTeaming_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
+        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
         VMHostVss vmHostVssSettings {
             Name = $Name
             Server = $Server
-            Credential = $script:vmHostCredential
-            VssName = $script:VssName
-            Ensure = $script:EnsurePresent
-            Mtu = $script:Mtu
+            Credential = $vmHostCredential
+            VssName = 'VSS1'
+            Ensure = 'Present'
+            Mtu = 1500
         }
 
-        VMHostVssSecurity vmHostVssSecuritySettings {
+        VMHostVssTeaming vmHostVssTeaming {
             Name = $Name
             Server = $Server
-            Credential = $script:vmHostCredential
-            VssName = $script:VssName
-            Ensure = $script:EnsurePresent
-            AllowPromiscuous = -not $script:AllowPromiscuous
-            ForgedTransmits = -not $script:ForgedTransmits
-            MacChanges = -not $script:MacChanges
+            Credential = $Credential
+            VssName = 'VSS1'
+            CheckBeacon = $false
+            ActiveNic = @('vmnic0', 'vmnic1')
+            StandbyNic = @()
+            NotifySwitches = $true
+            Policy = [NicTeamingPolicy]::LoadBalance_SrcId
+            RollingOrder = $false
             DependsOn = "[VMHostVss]vmHostVssSettings"
         }
     }
 }
 
-Configuration VMHostVssSecurity_Remove_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        VMHostVss vmHostVssSettings {
-            Name = $Name
-            Server = $Server
-            Credential = $script:vmHostCredential
-            VssName = $script:VssName
-            Ensure = $script:EnsurePresent
-            Mtu = $script:Mtu
-        }
-
-        VMHostVssSecurity vmHostVssSecuritySettings {
-            Name = $Name
-            Server = $Server
-            Credential = $script:vmHostCredential
-            VssName = $script:VssName
-            Ensure = $script:Absent
-            DependsOn = "[VMHostVss]vmHostVssSettings"
-        }
-    }
-}
-
-VMHostVssSecurity_Modify_Config -OutputPath "$integrationTestsFolderPath\VMHostVssSecurity_Modify_Config" -ConfigurationData $script:configurationData
-VMHostVssSecurity_Remove_Config -OutputPath "$integrationTestsFolderPath\VMHostVssSecurity_Remove_Config" -ConfigurationData $script:configurationData
+VMHostVssTeaming_Config -ConfigurationData $script:configurationData

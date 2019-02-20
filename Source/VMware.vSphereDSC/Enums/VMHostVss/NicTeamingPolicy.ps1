@@ -14,62 +14,9 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-param(
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Name,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Server,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $User,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Password
-)
-
-$script:configurationData = @{
-    AllNodes = @(
-        @{
-            NodeName = 'localhost'
-            PSDscAllowPlainTextPassword = $true
-        }
-    )
+enum NicTeamingPolicy {
+    Loadbalance_ip
+    Loadbalance_srcmac
+    Loadbalance_srcid
+    Failover_explicit
 }
-
-Configuration VMHostVssShaping_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-        VMHostVss vmHostVssSettings {
-            Name = $Name
-            Server = $Server
-            Credential = $Credential
-            VssName = 'VSS1'
-            Ensure = 'Present'
-            Mtu = 1500
-        }
-
-        VMHostVssShaping vmHostVSSShaping {
-            Name = $Name
-            Server = $Server
-            Credential = $Credential
-            VssName = 'VSS1'
-            Ensure = 'Present'
-            AverageBandwidth = 100000
-            BurstSize = 100000
-            Enabled = $true
-            PeakBandwidth = 100000
-            DependsOn = "[VMHostVss]vmHostVssSettings"
-        }
-    }
-}
-
-VMHostVssShaping_Config -ConfigurationData $script:configurationData
