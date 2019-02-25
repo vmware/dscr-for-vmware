@@ -17,6 +17,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 enum DatacenterFolderType {
     Network
     Datastore
-    VM
+    Vm
     Host
 }
