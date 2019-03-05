@@ -50,7 +50,7 @@ class HACluster : InventoryBaseDSC {
     .DESCRIPTION
 
     Indicates that the virtual machine should be powered off if a host determines that it is isolated from the rest of the compute resource.
-    The valid values are PowerOff, DoNothing and Unset.
+    The valid values are PowerOff, DoNothing, Shutdown and Unset.
     #>
     [DscProperty()]
     [HAIsolationResponse] $HAIsolationResponse = [HAIsolationResponse]::Unset
@@ -58,7 +58,7 @@ class HACluster : InventoryBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the cluster HA restart priority. The valid values are Unset, Disabled, Low, Medium, and High.
+    Specifies the cluster HA restart priority. The valid values are Disabled, Low, Medium, High and Unset.
     VMware HA is a feature that detects failed virtual machines and automatically restarts them on alternative ESX hosts.
     #>
     [DscProperty()]
@@ -71,10 +71,11 @@ class HACluster : InventoryBaseDSC {
     hidden [string] $HARestartPriorityParemeterName = 'HARestartPriority'
 
     [void] Set() {
-        $clusterData = $this.GetClusterData()
+        $this.ConnectVIServer()
 
-        $clusterLocation = $clusterData.ClusterLocation
-        $cluster = $clusterData.Cluster
+        $foundDatacenter = $this.GetDatacenterFromPath()
+        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $cluster) {
@@ -92,8 +93,11 @@ class HACluster : InventoryBaseDSC {
     }
 
     [bool] Test() {
-        $clusterData = $this.GetClusterData()
-        $cluster = $clusterData.Cluster
+        $this.ConnectVIServer()
+
+        $foundDatacenter = $this.GetDatacenterFromPath()
+        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $cluster) {
@@ -113,32 +117,15 @@ class HACluster : InventoryBaseDSC {
         $result.InventoryPath = $this.InventoryPath
         $result.Datacenter = $this.Datacenter
 
-        $clusterData = $this.GetClusterData()
-        $cluster = $clusterData.Cluster
+        $this.ConnectVIServer()
+
+        $foundDatacenter = $this.GetDatacenterFromPath()
+        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         $this.PopulateResult($cluster, $result)
 
         return $result
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a hashtable containing the Cluster Location and the Cluster with the specified name if if exists,
-    otherwise the Cluster is set to $null.
-    #>
-    [hashtable] GetClusterData() {
-        $clusterData = @{}
-
-        $this.ConnectVIServer()
-        $foundDatacenter = $this.GetDatacenterFromPath()
-        $inventoryItemLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
-        $cluster = $this.GetInventoryItem($foundDatacenter, $inventoryItemLocation)
-
-        $clusterData.ClusterLocation = $inventoryItemLocation
-        $clusterData.Cluster = $cluster
-
-        return $clusterData
     }
 
     <#
@@ -169,9 +156,11 @@ class HACluster : InventoryBaseDSC {
             Unset means that the property was not specified in the Configuration.
         #>
         if ($desiredValue -is [HAIsolationResponse] -or $desiredValue -is [HARestartPriority]) {
-            if ($desiredValue.ToString -ne 'Unset') {
-                $clusterParams.$parameter = $desiredValue
+            if ($desiredValue -ne 'Unset') {
+                $clusterParams.$parameter = $desiredValue.ToString()
             }
+
+			return
         }
 
         if ($null -ne $desiredValue) {
@@ -188,7 +177,6 @@ class HACluster : InventoryBaseDSC {
         $clusterParams = @{}
 
         $clusterParams.Server = $this.Connection
-        $clusterParams.Name = $this.Name
         $clusterParams.Confirm = $false
         $clusterParams.ErrorAction = 'Stop'
 
@@ -208,6 +196,7 @@ class HACluster : InventoryBaseDSC {
     #>
     [void] AddCluster($clusterLocation) {
         $clusterParams = $this.GetClusterParams()
+        $clusterParams.Name = $this.Name
         $clusterParams.Location = $clusterLocation
 
         try {
@@ -260,8 +249,8 @@ class HACluster : InventoryBaseDSC {
             $result.HAEnabled = $cluster.HAEnabled
             $result.HAAdmissionControlEnabled = $cluster.HAAdmissionControlEnabled
             $result.HAFailoverLevel = $cluster.HAFailoverLevel
-            $result.HAIsolationResponse = $cluster.HAIsolationResponse
-            $result.HARestartPriority = $cluster.HARestartPriority
+            $result.HAIsolationResponse = $cluster.HAIsolationResponse.ToString()
+            $result.HARestartPriority = $cluster.HARestartPriority.ToString()
         }
         else {
             $result.Name = $this.Name

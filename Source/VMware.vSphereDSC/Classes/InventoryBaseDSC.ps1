@@ -85,7 +85,7 @@ class InventoryBaseDSC : BaseDSC {
         #>
         if ($this.Datacenter -NotMatch '/') {
             $datacentersFolder = Get-Inventory -Server $this.Connection -Id $rootFolder.MoRef
-            $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $this.Datacenter -Location $datacentersFolder | Where-Object { $_.ParentFolderId -eq $datacentersFolder.Id }
+            $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $this.Datacenter -Location $datacentersFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $datacentersFolder.Id }
 
             if ($null -eq $foundDatacenter) {
                 throw "Datacenter with name $($this.Datacenter) was not found at $($datacentersFolder.Name)."
@@ -121,7 +121,7 @@ class InventoryBaseDSC : BaseDSC {
         }
 
         $datacenterLocation = Get-Inventory -Server $this.Connection -Id $foundPathItem.MoRef
-        $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $datacenterName -Location $datacenterLocation | Where-Object { $_.ParentFolderId -eq $datacenterLocation.Id }
+        $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $datacenterName -Location $datacenterLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $datacenterLocation.Id }
 
         if ($null -eq $foundDatacenter) {
             throw "Datacenter with name $datacenterName was not found."
@@ -148,7 +148,7 @@ class InventoryBaseDSC : BaseDSC {
 
         # Special case where the path is just one folder.
         if ($this.InventoryPath -NotMatch '/') {
-            $validLocation = Get-Inventory -Server $this.Connection -Name $this.InventoryPath -Location $datacenterFolder | Where-Object { $_.ParentId -eq $datacenterFolder.Id }
+            $validLocation = Get-Inventory -Server $this.Connection -Name $this.InventoryPath -Location $datacenterFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $datacenterFolder.Id }
 
             if ($null -eq $validLocation) {
                 throw "The provided path $($this.InventoryPath) is not a valid path in the Folder $($datacenterFolder.Name)."
@@ -163,7 +163,7 @@ class InventoryBaseDSC : BaseDSC {
         [array]::Reverse($pathItems)
 
         $inventoryItemLocationName = $pathItems[0]
-        $locations = Get-Inventory -Server $this.Connection -Name $inventoryItemLocationName -Location $datacenterFolder
+        $locations = Get-Inventory -Server $this.Connection -Name $inventoryItemLocationName -Location $datacenterFolder -ErrorAction SilentlyContinue
 
         # Removes the Inventory Item Location from the path items array as we already retrieved it.
         $pathItems = $pathItems[1..($pathItems.Length - 1)]
@@ -204,6 +204,6 @@ class InventoryBaseDSC : BaseDSC {
             throw "The provided path $($this.InventoryPath) is not a valid path in the Datacenter $($foundDatacenter.Name)."
         }
 
-        return Get-Inventory -Server $this.Connection -Name $this.Name -Location $inventoryItemLocation | Where-Object { $_.ParentId -eq $inventoryItemLocation.Id }
+        return Get-Inventory -Server $this.Connection -Name $this.Name -Location $inventoryItemLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $inventoryItemLocation.Id }
     }
 }

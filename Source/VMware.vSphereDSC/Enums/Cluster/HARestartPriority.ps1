@@ -15,9 +15,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 enum HARestartPriority {
-    High
-    Medium
-    Low
     Disabled
+    Low
+    Medium
+    High
     Unset
 }
