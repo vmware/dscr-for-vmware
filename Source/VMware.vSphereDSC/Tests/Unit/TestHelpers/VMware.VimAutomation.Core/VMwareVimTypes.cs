@@ -479,23 +479,53 @@ namespace VMware.Vim
         }
     }
 
-    public class Folder
+    public class Folder : System.IEquatable<Folder>
     {
         public string Name { get; set; }
 
         public ManagedObjectReference[] ChildEntity { get; set; }
+
+        public ManagedObjectReference MoRef { get; set; }
+
+        public ManagedObjectReference Parent { get; set; }
+
+        public bool Equals(Folder folder)
+        {
+            return folder != null && this.Name == folder.Name && this.MoRef != null && this.MoRef.Equals(folder.MoRef);
+        }
+
+        public override bool Equals(object folder)
+        {
+            return this.Equals(folder as Folder);
+        }
+
+        public override int GetHashCode()
+        {
+            if (this.MoRef != null)
+            {
+                return (this.Name + "_" + this.MoRef.Type + "_" + this.MoRef.Value).GetHashCode();
+            }
+
+            return this.Name.GetHashCode();
+        }
     }
 
     public class Datacenter
     {
-        public string Name { get; set; }
+        public ManagedObjectReference VmFolder { get; set; }
+
+        public ManagedObjectReference HostFolder { get; set; }
+
+        public ManagedObjectReference DatastoreFolder { get; set; }
+
+        public ManagedObjectReference NetworkFolder { get; set; }
     }
 
     public class ServiceContent
     {
         public ManagedObjectReference PerfManager { get; set; }
 
-        public Folder RootFolder { get; set; }
+        public ManagedObjectReference RootFolder { get; set; }
     }
 
     public class VCenterExtensionData
@@ -867,5 +897,58 @@ namespace VMware.Vim
         public string[] ConsoleVnicDevice { get; set; }
 
         public string[] VnicDevice { get; set; }
+    }
+}
+
+namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
+{
+    public class FolderImpl : System.IEquatable<FolderImpl>
+    {
+        public string Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string ParentId { get; set; }
+
+        public bool Equals(FolderImpl folderImpl)
+        {
+            return (folderImpl != null && this.Id == folderImpl.Id && this.Name == folderImpl.Name && this.ParentId == folderImpl.ParentId);
+        }
+
+        public override bool Equals(object folderImpl)
+        {
+            return this.Equals(folderImpl as FolderImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Id + "_" + this.Name + "_" + this.ParentId).GetHashCode();
+        }
+    }
+
+    public class DatacenterImpl : System.IEquatable<DatacenterImpl>
+    {
+        public string Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string ParentFolderId { get; set; }
+
+        public VMware.Vim.Datacenter ExtensionData { get; set; }
+
+        public bool Equals(DatacenterImpl datacenterImpl)
+        {
+            return (datacenterImpl != null && this.Id == datacenterImpl.Id && this.Name == datacenterImpl.Name && this.ParentFolderId == datacenterImpl.ParentFolderId);
+        }
+
+        public override bool Equals(object datacenterImpl)
+        {
+            return this.Equals(datacenterImpl as DatacenterImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Id + "_" + this.Name + "_" + this.ParentFolderId).GetHashCode();
+        }
     }
 }

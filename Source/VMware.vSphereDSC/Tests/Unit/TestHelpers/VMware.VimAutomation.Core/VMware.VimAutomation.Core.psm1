@@ -44,7 +44,7 @@ function Get-View {
         [Parameter(ParameterSetName = 'GetViewByVIObject')]
         [PSObject] $VIObject,
         [Parameter(ParameterSetName = 'GetView')]
-        [VMware.Vim.ManagedObjectReference] $Id,
+        [VMware.Vim.ManagedObjectReference[]] $Id,
         [Parameter(ParameterSetName = 'GetView')]
         [Parameter(ParameterSetName = 'GetEntity')]
         [Parameter(ParameterSetName = 'GetViewByRelatedObject')]
@@ -158,8 +158,57 @@ function Get-Datacenter {
     param(
         [PSObject] $Server,
         [string] $Name,
-        [VMware.Vim.Folder] $Location
+        [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] $Location
     )
 
-    return New-Object VMware.Vim.Datacenter
+    return $null
+}
+
+function Get-Inventory {
+    param(
+        [PSObject] $Server,
+        [VMware.Vim.ManagedObjectReference] $Id,
+        [string] $Name,
+        [PSObject] $Location
+    )
+
+    return $null
+}
+
+function New-Cluster {
+    param(
+        [PSObject] $Server,
+        [string] $Name,
+        [PSObject] $Location,
+        [bool] $HAEnabled,
+        [bool] $HAAdmissionControlEnabled,
+        [int] $HAFailoverLevel,
+        [HAIsolationResponse] $HAIsolationResponse,
+        [HARestartPriority] $HARestartPriority,
+        [switch] $Confirm
+    )
+}
+
+function Set-Cluster {
+    [CmdletBinding()]
+    param(
+        [Parameter(ValueFromPipeline)] $Cluster,
+        [PSObject] $Server,
+        [string] $Name,
+        [bool] $HAEnabled,
+        [bool] $HAAdmissionControlEnabled,
+        [int] $HAFailoverLevel,
+        [HAIsolationResponse] $HAIsolationResponse,
+        [HARestartPriority] $HARestartPriority,
+        [switch] $Confirm
+    )
+}
+
+function Remove-Cluster {
+    [CmdletBinding()]
+    param(
+        [Parameter(ValueFromPipeline)] $Cluster,
+        [PSObject] $Server,
+        [switch] $Confirm
+    )
 }
