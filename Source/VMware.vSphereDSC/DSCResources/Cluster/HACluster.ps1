@@ -131,7 +131,7 @@ class HACluster : InventoryBaseDSC {
     <#
     .DESCRIPTION
 
-    Checks if the cluster should be updated.
+    Checks if the Cluster should be updated.
     #>
     [bool] ShouldUpdateCluster($cluster) {
         $shouldUpdateCluster = @()

@@ -56,6 +56,6 @@ VariablesToExport = '*'
 AliasesToExport = @()
 
 # DSC resources to export from this module
-DscResourcesToExport = @('PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'VMHostVss', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming')
+DscResourcesToExport = @('PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'VMHostVss', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'HACluster')
 
 }

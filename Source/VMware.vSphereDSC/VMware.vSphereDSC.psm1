@@ -19,7 +19,7 @@ Using module '.\VMware.vSphereDSC.Helper.psm1'
 enum DatacenterFolderType {
     Network
     Datastore
-    VM
+    Vm
     Host
 }
 
@@ -57,6 +57,21 @@ enum NicTeamingPolicy {
     Loadbalance_srcmac
     Loadbalance_srcid
     Failover_explicit
+}
+
+enum HAIsolationResponse {
+    PowerOff
+    DoNothing
+    Shutdown
+    Unset
+}
+
+enum HARestartPriority {
+    Disabled
+    Low
+    Medium
+    High
+    Unset
 }
 
 enum BadCertificateAction {
@@ -205,6 +220,7 @@ class InventoryBaseDSC : BaseDSC {
 
         $vCenter = $this.Connection
         $rootFolder = Get-View -Server $this.Connection -Id $vCenter.ExtensionData.Content.RootFolder
+        $foundDatacenter = $null
 
         <#
         This is a special case where only the Datacenter name is passed.
@@ -212,12 +228,13 @@ class InventoryBaseDSC : BaseDSC {
         #>
         if ($this.Datacenter -NotMatch '/') {
             $datacentersFolder = Get-Inventory -Server $this.Connection -Id $rootFolder.MoRef
-            try {
-                return Get-Datacenter -Server $this.Connection -Name $this.Datacenter -Location $datacentersFolder -ErrorAction Stop | Where-Object { $._ParentFolderId -eq $datacentersFolder.Id }
+            $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $this.Datacenter -Location $datacentersFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $datacentersFolder.Id }
+
+            if ($null -eq $foundDatacenter) {
+                throw "Datacenter with name $($this.Datacenter) was not found at $($datacentersFolder.Name)."
             }
-            catch {
-                throw "Datacenter with name $($this.Datacenter) was not found at $($datacentersFolder.Name). For more inforamtion: $($_.Exception.Message)"
-            }
+
+            return $foundDatacenter
         }
 
         $pathItems = $this.Datacenter -Split '/'
@@ -237,7 +254,7 @@ class InventoryBaseDSC : BaseDSC {
             }
 
             # If the found path item does not have 'ChildEntity' member, the item is a Datacenter.
-            $childEntityMember = $foundPathItem | Get-Member -Name 'ChildEnity'
+            $childEntityMember = $foundPathItem | Get-Member -Name 'ChildEntity'
             if ($null -eq $childEntityMember) {
                 throw "The path $($this.Datacenter) contains another Datacenter $pathItem."
             }
@@ -246,13 +263,14 @@ class InventoryBaseDSC : BaseDSC {
             $childEntities = Get-View -Server $this.Connection -Id $foundPathItem.ChildEntity
         }
 
-        try {
-            $datacenterLocation = Get-Inventory -Server $this.Connection -Id $foundPathItem.MoRef
-            return Get-Datacenter -Server $this.Connection -Name $datacenterName -Location $datacenterLocation -ErrorAction Stop | Where-Object { $._ParentFolderId -eq $datacenterLocation.Id }
+        $datacenterLocation = Get-Inventory -Server $this.Connection -Id $foundPathItem.MoRef
+        $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $datacenterName -Location $datacenterLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $datacenterLocation.Id }
+
+        if ($null -eq $foundDatacenter) {
+            throw "Datacenter with name $datacenterName was not found."
         }
-        catch {
-            throw "Datacenter with name $datacenterName was not found. For more inforamtion: $($_.Exception.Message)"
-        }
+
+        return $foundDatacenter
     }
 
     <#
@@ -273,12 +291,13 @@ class InventoryBaseDSC : BaseDSC {
 
         # Special case where the path is just one folder.
         if ($this.InventoryPath -NotMatch '/') {
-            try {
-                return Get-Inventory -Server $this.Connection -Name $this.InventoryPath -Location $datacenterFolder -ErrorAction Stop | Where-Object { $_.ParentId -eq $datacenterFolder.Id }
-            }
-            catch {
+            $validLocation = Get-Inventory -Server $this.Connection -Name $this.InventoryPath -Location $datacenterFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $datacenterFolder.Id }
+
+            if ($null -eq $validLocation) {
                 throw "The provided path $($this.InventoryPath) is not a valid path in the Folder $($datacenterFolder.Name)."
             }
+
+            return $validLocation
         }
 
         $pathItems = $this.InventoryPath -Split '/'
@@ -287,7 +306,7 @@ class InventoryBaseDSC : BaseDSC {
         [array]::Reverse($pathItems)
 
         $inventoryItemLocationName = $pathItems[0]
-        $locations = Get-Inventory -Server $this.Connection -Name $inventoryItemLocationName -Location $datacenterFolder
+        $locations = Get-Inventory -Server $this.Connection -Name $inventoryItemLocationName -Location $datacenterFolder -ErrorAction SilentlyContinue
 
         # Removes the Inventory Item Location from the path items array as we already retrieved it.
         $pathItems = $pathItems[1..($pathItems.Length - 1)]
@@ -323,15 +342,12 @@ class InventoryBaseDSC : BaseDSC {
 
     Returns the Inventory Item from the specified Datacenter if it exists, otherwise returns $null.
     #>
-    [PSObject] GetInventoryItem() {
-        $foundDatacenter = $this.GetDatacenterFromPath()
-        $inventoryItemLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
-
+    [PSObject] GetInventoryItem($foundDatacenter, $inventoryItemLocation) {
         if ($null -eq $inventoryItemLocation) {
             throw "The provided path $($this.InventoryPath) is not a valid path in the Datacenter $($foundDatacenter.Name)."
         }
 
-        return Get-Inventory -Server $this.Connection -Name $this.Name -Location $inventoryItemLocation | Where-Object { $_.ParentId -eq $inventoryItemLocation.Id }
+        return Get-Inventory -Server $this.Connection -Name $this.Name -Location $inventoryItemLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $inventoryItemLocation.Id }
     }
 }
 
@@ -3003,6 +3019,256 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSTeaming.VssName = $this.Name
+        }
+    }
+}
+
+[DscResource()]
+class HACluster : InventoryBaseDSC {
+    HACluster() {
+        $this.DatacenterFolderType = [DatacenterFolderType]::Host
+    }
+
+    <#
+    .DESCRIPTION
+
+    Indicates that VMware HA (High Availability) is enabled.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $HAEnabled
+
+    <#
+    .DESCRIPTION
+
+    Indicates that virtual machines cannot be powered on if they violate availability constraints.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $HAAdmissionControlEnabled
+
+    <#
+    .DESCRIPTION
+
+    Specifies a configured failover level.
+    This is the number of physical host failures that can be tolerated without impacting the ability to meet minimum thresholds for all running virtual machines.
+    The valid values range from 1 to 4.
+    #>
+    [DscProperty()]
+    [nullable[int]] $HAFailoverLevel
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the virtual machine should be powered off if a host determines that it is isolated from the rest of the compute resource.
+    The valid values are PowerOff, DoNothing, Shutdown and Unset.
+    #>
+    [DscProperty()]
+    [HAIsolationResponse] $HAIsolationResponse = [HAIsolationResponse]::Unset
+
+    <#
+    .DESCRIPTION
+
+    Specifies the cluster HA restart priority. The valid values are Disabled, Low, Medium, High and Unset.
+    VMware HA is a feature that detects failed virtual machines and automatically restarts them on alternative ESX hosts.
+    #>
+    [DscProperty()]
+    [HARestartPriority] $HARestartPriority = [HARestartPriority]::Unset
+
+    hidden [string] $HAEnabledParameterName = 'HAEnabled'
+    hidden [string] $HAAdmissionControlEnabledParameterName = 'HAAdmissionControlEnabled'
+    hidden [string] $HAFailoverLevelParameterName = 'HAFailoverLevel'
+    hidden [string] $HAIsolationResponseParameterName = 'HAIsolationResponse'
+    hidden [string] $HARestartPriorityParemeterName = 'HARestartPriority'
+
+    [void] Set() {
+        $this.ConnectVIServer()
+
+        $foundDatacenter = $this.GetDatacenterFromPath()
+        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            if ($null -eq $cluster) {
+                $this.AddCluster($clusterLocation)
+            }
+            else {
+                $this.UpdateCluster($cluster)
+            }
+        }
+        else {
+            if ($null -ne $cluster) {
+                $this.RemoveCluster($cluster)
+            }
+        }
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+
+        $foundDatacenter = $this.GetDatacenterFromPath()
+        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            if ($null -eq $cluster) {
+                return $false
+            }
+
+            return !$this.ShouldUpdateCluster($cluster)
+        }
+        else {
+            return ($null -eq $cluster)
+        }
+    }
+
+    [HACluster] Get() {
+        $result = [HACluster]::new()
+        $result.Server = $this.Server
+        $result.InventoryPath = $this.InventoryPath
+        $result.Datacenter = $this.Datacenter
+
+        $this.ConnectVIServer()
+
+        $foundDatacenter = $this.GetDatacenterFromPath()
+        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
+
+        $this.PopulateResult($cluster, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Cluster should be updated.
+    #>
+    [bool] ShouldUpdateCluster($cluster) {
+        $shouldUpdateCluster = @()
+        $shouldUpdateCluster += ($null -ne $this.HAEnabled -and $this.HAEnabled -ne $cluster.HAEnabled)
+        $shouldUpdateCluster += ($null -ne $this.HAAdmissionControlEnabled -and $this.HAAdmissionControlEnabled -ne $cluster.HAAdmissionControlEnabled)
+        $shouldUpdateCluster += ($null -ne $this.HAFailoverLevel -and $this.HAFailoverLevel -ne $cluster.HAFailoverLevel)
+        $shouldUpdateCluster += ($this.HAIsolationResponse -ne [HAIsolationResponse]::Unset -and $this.HAIsolationResponse -ne $cluster.HAIsolationResponse)
+        $shouldUpdateCluster += ($this.HARestartPriority -ne [HARestartPriority]::Unset -and $this.HARestartPriority -ne $cluster.HARestartPriority)
+
+        return ($shouldUpdateCluster -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the parameters for the New-Cluster and Set-Cluster cmdlets.
+    #>
+    [void] PopulateClusterParams($clusterParams, $parameter, $desiredValue) {
+        <#
+            Special case where the desired value is enum type. These type of properties
+            should be added as parameters to the cmdlet only when their value is not equal to Unset.
+            Unset means that the property was not specified in the Configuration.
+        #>
+        if ($desiredValue -is [HAIsolationResponse] -or $desiredValue -is [HARestartPriority]) {
+            if ($desiredValue -ne 'Unset') {
+                $clusterParams.$parameter = $desiredValue.ToString()
+            }
+
+			return
+        }
+
+        if ($null -ne $desiredValue) {
+            $clusterParams.$parameter = $desiredValue
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the populated Cluster parameters.
+    #>
+    [hashtable] GetClusterParams() {
+        $clusterParams = @{}
+
+        $clusterParams.Server = $this.Connection
+        $clusterParams.Confirm = $false
+        $clusterParams.ErrorAction = 'Stop'
+
+        $this.PopulateClusterParams($clusterParams, $this.HAEnabledParameterName, $this.HAEnabled)
+        $this.PopulateClusterParams($clusterParams, $this.HAAdmissionControlEnabledParameterName, $this.HAAdmissionControlEnabled)
+        $this.PopulateClusterParams($clusterParams, $this.HAFailoverLevelParameterName, $this.HAFailoverLevel)
+        $this.PopulateClusterParams($clusterParams, $this.HAIsolationResponseParameterName, $this.HAIsolationResponse)
+        $this.PopulateClusterParams($clusterParams, $this.HARestartPriorityParemeterName, $this.HARestartPriority)
+
+        return $clusterParams
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Cluster with the specified properties at the specified location.
+    #>
+    [void] AddCluster($clusterLocation) {
+        $clusterParams = $this.GetClusterParams()
+        $clusterParams.Name = $this.Name
+        $clusterParams.Location = $clusterLocation
+
+        try {
+            New-Cluster @clusterParams
+        }
+        catch {
+            throw "Cannot create Cluster $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the Cluster with the specified properties.
+    #>
+    [void] UpdateCluster($cluster) {
+        $clusterParams = $this.GetClusterParams()
+
+        try {
+            $cluster | Set-Cluster @clusterParams
+        }
+        catch {
+            throw "Cannot update Cluster $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the specified Cluster from the specified Datacenter.
+    #>
+    [void] RemoveCluster($cluster) {
+        try {
+            $cluster | Remove-Cluster -Server $this.Connection -Confirm:$false -ErrorAction Stop
+        }
+        catch {
+            throw "Cannot remove Cluster $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Cluster from the server.
+    #>
+    [void] PopulateResult($cluster, $result) {
+        if ($null -ne $cluster) {
+            $result.Name = $cluster.Name
+            $result.Ensure = [Ensure]::Present
+            $result.HAEnabled = $cluster.HAEnabled
+            $result.HAAdmissionControlEnabled = $cluster.HAAdmissionControlEnabled
+            $result.HAFailoverLevel = $cluster.HAFailoverLevel
+            $result.HAIsolationResponse = $cluster.HAIsolationResponse.ToString()
+            $result.HARestartPriority = $cluster.HARestartPriority.ToString()
+        }
+        else {
+            $result.Name = $this.Name
+            $result.Ensure = [Ensure]::Absent
+            $result.HAEnabled = $this.HAEnabled
+            $result.HAAdmissionControlEnabled = $this.HAAdmissionControlEnabled
+            $result.HAFailoverLevel = $this.HAFailoverLevel
+            $result.HAIsolationResponse = $this.HAIsolationResponse
+            $result.HARestartPriority = $this.HARestartPriority
         }
     }
 }

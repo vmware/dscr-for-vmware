@@ -18,13 +18,13 @@
 
 ## Description
 
-The resource is used to create, update and delete Clusters in a specified Datacenter.
+The resource is used to create, update and delete Clusters in a specified Datacenter. The resource also takes care to configure Cluster's High Availability (HA) settings.
 
 ## Examples
 
 ### Example 1
 
-Creates a new Cluster in the specified Datacenter.
+Creates a new Cluster in the specified Datacenter. The new Cluster has HAEnabled and HAAdmissionControlEnabled set to 'true', HAFailoverLevel is set to '3', HAIsolationResponse is 'DoNothing' and HARestartPriority is set to 'Low'.
 
 ```powershell
 param(
