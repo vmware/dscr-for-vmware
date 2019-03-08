@@ -304,7 +304,7 @@ try {
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
         }
 
-        AfterAll {
+        AfterEach {
             $script:resourceProperties.Datacenter = [string]::Empty
             $script:resourceProperties.InventoryPath = [string]::Empty
         }
@@ -318,7 +318,7 @@ try {
 
             It 'Should call the New-Cluster mock with the passed parameters once' {
                 # Act
-                { $resource.Set() } | Should -Not -Throw
+                $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
@@ -359,7 +359,7 @@ try {
 
             It 'Should call the New-Cluster mock with the passed parameters once' {
                 # Act
-                { $resource.Set() } | Should -Not -Throw
+                $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
@@ -387,7 +387,7 @@ try {
 
             It 'Should call the Set-Cluster mock with the passed parameters once' {
                 # Act
-                { $resource.Set() } | Should -Not -Throw
+                $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
@@ -431,7 +431,7 @@ try {
 
             It 'Should call the Set-Cluster mock with the passed parameters once' {
                 # Act
-                { $resource.Set() } | Should -Not -Throw
+                $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
@@ -467,7 +467,7 @@ try {
 
             It 'Should call the Remove-Cluster mock with the passed parameters once' {
                 # Act
-                { $resource.Set() } | Should -Not -Throw
+                $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
@@ -500,7 +500,7 @@ try {
 
             It 'Should not call the Remove-Cluster mock' {
                 # Act
-                { $resource.Set() } | Should -Not -Throw
+                $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
@@ -551,7 +551,7 @@ try {
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
         }
 
-        AfterAll {
+        AfterEach {
             $script:resourceProperties.Datacenter = [string]::Empty
             $script:resourceProperties.InventoryPath = [string]::Empty
         }
@@ -564,10 +564,10 @@ try {
 
             It 'Should return $false' {
                 # Act
-                { $resource.Test() } | Should -Not -Throw
+                $result = $resource.Test()
 
                 # Assert
-                $resource.Test() | Should -Be $false
+                $result | Should -Be $false
             }
         }
 
@@ -596,10 +596,10 @@ try {
 
             It 'Should return $true' {
                 # Act
-                { $resource.Test() } | Should -Not -Throw
+                $result = $resource.Test()
 
                 # Assert
-                $resource.Test() | Should -Be $true
+                $result | Should -Be $true
             }
         }
 
@@ -628,10 +628,10 @@ try {
 
             It 'Should return $false' {
                 # Act
-                { $resource.Test() } | Should -Not -Throw
+                $result = $resource.Test()
 
                 # Assert
-                $resource.Test() | Should -Be $false
+                $result | Should -Be $false
             }
         }
 
@@ -650,10 +650,10 @@ try {
 
             It 'Should return $true' {
                 # Act
-                { $resource.Test() } | Should -Not -Throw
+                $result = $resource.Test()
 
                 # Assert
-                $resource.Test() | Should -Be $true
+                $result | Should -Be $true
             }
         }
 
@@ -673,10 +673,10 @@ try {
 
             It 'Should return $false' {
                 # Act
-                { $resource.Test() } | Should -Not -Throw
+                $result = $resource.Test()
 
                 # Assert
-                $resource.Test() | Should -Be $false
+                $result | Should -Be $false
             }
         }
     }
@@ -719,7 +719,7 @@ try {
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
         }
 
-        AfterAll {
+        AfterEach {
             $script:resourceProperties.Datacenter = [string]::Empty
             $script:resourceProperties.InventoryPath = [string]::Empty
             $script:resourceProperties.HAEnabled = $null
@@ -737,8 +737,6 @@ try {
 
             It 'Should retrieve the correct settings from the server' {
                 # Act
-                { $resource.Get() } | Should -Not -Throw
-
                 $result = $resource.Get()
 
                 # Assert
@@ -765,8 +763,6 @@ try {
 
             It 'Should retrieve the correct settings from the server' {
                 # Act
-                { $resource.Get() } | Should -Not -Throw
-
                 $result = $resource.Get()
 
                 # Assert
@@ -798,8 +794,6 @@ try {
 
             It 'Should retrieve the correct settings from the server' {
                 # Act
-                { $resource.Get() } | Should -Not -Throw
-
                 $result = $resource.Get()
 
                 # Assert
@@ -832,8 +826,6 @@ try {
 
             It 'Should retrieve the correct settings from the server' {
                 # Act
-                { $resource.Get() } | Should -Not -Throw
-
                 $result = $resource.Get()
 
                 # Assert
