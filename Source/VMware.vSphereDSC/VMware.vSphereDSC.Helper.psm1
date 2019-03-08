@@ -334,3 +334,42 @@ function Update-Network {
 
     $NetworkSystem.UpdateNetworkConfig($configNet, [VMware.Vim.HostConfigChangeMode]::modify)
 }
+
+function Add-Cluster {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.Folder] $Folder,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Name,
+
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.ClusterConfigSpecEx] $Spec
+    )
+
+    $Folder.CreateClusterEx($Name, $Spec)
+}
+
+function Update-ClusterComputeResource {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.ClusterComputeResource] $ClusterComputeResource,
+
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.ClusterConfigSpecEx] $Spec
+    )
+
+    $ClusterComputeResource.ReconfigureComputeResource_Task($Spec, $true)
+}
+
+function Remove-ClusterComputeResource {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.ClusterComputeResource] $ClusterComputeResource
+    )
+
+    $ClusterComputeResource.Destroy()
+}
