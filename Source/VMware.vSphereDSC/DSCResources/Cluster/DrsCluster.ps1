@@ -205,17 +205,23 @@ class DrsCluster : InventoryBaseDSC {
     <#
     .DESCRIPTION
 
-    Adds new option to the options array of the DrsConfig.
+    Returns the Option array for the DrsConfig with the specified options in the Configuration.
     #>
-    [void] AddOptionToDrsConfig($options, $key, $value) {
-        if ($null -ne $value) {
-            $option = New-Object VMware.Vim.OptionValue
+    [PSObject] GetOptionsForDrsConfig($allOptions) {
+        $drsConfigOptions = @()
 
-            $option.Key = $key
-            $option.Value = $value
+        foreach ($key in $allOptions.Keys) {
+            if ($null -ne $allOptions.$key) {
+                $option = New-Object VMware.Vim.OptionValue
 
-            $options += $option
+                $option.Key = $key
+                $option.Value = $allOptions.$key
+
+                $drsConfigOptions += $option
+            }
         }
+
+        return $drsConfigOptions
     }
 
     <#
@@ -231,11 +237,13 @@ class DrsCluster : InventoryBaseDSC {
         $this.PopulateDrsConfigProperty($clusterSpec.DrsConfig, $this.DrsAutomationLevelConfigPropertyName, $this.DrsAutomationLevel)
         $this.PopulateDrsConfigProperty($clusterSpec.DrsConfig, $this.DrsMigrationThresholdConfigPropertyName, $this.DrsMigrationThreshold)
 
-        $clusterSpec.DrsConfig.Option = @()
+        $allOptions = @{
+            $this.DrsDistributionSettingName = $this.DrsDistribution
+            $this.MemoryLoadBalancingSettingName = $this.MemoryLoadBalancing
+            $this.CPUOverCommitmentSettingName = $this.CPUOverCommitment
+        }
 
-        $this.AddOptionToDrsConfig($clusterSpec.DrsConfig.Option, $this.DrsDistributionSettingName, $this.DrsDistribution)
-        $this.AddOptionToDrsConfig($clusterSpec.DrsConfig.Option, $this.MemoryLoadBalancingSettingName, $this.MemoryLoadBalancing)
-        $this.AddOptionToDrsConfig($clusterSpec.DrsConfig.Option, $this.CPUOverCommitmentSettingName, $this.CPUOverCommitment)
+        $clusterSpec.DrsConfig.Option = $this.GetOptionsForDrsConfig($allOptions)
 
         return $clusterSpec
     }
