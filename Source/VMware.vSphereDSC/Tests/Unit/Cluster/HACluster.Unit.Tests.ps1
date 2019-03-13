@@ -177,7 +177,7 @@ function Invoke-TestSetup {
 '@
 
     $script:clusterScriptBlock = @'
-        return @{
+        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
             Id = '$($script:constants.ClusterId)'
             Name = '$($script:constants.ClusterName)'
             ParentId = [VMware.Vim.ManagedObjectReference] @{
@@ -189,6 +189,11 @@ function Invoke-TestSetup {
             HAFailoverLevel = 4
             HAIsolationResponse = 'DoNothing'
             HARestartPriority = 'High'
+            ExtensionData = [VMware.Vim.ClusterComputeResource] @{
+                ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
+                    DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{}
+                }
+            }
         }
 '@
 
@@ -247,7 +252,7 @@ function Invoke-TestSetup {
         }
     }
 
-    $script:cluster = @{
+    $script:cluster = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
         Id = $script:constants.ClusterId
         Name = $script:constants.ClusterName
         ParentId = [VMware.Vim.ManagedObjectReference] @{
@@ -259,6 +264,11 @@ function Invoke-TestSetup {
         HAFailoverLevel = 4
         HAIsolationResponse = 'DoNothing'
         HARestartPriority = 'High'
+        ExtensionData = [VMware.Vim.ClusterComputeResource] @{
+            ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
+                DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{}
+            }
+        }
     }
 }
 
@@ -392,8 +402,7 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Set-Cluster'
-                    ParameterFilter = { $Cluster.Id -eq $script:cluster.Id -and $Cluster.Name -eq $script:cluster.Name -and $Cluster.ParentId -eq $script:cluster.ParentId -and `
-                                        $Server -eq $script:vCenter -and !$Confirm }
+                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -436,9 +445,9 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Set-Cluster'
-                    ParameterFilter = { $Cluster.Id -eq $script:cluster.Id -and $Cluster.Name -eq $script:cluster.Name -and $Cluster.ParentId -eq $script:cluster.ParentId -and `
-                                        $Server -eq $script:vCenter -and !$Confirm -and $HAEnabled -eq $false -and `
-                                        $HAAdmissionControlEnabled -eq $false -and $HAFailoverLevel -eq 4 -and $HAIsolationResponse -eq 'DoNothing' -and $HARestartPriority -eq 'High' }
+                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm -and $HAEnabled -eq $false -and `
+                                        $HAAdmissionControlEnabled -eq $false -and $HAFailoverLevel -eq 4 -and $HAIsolationResponse -eq 'DoNothing' -and `
+                                        $HARestartPriority -eq 'High' }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -472,8 +481,7 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Remove-Cluster'
-                    ParameterFilter = { $Cluster.Id -eq $script:cluster.Id -and $Cluster.Name -eq $script:cluster.Name -and $Cluster.ParentId -eq $script:cluster.ParentId -and `
-                                        $Server -eq $script:vCenter -and !$Confirm }
+                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -505,8 +513,7 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Remove-Cluster'
-                    ParameterFilter = { $Cluster.Id -eq $script:cluster.Id -and $Cluster.Name -eq $script:cluster.Name -and $Cluster.ParentId -eq $script:cluster.ParentId -and `
-                                        $Server -eq $script:vCenter -and !$Confirm }
+                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 0

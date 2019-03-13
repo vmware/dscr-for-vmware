@@ -33,6 +33,21 @@ namespace VMware.Vim
         Unset
     }
 
+    public enum HAIsolationResponse
+    {
+        PowerOff,
+        DoNothing,
+        Shutdown
+    }
+
+    public enum HARestartPriority
+    {
+        Disabled,
+        Low,
+        Medium,
+        High
+    }
+
     public enum DrsAutomationLevel
     {
         FullyAutomated,
@@ -1145,6 +1160,16 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
 
         public string ParentId { get; set; }
 
+        public bool HAEnabled { get; set; }
+
+        public bool HAAdmissionControlEnabled { get; set; }
+
+        public int HAFailoverLevel { get; set; }
+
+        public VMware.Vim.HAIsolationResponse HAIsolationResponse { get; set; }
+
+        public VMware.Vim.HARestartPriority HARestartPriority { get; set; }
+
         public VMware.Vim.ClusterComputeResource ExtensionData { get; set; }
 
         public void ReconfigureComputeResource_Task(VMware.Vim.ClusterConfigSpecEx Spec, bool modify)
@@ -1158,7 +1183,9 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
         public bool Equals(ClusterImpl clusterImpl)
         {
             return (clusterImpl != null && this.Id == clusterImpl.Id && this.Name == clusterImpl.Name && this.ParentId == clusterImpl.ParentId &&
-                    this.ExtensionData.Equals(clusterImpl.ExtensionData));
+                    this.HAEnabled == clusterImpl.HAEnabled && this.HAAdmissionControlEnabled == clusterImpl.HAAdmissionControlEnabled &&
+                    this.HAFailoverLevel == clusterImpl.HAFailoverLevel && this.HAIsolationResponse == clusterImpl.HAIsolationResponse &&
+                    this.HARestartPriority == clusterImpl.HARestartPriority && this.ExtensionData.Equals(clusterImpl.ExtensionData));
         }
 
         public override bool Equals(object clusterImpl)
@@ -1168,7 +1195,8 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
 
         public override int GetHashCode()
         {
-            return (this.Id + "_" + this.Name + "_" + this.ParentId).GetHashCode() + this.ExtensionData.GetHashCode();
+            return (this.Id + "_" + this.Name + "_" + this.ParentId + "_" + this.HAEnabled + "_" + this.HAAdmissionControlEnabled +
+                    "_" + this.HAFailoverLevel + "_" + this.HAIsolationResponse + "_" + this.HARestartPriority).GetHashCode() + this.ExtensionData.GetHashCode();
         }
     }
 }

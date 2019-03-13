@@ -96,7 +96,7 @@ $script:mofFileWithClusterToUpdateInCustomFolderPath = "$script:integrationTests
 $script:mofFileWithClusterToRemovePath = "$script:integrationTestsFolderPath\$($script:configWithClusterToRemove)"
 $script:mofFileWithClusterToRemoveInCustomFolderPath = "$script:integrationTestsFolderPath\$($script:configWithClusterToRemoveInCustomFolder)"
 
-function Create-CustomFolder {
+function New-CustomFolder {
     $hostFolderAsViewObject = Get-View -Server $script:vCenter -Id $script:clusterLocation.ExtensionData.HostFolder
     $hostFolder = Get-Inventory -Server $script:vCenter -Id $hostFolderAsViewObject.MoRef
 
@@ -104,7 +104,7 @@ function Create-CustomFolder {
 }
 
 function Invoke-TestSetup {
-    # Cluster Location is the Datacenter.
+    # Cluster Location is the Host folder of the Datacenter.
     $clusterWithDatacenterAsLocationParams = @{
         Server = $script:vCenter
         Name = $script:clusterName
@@ -124,7 +124,7 @@ function Invoke-TestSetup {
     $clusterWithCustomFolderAsLocationParams = @{
         Server = $script:vCenter
         Name = $script:clusterName
-        Location = Create-CustomFolder
+        Location = New-CustomFolder
         HAEnabled = $script:resourceWithClusterToAddInCustomFolder.HAEnabled
         HAAdmissionControlEnabled = $script:resourceWithClusterToAddInCustomFolder.HAAdmissionControlEnabled
         HAFailoverLevel = $script:resourceWithClusterToAddInCustomFolder.HAFailoverLevel
@@ -205,7 +205,7 @@ try {
 
         Context "When using configuration $($script:configWithClusterToAddInCustomFolder)" {
             BeforeAll {
-                Create-CustomFolder
+                New-CustomFolder
             }
 
             AfterAll {
