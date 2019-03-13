@@ -206,15 +206,15 @@ function Invoke-TestSetup {
                         Option = @(
                             [VMware.Vim.OptionValue] @{
                                 Key = 'LimitVMsPerESXHostPercent'
-                                Value = 10
+                                Value = '10'
                             },
                             [VMware.Vim.OptionValue] @{
                                 Key = 'PercentIdleMBInMemDemand'
-                                Value = 200
+                                Value = '200'
                             },
                             [VMware.Vim.OptionValue] @{
                                 Key = 'MaxVcpusPerClusterPct'
-                                Value = 400
+                                Value = '400'
                             }
                         )
                     }
@@ -301,15 +301,15 @@ function Invoke-TestSetup {
             Option = @(
                 [VMware.Vim.OptionValue] @{
                     Key = 'LimitVMsPerESXHostPercent'
-                    Value = $script:constants.DrsDistribution
+                    Value = $script:constants.DrsDistribution.ToString()
                 },
                 [VMware.Vim.OptionValue] @{
                     Key = 'PercentIdleMBInMemDemand'
-                    Value = $script:constants.MemoryLoadBalancing
+                    Value = $script:constants.MemoryLoadBalancing.ToString()
                 },
                 [VMware.Vim.OptionValue] @{
                     Key = 'MaxVcpusPerClusterPct'
-                    Value = $script:constants.CPUOverCommitment
+                    Value = $script:constants.CPUOverCommitment.ToString()
                 }
             )
         }
@@ -324,15 +324,15 @@ function Invoke-TestSetup {
                 Option = @(
                     [VMware.Vim.OptionValue] @{
                         Key = 'LimitVMsPerESXHostPercent'
-                        Value = 10
+                        Value = '10'
                     },
                     [VMware.Vim.OptionValue] @{
                         Key = 'PercentIdleMBInMemDemand'
-                        Value = 200
+                        Value = '200'
                     },
                     [VMware.Vim.OptionValue] @{
                         Key = 'MaxVcpusPerClusterPct'
-                        Value = 400
+                        Value = '400'
                     }
                 )
             }

@@ -215,7 +215,7 @@ class DrsCluster : InventoryBaseDSC {
                 $option = New-Object VMware.Vim.OptionValue
 
                 $option.Key = $key
-                $option.Value = $allOptions.$key
+                $option.Value = $allOptions.$key.ToString()
 
                 $drsConfigOptions += $option
             }
