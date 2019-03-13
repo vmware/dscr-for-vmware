@@ -18,7 +18,7 @@ For more information about all available **Resources**, please visit the **wiki*
 
 ## Getting Started
 ## Requirements
-**VMware.vSphereDSC** module contains Windows PowerShell Desired State Configuration Resources.
+**VMware.vSphereDSC** module contains Microsoft PowerShell Desired State Configuration Resources.
 The following table describes the required dependencies for running VMware.vSphereDSC Resources.
 
  **Required dependency**   | **Minimum version**
