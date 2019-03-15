@@ -138,8 +138,24 @@ class HACluster : InventoryBaseDSC {
         $shouldUpdateCluster += ($null -ne $this.HAEnabled -and $this.HAEnabled -ne $cluster.HAEnabled)
         $shouldUpdateCluster += ($null -ne $this.HAAdmissionControlEnabled -and $this.HAAdmissionControlEnabled -ne $cluster.HAAdmissionControlEnabled)
         $shouldUpdateCluster += ($null -ne $this.HAFailoverLevel -and $this.HAFailoverLevel -ne $cluster.HAFailoverLevel)
-        $shouldUpdateCluster += ($this.HAIsolationResponse -ne [HAIsolationResponse]::Unset -and $this.HAIsolationResponse -ne $cluster.HAIsolationResponse)
-        $shouldUpdateCluster += ($this.HARestartPriority -ne [HARestartPriority]::Unset -and $this.HARestartPriority -ne $cluster.HARestartPriority)
+
+        if ($this.HAIsolationResponse -ne [HAIsolationResponse]::Unset) {
+            if ($null -ne $cluster.HAIsolationResponse) {
+                $shouldUpdateCluster += ($this.HAIsolationResponse.ToString() -ne $cluster.HAIsolationResponse.ToString())
+            }
+            else {
+                $shouldUpdateCluster += $true
+            }
+        }
+
+        if ($this.HARestartPriority -ne [HARestartPriority]::Unset) {
+            if ($null -ne $cluster.HARestartPriority) {
+                $shouldUpdateCluster += ($this.HARestartPriority.ToString() -ne $cluster.HARestartPriority.ToString())
+            }
+            else {
+                $shouldUpdateCluster += $true
+            }
+        }
 
         return ($shouldUpdateCluster -Contains $true)
     }
@@ -160,7 +176,7 @@ class HACluster : InventoryBaseDSC {
                 $clusterParams.$parameter = $desiredValue.ToString()
             }
 
-			return
+            return
         }
 
         if ($null -ne $desiredValue) {
@@ -226,7 +242,7 @@ class HACluster : InventoryBaseDSC {
     <#
     .DESCRIPTION
 
-    Removes the specified Cluster from the specified Datacenter.
+    Removes the Cluster from the specified Datacenter.
     #>
     [void] RemoveCluster($cluster) {
         try {

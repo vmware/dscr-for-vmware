@@ -35,7 +35,7 @@ param(
 # Mandatory Integration Tests parameter unused so set to null.
 $Name = $null
 
-$script:dscResourceName = 'HACluster'
+$script:dscResourceName = 'DrsCluster'
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -48,7 +48,8 @@ $script:configWithClusterToRemove = "$($script:dscResourceName)_WithClusterToRem
 $script:configWithClusterToRemoveInCustomFolder = "$($script:dscResourceName)_WithClusterToRemoveInCustomFolder_Config"
 
 $script:vCenter = Connect-VIServer -Server $Server -User $User -Password $Password
-$script:clusterLocation = Get-Datacenter -Server $script:vCenter -Name 'Datacenter'
+$script:datacenter = Get-Datacenter -Server $script:vCenter -Name 'Datacenter'
+$script:clusterLocation = Get-Inventory -Server $script:vCenter -Name 'host' -Location $script:datacenter | Where-Object { $_.ParentId -eq $script:datacenter.Id }
 
 $script:clusterName = 'MyCluster'
 $script:inventoryPath = [string]::Empty
@@ -57,30 +58,33 @@ $script:datacenter = 'Datacenter'
 
 $script:resourceWithClusterToAdd = @{
     Ensure = 'Present'
-    HAEnabled = $true
-    HAAdmissionControlEnabled = $true
-    HAFailoverLevel = 3
-    HAIsolationResponse = 'DoNothing'
-    HARestartPriority = 'Low'
+    DrsEnabled = $true
+    DrsAutomationLevel = 'FullyAutomated'
+    DrsMigrationThreshold = 5
+    DrsDistribution = 0
+    MemoryLoadBalancing = 100
+    CPUOverCommitment = 500
 }
 
 $script:resourceWithClusterToAddInCustomFolder = @{
     Ensure = 'Present'
-    HAEnabled = $true
-    HAAdmissionControlEnabled = $true
-    HAFailoverLevel = 2
-    HAIsolationResponse = 'PowerOff'
-    HARestartPriority = 'High'
+    DrsEnabled = $true
+    DrsAutomationLevel = 'PartiallyAutomated'
+    DrsMigrationThreshold = 3
+    DrsDistribution = 1
+    MemoryLoadBalancing = 200
+    CPUOverCommitment = 400
 }
 
 $script:resourceWithClusterToUpdate = @{
-    HAAdmissionControlEnabled = $false
-    HAIsolationResponse = 'PowerOff'
+    DrsAutomationLevel = 'Manual'
+    DrsMigrationThreshold = 1
 }
 
 $script:resourceWithClusterToUpdateInCustomFolder = @{
-    HAFailoverLevel = 4
-    HARestartPriority = 'Medium'
+    DrsDistribution = 2
+    MemoryLoadBalancing = 50
+    CPUOverCommitment = 300
 }
 
 $script:resourceWithClusterToRemove = @{
@@ -97,44 +101,58 @@ $script:mofFileWithClusterToRemovePath = "$script:integrationTestsFolderPath\$($
 $script:mofFileWithClusterToRemoveInCustomFolderPath = "$script:integrationTestsFolderPath\$($script:configWithClusterToRemoveInCustomFolder)"
 
 function New-CustomFolder {
-    $hostFolderAsViewObject = Get-View -Server $script:vCenter -Id $script:clusterLocation.ExtensionData.HostFolder
-    $hostFolder = Get-Inventory -Server $script:vCenter -Id $hostFolderAsViewObject.MoRef
-
-    return New-Folder -Server $script:vCenter -Name $script:inventoryPathWithCustomFolder -Location $hostFolder
+    return New-Folder -Server $script:vCenter -Name $script:inventoryPathWithCustomFolder -Location $script:clusterLocation
 }
 
 function Invoke-TestSetup {
     # Cluster Location is the Host folder of the Datacenter.
-    $clusterWithDatacenterAsLocationParams = @{
-        Server = $script:vCenter
-        Name = $script:clusterName
-        Location = $script:clusterLocation
-        HAEnabled = $script:resourceWithClusterToAdd.HAEnabled
-        HAAdmissionControlEnabled = $script:resourceWithClusterToAdd.HAAdmissionControlEnabled
-        HAFailoverLevel = $script:resourceWithClusterToAdd.HAFailoverLevel
-        HAIsolationResponse = $script:resourceWithClusterToAdd.HAIsolationResponse
-        HARestartPriority = $script:resourceWithClusterToAdd.HARestartPriority
-        Confirm = $false
-        ErrorAction = 'Stop'
-    }
+    $clusterSpec = New-Object VMware.Vim.ClusterConfigSpecEx
+    $clusterSpec.DrsConfig = New-Object VMware.Vim.ClusterDrsConfigInfo
 
-    New-Cluster @clusterWithDatacenterAsLocationParams
+    $clusterSpec.DrsConfig.Enabled = $script:resourceWithClusterToAdd.DrsEnabled
+    $clusterSpec.DrsConfig.DefaultVmBehavior = $script:resourceWithClusterToAdd.DrsAutomationLevel
+    $clusterSpec.DrsConfig.VmotionRate = $script:resourceWithClusterToAdd.DrsMigrationThreshold
+    $clusterSpec.DrsConfig.Option = @(
+        [VMware.Vim.OptionValue] @{
+            Key = 'LimitVMsPerESXHostPercent'
+            Value = $script:resourceWithClusterToAdd.DrsDistribution.ToString()
+        },
+        [VMware.Vim.OptionValue] @{
+            Key = 'PercentIdleMBInMemDemand'
+            Value = $script:resourceWithClusterToAdd.MemoryLoadBalancing.ToString()
+        },
+        [VMware.Vim.OptionValue] @{
+            Key = 'MaxVcpusPerClusterPct'
+            Value = $script:resourceWithClusterToAdd.CPUOverCommitment.ToString()
+        }
+    )
+
+    $script:clusterLocation.ExtensionData.CreateClusterEx($script:clusterName, $clusterSpec)
 
     # Cluster Location is a Folder inside the Host Folder of the Datacenter.
-    $clusterWithCustomFolderAsLocationParams = @{
-        Server = $script:vCenter
-        Name = $script:clusterName
-        Location = New-CustomFolder
-        HAEnabled = $script:resourceWithClusterToAddInCustomFolder.HAEnabled
-        HAAdmissionControlEnabled = $script:resourceWithClusterToAddInCustomFolder.HAAdmissionControlEnabled
-        HAFailoverLevel = $script:resourceWithClusterToAddInCustomFolder.HAFailoverLevel
-        HAIsolationResponse = $script:resourceWithClusterToAddInCustomFolder.HAIsolationResponse
-        HARestartPriority = $script:resourceWithClusterToAddInCustomFolder.HARestartPriority
-        Confirm = $false
-        ErrorAction = 'Stop'
-    }
+    $clusterSpec = New-Object VMware.Vim.ClusterConfigSpecEx
+    $clusterSpec.DrsConfig = New-Object VMware.Vim.ClusterDrsConfigInfo
 
-    New-Cluster @clusterWithCustomFolderAsLocationParams
+    $clusterSpec.DrsConfig.Enabled = $script:resourceWithClusterToAddInCustomFolder.DrsEnabled
+    $clusterSpec.DrsConfig.DefaultVmBehavior = $script:resourceWithClusterToAddInCustomFolder.DrsAutomationLevel
+    $clusterSpec.DrsConfig.VmotionRate = $script:resourceWithClusterToAddInCustomFolder.DrsMigrationThreshold
+    $clusterSpec.DrsConfig.Option = @(
+        [VMware.Vim.OptionValue] @{
+            Key = 'LimitVMsPerESXHostPercent'
+            Value = $script:resourceWithClusterToAddInCustomFolder.DrsDistribution.ToString()
+        },
+        [VMware.Vim.OptionValue] @{
+            Key = 'PercentIdleMBInMemDemand'
+            Value = $script:resourceWithClusterToAddInCustomFolder.MemoryLoadBalancing.ToString()
+        },
+        [VMware.Vim.OptionValue] @{
+            Key = 'MaxVcpusPerClusterPct'
+            Value = $script:resourceWithClusterToAddInCustomFolder.CPUOverCommitment.ToString()
+        }
+    )
+
+    $customFolderAsLocation = New-CustomFolder
+    $customFolderAsLocation.ExtensionData.CreateClusterEx($script:clusterName, $clusterSpec)
 }
 
 function Invoke-TestCleanup {
@@ -190,11 +208,12 @@ try {
                 $configuration.InventoryPath | Should -Be $script:inventoryPath
                 $configuration.Datacenter | Should -Be $script:datacenter
                 $configuration.Name | Should -Be $script:clusterName
-                $configuration.HAEnabled | Should -Be $script:resourceWithClusterToAdd.HAEnabled
-                $configuration.HAAdmissionControlEnabled | Should -Be $script:resourceWithClusterToAdd.HAAdmissionControlEnabled
-                $configuration.HAFailoverLevel | Should -Be $script:resourceWithClusterToAdd.HAFailoverLevel
-                $configuration.HAIsolationResponse | Should -Be $script:resourceWithClusterToAdd.HAIsolationResponse
-                $configuration.HARestartPriority | Should -Be $script:resourceWithClusterToAdd.HARestartPriority
+                $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAdd.DrsEnabled
+                $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToAdd.DrsAutomationLevel
+                $configuration.DrsMigrationThreshold | Should -Be $script:resourceWithClusterToAdd.DrsMigrationThreshold
+                $configuration.DrsDistribution | Should -Be $script:resourceWithClusterToAdd.DrsDistribution
+                $configuration.MemoryLoadBalancing | Should -Be $script:resourceWithClusterToAdd.MemoryLoadBalancing
+                $configuration.CPUOverCommitment | Should -Be $script:resourceWithClusterToAdd.CPUOverCommitment
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -253,11 +272,12 @@ try {
                 $configuration.InventoryPath | Should -Be $script:inventoryPathWithCustomFolder
                 $configuration.Datacenter | Should -Be $script:datacenter
                 $configuration.Name | Should -Be $script:clusterName
-                $configuration.HAEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.HAEnabled
-                $configuration.HAAdmissionControlEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.HAAdmissionControlEnabled
-                $configuration.HAFailoverLevel | Should -Be $script:resourceWithClusterToAddInCustomFolder.HAFailoverLevel
-                $configuration.HAIsolationResponse | Should -Be $script:resourceWithClusterToAddInCustomFolder.HAIsolationResponse
-                $configuration.HARestartPriority | Should -Be $script:resourceWithClusterToAddInCustomFolder.HARestartPriority
+                $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsEnabled
+                $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsAutomationLevel
+                $configuration.DrsMigrationThreshold | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsMigrationThreshold
+                $configuration.DrsDistribution | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsDistribution
+                $configuration.MemoryLoadBalancing | Should -Be $script:resourceWithClusterToAddInCustomFolder.MemoryLoadBalancing
+                $configuration.CPUOverCommitment | Should -Be $script:resourceWithClusterToAddInCustomFolder.CPUOverCommitment
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -316,11 +336,12 @@ try {
                 $configuration.InventoryPath | Should -Be $script:inventoryPath
                 $configuration.Datacenter | Should -Be $script:datacenter
                 $configuration.Name | Should -Be $script:clusterName
-                $configuration.HAEnabled | Should -Be $script:resourceWithClusterToAdd.HAEnabled
-                $configuration.HAAdmissionControlEnabled | Should -Be $script:resourceWithClusterToUpdate.HAAdmissionControlEnabled
-                $configuration.HAFailoverLevel | Should -Be $script:resourceWithClusterToAdd.HAFailoverLevel
-                $configuration.HAIsolationResponse | Should -Be $script:resourceWithClusterToUpdate.HAIsolationResponse
-                $configuration.HARestartPriority | Should -Be $script:resourceWithClusterToAdd.HARestartPriority
+                $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAdd.DrsEnabled
+                $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToUpdate.DrsAutomationLevel
+                $configuration.DrsMigrationThreshold | Should -Be $script:resourceWithClusterToUpdate.DrsMigrationThreshold
+                $configuration.DrsDistribution | Should -Be $script:resourceWithClusterToAdd.DrsDistribution
+                $configuration.MemoryLoadBalancing | Should -Be $script:resourceWithClusterToAdd.MemoryLoadBalancing
+                $configuration.CPUOverCommitment | Should -Be $script:resourceWithClusterToAdd.CPUOverCommitment
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -379,11 +400,12 @@ try {
                 $configuration.InventoryPath | Should -Be $script:inventoryPathWithCustomFolder
                 $configuration.Datacenter | Should -Be $script:datacenter
                 $configuration.Name | Should -Be $script:clusterName
-                $configuration.HAEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.HAEnabled
-                $configuration.HAAdmissionControlEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.HAAdmissionControlEnabled
-                $configuration.HAFailoverLevel | Should -Be $script:resourceWithClusterToUpdateInCustomFolder.HAFailoverLevel
-                $configuration.HAIsolationResponse | Should -Be $script:resourceWithClusterToAddInCustomFolder.HAIsolationResponse
-                $configuration.HARestartPriority | Should -Be $script:resourceWithClusterToUpdateInCustomFolder.HARestartPriority
+                $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsEnabled
+                $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsAutomationLevel
+                $configuration.DrsMigrationThreshold | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsMigrationThreshold
+                $configuration.DrsDistribution | Should -Be $script:resourceWithClusterToUpdateInCustomFolder.DrsDistribution
+                $configuration.MemoryLoadBalancing | Should -Be $script:resourceWithClusterToUpdateInCustomFolder.MemoryLoadBalancing
+                $configuration.CPUOverCommitment | Should -Be $script:resourceWithClusterToUpdateInCustomFolder.CPUOverCommitment
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -442,11 +464,12 @@ try {
                 $configuration.InventoryPath | Should -Be $script:inventoryPath
                 $configuration.Datacenter | Should -Be $script:datacenter
                 $configuration.Name | Should -Be $script:clusterName
-                $configuration.HAEnabled | Should -Be $null
-                $configuration.HAAdmissionControlEnabled | Should -Be $null
-                $configuration.HAFailoverLevel | Should -Be $null
-                $configuration.HAIsolationResponse | Should -Be 'Unset'
-                $configuration.HARestartPriority | Should -Be 'Unset'
+                $configuration.DrsEnabled | Should -Be $null
+                $configuration.DrsAutomationLevel | Should -Be 'Unset'
+                $configuration.DrsMigrationThreshold | Should -Be $null
+                $configuration.DrsDistribution | Should -Be $null
+                $configuration.MemoryLoadBalancing | Should -Be $null
+                $configuration.CPUOverCommitment | Should -Be $null
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -505,11 +528,12 @@ try {
                 $configuration.InventoryPath | Should -Be $script:inventoryPathWithCustomFolder
                 $configuration.Datacenter | Should -Be $script:datacenter
                 $configuration.Name | Should -Be $script:clusterName
-                $configuration.HAEnabled | Should -Be $null
-                $configuration.HAAdmissionControlEnabled | Should -Be $null
-                $configuration.HAFailoverLevel | Should -Be $null
-                $configuration.HAIsolationResponse | Should -Be 'Unset'
-                $configuration.HARestartPriority | Should -Be 'Unset'
+                $configuration.DrsEnabled | Should -Be $null
+                $configuration.DrsAutomationLevel | Should -Be 'Unset'
+                $configuration.DrsMigrationThreshold | Should -Be $null
+                $configuration.DrsDistribution | Should -Be $null
+                $configuration.MemoryLoadBalancing | Should -Be $null
+                $configuration.CPUOverCommitment | Should -Be $null
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {

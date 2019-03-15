@@ -22,7 +22,7 @@ function Invoke-TestSetup {
     $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
 
     $script:moduleName = 'VMware.vSphereDSC'
-    $script:resourceName = 'HACluster'
+    $script:resourceName = 'DrsCluster'
 
     $script:user = 'user'
     $password = 'password' | ConvertTo-SecureString -AsPlainText -Force
@@ -52,6 +52,12 @@ function Invoke-TestSetup {
         InventoryPathItemTwo = 'MyClusterFolderTwo'
         ClusterId = 'my-cluster-id'
         ClusterName = 'MyCluster'
+        DrsEnabled = $true
+        DrsAutomationLevel = 'FullyAutomated'
+        DrsMigrationThreshold = 5
+        DrsDistribution = 0
+        MemoryLoadBalancing = 100
+        CPUOverCommitment = 500
     }
 
     $script:vCenterWithRootFolderScriptBlock = @'
@@ -152,6 +158,13 @@ function Invoke-TestSetup {
                     Type = '$($script:constants.FolderType)'
                     Value = '$($script:constants.InventoryPathItemTwoId)'
                 }
+                ExtensionData = [VMware.Vim.Folder] @{
+                    Name = '$($script:constants.InventoryPathItemTwo)'
+                    MoRef = [VMware.Vim.ManagedObjectReference] @{
+                        Type = '$($script:constants.FolderType)'
+                        Value = '$($script:constants.InventoryPathItemTwoId)'
+                    }
+                }
             }
         )
 '@
@@ -184,14 +197,27 @@ function Invoke-TestSetup {
                 Type = '$($script:constants.FolderType)'
                 Value = '$($script:constants.InventoryPathItemTwoId)'
             }
-            HAEnabled = '$($true)'
-            HAAdmissionControlEnabled = '$($true)'
-            HAFailoverLevel = 4
-            HAIsolationResponse = 'DoNothing'
-            HARestartPriority = 'High'
             ExtensionData = [VMware.Vim.ClusterComputeResource] @{
                 ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
-                    DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{}
+                    DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{
+                        Enabled = '$($true)'
+                        DefaultVmBehavior = 'Manual'
+                        VmotionRate = 3
+                        Option = @(
+                            [VMware.Vim.OptionValue] @{
+                                Key = 'LimitVMsPerESXHostPercent'
+                                Value = '10'
+                            },
+                            [VMware.Vim.OptionValue] @{
+                                Key = 'PercentIdleMBInMemDemand'
+                                Value = '200'
+                            },
+                            [VMware.Vim.OptionValue] @{
+                                Key = 'MaxVcpusPerClusterPct'
+                                Value = '400'
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -252,21 +278,63 @@ function Invoke-TestSetup {
         }
     }
 
-    $script:cluster = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
-        Id = $script:constants.ClusterId
-        Name = $script:constants.ClusterName
-        ParentId = [VMware.Vim.ManagedObjectReference] @{
+    $script:folder = [VMware.Vim.Folder] @{
+        Name = $script:constants.InventoryPathItemTwo
+        MoRef = [VMware.Vim.ManagedObjectReference] @{
             Type = $script:constants.FolderType
             Value = $script:constants.InventoryPathItemTwoId
         }
-        HAEnabled = $true
-        HAAdmissionControlEnabled = $true
-        HAFailoverLevel = 4
-        HAIsolationResponse = 'DoNothing'
-        HARestartPriority = 'High'
-        ExtensionData = [VMware.Vim.ClusterComputeResource] @{
-            ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
-                DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{}
+    }
+
+    $script:clusterSpecWithoutDrsSettings = [VMware.Vim.ClusterConfigSpecEx] @{
+        DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{
+            Option = @(
+            )
+        }
+    }
+
+    $script:clusterSpecWithDrsSettings = [VMware.Vim.ClusterConfigSpecEx] @{
+        DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{
+            Enabled = $script:constants.DrsEnabled
+            DefaultVmBehavior = $script:constants.DrsAutomationLevel
+            VmotionRate = $script:constants.DrsMigrationThreshold
+            Option = @(
+                [VMware.Vim.OptionValue] @{
+                    Key = 'LimitVMsPerESXHostPercent'
+                    Value = $script:constants.DrsDistribution.ToString()
+                },
+                [VMware.Vim.OptionValue] @{
+                    Key = 'PercentIdleMBInMemDemand'
+                    Value = $script:constants.MemoryLoadBalancing.ToString()
+                },
+                [VMware.Vim.OptionValue] @{
+                    Key = 'MaxVcpusPerClusterPct'
+                    Value = $script:constants.CPUOverCommitment.ToString()
+                }
+            )
+        }
+    }
+
+    $script:clusterComputeResource = [VMware.Vim.ClusterComputeResource] @{
+        ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
+            DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{
+                Enabled = $true
+                DefaultVmBehavior = 'Manual'
+                VmotionRate = 3
+                Option = @(
+                    [VMware.Vim.OptionValue] @{
+                        Key = 'LimitVMsPerESXHostPercent'
+                        Value = '10'
+                    },
+                    [VMware.Vim.OptionValue] @{
+                        Key = 'PercentIdleMBInMemDemand'
+                        Value = '200'
+                    },
+                    [VMware.Vim.OptionValue] @{
+                        Key = 'MaxVcpusPerClusterPct'
+                        Value = '400'
+                    }
+                )
             }
         }
     }
@@ -281,7 +349,7 @@ try {
     # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
     Invoke-TestSetup
 
-    Describe 'HACluster\Set' -Tag 'Set' {
+    Describe 'DrsCluster\Set' -Tag 'Set' {
         BeforeEach {
             # Arrange
             $script:resourceProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
@@ -319,21 +387,21 @@ try {
             $script:resourceProperties.InventoryPath = [string]::Empty
         }
 
-        Context 'Invoking with Ensure Present, non existing Cluster and no HA settings specified' {
+        Context 'Invoking with Ensure Present, non existing Cluster and no Drs settings specified' {
             BeforeAll {
                 # Arrange
                 Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
-                Mock -CommandName New-Cluster -MockWith { return $null } -ModuleName $script:moduleName
+                Mock -CommandName Add-Cluster -MockWith { return $null } -ModuleName $script:moduleName
             }
 
-            It 'Should call the New-Cluster mock with the passed parameters once' {
+            It 'Should call the Add-Cluster mock with the passed parameters once' {
                 # Act
                 $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
-                    CommandName = 'New-Cluster'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id -and !$Confirm }
+                    CommandName = 'Add-Cluster'
+                    ParameterFilter = { $Folder -eq $script:folder -and $Name -eq $script:resourceProperties.Name -and $Spec -eq $script:clusterSpecWithoutDrsSettings }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -344,38 +412,39 @@ try {
             }
         }
 
-        Context 'Invoking with Ensure Present, non existing Cluster and HA settings specified' {
+        Context 'Invoking with Ensure Present, non existing Cluster and Drs settings specified' {
             BeforeAll {
                 # Arrange
-                $script:resourceProperties.HAEnabled = $true
-                $script:resourceProperties.HAAdmissionControlEnabled = $true
-                $script:resourceProperties.HAFailoverLevel = 4
-                $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-                $script:resourceProperties.HARestartPriority = 'High'
+                $script:resourceProperties.DrsEnabled = $script:constants.DrsEnabled
+                $script:resourceProperties.DrsAutomationLevel = $script:constants.DrsAutomationLevel
+                $script:resourceProperties.DrsMigrationThreshold = $script:constants.DrsMigrationThreshold
+                $script:resourceProperties.DrsDistribution = $script:constants.DrsDistribution
+                $script:resourceProperties.MemoryLoadBalancing = $script:constants.MemoryLoadBalancing
+                $script:resourceProperties.CPUOverCommitment = $script:constants.CPUOverCommitment
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
                 Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
-                Mock -CommandName New-Cluster -MockWith { return $null } -ModuleName $script:moduleName
+                Mock -CommandName Add-Cluster -MockWith { return $null } -ModuleName $script:moduleName
             }
 
             AfterAll {
-                $script:resourceProperties.HAEnabled = $null
-                $script:resourceProperties.HAAdmissionControlEnabled = $null
-                $script:resourceProperties.HAFailoverLevel = $null
-                $script:resourceProperties.HAIsolationResponse = 'Unset'
-                $script:resourceProperties.HARestartPriority = 'Unset'
+                $script:resourceProperties.DrsEnabled = $null
+                $script:resourceProperties.DrsAutomationLevel = 'Unset'
+                $script:resourceProperties.DrsMigrationThreshold = $null
+                $script:resourceProperties.DrsDistribution = $null
+                $script:resourceProperties.MemoryLoadBalancing = $null
+                $script:resourceProperties.CPUOverCommitment = $null
             }
 
-            It 'Should call the New-Cluster mock with the passed parameters once' {
+            It 'Should call the Add-Cluster mock with the passed parameters once' {
                 # Act
                 $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
-                    CommandName = 'New-Cluster'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id -and !$Confirm -and `
-                    $HAEnabled -eq $true -and $HAAdmissionControlEnabled -eq $true -and $HAFailoverLevel -eq 4 -and $HAIsolationResponse -eq 'DoNothing' -and $HARestartPriority -eq 'High' }
+                    CommandName = 'Add-Cluster'
+                    ParameterFilter = { $Folder -eq $script:folder -and $Name -eq $script:resourceProperties.Name -and $Spec -eq $script:clusterSpecWithDrsSettings }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -386,23 +455,23 @@ try {
             }
         }
 
-        Context 'Invoking with Ensure Present, existing Cluster and no HA settings specified' {
+        Context 'Invoking with Ensure Present, existing Cluster and no Drs settings specified' {
             BeforeAll {
                 # Arrange
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
 
                 Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
-                Mock -CommandName Set-Cluster -MockWith { return $null } -ModuleName $script:moduleName
+                Mock -CommandName Update-ClusterComputeResource -MockWith { return $null } -ModuleName $script:moduleName
             }
 
-            It 'Should call the Set-Cluster mock with the passed parameters once' {
+            It 'Should call the Update-ClusterComputeResource mock with the passed parameters once' {
                 # Act
                 $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
-                    CommandName = 'Set-Cluster'
-                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm }
+                    CommandName = 'Update-ClusterComputeResource'
+                    ParameterFilter = { $ClusterComputeResource -eq $script:clusterComputeResource -and $Spec -eq $script:clusterSpecWithoutDrsSettings }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -413,41 +482,41 @@ try {
             }
         }
 
-        Context 'Invoking with Ensure Present, existing Cluster and HA settings specified' {
+        Context 'Invoking with Ensure Present, existing Cluster and Drs settings specified' {
             BeforeAll {
                 # Arrange
-                $script:resourceProperties.HAEnabled = $false
-                $script:resourceProperties.HAAdmissionControlEnabled = $false
-                $script:resourceProperties.HAFailoverLevel = 4
-                $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-                $script:resourceProperties.HARestartPriority = 'High'
+                $script:resourceProperties.DrsEnabled = $script:constants.DrsEnabled
+                $script:resourceProperties.DrsAutomationLevel = $script:constants.DrsAutomationLevel
+                $script:resourceProperties.DrsMigrationThreshold = $script:constants.DrsMigrationThreshold
+                $script:resourceProperties.DrsDistribution = $script:constants.DrsDistribution
+                $script:resourceProperties.MemoryLoadBalancing = $script:constants.MemoryLoadBalancing
+                $script:resourceProperties.CPUOverCommitment = $script:constants.CPUOverCommitment
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
 
                 Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
-                Mock -CommandName Set-Cluster -MockWith { return $null } -ModuleName $script:moduleName
+                Mock -CommandName Update-ClusterComputeResource -MockWith { return $null } -ModuleName $script:moduleName
             }
 
             AfterAll {
-                $script:resourceProperties.HAEnabled = $null
-                $script:resourceProperties.HAAdmissionControlEnabled = $null
-                $script:resourceProperties.HAFailoverLevel = $null
-                $script:resourceProperties.HAIsolationResponse = 'Unset'
-                $script:resourceProperties.HARestartPriority = 'Unset'
+                $script:resourceProperties.DrsEnabled = $null
+                $script:resourceProperties.DrsAutomationLevel = 'Unset'
+                $script:resourceProperties.DrsMigrationThreshold = $null
+                $script:resourceProperties.DrsDistribution = $null
+                $script:resourceProperties.MemoryLoadBalancing = $null
+                $script:resourceProperties.CPUOverCommitment = $null
             }
 
-            It 'Should call the Set-Cluster mock with the passed parameters once' {
+            It 'Should call the Update-ClusterComputeResource mock with the passed parameters once' {
                 # Act
                 $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
-                    CommandName = 'Set-Cluster'
-                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm -and $HAEnabled -eq $false -and `
-                                        $HAAdmissionControlEnabled -eq $false -and $HAFailoverLevel -eq 4 -and $HAIsolationResponse -eq 'DoNothing' -and `
-                                        $HARestartPriority -eq 'High' }
+                    CommandName = 'Update-ClusterComputeResource'
+                    ParameterFilter = { $ClusterComputeResource -eq $script:clusterComputeResource -and $Spec -eq $script:clusterSpecWithDrsSettings }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -467,21 +536,21 @@ try {
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
 
                 Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
-                Mock -CommandName Remove-Cluster -MockWith { return $null } -ModuleName $script:moduleName
+                Mock -CommandName Remove-ClusterComputeResource -MockWith { return $null } -ModuleName $script:moduleName
             }
 
             AfterAll {
                 $script:resourceProperties.Ensure = 'Present'
             }
 
-            It 'Should call the Remove-Cluster mock with the passed parameters once' {
+            It 'Should call the Remove-ClusterComputeResource mock with the passed parameters once' {
                 # Act
                 $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
-                    CommandName = 'Remove-Cluster'
-                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm }
+                    CommandName = 'Remove-ClusterComputeResource'
+                    ParameterFilter = { $ClusterComputeResource -eq $script:clusterComputeResource }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -499,21 +568,21 @@ try {
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
                 Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
-                Mock -CommandName Remove-Cluster -MockWith { return $null } -ModuleName $script:moduleName
+                Mock -CommandName Remove-ClusterComputeResource -MockWith { return $null } -ModuleName $script:moduleName
             }
 
             AfterAll {
                 $script:resourceProperties.Ensure = 'Present'
             }
 
-            It 'Should not call the Remove-Cluster mock' {
+            It 'Should not call the Remove-ClusterComputeResource mock' {
                 # Act
                 $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
-                    CommandName = 'Remove-Cluster'
-                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm }
+                    CommandName = 'Remove-ClusterComputeResource'
+                    ParameterFilter = { $ClusterComputeResource -eq $script:clusterComputeResource }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 0
@@ -525,7 +594,7 @@ try {
         }
     }
 
-    Describe 'HACluster\Test' -Tag 'Test' {
+    Describe 'DrsCluster\Test' -Tag 'Test' {
         BeforeEach {
             # Arrange
             $script:resourceProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
@@ -581,11 +650,12 @@ try {
         Context 'Invoking with Ensure Present, existing Cluster and matching settings' {
             BeforeAll {
                 # Arrange
-                $script:resourceProperties.HAEnabled = $true
-                $script:resourceProperties.HAAdmissionControlEnabled = $true
-                $script:resourceProperties.HAFailoverLevel = 4
-                $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-                $script:resourceProperties.HARestartPriority = 'High'
+                $script:resourceProperties.DrsEnabled = $script:constants.DrsEnabled
+                $script:resourceProperties.DrsAutomationLevel = 'Manual'
+                $script:resourceProperties.DrsMigrationThreshold = 3
+                $script:resourceProperties.DrsDistribution = 10
+                $script:resourceProperties.MemoryLoadBalancing = 200
+                $script:resourceProperties.CPUOverCommitment = 400
 
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
                 Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
@@ -594,11 +664,12 @@ try {
             }
 
             AfterAll {
-                $script:resourceProperties.HAEnabled = $null
-                $script:resourceProperties.HAAdmissionControlEnabled = $null
-                $script:resourceProperties.HAFailoverLevel = $null
-                $script:resourceProperties.HAIsolationResponse = 'Unset'
-                $script:resourceProperties.HARestartPriority = 'Unset'
+                $script:resourceProperties.DrsEnabled = $null
+                $script:resourceProperties.DrsAutomationLevel = 'Unset'
+                $script:resourceProperties.DrsMigrationThreshold = $null
+                $script:resourceProperties.DrsDistribution = $null
+                $script:resourceProperties.MemoryLoadBalancing = $null
+                $script:resourceProperties.CPUOverCommitment = $null
             }
 
             It 'Should return $true' {
@@ -613,11 +684,12 @@ try {
         Context 'Invoking with Ensure Present, existing Cluster and non matching settings' {
             BeforeAll {
                 # Arrange
-                $script:resourceProperties.HAEnabled = $true
-                $script:resourceProperties.HAAdmissionControlEnabled = $true
-                $script:resourceProperties.HAFailoverLevel = 3
-                $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-                $script:resourceProperties.HARestartPriority = 'High'
+                $script:resourceProperties.DrsEnabled = $script:constants.DrsEnabled
+                $script:resourceProperties.DrsAutomationLevel = $script:constants.DrsAutomationLevel
+                $script:resourceProperties.DrsMigrationThreshold = $script:constants.DrsMigrationThreshold
+                $script:resourceProperties.DrsDistribution = $script:constants.DrsDistribution
+                $script:resourceProperties.MemoryLoadBalancing = $script:constants.MemoryLoadBalancing
+                $script:resourceProperties.CPUOverCommitment = $script:constants.CPUOverCommitment
 
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
                 Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
@@ -626,11 +698,12 @@ try {
             }
 
             AfterAll {
-                $script:resourceProperties.HAEnabled = $null
-                $script:resourceProperties.HAAdmissionControlEnabled = $null
-                $script:resourceProperties.HAFailoverLevel = $null
-                $script:resourceProperties.HAIsolationResponse = 'Unset'
-                $script:resourceProperties.HARestartPriority = 'Unset'
+                $script:resourceProperties.DrsEnabled = $null
+                $script:resourceProperties.DrsAutomationLevel = 'Unset'
+                $script:resourceProperties.DrsMigrationThreshold = $null
+                $script:resourceProperties.DrsDistribution = $null
+                $script:resourceProperties.MemoryLoadBalancing = $null
+                $script:resourceProperties.CPUOverCommitment = $null
             }
 
             It 'Should return $false' {
@@ -688,16 +761,17 @@ try {
         }
     }
 
-    Describe 'HACluster\Get' -Tag 'Get' {
+    Describe 'DrsCluster\Get' -Tag 'Get' {
         BeforeEach {
             # Arrange
             $script:resourceProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
             $script:resourceProperties.InventoryPath = "$($script:constants.InventoryPathItemOne)/$($script:constants.InventoryPathItemTwo)"
-            $script:resourceProperties.HAEnabled = $true
-            $script:resourceProperties.HAAdmissionControlEnabled = $true
-            $script:resourceProperties.HAFailoverLevel = 4
-            $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-            $script:resourceProperties.HARestartPriority = 'High'
+            $script:resourceProperties.DrsEnabled = $script:constants.DrsEnabled
+            $script:resourceProperties.DrsAutomationLevel = $script:constants.DrsAutomationLevel
+            $script:resourceProperties.DrsMigrationThreshold = $script:constants.DrsMigrationThreshold
+            $script:resourceProperties.DrsDistribution = $script:constants.DrsDistribution
+            $script:resourceProperties.MemoryLoadBalancing = $script:constants.MemoryLoadBalancing
+            $script:resourceProperties.CPUOverCommitment = $script:constants.CPUOverCommitment
 
             $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterWithRootFolderScriptBlock))
             $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
@@ -729,11 +803,12 @@ try {
         AfterEach {
             $script:resourceProperties.Datacenter = [string]::Empty
             $script:resourceProperties.InventoryPath = [string]::Empty
-            $script:resourceProperties.HAEnabled = $null
-            $script:resourceProperties.HAAdmissionControlEnabled = $null
-            $script:resourceProperties.HAFailoverLevel = $null
-            $script:resourceProperties.HAIsolationResponse = 'Unset'
-            $script:resourceProperties.HARestartPriority = 'Unset'
+            $script:resourceProperties.DrsEnabled = $null
+            $script:resourceProperties.DrsAutomationLevel = 'Unset'
+            $script:resourceProperties.DrsMigrationThreshold = $null
+            $script:resourceProperties.DrsDistribution = $null
+            $script:resourceProperties.MemoryLoadBalancing = $null
+            $script:resourceProperties.CPUOverCommitment = $null
         }
 
         Context 'Invoking with Ensure Present and non existing Cluster' {
@@ -752,11 +827,12 @@ try {
                 $result.Datacenter | Should -Be $script:resourceProperties.Datacenter
                 $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Ensure | Should -Be 'Absent'
-                $result.HAEnabled | Should -Be $script:resourceProperties.HAEnabled
-                $result.HAAdmissionControlEnabled | Should -Be $script:resourceProperties.HAAdmissionControlEnabled
-                $result.HAFailoverLevel | Should -Be $script:resourceProperties.HAFailoverLevel
-                $result.HAIsolationResponse | Should -Be $script:resourceProperties.HAIsolationResponse
-                $result.HARestartPriority | Should -Be $script:resourceProperties.HARestartPriority
+                $result.DrsEnabled | Should -Be $script:resourceProperties.DrsEnabled
+                $result.DrsAutomationLevel | Should -Be $script:resourceProperties.DrsAutomationLevel
+                $result.DrsMigrationThreshold | Should -Be $script:resourceProperties.DrsMigrationThreshold
+                $result.DrsDistribution | Should -Be $script:resourceProperties.DrsDistribution
+                $result.MemoryLoadBalancing | Should -Be $script:resourceProperties.MemoryLoadBalancing
+                $result.CPUOverCommitment | Should -Be $script:resourceProperties.CPUOverCommitment
             }
         }
 
@@ -776,13 +852,14 @@ try {
                 $result.Server | Should -Be $script:resourceProperties.Server
                 $result.InventoryPath | Should -Be $script:resourceProperties.InventoryPath
                 $result.Datacenter | Should -Be $script:resourceProperties.Datacenter
-                $result.Name | Should -Be $script:cluster.Name
+                $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Ensure | Should -Be 'Present'
-                $result.HAEnabled | Should -Be $script:cluster.HAEnabled
-                $result.HAAdmissionControlEnabled | Should -Be $script:cluster.HAAdmissionControlEnabled
-                $result.HAFailoverLevel | Should -Be $script:cluster.HAFailoverLevel
-                $result.HAIsolationResponse | Should -Be $script:cluster.HAIsolationResponse
-                $result.HARestartPriority | Should -Be $script:cluster.HARestartPriority
+                $result.DrsEnabled | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.Enabled
+                $result.DrsAutomationLevel | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.DefaultVmBehavior
+                $result.DrsMigrationThreshold | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.VmotionRate
+                $result.DrsDistribution | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'LimitVMsPerESXHostPercent' }).Value
+                $result.MemoryLoadBalancing | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'PercentIdleMBInMemDemand' }).Value
+                $result.CPUOverCommitment | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'MaxVcpusPerClusterPct' }).Value
             }
         }
 
@@ -809,11 +886,12 @@ try {
                 $result.Datacenter | Should -Be $script:resourceProperties.Datacenter
                 $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Ensure | Should -Be 'Absent'
-                $result.HAEnabled | Should -Be $script:resourceProperties.HAEnabled
-                $result.HAAdmissionControlEnabled | Should -Be $script:resourceProperties.HAAdmissionControlEnabled
-                $result.HAFailoverLevel | Should -Be $script:resourceProperties.HAFailoverLevel
-                $result.HAIsolationResponse | Should -Be $script:resourceProperties.HAIsolationResponse
-                $result.HARestartPriority | Should -Be $script:resourceProperties.HARestartPriority
+                $result.DrsEnabled | Should -Be $script:resourceProperties.DrsEnabled
+                $result.DrsAutomationLevel | Should -Be $script:resourceProperties.DrsAutomationLevel
+                $result.DrsMigrationThreshold | Should -Be $script:resourceProperties.DrsMigrationThreshold
+                $result.DrsDistribution | Should -Be $script:resourceProperties.DrsDistribution
+                $result.MemoryLoadBalancing | Should -Be $script:resourceProperties.MemoryLoadBalancing
+                $result.CPUOverCommitment | Should -Be $script:resourceProperties.CPUOverCommitment
             }
         }
 
@@ -839,13 +917,14 @@ try {
                 $result.Server | Should -Be $script:resourceProperties.Server
                 $result.InventoryPath | Should -Be $script:resourceProperties.InventoryPath
                 $result.Datacenter | Should -Be $script:resourceProperties.Datacenter
-                $result.Name | Should -Be $script:cluster.Name
+                $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Ensure | Should -Be 'Present'
-                $result.HAEnabled | Should -Be $script:cluster.HAEnabled
-                $result.HAAdmissionControlEnabled | Should -Be $script:cluster.HAAdmissionControlEnabled
-                $result.HAFailoverLevel | Should -Be $script:cluster.HAFailoverLevel
-                $result.HAIsolationResponse | Should -Be $script:cluster.HAIsolationResponse
-                $result.HARestartPriority | Should -Be $script:cluster.HARestartPriority
+                $result.DrsEnabled | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.Enabled
+                $result.DrsAutomationLevel | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.DefaultVmBehavior
+                $result.DrsMigrationThreshold | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.VmotionRate
+                $result.DrsDistribution | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'LimitVMsPerESXHostPercent' }).Value
+                $result.MemoryLoadBalancing | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'PercentIdleMBInMemDemand' }).Value
+                $result.CPUOverCommitment | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'MaxVcpusPerClusterPct' }).Value
             }
         }
     }

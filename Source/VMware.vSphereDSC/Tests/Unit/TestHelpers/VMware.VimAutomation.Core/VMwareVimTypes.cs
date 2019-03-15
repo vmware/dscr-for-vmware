@@ -1,5 +1,7 @@
 namespace VMware.Vim
 {
+    using System.Linq;
+
     public enum ServicePolicy
     {
         Unset = 0,
@@ -29,6 +31,29 @@ namespace VMware.Vim
         NoProxy,
         UseSystemProxy,
         Unset
+    }
+
+    public enum HAIsolationResponse
+    {
+        PowerOff,
+        DoNothing,
+        Shutdown
+    }
+
+    public enum HARestartPriority
+    {
+        Disabled,
+        Low,
+        Medium,
+        High
+    }
+
+    public enum DrsAutomationLevel
+    {
+        FullyAutomated,
+        Manual,
+        PartiallyAutomated,
+        Disabled
     }
 
     public class ManagedObjectReference : System.IEquatable<ManagedObjectReference>
@@ -479,37 +504,6 @@ namespace VMware.Vim
         }
     }
 
-    public class Folder : System.IEquatable<Folder>
-    {
-        public string Name { get; set; }
-
-        public ManagedObjectReference[] ChildEntity { get; set; }
-
-        public ManagedObjectReference MoRef { get; set; }
-
-        public ManagedObjectReference Parent { get; set; }
-
-        public bool Equals(Folder folder)
-        {
-            return folder != null && this.Name == folder.Name && this.MoRef != null && this.MoRef.Equals(folder.MoRef);
-        }
-
-        public override bool Equals(object folder)
-        {
-            return this.Equals(folder as Folder);
-        }
-
-        public override int GetHashCode()
-        {
-            if (this.MoRef != null)
-            {
-                return (this.Name + "_" + this.MoRef.Type + "_" + this.MoRef.Value).GetHashCode();
-            }
-
-            return this.Name.GetHashCode();
-        }
-    }
-
     public class Datacenter
     {
         public ManagedObjectReference VmFolder { get; set; }
@@ -898,6 +892,212 @@ namespace VMware.Vim
 
         public string[] VnicDevice { get; set; }
     }
+
+    public class OptionValue : System.IEquatable<OptionValue>
+    {
+        public string Key { get; set; }
+
+        public object Value { get; set; }
+
+        public bool Equals(OptionValue optionValue)
+        {
+            if (optionValue == null)
+            {
+                return false;
+            }
+
+            if (this.Key != optionValue.Key)
+            {
+                return false;
+            }
+
+            // The Value property can be of type int or string. So we first check if it's an integer and if it's not we then check if it's a string.
+            if (this.Value is int && optionValue.Value is int)
+            {
+                return (int)this.Value == (int)optionValue.Value;
+            }
+            else if (this.Value is string && optionValue.Value is string)
+            {
+                return (string)this.Value == (string)optionValue.Value;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override bool Equals(object optionValue)
+        {
+            return this.Equals(optionValue as OptionValue);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Key + "_" + this.Value).GetHashCode();
+        }
+    }
+
+    public class ClusterDrsConfigInfo : System.IEquatable<ClusterDrsConfigInfo>
+    {
+        public bool Enabled { get; set; }
+
+        public DrsAutomationLevel DefaultVmBehavior { get; set; }
+
+        public int VmotionRate { get; set; }
+
+        public OptionValue[] Option { get; set; }
+
+        public bool Equals(ClusterDrsConfigInfo clusterDrsConfigInfo)
+        {
+            if (clusterDrsConfigInfo == null)
+            {
+                return false;
+            }
+
+            // First we check all properties except the Option array for equality. If any of them are not equal we return false without comparing the Option arrays.
+            var areEqual = (this.Enabled == clusterDrsConfigInfo.Enabled && this.DefaultVmBehavior == clusterDrsConfigInfo.DefaultVmBehavior && this.VmotionRate == clusterDrsConfigInfo.VmotionRate);
+            if (!areEqual)
+            {
+                return false;
+            }
+
+            // If the Option arrays are both null, we return true because all other properties are equal.
+            if (this.Option == null && clusterDrsConfigInfo.Option == null)
+            {
+                return true;
+            }
+
+            // If the Option arrays are not null and are of equal length, we check if every option from the first array is present in the second array.
+            if (this.Option != null && clusterDrsConfigInfo.Option != null && this.Option.Length == clusterDrsConfigInfo.Option.Length)
+            {
+                foreach (var option in this.Option)
+                {
+                    var containsOption = clusterDrsConfigInfo.Option.Contains(option);
+                    if (!containsOption)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public override bool Equals(object clusterDrsConfigInfo)
+        {
+            return this.Equals(clusterDrsConfigInfo as ClusterDrsConfigInfo);
+        }
+
+        public override int GetHashCode()
+        {
+            var result = new System.Text.StringBuilder();
+            result.Append(this.Enabled + "_" + this.DefaultVmBehavior + "_" + this.VmotionRate);
+
+            foreach (var option in this.Option)
+            {
+                result.Append(option.Key + "_" + option.Value);
+            }
+
+            return result.ToString().GetHashCode();
+        }
+    }
+
+    public class ClusterConfigSpecEx : System.IEquatable<ClusterConfigSpecEx>
+    {
+        public ClusterDrsConfigInfo DrsConfig { get; set; }
+
+        public bool Equals(ClusterConfigSpecEx clusterConfigSpecEx)
+        {
+            return (clusterConfigSpecEx != null && this.DrsConfig.Equals(clusterConfigSpecEx.DrsConfig));
+        }
+
+        public override bool Equals(object clusterConfigSpecEx)
+        {
+            return this.Equals(clusterConfigSpecEx as ClusterConfigSpecEx);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.DrsConfig.GetHashCode();
+        }
+    }
+
+    public class ClusterConfigInfoEx : System.IEquatable<ClusterConfigInfoEx>
+    {
+        public ClusterDrsConfigInfo DrsConfig { get; set; }
+
+        public bool Equals(ClusterConfigInfoEx clusterConfigInfoEx)
+        {
+            return (clusterConfigInfoEx != null && this.DrsConfig.Equals(clusterConfigInfoEx.DrsConfig));
+        }
+
+        public override bool Equals(object clusterConfigInfoEx)
+        {
+            return this.Equals(clusterConfigInfoEx as ClusterConfigInfoEx);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.DrsConfig.GetHashCode();
+        }
+    }
+
+    public class ClusterComputeResource : System.IEquatable<ClusterComputeResource>
+    {
+        public ClusterConfigInfoEx ConfigurationEx { get; set; }
+
+        public bool Equals(ClusterComputeResource clusterComputeResource)
+        {
+            return (clusterComputeResource != null && this.ConfigurationEx.Equals(clusterComputeResource.ConfigurationEx));
+        }
+
+        public override bool Equals(object clusterComputeResource)
+        {
+            return this.Equals(clusterComputeResource as ClusterComputeResource);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.ConfigurationEx.GetHashCode();
+        }
+    }
+
+    public class Folder : System.IEquatable<Folder>
+    {
+        public string Name { get; set; }
+
+        public ManagedObjectReference[] ChildEntity { get; set; }
+
+        public ManagedObjectReference MoRef { get; set; }
+
+        public ManagedObjectReference Parent { get; set; }
+
+        public void CreateClusterEx(string Name, ClusterConfigSpecEx Spec)
+        {
+        }
+
+        public bool Equals(Folder folder)
+        {
+            return folder != null && this.Name == folder.Name && this.MoRef != null && this.MoRef.Equals(folder.MoRef);
+        }
+
+        public override bool Equals(object folder)
+        {
+            return this.Equals(folder as Folder);
+        }
+
+        public override int GetHashCode()
+        {
+            if (this.MoRef != null)
+            {
+                return (this.Name + "_" + this.MoRef.Type + "_" + this.MoRef.Value).GetHashCode();
+            }
+
+            return this.Name.GetHashCode();
+        }
+    }
 }
 
 namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
@@ -949,6 +1149,54 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
         public override int GetHashCode()
         {
             return (this.Id + "_" + this.Name + "_" + this.ParentFolderId).GetHashCode();
+        }
+    }
+
+    public class ClusterImpl : System.IEquatable<ClusterImpl>
+    {
+        public string Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string ParentId { get; set; }
+
+        public bool HAEnabled { get; set; }
+
+        public bool HAAdmissionControlEnabled { get; set; }
+
+        public int HAFailoverLevel { get; set; }
+
+        public VMware.Vim.HAIsolationResponse HAIsolationResponse { get; set; }
+
+        public VMware.Vim.HARestartPriority HARestartPriority { get; set; }
+
+        public VMware.Vim.ClusterComputeResource ExtensionData { get; set; }
+
+        public void ReconfigureComputeResource_Task(VMware.Vim.ClusterConfigSpecEx Spec, bool modify)
+        {
+        }
+
+        public void Destroy()
+        {
+        }
+
+        public bool Equals(ClusterImpl clusterImpl)
+        {
+            return (clusterImpl != null && this.Id == clusterImpl.Id && this.Name == clusterImpl.Name && this.ParentId == clusterImpl.ParentId &&
+                    this.HAEnabled == clusterImpl.HAEnabled && this.HAAdmissionControlEnabled == clusterImpl.HAAdmissionControlEnabled &&
+                    this.HAFailoverLevel == clusterImpl.HAFailoverLevel && this.HAIsolationResponse == clusterImpl.HAIsolationResponse &&
+                    this.HARestartPriority == clusterImpl.HARestartPriority && this.ExtensionData.Equals(clusterImpl.ExtensionData));
+        }
+
+        public override bool Equals(object clusterImpl)
+        {
+            return this.Equals(clusterImpl as ClusterImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Id + "_" + this.Name + "_" + this.ParentId + "_" + this.HAEnabled + "_" + this.HAAdmissionControlEnabled +
+                    "_" + this.HAFailoverLevel + "_" + this.HAIsolationResponse + "_" + this.HARestartPriority).GetHashCode() + this.ExtensionData.GetHashCode();
         }
     }
 }
