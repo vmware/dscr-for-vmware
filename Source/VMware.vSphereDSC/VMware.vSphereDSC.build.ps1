@@ -211,35 +211,13 @@ function Update-ModuleVersion {
         [System.Object[]] $FileContent
     )
 
-    $moduleVersionPattern = '*ModuleVersion*'
-    $moduleVersionLine = $null
-    $lineIndex = 1
+    $moduleVersionPattern = "(?<=ModuleVersion = ')(\d*.\d*.\d*.\d*)"
+    $moduleVersionMatch = $FileContent | Select-String -Pattern $moduleVersionPattern
+    [System.Version] $currentVersion = $moduleVersionMatch.Matches[0].Value
 
-    foreach ($line in $FileContent) {
-        if ($line -Like $moduleVersionPattern) {
-            $moduleVersionLine = $line
-            break
-        }
+    $newVersion = (New-Object -TypeName 'System.Version' $currentVersion.Major, $currentVersion.Minor, $currentVersion.Build, ($currentVersion.Revision + 1)).ToString()
 
-        $lineIndex++
-    }
-
-    $revisionIndex = $null
-    $revisionValue = $null
-
-    for ($i = $moduleVersionLine.Length - 1; $i -ne -1; $i--) {
-        if ($moduleVersionLine[$i] -Match '\d') {
-            $revisionIndex = $i
-            $revisionValue = [int]::Parse($moduleVersionLine[$i])
-            break
-        }
-    }
-
-    $newRevisionValue = $revisionValue + 1
-    $moduleVersionLine = $moduleVersionLine.Remove($revisionIndex, 1)
-    $moduleVersionLine = $moduleVersionLine.Insert($revisionIndex, $newRevisionValue)
-
-    return $FileContent[0..($lineIndex - 2)] + $moduleVersionLine + $FileContent[$lineIndex..($FileContent.Length - 1)]
+    return $FileContent -Replace $moduleVersionPattern, $newVersion
 }
 
 # Add License to psm1 file.
