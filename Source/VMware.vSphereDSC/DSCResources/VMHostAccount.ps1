@@ -157,7 +157,7 @@ class VMHostAccount : BaseDSC {
         $vmHostAccountParams.ErrorAction = 'Stop'
 
         $this.PopulateVMHostAccountParams($vmHostAccountParams, $this.AccountPasswordParameterName, $this.AccountPassword)
-        $this.PopulateVMHostAccountParams($vmHostAccountParams, $this.DesriptionParameterName, $this.Description)
+        $this.PopulateVMHostAccountParams($vmHostAccountParams, $this.DescriptionParameterName, $this.Description)
         $this.PopulateVMHostAccountParams($vmHostAccountParams, $this.GrantShellAccessParameterName, $this.GrantShellAccess)
 
         return $vmHostAccountParams

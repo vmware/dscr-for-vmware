@@ -1100,6 +1100,31 @@ namespace VMware.Vim
     }
 }
 
+namespace VMware.VimAutomation.ViCore.Impl.V1
+{
+    public class VIServerImpl : System.IEquatable<VIServerImpl>
+    {
+        public string Name { get; set; }
+
+        public string User { get; set; }
+
+        public bool Equals(VIServerImpl vIServerImpl)
+        {
+            return (vIServerImpl != null && this.Name == vIServerImpl.Name && this.User == vIServerImpl.User);
+        }
+
+        public override bool Equals(object vIServerImpl)
+        {
+            return this.Equals(vIServerImpl as VIServerImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Name + "_" + this.User).GetHashCode();
+        }
+    }
+}
+
 namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
 {
     public class FolderImpl : System.IEquatable<FolderImpl>
@@ -1197,6 +1222,36 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
         {
             return (this.Id + "_" + this.Name + "_" + this.ParentId + "_" + this.HAEnabled + "_" + this.HAAdmissionControlEnabled +
                     "_" + this.HAFailoverLevel + "_" + this.HAIsolationResponse + "_" + this.HARestartPriority).GetHashCode() + this.ExtensionData.GetHashCode();
+        }
+    }
+}
+
+namespace VMware.VimAutomation.ViCore.Impl.V1.Host.Account
+{
+    public class HostUserAccountImpl : System.IEquatable<HostUserAccountImpl>
+    {
+        public string Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public bool ShellAccessEnabled { get; set; }
+
+        public bool Equals(HostUserAccountImpl hostUserAccountImpl)
+        {
+            return (hostUserAccountImpl != null && this.Id == hostUserAccountImpl.Id && this.Name == hostUserAccountImpl.Name &&
+                    this.Description == hostUserAccountImpl.Description && this.ShellAccessEnabled == hostUserAccountImpl.ShellAccessEnabled);
+        }
+
+        public override bool Equals(object hostUserAccountImpl)
+        {
+            return this.Equals(hostUserAccountImpl as HostUserAccountImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Id + "_" + this.Name + "_" + this.Description + "_" + this.ShellAccessEnabled).GetHashCode();
         }
     }
 }
