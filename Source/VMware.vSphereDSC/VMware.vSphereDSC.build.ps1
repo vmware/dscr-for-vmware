@@ -204,6 +204,22 @@ function Update-ContentOfModuleFile {
     }
 }
 
+function Update-ModuleVersion {
+    [CmdletBinding()]
+    [OutputType([System.Object[]])]
+    param(
+        [System.Object[]] $FileContent
+    )
+
+    $moduleVersionPattern = "(?<=ModuleVersion = ')(\d*.\d*.\d*.\d*)"
+    $moduleVersionMatch = $FileContent | Select-String -Pattern $moduleVersionPattern
+    [System.Version] $currentVersion = $moduleVersionMatch.Matches[0].Value
+
+    $newVersion = (New-Object -TypeName 'System.Version' $currentVersion.Major, $currentVersion.Minor, $currentVersion.Build, ($currentVersion.Revision + 1)).ToString()
+
+    return $FileContent -Replace $moduleVersionPattern, $newVersion
+}
+
 # Add License to psm1 file.
 "<#" | Out-File -FilePath $script:PsmPath -Encoding Default
 $script:LicenseFileContent | ForEach-Object { $_ | Out-File -FilePath $script:PsmPath -Encoding Default -Append }
@@ -246,6 +262,9 @@ if (Test-Path -Path $script:DSCResourcesFolder) {
     $dscResourcesToExport = "DscResourcesToExport = @($resources)"
 
     $psdFileContent = Get-Content -Path $script:PsdPath
+
+    # Updating the module version in the psd1 file.
+    $psdFileContent = Update-ModuleVersion -FileContent $psdFileContent
 
     $range = Get-LinesRange -FileContent $psdFileContent -StartLinePattern '*DscResourcesToExport*' -EndLinePattern ')'
     $startLine = $range.StartLine
