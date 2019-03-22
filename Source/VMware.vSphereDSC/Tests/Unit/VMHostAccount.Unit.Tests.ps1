@@ -498,7 +498,6 @@ try {
 
     Describe 'VMHostAccount\Get' -Tag 'Get' {
         BeforeAll {
-            $script:resourceProperties.AccountPassword = $script:constants.AccountPassword
             $script:resourceProperties.Description = $script:constants.Description
             $script:resourceProperties.GrantShellAccess = $script:constants.GrantShellAccess
 
@@ -506,7 +505,6 @@ try {
         }
 
         AfterAll {
-            $script:resourceProperties.Remove('AccountPassword')
             $script:resourceProperties.Remove('Description')
             $script:resourceProperties.Remove('GrantShellAccess')
         }
@@ -562,7 +560,6 @@ try {
 
                 # Assert
                 $result.Server | Should -Be $script:resourceProperties.Server
-                $result.AccountPassword | Should -Be $script:resourceProperties.AccountPassword
                 $result.Id | Should -Be $script:resourceProperties.Id
                 $result.Ensure | Should -Be 'Absent'
                 $result.Description | Should -Be $script:resourceProperties.Description
@@ -584,7 +581,6 @@ try {
 
                 # Assert
                 $result.Server | Should -Be $script:resourceProperties.Server
-                $result.AccountPassword | Should -Be $script:resourceProperties.AccountPassword
                 $result.Id | Should -Be $script:vmHostAccount.Id
                 $result.Ensure | Should -Be 'Present'
                 $result.Description | Should -Be $script:vmHostAccount.Description
@@ -612,7 +608,6 @@ try {
 
                 # Assert
                 $result.Server | Should -Be $script:resourceProperties.Server
-                $result.AccountPassword | Should -Be $script:resourceProperties.AccountPassword
                 $result.Id | Should -Be $script:resourceProperties.Id
                 $result.Ensure | Should -Be 'Absent'
                 $result.Description | Should -Be $script:resourceProperties.Description
@@ -642,7 +637,6 @@ try {
 
                 # Assert
                 $result.Server | Should -Be $script:resourceProperties.Server
-                $result.AccountPassword | Should -Be $script:resourceProperties.AccountPassword
                 $result.Id | Should -Be $script:vmHostAccount.Id
                 $result.Ensure | Should -Be 'Present'
                 $result.Description | Should -Be $script:vmHostAccount.Description

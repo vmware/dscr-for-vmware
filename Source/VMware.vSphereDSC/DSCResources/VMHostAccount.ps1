@@ -98,7 +98,6 @@ class VMHostAccount : BaseDSC {
     [VMHostAccount] Get() {
         $result = [VMHostAccount]::new()
         $result.Server = $this.Server
-        $result.AccountPassword = $this.AccountPassword
 
         $this.ConnectVIServer()
         $vmHostAccount = $this.GetVMHostAccount()
