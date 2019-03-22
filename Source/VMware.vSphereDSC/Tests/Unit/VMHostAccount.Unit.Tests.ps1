@@ -95,19 +95,18 @@ try {
             Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
         }
 
-        Context 'Invoking with Ensure Present, non existing VMHost Account and only Account Password specified' {
+        Context 'Invoking with Ensure Absent, non existing VMHostAccount and only Account Id specified' {
             BeforeAll {
                 # Arrange
-                $script:resourceProperties.AccountPassword = $script:constants.AccountPassword
+                $script:resourceProperties.Ensure = 'Absent'
 
                 Mock -CommandName Get-VMHostAccount -MockWith { return $null } -ModuleName $script:moduleName
-                Mock -CommandName New-VMHostAccount -MockWith { return $null } -ModuleName $script:moduleName
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
             }
 
             AfterAll {
-                $script:resourceProperties.Remove('AccountPassword')
+                $script:resourceProperties.Ensure = 'Present'
             }
 
             It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
@@ -125,6 +124,22 @@ try {
                 }
 
                 Assert-MockCalled @assertMockCalledParams
+            }
+        }
+
+        Context 'Invoking with Ensure Present, non existing VMHost Account and only Account Password specified' {
+            BeforeAll {
+                # Arrange
+                $script:resourceProperties.AccountPassword = $script:constants.AccountPassword
+
+                Mock -CommandName Get-VMHostAccount -MockWith { return $null } -ModuleName $script:moduleName
+                Mock -CommandName New-VMHostAccount -MockWith { return $null } -ModuleName $script:moduleName
+
+                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+            }
+
+            AfterAll {
+                $script:resourceProperties.Remove('AccountPassword')
             }
 
             It 'Should call the New-VMHostAccount mock with the VIServer, VMHost Account Id and Password once' {
@@ -164,23 +179,6 @@ try {
                 $script:resourceProperties.Remove('GrantShellAccess')
             }
 
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-
             It 'Should call the New-VMHostAccount mock with the VIServer, VMHost Account Id, Password, Description and GrantShellAccess once' {
                 # Act
                 $resource.Set()
@@ -209,23 +207,6 @@ try {
                 Mock -CommandName Set-VMHostAccount -MockWith { return $null } -ModuleName $script:moduleName
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-            }
-
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
             }
 
             It 'Should call the Set-VMHostAccount mock with the VIServer and VMHost Account once' {
@@ -267,23 +248,6 @@ try {
                 $script:resourceProperties.Remove('GrantShellAccess')
             }
 
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-
             It 'Should call the Set-VMHostAccount mock with the VIServer and VMHost Account, Account Password, Description and GrantShellAccess once' {
                 # Act
                 $resource.Set()
@@ -320,23 +284,6 @@ try {
                 $script:resourceProperties.Ensure = 'Present'
             }
 
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-
             It 'Should call the Remove-VMHostAccount mock with the VIServer and VMHost Account once' {
                 # Act
                 $resource.Set()
@@ -370,23 +317,6 @@ try {
                 $script:resourceProperties.Ensure = 'Present'
             }
 
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-
             It 'Should not call the Remove-VMHostAccount mock' {
                 # Act
                 $resource.Set()
@@ -414,12 +344,18 @@ try {
             Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
         }
 
-        Context 'Invoking with Ensure Present and non existing VMHost Account' {
+        Context 'Invoking with Ensure Absent, non existing VMHostAccount and only Account Id specified' {
             BeforeAll {
                 # Arrange
+                $script:resourceProperties.Ensure = 'Absent'
+
                 Mock -CommandName Get-VMHostAccount -MockWith { return $null } -ModuleName $script:moduleName
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+            }
+
+            AfterAll {
+                $script:resourceProperties.Ensure = 'Present'
             }
 
             It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
@@ -437,6 +373,15 @@ try {
                 }
 
                 Assert-MockCalled @assertMockCalledParams
+            }
+        }
+
+        Context 'Invoking with Ensure Present and non existing VMHost Account' {
+            BeforeAll {
+                # Arrange
+                Mock -CommandName Get-VMHostAccount -MockWith { return $null } -ModuleName $script:moduleName
+
+                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
             }
 
             It 'Should return $false' {
@@ -466,23 +411,6 @@ try {
                 $script:resourceProperties.Remove('GrantShellAccess')
             }
 
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Test()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-
             It 'Should return $true' {
                 # Act
                 $result = $resource.Test()
@@ -510,23 +438,6 @@ try {
                 $script:resourceProperties.Remove('GrantShellAccess')
             }
 
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Test()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-
             It 'Should return $false' {
                 # Act
                 $result = $resource.Test()
@@ -548,23 +459,6 @@ try {
 
             AfterAll {
                 $script:resourceProperties.Ensure = 'Present'
-            }
-
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Test()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
             }
 
             It 'Should return $true' {
@@ -590,23 +484,6 @@ try {
 
             AfterAll {
                 $script:resourceProperties.Ensure = 'Present'
-            }
-
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Test()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
             }
 
             It 'Should return $false' {
@@ -641,10 +518,18 @@ try {
             Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
         }
 
-        Context 'Invoking with Ensure Present and non existing VMHost Account' {
+        Context 'Invoking with Ensure Absent, non existing VMHostAccount and only Account Id specified' {
             BeforeAll {
                 # Arrange
+                $script:resourceProperties.Ensure = 'Absent'
+
                 Mock -CommandName Get-VMHostAccount -MockWith { return $null } -ModuleName $script:moduleName
+
+                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+            }
+
+            AfterAll {
+                $script:resourceProperties.Ensure = 'Present'
             }
 
             It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
@@ -662,6 +547,13 @@ try {
                 }
 
                 Assert-MockCalled @assertMockCalledParams
+            }
+        }
+
+        Context 'Invoking with Ensure Present and non existing VMHost Account' {
+            BeforeAll {
+                # Arrange
+                Mock -CommandName Get-VMHostAccount -MockWith { return $null } -ModuleName $script:moduleName
             }
 
             It 'Should retrieve the correct settings from the server' {
@@ -684,23 +576,6 @@ try {
                 $vmHostAccountMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostAccountScriptBlock))
 
                 Mock -CommandName Get-VMHostAccount -MockWith $vmHostAccountMock -ModuleName $script:moduleName
-            }
-
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Get()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
             }
 
             It 'Should retrieve the correct settings from the server' {
@@ -731,23 +606,6 @@ try {
                 $script:resourceProperties.Ensure = 'Present'
             }
 
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Get()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-
             It 'Should retrieve the correct settings from the server' {
                 # Act
                 $result = $resource.Get()
@@ -776,23 +634,6 @@ try {
 
             AfterAll {
                 $script:resourceProperties.Ensure = 'Present'
-            }
-
-            It 'Should call the Get-VMHostAccount mock with the VIServer and VMHost Account Id once' {
-                # Act
-                $resource.Get()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-VMHostAccount'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:resourceProperties.Id }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
             }
 
             It 'Should retrieve the correct settings from the server' {
