@@ -28,9 +28,6 @@ param(
     $Password
 )
 
-$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-$script:vCenterCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
 $script:clusterName = 'MyCluster'
 $script:inventoryPath = [string]::Empty
 $script:datacenter = 'Datacenter'
@@ -48,9 +45,12 @@ Configuration DrsCluster_WithClusterToAdd_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
+        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
         DrsCluster drsCluster {
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $Credential
             Ensure = 'Present'
             InventoryPath = $script:inventoryPath
             Datacenter = $script:datacenter
@@ -69,9 +69,12 @@ Configuration DrsCluster_WithClusterToRemove_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
+        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
         DrsCluster drsCluster {
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $Credential
             Ensure = 'Absent'
             InventoryPath = $script:inventoryPath
             Datacenter = $script:datacenter

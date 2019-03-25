@@ -55,6 +55,9 @@ Configuration DrsCluster_WithClusterToAdd_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
+        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
         DrsCluster drsCluster {
             Server = $Server
             Credential = $Credential
@@ -105,6 +108,9 @@ Configuration DrsCluster_WithClusterToRemove_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
+        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
         DrsCluster drsCluster {
             Server = $Server
             Credential = $Credential

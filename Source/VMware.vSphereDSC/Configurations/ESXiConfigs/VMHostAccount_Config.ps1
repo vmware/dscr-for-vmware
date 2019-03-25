@@ -28,9 +28,6 @@ param(
     $Password
 )
 
-$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-$script:viServerCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
 $script:vmHostAccountId = 'MyVMHostAccount'
 $script:vmHostAccountRole = 'Admin'
 
@@ -47,9 +44,12 @@ Configuration VMHostAccount_WithAccountToAdd_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
+        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
         VMHostAccount vmHostAccount {
             Server = $Server
-            Credential = $script:viServerCredential
+            Credential = $Credential
             Id = $script:vmHostAccountId
             Ensure = 'Present'
             Role = $script:vmHostAccountRole
@@ -63,9 +63,12 @@ Configuration VMHostAccount_WithAccountToRemove_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
+        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
         VMHostAccount vmHostAccount {
             Server = $Server
-            Credential = $script:viServerCredential
+            Credential = $Credential
             Id = $script:vmHostAccountId
             Ensure = 'Absent'
             Role = $script:vmHostAccountRole
