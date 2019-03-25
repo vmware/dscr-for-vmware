@@ -35,6 +35,14 @@ class VMHostAccount : BaseDSC {
     <#
     .DESCRIPTION
 
+    Specifies the Role for the host account.
+    #>
+    [DscProperty(Mandatory)]
+    [string] $Role
+
+    <#
+    .DESCRIPTION
+
     Specifies the Password for the host account.
     #>
     [DscProperty()]
@@ -48,17 +56,8 @@ class VMHostAccount : BaseDSC {
     [DscProperty()]
     [string] $Description
 
-    <#
-    .DESCRIPTION
-
-    Indicates that the account is allowed to access the ESX shell.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $GrantShellAccess
-
     hidden [string] $AccountPasswordParameterName = 'Password'
     hidden [string] $DescriptionParameterName = 'Description'
-    hidden [string] $GrantShellAccessParameterName = 'GrantShellAccess'
 
     [void] Set() {
         $this.ConnectVIServer()
@@ -88,7 +87,7 @@ class VMHostAccount : BaseDSC {
                 return $false
             }
 
-            return !$this.ShouldUpdateVMHostAccount($vmHostAccount)
+            return !$this.ShouldUpdateVMHostAccount($vmHostAccount) -or !$this.ShouldCreateAcountPermission($vmHostAccount)
         }
         else {
             return ($null -eq $vmHostAccount)
@@ -119,17 +118,38 @@ class VMHostAccount : BaseDSC {
     <#
     .DESCRIPTION
 
+    Checks if a new Permission with the passed Role needs to be created for the specified VMHost Account.
+    #>
+    [bool] ShouldCreateAcountPermission($vmHostAccount) {
+        $existingPermission = Get-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -ErrorAction SilentlyContinue | Where-Object { $_.Role -eq $this.Role }
+
+        return ($null -eq $existingPermission)
+    }
+
+    <#
+    .DESCRIPTION
+
     Checks if the VMHost Account should be updated.
     #>
     [bool] ShouldUpdateVMHostAccount($vmHostAccount) {
-        $shouldUpdateVMHostAccount = @()
-        $shouldUpdateVMHostAccount += ($null -ne $this.Description -and $this.Description -ne $vmHostAccount.Description)
-        $shouldUpdateVMHostAccount += ($null -ne $this.GrantShellAccess -and $this.GrantShellAccess -ne $vmHostAccount.ShellAccessEnabled)
+        <#
+        If the Account Password is passed, we should check if we can connect to the ESXi host with the passed Id and Password.
+        If we can connect to the host it means that the password is in the desired state so we should close the connection and
+        continue checking the other passed properties. If we cannot connect to the host it means that
+        the desired Password is not equal to the current Password of the Account.
+        #>
+        if ($null -ne $this.AccountPassword) {
+            $hostConnection = Connect-VIServer -Server $this.Server -User $this.Id -Password $this.AccountPassword -ErrorAction SilentlyContinue
 
-        # If the Account Password is passed to the Configuration, it should be updated.
-        $shouldUpdateVMHostAccount += ($null -ne $this.AccountPassword)
+            if ($null -eq $hostConnection) {
+                return $true
+            }
+            else {
+                Disconnect-VIServer -Server $hostConnection -Confirm:$false
+            }
+        }
 
-        return ($shouldUpdateVMHostAccount -Contains $true)
+        return ($null -ne $this.Description -and $this.Description -ne $vmHostAccount.Description)
     }
 
     <#
@@ -157,9 +177,27 @@ class VMHostAccount : BaseDSC {
 
         $this.PopulateVMHostAccountParams($vmHostAccountParams, $this.AccountPasswordParameterName, $this.AccountPassword)
         $this.PopulateVMHostAccountParams($vmHostAccountParams, $this.DescriptionParameterName, $this.Description)
-        $this.PopulateVMHostAccountParams($vmHostAccountParams, $this.GrantShellAccessParameterName, $this.GrantShellAccess)
 
         return $vmHostAccountParams
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Permission with the passed Role for the specified VMHost Account.
+    #>
+    [void] CreateAccountPermission($vmHostAccount) {
+        $accountRole = Get-VIRole -Server $this.Connection -Name $this.Role -ErrorAction SilentlyContinue
+        if ($null -eq $accountRole) {
+            throw "The passed role $($this.Role) is not present on the server."
+        }
+
+        try {
+            New-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -Role $accountRole -ErrorAction Stop
+        }
+        catch {
+            throw "Cannot assign role $($this.Role) to account $($vmHostAccount.Name). For more information: $($_.Exception.Message)"
+        }
     }
 
     <#
@@ -171,12 +209,16 @@ class VMHostAccount : BaseDSC {
         $vmHostAccountParams = $this.GetVMHostAccountParams()
         $vmHostAccountParams.Id = $this.Id
 
+        $vmHostAccount = $null
+
         try {
-            New-VMHostAccount @vmHostAccountParams
+            $vmHostAccount = New-VMHostAccount @vmHostAccountParams
         }
         catch {
             throw "Cannot create VMHost Account $($this.Id). For more information: $($_.Exception.Message)"
         }
+
+        $this.CreateAccountPermission($vmHostAccount)
     }
 
     <#
@@ -192,6 +234,10 @@ class VMHostAccount : BaseDSC {
         }
         catch {
             throw "Cannot update VMHost Account $($this.Id). For more information: $($_.Exception.Message)"
+        }
+
+        if ($this.ShouldCreateAcountPermission($vmHostAccount)) {
+            $this.CreateAccountPermission($vmHostAccount)
         }
     }
 
@@ -216,16 +262,18 @@ class VMHostAccount : BaseDSC {
     #>
     [void] PopulateResult($vmHostAccount, $result) {
         if ($null -ne $vmHostAccount) {
+            $permission = Get-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -ErrorAction SilentlyContinue | Where-Object { $_.Role -eq $this.Role }
+
             $result.Id = $vmHostAccount.Id
             $result.Ensure = [Ensure]::Present
+            $result.Role = $permission.Role
             $result.Description = $vmHostAccount.Description
-            $result.GrantShellAccess = $vmHostAccount.ShellAccessEnabled
         }
         else {
             $result.Id = $this.Id
             $result.Ensure = [Ensure]::Absent
+            $result.Role = $this.Role
             $result.Description = $this.Description
-            $result.GrantShellAccess = $this.GrantShellAccess
         }
     }
 }
