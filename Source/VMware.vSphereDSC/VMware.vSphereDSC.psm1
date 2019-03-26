@@ -165,7 +165,7 @@ class BaseDSC {
     }
 }
 
-class InventoryBaseDSC : BaseDSC {
+class DatacenterInventoryBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
@@ -186,7 +186,7 @@ class InventoryBaseDSC : BaseDSC {
     Example path for a VM resource: "Discovered Virtual Machines/My Ubuntu VMs".
     #>
     [DscProperty(Key)]
-    [string] $InventoryPath
+    [string] $DatacenterInventoryPath
 
     <#
     .DESCRIPTION
@@ -286,35 +286,35 @@ class InventoryBaseDSC : BaseDSC {
 
     Returns the Location of the Inventory Item we will use from the specified Datacenter.
     #>
-    [PSObject] GetInventoryItemLocationFromPath($foundDatacenter) {
+    [PSObject] GetDatacenterInventoryItemLocationFromPath($foundDatacenter) {
         $validLocation = $null
         $datacenterFolderName = "$($this.DatacenterFolderType)Folder"
         $datacenterFolderAsViewObject = Get-View -Server $this.Connection -Id $foundDatacenter.ExtensionData.$datacenterFolderName
         $datacenterFolder = Get-Inventory -Server $this.Connection -Id $datacenterFolderAsViewObject.MoRef
 
         # Special case where the path does not contain any folders.
-        if ($this.InventoryPath -eq [string]::Empty) {
+        if ($this.DatacenterInventoryPath -eq [string]::Empty) {
             return $datacenterFolder
         }
 
         # Special case where the path is just one folder.
-        if ($this.InventoryPath -NotMatch '/') {
-            $validLocation = Get-Inventory -Server $this.Connection -Name $this.InventoryPath -Location $datacenterFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $datacenterFolder.Id }
+        if ($this.DatacenterInventoryPath -NotMatch '/') {
+            $validLocation = Get-Inventory -Server $this.Connection -Name $this.DatacenterInventoryPath -Location $datacenterFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $datacenterFolder.Id }
 
             if ($null -eq $validLocation) {
-                throw "The provided path $($this.InventoryPath) is not a valid path in the Folder $($datacenterFolder.Name)."
+                throw "The provided path $($this.DatacenterInventoryPath) is not a valid path in the Folder $($datacenterFolder.Name)."
             }
 
             return $validLocation
         }
 
-        $pathItems = $this.InventoryPath -Split '/'
+        $pathItems = $this.DatacenterInventoryPath -Split '/'
 
         # Reverses the path items so that we can start from the bottom and go to the top of the Inventory.
         [array]::Reverse($pathItems)
 
-        $inventoryItemLocationName = $pathItems[0]
-        $locations = Get-Inventory -Server $this.Connection -Name $inventoryItemLocationName -Location $datacenterFolder -ErrorAction SilentlyContinue
+        $datacenterInventoryItemLocationName = $pathItems[0]
+        $locations = Get-Inventory -Server $this.Connection -Name $datacenterInventoryItemLocationName -Location $datacenterFolder -ErrorAction SilentlyContinue
 
         # Removes the Inventory Item Location from the path items array as we already retrieved it.
         $pathItems = $pathItems[1..($pathItems.Length - 1)]
@@ -350,12 +350,12 @@ class InventoryBaseDSC : BaseDSC {
 
     Returns the Inventory Item from the specified Datacenter if it exists, otherwise returns $null.
     #>
-    [PSObject] GetInventoryItem($foundDatacenter, $inventoryItemLocation) {
-        if ($null -eq $inventoryItemLocation) {
-            throw "The provided path $($this.InventoryPath) is not a valid path in the Datacenter $($foundDatacenter.Name)."
+    [PSObject] GetInventoryItem($foundDatacenter, $datacenterInventoryItemLocation) {
+        if ($null -eq $datacenterInventoryItemLocation) {
+            throw "The provided path $($this.DatacenterInventoryPath) is not a valid path in the Datacenter $($foundDatacenter.Name)."
         }
 
-        return Get-Inventory -Server $this.Connection -Name $this.Name -Location $inventoryItemLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $inventoryItemLocation.Id }
+        return Get-Inventory -Server $this.Connection -Name $this.Name -Location $datacenterInventoryItemLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $datacenterInventoryItemLocation.Id }
     }
 }
 
@@ -3032,7 +3032,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 }
 
 [DscResource()]
-class DrsCluster : InventoryBaseDSC {
+class DrsCluster : DatacenterInventoryBaseDSC {
     DrsCluster() {
         $this.DatacenterFolderType = [DatacenterFolderType]::Host
     }
@@ -3099,7 +3099,7 @@ class DrsCluster : InventoryBaseDSC {
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -3121,7 +3121,7 @@ class DrsCluster : InventoryBaseDSC {
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -3139,13 +3139,13 @@ class DrsCluster : InventoryBaseDSC {
     [DrsCluster] Get() {
         $result = [DrsCluster]::new()
         $result.Server = $this.Server
-        $result.InventoryPath = $this.InventoryPath
+        $result.DatacenterInventoryPath = $this.DatacenterInventoryPath
         $result.Datacenter = $this.Datacenter
 
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         $this.PopulateResult($cluster, $result)
@@ -3360,7 +3360,7 @@ class DrsCluster : InventoryBaseDSC {
 }
 
 [DscResource()]
-class HACluster : InventoryBaseDSC {
+class HACluster : DatacenterInventoryBaseDSC {
     HACluster() {
         $this.DatacenterFolderType = [DatacenterFolderType]::Host
     }
@@ -3419,7 +3419,7 @@ class HACluster : InventoryBaseDSC {
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -3441,7 +3441,7 @@ class HACluster : InventoryBaseDSC {
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -3459,13 +3459,13 @@ class HACluster : InventoryBaseDSC {
     [HACluster] Get() {
         $result = [HACluster]::new()
         $result.Server = $this.Server
-        $result.InventoryPath = $this.InventoryPath
+        $result.DatacenterInventoryPath = $this.DatacenterInventoryPath
         $result.Datacenter = $this.Datacenter
 
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         $this.PopulateResult($cluster, $result)
