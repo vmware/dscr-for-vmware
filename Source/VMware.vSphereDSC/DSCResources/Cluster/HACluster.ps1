@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class HACluster : InventoryBaseDSC {
+class HACluster : DatacenterInventoryBaseDSC {
     HACluster() {
         $this.DatacenterFolderType = [DatacenterFolderType]::Host
     }
@@ -74,7 +74,7 @@ class HACluster : InventoryBaseDSC {
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -96,7 +96,7 @@ class HACluster : InventoryBaseDSC {
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -114,13 +114,13 @@ class HACluster : InventoryBaseDSC {
     [HACluster] Get() {
         $result = [HACluster]::new()
         $result.Server = $this.Server
-        $result.InventoryPath = $this.InventoryPath
+        $result.DatacenterInventoryPath = $this.DatacenterInventoryPath
         $result.Datacenter = $this.Datacenter
 
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         $this.PopulateResult($cluster, $result)

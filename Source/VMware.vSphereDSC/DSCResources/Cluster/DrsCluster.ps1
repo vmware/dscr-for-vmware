@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class DrsCluster : InventoryBaseDSC {
+class DrsCluster : DatacenterInventoryBaseDSC {
     DrsCluster() {
         $this.DatacenterFolderType = [DatacenterFolderType]::Host
     }
@@ -82,7 +82,7 @@ class DrsCluster : InventoryBaseDSC {
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -104,7 +104,7 @@ class DrsCluster : InventoryBaseDSC {
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -122,13 +122,13 @@ class DrsCluster : InventoryBaseDSC {
     [DrsCluster] Get() {
         $result = [DrsCluster]::new()
         $result.Server = $this.Server
-        $result.InventoryPath = $this.InventoryPath
+        $result.DatacenterInventoryPath = $this.DatacenterInventoryPath
         $result.Datacenter = $this.Datacenter
 
         $this.ConnectVIServer()
 
         $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetInventoryItemLocationFromPath($foundDatacenter)
+        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
         $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
 
         $this.PopulateResult($cluster, $result)
