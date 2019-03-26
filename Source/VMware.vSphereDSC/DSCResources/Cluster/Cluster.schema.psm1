@@ -27,7 +27,7 @@ Configuration Cluster {
 
         [Parameter(Mandatory = $true)]
         [AllowEmptyString()]
-        [string] $InventoryPath,
+        [string] $DatacenterInventoryPath,
 
         [Parameter(Mandatory = $true)]
         [string] $Datacenter,
@@ -79,7 +79,7 @@ Configuration Cluster {
         Server = $Server
         Credential = $Credential
         Ensure = $Ensure
-        InventoryPath = $InventoryPath
+        DatacenterInventoryPath = $DatacenterInventoryPath
         Datacenter = $Datacenter
         Name = $Name
         HAEnabled = $HAEnabled
@@ -93,7 +93,7 @@ Configuration Cluster {
         Server = $Server
         Credential = $Credential
         Ensure = $Ensure
-        InventoryPath = $InventoryPath
+        DatacenterInventoryPath = $DatacenterInventoryPath
         Datacenter = $Datacenter
         Name = $Name
         DrsEnabled = $DrsEnabled

@@ -32,8 +32,8 @@ $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
 $script:vCenterCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
 $script:clusterName = 'MyCluster'
-$script:inventoryPath = [string]::Empty
-$script:inventoryPathWithCustomFolder = 'MyClusterFolder'
+$script:datacenterInventoryPath = [string]::Empty
+$script:datacenterInventoryPathWithCustomFolder = 'MyClusterFolder'
 $script:datacenter = 'Datacenter'
 
 $script:configurationData = @{
@@ -56,7 +56,7 @@ Configuration DrsCluster_WithClusterToAdd_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            InventoryPath = $script:inventoryPath
+            DatacenterInventoryPath = $script:datacenterInventoryPath
             Datacenter = $script:datacenter
             Name = $script:clusterName
             DrsEnabled = $true
@@ -77,7 +77,7 @@ Configuration DrsCluster_WithClusterToAddInCustomFolder_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            InventoryPath = $script:inventoryPathWithCustomFolder
+            DatacenterInventoryPath = $script:datacenterInventoryPathWithCustomFolder
             Datacenter = $script:datacenter
             Name = $script:clusterName
             DrsEnabled = $true
@@ -98,7 +98,7 @@ Configuration DrsCluster_WithClusterToUpdate_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            InventoryPath = $script:inventoryPath
+            DatacenterInventoryPath = $script:datacenterInventoryPath
             Datacenter = $script:datacenter
             Name = $script:clusterName
             DrsAutomationLevel = 'Manual'
@@ -115,7 +115,7 @@ Configuration DrsCluster_WithClusterToUpdateInCustomFolder_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            InventoryPath = $script:inventoryPathWithCustomFolder
+            DatacenterInventoryPath = $script:datacenterInventoryPathWithCustomFolder
             Datacenter = $script:datacenter
             Name = $script:clusterName
             DrsDistribution = 2
@@ -133,7 +133,7 @@ Configuration DrsCluster_WithClusterToRemove_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Absent'
-            InventoryPath = $script:inventoryPath
+            DatacenterInventoryPath = $script:datacenterInventoryPath
             Datacenter = $script:datacenter
             Name = $script:clusterName
         }
@@ -148,7 +148,7 @@ Configuration DrsCluster_WithClusterToRemoveInCustomFolder_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Absent'
-            InventoryPath = $script:inventoryPathWithCustomFolder
+            DatacenterInventoryPath = $script:datacenterInventoryPathWithCustomFolder
             Datacenter = $script:datacenter
             Name = $script:clusterName
         }

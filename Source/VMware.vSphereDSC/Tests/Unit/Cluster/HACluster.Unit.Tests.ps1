@@ -46,10 +46,10 @@ function Invoke-TestSetup {
         DatacenterPathItemTwo = 'MyDatacenterFolderTwo'
         HostFolderId = 'group-h4'
         HostFolderName = 'HostFolder'
-        InventoryPathItemOneId = 'my-cluster-location-one'
-        InventoryPathItemOne = 'MyClusterFolderOne'
-        InventoryPathItemTwoId = 'my-cluster-location-two'
-        InventoryPathItemTwo = 'MyClusterFolderTwo'
+        DatacenterInventoryPathItemOneId = 'my-cluster-location-one'
+        DatacenterInventoryPathItemOne = 'MyClusterFolderOne'
+        DatacenterInventoryPathItemTwoId = 'my-cluster-location-two'
+        DatacenterInventoryPathItemTwo = 'MyClusterFolderTwo'
         ClusterId = 'my-cluster-id'
         ClusterName = 'MyCluster'
     }
@@ -150,7 +150,7 @@ function Invoke-TestSetup {
             @{
                 Id = [VMware.Vim.ManagedObjectReference] @{
                     Type = '$($script:constants.FolderType)'
-                    Value = '$($script:constants.InventoryPathItemTwoId)'
+                    Value = '$($script:constants.DatacenterInventoryPathItemTwoId)'
                 }
             }
         )
@@ -158,20 +158,20 @@ function Invoke-TestSetup {
 
     $script:locationViewBaseObjectScriptBlock = @'
         return [VMware.Vim.Folder] @{
-            Name = '$($script:constants.InventoryPathItemTwo)'
+            Name = '$($script:constants.DatacenterInventoryPathItemTwo)'
             Parent = [VMware.Vim.ManagedObjectReference] @{
                 Type = '$($script:constants.FolderType)'
-                Value = '$($script:constants.InventoryPathItemOneId)'
+                Value = '$($script:constants.DatacenterInventoryPathItemOneId)'
             }
         }
 '@
 
     $script:locationParentScriptBlock = @'
         return [VMware.Vim.Folder] @{
-            Name = '$($script:constants.InventoryPathItemOne)'
+            Name = '$($script:constants.DatacenterInventoryPathItemOne)'
             Parent = [VMware.Vim.ManagedObjectReference] @{
                 Type = '$($script:constants.FolderType)'
-                Value = '$($script:constants.InventoryPathItemOneId)'
+                Value = '$($script:constants.DatacenterInventoryPathItemOneId)'
             }
         }
 '@
@@ -182,7 +182,7 @@ function Invoke-TestSetup {
             Name = '$($script:constants.ClusterName)'
             ParentId = [VMware.Vim.ManagedObjectReference] @{
                 Type = '$($script:constants.FolderType)'
-                Value = '$($script:constants.InventoryPathItemTwoId)'
+                Value = '$($script:constants.DatacenterInventoryPathItemTwoId)'
             }
             HAEnabled = '$($true)'
             HAAdmissionControlEnabled = '$($true)'
@@ -237,18 +237,18 @@ function Invoke-TestSetup {
 
     $script:location = [VMware.Vim.ManagedObjectReference] @{
         Type = $script:constants.FolderType
-        Value = $script:constants.InventoryPathItemTwoId
+        Value = $script:constants.DatacenterInventoryPathItemTwoId
     }
 
     $script:locationParent = [VMware.Vim.ManagedObjectReference] @{
         Type = $script:constants.FolderType
-        Value = $script:constants.InventoryPathItemOneId
+        Value = $script:constants.DatacenterInventoryPathItemOneId
     }
 
     $script:clusterLocation = @{
         Id = [VMware.Vim.ManagedObjectReference] @{
             Type = $script:constants.FolderType
-            Value = $script:constants.InventoryPathItemTwoId
+            Value = $script:constants.DatacenterInventoryPathItemTwoId
         }
     }
 
@@ -257,7 +257,7 @@ function Invoke-TestSetup {
         Name = $script:constants.ClusterName
         ParentId = [VMware.Vim.ManagedObjectReference] @{
             Type = $script:constants.FolderType
-            Value = $script:constants.InventoryPathItemTwoId
+            Value = $script:constants.DatacenterInventoryPathItemTwoId
         }
         HAEnabled = $true
         HAAdmissionControlEnabled = $true
@@ -285,7 +285,7 @@ try {
         BeforeEach {
             # Arrange
             $script:resourceProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-            $script:resourceProperties.InventoryPath = "$($script:constants.InventoryPathItemOne)/$($script:constants.InventoryPathItemTwo)"
+            $script:resourceProperties.DatacenterInventoryPath = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
 
             $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterWithRootFolderScriptBlock))
             $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
@@ -307,7 +307,7 @@ try {
             Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.InventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
+            Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:location } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
 
@@ -316,7 +316,7 @@ try {
 
         AfterEach {
             $script:resourceProperties.Datacenter = [string]::Empty
-            $script:resourceProperties.InventoryPath = [string]::Empty
+            $script:resourceProperties.DatacenterInventoryPath = [string]::Empty
         }
 
         Context 'Invoking with Ensure Present, non existing Cluster and no HA settings specified' {
@@ -529,7 +529,7 @@ try {
         BeforeEach {
             # Arrange
             $script:resourceProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-            $script:resourceProperties.InventoryPath = "$($script:constants.InventoryPathItemOne)/$($script:constants.InventoryPathItemTwo)"
+            $script:resourceProperties.DatacenterInventoryPath = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
 
             $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterWithRootFolderScriptBlock))
             $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
@@ -551,7 +551,7 @@ try {
             Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.InventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
+            Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:location } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
 
@@ -560,7 +560,7 @@ try {
 
         AfterEach {
             $script:resourceProperties.Datacenter = [string]::Empty
-            $script:resourceProperties.InventoryPath = [string]::Empty
+            $script:resourceProperties.DatacenterInventoryPath = [string]::Empty
         }
 
         Context 'Invoking with Ensure Present and non existing Cluster' {
@@ -692,7 +692,7 @@ try {
         BeforeEach {
             # Arrange
             $script:resourceProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-            $script:resourceProperties.InventoryPath = "$($script:constants.InventoryPathItemOne)/$($script:constants.InventoryPathItemTwo)"
+            $script:resourceProperties.DatacenterInventoryPath = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
             $script:resourceProperties.HAEnabled = $true
             $script:resourceProperties.HAAdmissionControlEnabled = $true
             $script:resourceProperties.HAFailoverLevel = 4
@@ -719,7 +719,7 @@ try {
             Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.InventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
+            Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:location } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
 
@@ -728,7 +728,7 @@ try {
 
         AfterEach {
             $script:resourceProperties.Datacenter = [string]::Empty
-            $script:resourceProperties.InventoryPath = [string]::Empty
+            $script:resourceProperties.DatacenterInventoryPath = [string]::Empty
             $script:resourceProperties.HAEnabled = $null
             $script:resourceProperties.HAAdmissionControlEnabled = $null
             $script:resourceProperties.HAFailoverLevel = $null
@@ -748,7 +748,7 @@ try {
 
                 # Assert
                 $result.Server | Should -Be $script:resourceProperties.Server
-                $result.InventoryPath | Should -Be $script:resourceProperties.InventoryPath
+                $result.DatacenterInventoryPath | Should -Be $script:resourceProperties.DatacenterInventoryPath
                 $result.Datacenter | Should -Be $script:resourceProperties.Datacenter
                 $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Ensure | Should -Be 'Absent'
@@ -774,7 +774,7 @@ try {
 
                 # Assert
                 $result.Server | Should -Be $script:resourceProperties.Server
-                $result.InventoryPath | Should -Be $script:resourceProperties.InventoryPath
+                $result.DatacenterInventoryPath | Should -Be $script:resourceProperties.DatacenterInventoryPath
                 $result.Datacenter | Should -Be $script:resourceProperties.Datacenter
                 $result.Name | Should -Be $script:cluster.Name
                 $result.Ensure | Should -Be 'Present'
@@ -805,7 +805,7 @@ try {
 
                 # Assert
                 $result.Server | Should -Be $script:resourceProperties.Server
-                $result.InventoryPath | Should -Be $script:resourceProperties.InventoryPath
+                $result.DatacenterInventoryPath | Should -Be $script:resourceProperties.DatacenterInventoryPath
                 $result.Datacenter | Should -Be $script:resourceProperties.Datacenter
                 $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Ensure | Should -Be 'Absent'
@@ -837,7 +837,7 @@ try {
 
                 # Assert
                 $result.Server | Should -Be $script:resourceProperties.Server
-                $result.InventoryPath | Should -Be $script:resourceProperties.InventoryPath
+                $result.DatacenterInventoryPath | Should -Be $script:resourceProperties.DatacenterInventoryPath
                 $result.Datacenter | Should -Be $script:resourceProperties.Datacenter
                 $result.Name | Should -Be $script:cluster.Name
                 $result.Ensure | Should -Be 'Present'

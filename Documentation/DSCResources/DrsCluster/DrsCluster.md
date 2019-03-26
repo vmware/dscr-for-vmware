@@ -7,7 +7,7 @@
 | **Server** | Key | string | Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Name** | Key | string | Name of the resource under the Datacenter of 'Datacenter' key property. ||
-| **InventoryPath** | Key | string | Inventory folder path location of the resource with name specified in 'Name' key property in the Datacenter specified in the 'Datacenter' key property. The path consists of 0 or more folders. Empty path means the resource is in the root inventory folder. The Root folders of the Datacenter are not part of the path. Folder names in path are separated by "/". Example path for a VM resource: "Discovered Virtual Machines/My Ubuntu VMs". ||
+| **DatacenterInventoryPath** | Key | string | Inventory folder path location of the resource with name specified in 'Name' key property in the Datacenter specified in the 'Datacenter' key property. The path consists of 0 or more folders. Empty path means the resource is in the root inventory folder. The Root folders of the Datacenter are not part of the path. Folder names in path are separated by "/". Example path for a VM resource: "Discovered Virtual Machines/My Ubuntu VMs". ||
 | **Datacenter** | Key | string | The full path to the Datacenter we will use from the Inventory. Root 'datacenters' folder is not part of the path. Path can't be empty. Last item in the path is the Datacenter Name. If only the Datacenter Name is specified, Datacenter will be searched under the root 'datacenters' folder. The parts of the path are separated with "/". Example path: "MyDatacentersFolder/MyDatacenter". ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the Resource should be Present or Absent. | Present, Absent |
 | **DrsEnabled** | Optional | bool | Indicates that VMware DRS (Distributed Resource Scheduler) is enabled. ||
@@ -59,7 +59,7 @@ Configuration DrsCluster_WithClusterToAdd_Config {
             Server = $Server
             Credential = $Credential
             Ensure = 'Present'
-            InventoryPath = [string]::Empty
+            DatacenterInventoryPath = [string]::Empty
             Datacenter = 'Datacenter'
             Name = 'MyCluster'
             DrsEnabled = $true
@@ -109,7 +109,7 @@ Configuration DrsCluster_WithClusterToRemove_Config {
             Server = $Server
             Credential = $Credential
             Ensure = 'Absent'
-            InventoryPath = [string]::Empty
+            DatacenterInventoryPath = [string]::Empty
             Datacenter = 'Datacenter'
             Name = 'MyCluster'
         }

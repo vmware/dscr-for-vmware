@@ -32,8 +32,8 @@ $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
 $script:vCenterCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
 $script:clusterName = 'MyCluster'
-$script:inventoryPath = [string]::Empty
-$script:inventoryPathWithCustomFolder = 'MyClusterFolder'
+$script:datacenterInventoryPath = [string]::Empty
+$script:datacenterInventoryPathWithCustomFolder = 'MyClusterFolder'
 $script:datacenter = 'Datacenter'
 
 $script:configurationData = @{
@@ -56,7 +56,7 @@ Configuration HACluster_WithClusterToAdd_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            InventoryPath = $script:inventoryPath
+            DatacenterInventoryPath = $script:datacenterInventoryPath
             Datacenter = $script:datacenter
             Name = $script:clusterName
             HAEnabled = $true
@@ -76,7 +76,7 @@ Configuration HACluster_WithClusterToAddInCustomFolder_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            InventoryPath = $script:inventoryPathWithCustomFolder
+            DatacenterInventoryPath = $script:datacenterInventoryPathWithCustomFolder
             Datacenter = $script:datacenter
             Name = $script:clusterName
             HAEnabled = $true
@@ -96,7 +96,7 @@ Configuration HACluster_WithClusterToUpdate_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            InventoryPath = $script:inventoryPath
+            DatacenterInventoryPath = $script:datacenterInventoryPath
             Datacenter = $script:datacenter
             Name = $script:clusterName
             HAAdmissionControlEnabled = $false
@@ -113,7 +113,7 @@ Configuration HACluster_WithClusterToUpdateInCustomFolder_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            InventoryPath = $script:inventoryPathWithCustomFolder
+            DatacenterInventoryPath = $script:datacenterInventoryPathWithCustomFolder
             Datacenter = $script:datacenter
             Name = $script:clusterName
             HAFailoverLevel = 4
@@ -130,7 +130,7 @@ Configuration HACluster_WithClusterToRemove_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Absent'
-            InventoryPath = $script:inventoryPath
+            DatacenterInventoryPath = $script:datacenterInventoryPath
             Datacenter = $script:datacenter
             Name = $script:clusterName
         }
@@ -145,7 +145,7 @@ Configuration HACluster_WithClusterToRemoveInCustomFolder_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Absent'
-            InventoryPath = $script:inventoryPathWithCustomFolder
+            DatacenterInventoryPath = $script:datacenterInventoryPathWithCustomFolder
             Datacenter = $script:datacenter
             Name = $script:clusterName
         }

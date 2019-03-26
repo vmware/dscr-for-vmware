@@ -48,7 +48,7 @@ Configuration Cluster_Config {
             Server = $Server
             Credential = $Credential
             Ensure = 'Present'
-            InventoryPath = [string]::Empty
+            DatacenterInventoryPath = [string]::Empty
             Datacenter = 'Datacenter'
             Name = 'MyCluster'
             HAEnabled = $true
