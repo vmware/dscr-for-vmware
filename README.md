@@ -14,6 +14,8 @@ The **VMware.vSphereDSC** module contains resources which are configuring:
 - **SATP Claim Rules** of VMHosts.
 - **Statistics** and **Advanced Settings** of vCenters.
 
+The Module also contains resources for Creating, Updating and Deleting **Clusters**.
+
 For more information about all available **Resources**, please visit the **wiki** page of the repository: [Wiki](https://github.com/vmware/dscr-for-vmware/wiki).
 
 ## Getting Started
@@ -78,6 +80,8 @@ For more information about the DSC cmdlets please visit the [PSDesiredStateConfi
 
 For a full list of resources in VMware.vSphereDSC and examples on their use, check out
 the [Desired State Configuration Resources for VMware wiki](https://github.com/vmware/dscr-for-vmware/wiki).
+
+Examples with Chef, Puppet and Ansible can be found [here](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Configurations).
 
 ## Branches
 
