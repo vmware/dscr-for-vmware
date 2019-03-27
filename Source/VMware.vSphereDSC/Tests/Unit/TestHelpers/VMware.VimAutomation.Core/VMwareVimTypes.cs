@@ -1108,9 +1108,11 @@ namespace VMware.VimAutomation.ViCore.Impl.V1
 
         public string User { get; set; }
 
+        public string ProductLine { get; set; }
+
         public bool Equals(VIServerImpl vIServerImpl)
         {
-            return (vIServerImpl != null && this.Name == vIServerImpl.Name && this.User == vIServerImpl.User);
+            return (vIServerImpl != null && this.Name == vIServerImpl.Name && this.User == vIServerImpl.User && this.ProductLine == vIServerImpl.ProductLine);
         }
 
         public override bool Equals(object vIServerImpl)
@@ -1120,7 +1122,7 @@ namespace VMware.VimAutomation.ViCore.Impl.V1
 
         public override int GetHashCode()
         {
-            return (this.Name + "_" + this.User).GetHashCode();
+            return (this.Name + "_" + this.User + "_" + this.ProductLine).GetHashCode();
         }
     }
 }

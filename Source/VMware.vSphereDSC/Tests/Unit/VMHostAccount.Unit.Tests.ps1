@@ -42,12 +42,14 @@ function Invoke-TestSetup {
         RoleId = 1
         RoleName = 'Admin'
         RoleDescription = 'role-admin-description'
+        ProductLine = 'embeddedEsx'
     }
 
     $script:viServerScriptBlock = @'
         return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
             Name = '$($script:resourceProperties.Server)'
             User = '$($script:user)'
+            ProductLine = '$($script:constants.ProductLine)'
         }
 '@
 
@@ -99,6 +101,7 @@ function Invoke-TestSetup {
     $script:viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
         Name = $script:resourceProperties.Server
         User = $script:user
+        ProductLine = $script:constants.ProductLine
     }
 
     $script:viServerForESXiHost = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{

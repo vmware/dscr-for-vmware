@@ -8,7 +8,7 @@
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Id** | Mandatory | string | Specifies the ID for the host account. ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the Resource should be Present or Absent. |Present, Absent|
-| **Role** | Mandatory | string | Specifies the Role for the host account. ||
+| **Role** | Mandatory | string | Permission on the VMHost entity is created for the specified User Id with the specified Role. ||
 | **AccountPassword** | Optional | string | Specifies the Password for the host account. ||
 | **Description** | Optional | string | Provides a description for the host account. The maximum length of the text is 255 symbols. ||
 

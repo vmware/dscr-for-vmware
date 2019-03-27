@@ -35,7 +35,7 @@ class VMHostAccount : BaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the Role for the host account.
+    Permission on the VMHost entity is created for the specified User Id with the specified Role.
     #>
     [DscProperty(Mandatory)]
     [string] $Role
@@ -56,11 +56,13 @@ class VMHostAccount : BaseDSC {
     [DscProperty()]
     [string] $Description
 
+    hidden [string] $ESXiProductId = 'embeddedEsx'
     hidden [string] $AccountPasswordParameterName = 'Password'
     hidden [string] $DescriptionParameterName = 'Description'
 
     [void] Set() {
         $this.ConnectVIServer()
+        $this.EnsureConnectionIsESXi()
         $vmHostAccount = $this.GetVMHostAccount()
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -80,6 +82,7 @@ class VMHostAccount : BaseDSC {
 
     [bool] Test() {
         $this.ConnectVIServer()
+        $this.EnsureConnectionIsESXi()
         $vmHostAccount = $this.GetVMHostAccount()
 
         if ($this.Ensure -eq [Ensure]::Present) {
@@ -99,11 +102,23 @@ class VMHostAccount : BaseDSC {
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
+        $this.EnsureConnectionIsESXi()
         $vmHostAccount = $this.GetVMHostAccount()
 
         $this.PopulateResult($vmHostAccount, $result)
 
         return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Connection is directly to an ESXi host and if not, throws an exception.
+    #>
+    [void] EnsureConnectionIsESXi() {
+        if ($this.Connection.ProductLine -ne $this.ESXiProductId) {
+            throw 'The Resource operations are only supported when connection is directly to an ESXi host.'
+        }
     }
 
     <#
@@ -121,7 +136,7 @@ class VMHostAccount : BaseDSC {
     Checks if a new Permission with the passed Role needs to be created for the specified VMHost Account.
     #>
     [bool] ShouldCreateAcountPermission($vmHostAccount) {
-        $existingPermission = Get-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -ErrorAction SilentlyContinue | Where-Object { $_.Role -eq $this.Role }
+        $existingPermission = Get-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -ErrorAction SilentlyContinue
 
         return ($null -eq $existingPermission)
     }
@@ -262,7 +277,7 @@ class VMHostAccount : BaseDSC {
     #>
     [void] PopulateResult($vmHostAccount, $result) {
         if ($null -ne $vmHostAccount) {
-            $permission = Get-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -ErrorAction SilentlyContinue | Where-Object { $_.Role -eq $this.Role }
+            $permission = Get-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -ErrorAction SilentlyContinue
 
             $result.Id = $vmHostAccount.Id
             $result.Ensure = [Ensure]::Present
