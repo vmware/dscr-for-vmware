@@ -20,12 +20,25 @@ Mock types of VMware.Vim assembly for the purpose of unit testing.
 Add-Type -Path "$($env:PSModulePath)/VMware.VimAutomation.Core/VMwareVimTypes.cs"
 
 function Connect-VIServer {
+    [CmdletBinding()]
     param(
         [string] $Server,
+        [string] $User,
+        [string] $Password,
         [PSCredential] $Credential
     )
 
-    return New-Object VMware.Vim.VIServer
+    return $null
+}
+
+function Disconnect-VIServer {
+    [CmdletBinding()]
+    param(
+        [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] $Server,
+        [switch] $Confirm
+    )
+
+    return $null
 }
 
 function Get-VMHost {
@@ -211,4 +224,84 @@ function Remove-Cluster {
         [PSObject] $Server,
         [switch] $Confirm
     )
+}
+
+function Get-VMHostAccount {
+    [CmdletBinding()]
+    param(
+        [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] $Server,
+        [string] $Id
+    )
+
+    return $null
+}
+
+function New-VMHostAccount {
+    [CmdletBinding()]
+    param(
+        [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] $Server,
+        [string] $Id,
+        [string] $Password,
+        [string] $Description,
+        [switch] $Confirm
+    )
+
+    return $null
+}
+
+function Set-VMHostAccount {
+    [CmdletBinding()]
+    param(
+        [Parameter(ValueFromPipeline)] $UserAccount,
+        [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] $Server,
+        [string] $Password,
+        [string] $Description,
+        [switch] $Confirm
+    )
+
+    return $null
+}
+
+function Remove-VMHostAccount {
+    [CmdletBinding()]
+    param(
+        [Parameter(ValueFromPipeline)] $HostAccount,
+        [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] $Server,
+        [switch] $Confirm
+    )
+
+    return $null
+}
+
+function Get-VIRole {
+    [CmdletBinding()]
+    param(
+        [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] $Server,
+        [string] $Name
+    )
+
+    return $null
+}
+
+function Get-VIPermission {
+    [CmdletBinding()]
+    param(
+        [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] $Server,
+        [string] $Entity,
+        [VMware.VimAutomation.ViCore.Impl.V1.Host.Account.HostUserAccountImpl] $Principal
+    )
+
+    return $null
+}
+
+function New-VIPermission {
+    [CmdletBinding()]
+    param(
+        [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] $Server,
+        [string] $Entity,
+        [VMware.VimAutomation.ViCore.Impl.V1.Host.Account.HostUserAccountImpl] $Principal,
+        [VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement.RoleImpl] $Role
+    )
+
+    return $null
 }

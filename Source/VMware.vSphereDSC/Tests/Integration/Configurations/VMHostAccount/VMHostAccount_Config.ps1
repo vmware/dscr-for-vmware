@@ -28,9 +28,10 @@ param(
     $Password
 )
 
-$script:clusterName = 'MyCluster'
-$script:datacenterInventoryPath = [string]::Empty
-$script:datacenter = 'Datacenter'
+$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+$script:viServerCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
+
+$script:vmHostAccountId = 'MyTestVMHostAccount'
 
 $script:configurationData = @{
     AllNodes = @(
@@ -41,46 +42,55 @@ $script:configurationData = @{
     )
 }
 
-Configuration HACluster_WithClusterToAdd_Config {
+$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
+$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
+
+Configuration VMHostAccount_WithAccountToAdd_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-        HACluster haCluster {
+        VMHostAccount vmHostAccount {
             Server = $Server
-            Credential = $Credential
+            Credential = $script:viServerCredential
+            Id = $script:vmHostAccountId
             Ensure = 'Present'
-            DatacenterInventoryPath = $script:datacenterInventoryPath
-            Datacenter = $script:datacenter
-            Name = $script:clusterName
-            HAEnabled = $true
-            HAAdmissionControlEnabled = $true
-            HAFailoverLevel = 3
-            HAIsolationResponse = 'DoNothing'
-            HARestartPriority = 'Low'
+            Role = 'Admin'
+            AccountPassword = 'MyTestAccountPass1!'
+            Description = 'MyTestVMHostAccount Description'
         }
     }
 }
 
-Configuration HACluster_WithClusterToRemove_Config {
+Configuration VMHostAccount_WithAccountToUpdate_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-        HACluster haCluster {
+        VMHostAccount vmHostAccount {
             Server = $Server
-            Credential = $Credential
-            Ensure = 'Absent'
-            DatacenterInventoryPath = $script:datacenterInventoryPath
-            Datacenter = $script:datacenter
-            Name = $script:clusterName
+            Credential = $script:viServerCredential
+            Id = $script:vmHostAccountId
+            Ensure = 'Present'
+            Role = 'ReadOnly'
+            AccountPassword = 'MyTestAccountPass123!'
+            Description = 'MyTestVMHostAccount Description 2'
         }
     }
 }
 
-HACluster_WithClusterToAdd_Config -ConfigurationData $script:configurationData
-HACluster_WithClusterToRemove_Config -ConfigurationData $script:configurationData
+Configuration VMHostAccount_WithAccountToRemove_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostAccount vmHostAccount {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Id = $script:vmHostAccountId
+            Ensure = 'Absent'
+            Role = 'ReadOnly'
+        }
+    }
+}
+
+VMHostAccount_WithAccountToAdd_Config -OutputPath "$integrationTestsFolderPath\VMHostAccount_WithAccountToAdd_Config" -ConfigurationData $script:configurationData
+VMHostAccount_WithAccountToUpdate_Config -OutputPath "$integrationTestsFolderPath\VMHostAccount_WithAccountToUpdate_Config" -ConfigurationData $script:configurationData
+VMHostAccount_WithAccountToRemove_Config -OutputPath "$integrationTestsFolderPath\VMHostAccount_WithAccountToRemove_Config" -ConfigurationData $script:configurationData

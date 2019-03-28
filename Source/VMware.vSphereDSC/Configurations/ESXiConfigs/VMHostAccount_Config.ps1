@@ -28,9 +28,8 @@ param(
     $Password
 )
 
-$script:clusterName = 'MyCluster'
-$script:datacenterInventoryPath = [string]::Empty
-$script:datacenter = 'Datacenter'
+$script:vmHostAccountId = 'MyVMHostAccount'
+$script:vmHostAccountRole = 'Admin'
 
 $script:configurationData = @{
     AllNodes = @(
@@ -41,46 +40,41 @@ $script:configurationData = @{
     )
 }
 
-Configuration HACluster_WithClusterToAdd_Config {
+Configuration VMHostAccount_WithAccountToAdd_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        HACluster haCluster {
+        VMHostAccount vmHostAccount {
             Server = $Server
             Credential = $Credential
+            Id = $script:vmHostAccountId
             Ensure = 'Present'
-            DatacenterInventoryPath = $script:datacenterInventoryPath
-            Datacenter = $script:datacenter
-            Name = $script:clusterName
-            HAEnabled = $true
-            HAAdmissionControlEnabled = $true
-            HAFailoverLevel = 3
-            HAIsolationResponse = 'DoNothing'
-            HARestartPriority = 'Low'
+            Role = $script:vmHostAccountRole
+            AccountPassword = 'MyAccountPass1!'
+            Description = 'MyVMHostAccount Description'
         }
     }
 }
 
-Configuration HACluster_WithClusterToRemove_Config {
+Configuration VMHostAccount_WithAccountToRemove_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-        HACluster haCluster {
+        VMHostAccount vmHostAccount {
             Server = $Server
             Credential = $Credential
+            Id = $script:vmHostAccountId
             Ensure = 'Absent'
-            DatacenterInventoryPath = $script:datacenterInventoryPath
-            Datacenter = $script:datacenter
-            Name = $script:clusterName
+            Role = $script:vmHostAccountRole
         }
     }
 }
 
-HACluster_WithClusterToAdd_Config -ConfigurationData $script:configurationData
-HACluster_WithClusterToRemove_Config -ConfigurationData $script:configurationData
+VMHostAccount_WithAccountToAdd_Config -ConfigurationData $script:configurationData
+VMHostAccount_WithAccountToRemove_Config -ConfigurationData $script:configurationData

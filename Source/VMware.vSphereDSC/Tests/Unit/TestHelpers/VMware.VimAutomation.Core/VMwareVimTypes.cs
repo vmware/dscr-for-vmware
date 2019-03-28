@@ -1100,6 +1100,33 @@ namespace VMware.Vim
     }
 }
 
+namespace VMware.VimAutomation.ViCore.Impl.V1
+{
+    public class VIServerImpl : System.IEquatable<VIServerImpl>
+    {
+        public string Name { get; set; }
+
+        public string User { get; set; }
+
+        public string ProductLine { get; set; }
+
+        public bool Equals(VIServerImpl vIServerImpl)
+        {
+            return (vIServerImpl != null && this.Name == vIServerImpl.Name && this.User == vIServerImpl.User && this.ProductLine == vIServerImpl.ProductLine);
+        }
+
+        public override bool Equals(object vIServerImpl)
+        {
+            return this.Equals(vIServerImpl as VIServerImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Name + "_" + this.User + "_" + this.ProductLine).GetHashCode();
+        }
+    }
+}
+
 namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
 {
     public class FolderImpl : System.IEquatable<FolderImpl>
@@ -1197,6 +1224,84 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Inventory
         {
             return (this.Id + "_" + this.Name + "_" + this.ParentId + "_" + this.HAEnabled + "_" + this.HAAdmissionControlEnabled +
                     "_" + this.HAFailoverLevel + "_" + this.HAIsolationResponse + "_" + this.HARestartPriority).GetHashCode() + this.ExtensionData.GetHashCode();
+        }
+    }
+}
+
+namespace VMware.VimAutomation.ViCore.Impl.V1.Host.Account
+{
+    public class HostUserAccountImpl : System.IEquatable<HostUserAccountImpl>
+    {
+        public string Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public bool Equals(HostUserAccountImpl hostUserAccountImpl)
+        {
+            return (hostUserAccountImpl != null && this.Id == hostUserAccountImpl.Id && this.Name == hostUserAccountImpl.Name &&
+                    this.Description == hostUserAccountImpl.Description);
+        }
+
+        public override bool Equals(object hostUserAccountImpl)
+        {
+            return this.Equals(hostUserAccountImpl as HostUserAccountImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Id + "_" + this.Name + "_" + this.Description).GetHashCode();
+        }
+    }
+}
+
+namespace VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement
+{
+    public class RoleImpl : System.IEquatable<RoleImpl>
+    {
+        public int Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public bool Equals(RoleImpl roleImpl)
+        {
+            return (roleImpl != null && this.Id == roleImpl.Id && this.Name == roleImpl.Name &&
+                    this.Description == roleImpl.Description);
+        }
+
+        public override bool Equals(object roleImpl)
+        {
+            return this.Equals(roleImpl as RoleImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.Id + "_" + this.Name + "_" + this.Description).GetHashCode();
+        }
+    }
+
+    public class PermissionImpl : System.IEquatable<PermissionImpl>
+    {
+        public int RoleId { get; set; }
+
+        public string Role { get; set; }
+
+        public bool Equals(PermissionImpl permissionImpl)
+        {
+            return (permissionImpl != null && this.RoleId == permissionImpl.RoleId && this.Role == permissionImpl.Role);
+        }
+
+        public override bool Equals(object permissionImpl)
+        {
+            return this.Equals(permissionImpl as PermissionImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (this.RoleId + "_" + this.Role).GetHashCode();
         }
     }
 }
