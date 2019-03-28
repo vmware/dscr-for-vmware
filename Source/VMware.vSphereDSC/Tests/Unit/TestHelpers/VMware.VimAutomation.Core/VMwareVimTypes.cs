@@ -18,7 +18,6 @@ namespace VMware.Vim
         Fail,
         Unset
     }
-
     public enum DefaultVIServerMode
     {
         Single,
@@ -734,6 +733,8 @@ namespace VMware.Vim
 
         public HostVirtualSwitchSpec Spec { get; set; }
 
+        public HostVirtualSwitchBridge Bridge { get; set; }
+
         public bool Equals(HostVirtualSwitch hostVirtualSwitch)
         {
             return (hostVirtualSwitch != null && this.Name == hostVirtualSwitch.Name && this.NumPorts == hostVirtualSwitch.NumPorts &&
@@ -757,11 +758,6 @@ namespace VMware.Vim
     public class HostVirtualSwitchBridge
     { }
 
-    public class HostVirtualSwitchAutoBridge : HostVirtualSwitchBridge
-    {
-        public string[] ExcludedNicDevice { get; set; }
-    }
-
     public class HostVirtualSwitchBeaconConfig
     {
         public int Interval { get; set; }
@@ -780,11 +776,6 @@ namespace VMware.Vim
 
         public LinkDiscoveryProtocolConfig LinkDiscoveryProtocolConfig { get; set; }
 
-        public string[] NicDevice { get; set; }
-    }
-
-    public class HostVirtualSwitchSimpleBridge : HostVirtualSwitchBridge
-    {
         public string[] NicDevice { get; set; }
     }
 

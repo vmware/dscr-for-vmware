@@ -35,6 +35,14 @@ class VMHostVss : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
 
+    The number of ports that this virtual switch currently has.
+    #>
+    [DscProperty(NotConfigurable)]
+    [int] $NumPorts
+
+    <#
+    .DESCRIPTION
+
     The number of ports that are available on this virtual switch.
     #>
     [DscProperty(NotConfigurable)]
