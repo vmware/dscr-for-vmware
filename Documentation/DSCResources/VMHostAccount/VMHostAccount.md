@@ -105,9 +105,9 @@ Configuration VMHostAccount_WithAccountToRemove_Config {
         VMHostAccount vmHostAccount {
             Server = $Server
             Credential = $Credential
-            Id = $script:vmHostAccountId
+            Id = 'MyVMHostAccount'
             Ensure = 'Absent'
-            Role = $script:vmHostAccountRole
+            Role = 'Admin'
         }
     }
 }
