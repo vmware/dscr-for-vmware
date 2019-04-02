@@ -50,6 +50,8 @@ function Invoke-TestSetup {
     $script:BeaconIntervalAlt = 1
     $script:LinkDiscoveryProtocolProtocolAlt = "CDP"
     $script:LinkDiscoveryProtocolOperationAlt = "Both"
+    $script:LinkDiscoveryProtocolProtocolUnset = "Unset"
+    $script:LinkDiscoveryProtocolOperationUnset = "Unset"
     $script:netObjectEdit = 'edit'
     $script:viServerCode = @'
         return [VMware.Vim.VIServer] @{
@@ -111,6 +113,31 @@ function Invoke-TestSetup {
                                     LinkDiscoveryProtocolConfig = [VMware.Vim.LinkDiscoveryProtocolConfig] @{
                                         Operation = '$($script:resourceProperties.LinkDiscoveryProtocolOperation)'
                                         Protocol = '$($script:resourceProperties.LinkDiscoveryProtocolProtocol)'
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        )
+'@
+    $script:networkSystemUnsetVssBridgeCode = @'
+        return (
+            [VMware.Vim.HostNetworkSystem] @{
+                NetworkInfo = [VMware.Vim.HostNetworkInfo] @{
+                    vswitch = @(
+                        [VMware.Vim.HostVirtualSwitch]@{
+                            Name = '$($script:resourceProperties.VssName)'
+                            Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
+                                Bridge = [VMware.Vim.HostVirtualSwitchBondBridge] @{
+                                    NicDevice = @($($script:resourceProperties.NicDevice))
+                                    Beacon = [VMware.Vim.HostVirtualSwitchBeaconConfig] @{
+                                        Interval = '$($script:resourceProperties.BeaconInterval)'
+                                    }
+                                    LinkDiscoveryProtocolConfig = [VMware.Vim.LinkDiscoveryProtocolConfig] @{
+                                        Operation = '$($script:resourceProperties.LinkDiscoveryProtocolOperationUnset)'
+                                        Protocol = '$($script:resourceProperties.LinkDiscoveryProtocolProtocolUnset)'
                                     }
                                 }
                             }
@@ -554,7 +581,7 @@ try {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssBridgeCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemUnsetVssBridgeCode))
             }
 
             # Arrange

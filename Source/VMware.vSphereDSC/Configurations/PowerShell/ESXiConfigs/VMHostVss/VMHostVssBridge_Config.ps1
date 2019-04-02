@@ -66,7 +66,7 @@ Configuration VMHostVssBridge_Config {
             BeaconInterval = 1
             LinkDiscoveryProtocolOperation = 'Listen'
             LinkDiscoveryProtocolType = 'CDP'
-            NicDevice = 'vmnic1','vmnic2'
+            NicDevice = @('vmnic1','vmnic2')
             DependsOn = "[VMHostVss]vmHostVssSettings"
         }
     }

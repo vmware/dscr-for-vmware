@@ -28,7 +28,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     .DESCRIPTION
     The beacon configuration to probe for the validity of a link.
     If this is set, beacon probing is configured and will be used.
-    f this is not set, beacon probing is disabled.
+    If this is not set, beacon probing is disabled.
     Determines how often, in seconds, a beacon should be sent.
     #>
     [DscProperty()]
@@ -37,10 +37,10 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
 
-    The link discovery protocol, whether to advertise or listen .
+    The link discovery protocol, whether to advertise or listen.
     #>
     [DscProperty()]
-    [LinkDiscoveryProtocolOperation] $LinkDiscoveryProtocolOperation
+    [LinkDiscoveryProtocolOperation] $LinkDiscoveryProtocolOperation = [LinkDiscoveryProtocolOperation]::Unset
 
     <#
     .DESCRIPTION
@@ -48,7 +48,14 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     The link discovery protocol type.
     #>
     [DscProperty()]
-    [LinkDiscoveryProtocolProtocol] $LinkDiscoveryProtocolProtocol
+    [LinkDiscoveryProtocolProtocol] $LinkDiscoveryProtocolProtocol = [LinkDiscoveryProtocolProtocol]::Unset
+
+    <#
+    .DESCRIPTION
+
+    Hidden property to have the name of the VSS Bridge type for later use.
+    #>
+    hidden [string] $bridgeType = 'HostVirtualSwitchBondBridge'
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
@@ -106,30 +113,27 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
 
-        $typeName = 'VMware.Vim.HostVirtualSwitchBondBridge'
-        try {
-            New-Object -TypeName $typeName
-        }
-        catch {
-            Import-Module -Name 'VMware.Vim'
-        }
         $vssBridgeTest = @()
         if ($null -eq $vss.Spec.Bridge) {
             $vssBridgeTest += $false
         }
         else {
-            $correctType = $vss.Spec.Bridge -is $typeName
+
+            $correctType = $vss.Spec.Bridge.GetType().Name -eq $this.bridgeType
             $vssBridgeTest += $correctType
             if ($correctType) {
                 $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Bridge.NicDevice -DifferenceObject $this.NicDevice
-                $areEqual = $null -eq $comparingResult
-                $vssBridgeTest += $areEqual
+                $vssBridgeTest += ($null -eq $comparingResult)
                 $vssBrdigeTest += ($vss.Spec.Bridge.Beacon.Interval -eq $this.BeaconInterval)
-                $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation -eq $this.LinkDiscoveryProtocolOperation)
-                $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol -eq $this.LinkDiscoveryProtocolProtocol)
+                if ($this.LinkDiscoveryProtocolOperation -ne [LinkDiscoveryProtocolOperation]::Unset) {
+                    $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation.ToString() -eq $this.LinkDiscoveryProtocolOperation.ToString())
+                }
+                if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
+                    $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol.ToString() -eq $this.LinkDiscoveryProtocolProtocol.ToString())
+                }
             }
         }
-        return ($vssBridgeTest -notcontains $false)
+        return ($vssBridgeTest -NotContains $false)
     }
 
     <#
@@ -145,9 +149,9 @@ class VMHostVssBridge : VMHostVssBaseDSC {
             NicDevice = $this.NicDevice
             BeaconInterval = $this.BeaconInterval
         }
-        if ($this.LinkDiscoveryProtocolProtocol -ne '') {
-            $vssBridgeArgs.Add('LinkDiscoveryProtocolProtocol', $this.LinkDiscoveryProtocolProtocol)
-            $vssBridgeArgs.Add('LinkDiscoveryProtocolOperation', $this.LinkDiscoveryProtocolOperation)
+        if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
+            $vssBridgeArgs.Add('LinkDiscoveryProtocolProtocol', $this.LinkDiscoveryProtocolProtocol.ToString())
+            $vssBridgeArgs.Add('LinkDiscoveryProtocolOperation', $this.LinkDiscoveryProtocolOperation.ToSTring())
         }
         $vss = $this.GetVss()
 
@@ -186,8 +190,8 @@ class VMHostVssBridge : VMHostVssBaseDSC {
             $vmHostVSSBridge.BeaconInterval = $currentVss.Spec.Bridge.Beacon.Interval
 
             if ($null -ne $currentVss.Spec.Bridge.linkDiscoveryProtocolConfig) {
-                $vmHostVSSBridge.LinkDiscoveryProtocolOperation = $currentVss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation
-                $vmHostVSSBridge.LinkDiscoveryProtocolProtocol = $currentVss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol
+                $vmHostVSSBridge.LinkDiscoveryProtocolOperation = $currentVss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation.ToString()
+                $vmHostVSSBridge.LinkDiscoveryProtocolProtocol = $currentVss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol.ToString()
             }
         }
         else {

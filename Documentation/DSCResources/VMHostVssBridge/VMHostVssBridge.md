@@ -74,7 +74,7 @@ Configuration VMHostVssBridge_Config {
             Credential = $Credential
             VssName = 'VSS1'
             Ensure = 'Present'
-            NicDevice = 'vmnic1','vmnic2'
+            NicDevice = @('vmnic1','vmnic2')
             BeaconInterval = 1
             LinkDiscoveryProtocolType = [LinkDiscoveryProtocolProtocol]::CDP
             LinkDiscoveryProtocolOperation = [LinkDiscoveryProtocolOperation]::Listen
