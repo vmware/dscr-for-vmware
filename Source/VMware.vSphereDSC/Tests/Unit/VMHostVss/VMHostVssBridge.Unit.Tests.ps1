@@ -22,10 +22,10 @@ function Invoke-TestSetup {
     $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
 
     $script:moduleName = 'VMware.vSphereDSC'
-    $script:resourceName = 'VMHostVssShaping'
+    $script:resourceName = 'VMHostVssBridge'
 
     $user = 'user'
-    $password = 'password' | ConvertTo-SecureString -AsPlainText -Force
+    $password = ConvertTo-SecureString -String 'password' -AsPlainText -Force
     $credential = New-Object System.Management.Automation.PSCredential($user, $password)
 
     $script:Constants = @{
@@ -39,13 +39,19 @@ function Invoke-TestSetup {
         Credential = $credential
         Ensure = 'Present'
         VssName = 'DSCTest'
-        AverageBandwidth = [long]100000
-        BurstSize = [long]100000
-        Enabled = $false
-        PeakBandwidth = [long]100000
+        NicDevice = @()
+        BeaconInterval = 0
+        LinkDiscoveryProtocolProtocol = 'CDP'
+        LinkDiscoveryProtocolOperation = 'Listen'
     }
     $script:resourcePropertiesAbsent = $script:resourceProperties.Clone()
     $script:resourcePropertiesAbsent.Ensure = 'Absent'
+    $script:NicDeviceAlt = "'vmnic1', 'vmnic2'"
+    $script:BeaconIntervalAlt = 1
+    $script:LinkDiscoveryProtocolProtocolAlt = "CDP"
+    $script:LinkDiscoveryProtocolOperationAlt = "Both"
+    $script:LinkDiscoveryProtocolProtocolUnset = "Unset"
+    $script:LinkDiscoveryProtocolOperationUnset = "Unset"
     $script:netObjectEdit = 'edit'
     $script:viServerCode = @'
         return [VMware.Vim.VIServer] @{
@@ -75,7 +81,7 @@ function Invoke-TestSetup {
             }
         )
 '@
-    $script:networkSystemDiffVssShapingCode = @'
+    $script:networkSystemNoVssBridgeCode = @'
         return (
             [VMware.Vim.HostNetworkSystem] @{
                 NetworkInfo = [VMware.Vim.HostNetworkInfo] @{
@@ -83,12 +89,30 @@ function Invoke-TestSetup {
                         [VMware.Vim.HostVirtualSwitch]@{
                             Name = '$($script:resourceProperties.VssName)'
                             Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
-                                Policy = [VMware.Vim.HostNetworkPolicy] @{
-                                    ShapingPolicy = [VMware.Vim.HostNetworkTrafficShapingPolicy] @{
-                                        AverageBandwidth = $($script:resourceProperties.AverageBandwidth + 1)
-                                        BurstSize = $($script:resourceProperties.BurstSize + 1)
-                                        Enabled = `$$(-not $script:resourceProperties.Enabled)
-                                        PeakBandwidth = $($script:resourceProperties.PeakBandwidth + 1)
+                                Bridge = @{}
+                            }
+                        }
+                    )
+                }
+            }
+        )
+'@
+    $script:networkSystemSameVssBridgeCode = @'
+        return (
+            [VMware.Vim.HostNetworkSystem] @{
+                NetworkInfo = [VMware.Vim.HostNetworkInfo] @{
+                    vswitch = @(
+                        [VMware.Vim.HostVirtualSwitch]@{
+                            Name = '$($script:resourceProperties.VssName)'
+                            Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
+                                Bridge = [VMware.Vim.HostVirtualSwitchBondBridge] @{
+                                    NicDevice = @($($script:resourceProperties.NicDevice))
+                                    Beacon = [VMware.Vim.HostVirtualSwitchBeaconConfig] @{
+                                        Interval = '$($script:resourceProperties.BeaconInterval)'
+                                    }
+                                    LinkDiscoveryProtocolConfig = [VMware.Vim.LinkDiscoveryProtocolConfig] @{
+                                        Operation = '$($script:resourceProperties.LinkDiscoveryProtocolOperation)'
+                                        Protocol = '$($script:resourceProperties.LinkDiscoveryProtocolProtocol)'
                                     }
                                 }
                             }
@@ -98,7 +122,7 @@ function Invoke-TestSetup {
             }
         )
 '@
-    $script:networkSystemSameVssShapingCode = @'
+    $script:networkSystemUnsetVssBridgeCode = @'
         return (
             [VMware.Vim.HostNetworkSystem] @{
                 NetworkInfo = [VMware.Vim.HostNetworkInfo] @{
@@ -106,12 +130,39 @@ function Invoke-TestSetup {
                         [VMware.Vim.HostVirtualSwitch]@{
                             Name = '$($script:resourceProperties.VssName)'
                             Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
-                                Policy = [VMware.Vim.HostNetworkPolicy] @{
-                                    ShapingPolicy = [VMware.Vim.HostNetworkTrafficShapingPolicy] @{
-                                        AverageBandwidth = $($script:resourceProperties.AverageBandwidth)
-                                        BurstSize = $($script:resourceProperties.BurstSize)
-                                        Enabled = `$$($script:resourceProperties.Enabled)
-                                        PeakBandwidth = $($script:resourceProperties.PeakBandwidth)
+                                Bridge = [VMware.Vim.HostVirtualSwitchBondBridge] @{
+                                    NicDevice = @($($script:resourceProperties.NicDevice))
+                                    Beacon = [VMware.Vim.HostVirtualSwitchBeaconConfig] @{
+                                        Interval = '$($script:resourceProperties.BeaconInterval)'
+                                    }
+                                    LinkDiscoveryProtocolConfig = [VMware.Vim.LinkDiscoveryProtocolConfig] @{
+                                        Operation = '$($script:resourceProperties.LinkDiscoveryProtocolOperationUnset)'
+                                        Protocol = '$($script:resourceProperties.LinkDiscoveryProtocolProtocolUnset)'
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        )
+'@
+    $script:networkSystemDiffVssBridgeCode = @'
+        return (
+            [VMware.Vim.HostNetworkSystem] @{
+                NetworkInfo = [VMware.Vim.HostNetworkInfo] @{
+                    vswitch = @(
+                        [VMware.Vim.HostVirtualSwitch]@{
+                            Name = '$($script:resourceProperties.VssName)'
+                            Spec = [VMware.Vim.HostVirtualSwitchSpec] @{
+                                Bridge = [VMware.Vim.HostVirtualSwitchBondBridge] @{
+                                    NicDevice = @($($script:NicDeviceAlt))
+                                    Beacon = [VMware.Vim.HostVirtualSwitchBeaconConfig] @{
+                                        Interval = '$($script:BeaconIntervalAlt)'
+                                    }
+                                    LinkDiscoveryProtocolConfig = [VMware.Vim.LinkDiscoveryProtocolConfig] @{
+                                        Operation = '$($script:LinkDiscoveryProtocolOperationAlt)'
+                                        Protocol = '$($script:LinkDiscoveryProtocolProtocolAlt)'
                                     }
                                 }
                             }
@@ -155,12 +206,12 @@ try {
     # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
     Invoke-TestSetup
 
-    Describe 'VMHostVssShaping\Set'  -Tag 'Set' {
-        Context 'Present and default Shaping properties' {
+    Describe 'VMHostVssBridge\Set'  -Tag 'Set' {
+        Context 'Present and no Bridge settings' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssShapingCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemNoVssBridgeCode))
                 $updateNetworkMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:updateNetworkCode))
             }
 
@@ -227,7 +278,7 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Update-Network'
-                    ParameterFilter = { $VssShapingConfig -ne $null -and $VssShapingConfig.Operation -eq $script:netObjectEdit.Operation }
+                    ParameterFilter = { $VssBridgeConfig -ne $null -and $VssBridgeConfig.Operation -eq $script:netObjectEdit.Operation }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 0
@@ -237,11 +288,44 @@ try {
             }
         }
 
-        Context 'Present and different shaping properties' {
+        Context 'Present and same Bridge settings' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssShapingCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssBridgeCode))
+                $updateNetworkMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:updateNetworkCode))
+            }
+
+            # Arrange
+            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+            Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
+            Mock -CommandName Update-Network -MockWith $updateNetworkMock -ModuleName $script:moduleName
+
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should not call Update-Network' {
+                # Act
+                $result = $resource.Set()
+
+                # Assert
+                $assertMockCalledParams = @{
+                    CommandName = 'Update-Network'
+                    ParameterFilter = { $null -ne $VssBridgeConfig -and $VssBridgeConfig.Operation -eq $script:netObjectEdit }
+                    ModuleName = $script:moduleName
+                    Exactly = $true
+                    Times = 0
+                    Scope = 'It'
+                }
+                Assert-MockCalled @assertMockCalledParams
+            }
+        }
+
+        Context 'Present and different Bridge settings' {
+            BeforeAll {
+                $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
+                $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssBridgeCode))
                 $updateNetworkMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:updateNetworkCode))
             }
 
@@ -260,7 +344,7 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Update-Network'
-                    ParameterFilter = { $null -ne $VssShapingConfig -and $VssShapingConfig.Operation -eq $script:netObjectEdit }
+                    ParameterFilter = { $null -ne $VssBridgeConfig -and $VssBridgeConfig.Operation -eq $script:netObjectEdit }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -270,11 +354,11 @@ try {
             }
         }
 
-        Context 'Absent and VSS exists' {
+        Context 'Absent and Bridge settings' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssShapingCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssBridgeCode))
                 $updateNetworkMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:updateNetworkCode))
             }
 
@@ -286,14 +370,14 @@ try {
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourcePropertiesAbsent
 
-            It 'Should call Update-Network once  with VssShapingConfig and operation Edit' {
+            It 'Should call Update-Network once with VssBridgeConfig and operation Edit' {
                 # Act
                 $result = $resource.Set()
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Update-Network'
-                    ParameterFilter = { $null -ne $VssShapingConfig -and $VssShapingConfig.Operation -eq $script:netObjectEdit }
+                    ParameterFilter = { $null -ne $VssBridgeConfig -and $VssBridgeConfig.Operation -eq $script:netObjectEdit }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -304,7 +388,7 @@ try {
         }
     }
 
-    Describe 'VMHostVssShaping\Test' -Tag 'Test' {
+    Describe 'VMHostVssBridge\Test' -Tag 'Test' {
         Context 'Present and VSS does not exist' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
@@ -376,34 +460,11 @@ try {
             }
         }
 
-        Context 'Present, VSS exists and shaping with different properties' {
+        Context 'Present, VSS exists and Bridge with the same properties' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssShapingCode))
-            }
-
-            # Arrange
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
-
-            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-            It 'Should return $false (The desired VSS is not configured correctly)' {
-                # Act
-                $result = $resource.Test()
-
-                # Assert
-                $result | Should -Be $false
-            }
-        }
-
-        Context 'Present, VSS exists and shaping with the same properties' {
-            BeforeAll {
-                $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
-                $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssShapingCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssBridgeCode))
             }
 
             # Arrange
@@ -419,6 +480,29 @@ try {
 
                 # Assert
                 $result | Should -Be $true
+            }
+        }
+
+        Context 'Present, VSS exists and Bridge with different properties' {
+            BeforeAll {
+                $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
+                $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssBridgeCode))
+            }
+
+            # Arrange
+            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+            Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $networkSystemMock -ModuleName $script:moduleName
+
+            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
+
+            It 'Should return $false (The desired VSS is not configured correctly)' {
+                # Act
+                $result = $resource.Test()
+
+                # Assert
+                $result | Should -Be $false
             }
         }
 
@@ -493,11 +577,11 @@ try {
             }
         }
 
-        Context 'Absent, VSS exists and not default shaping properties' {
+        Context 'Absent, VSS exists and Bridge with the default properties' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssShapingCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemUnsetVssBridgeCode))
             }
 
             # Arrange
@@ -507,7 +591,7 @@ try {
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourcePropertiesAbsent
 
-            It 'Should return $false (The VSS exists)' {
+            It 'Should return $false (The VSS exists and Bridge has the default properties)' {
                 # Act
                 $result = $resource.Test()
 
@@ -516,11 +600,11 @@ try {
             }
         }
 
-        Context 'Absent, VSS exists and default shaping properties' {
+        Context 'Absent, VSS exists and Bridge with non-default properties' {
             BeforeAll {
                 $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
                 $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssShapingCode))
+                $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemDiffVssBridgeCode))
             }
 
             # Arrange
@@ -530,21 +614,21 @@ try {
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourcePropertiesAbsent
 
-            It 'Should return $true (The VSS exists, but Shaping settings are defaults)' {
+            It 'Should return $false (The VSS exists, and Bridge does not have the default properties)' {
                 # Act
                 $result = $resource.Test()
 
                 # Assert
-                $result | Should -Be $true
+                $result | Should -Be $false
             }
         }
     }
 
-    Describe 'VMHostVssShaping\Get' -Tag 'Get' {
+    Describe 'VMHostVssBridge\Get' -Tag 'Get' {
         BeforeAll {
             $viserverMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerCode))
             $vmHostMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostCode))
-            $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssShapingCode))
+            $networkSystemMock = [scriptblock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:networkSystemSameVssBridgeCode))
         }
 
         # Arrange
@@ -611,10 +695,10 @@ try {
             $result.Name | Should -Be $script:resourceProperties.Name
             $result.Ensure | Should -Be $script:resourceProperties.Ensure
             $result.VssName | Should -Be $script:resourceProperties.VssName
-            $result.AverageBandwidth | Should -Be $script:resourceProperties.AverageBandwidth
-            $result.BurstSize | Should -Be $script:resourceProperties.BurstSize
-            $result.Enabled | Should -Be $script:resourceProperties.Enabled
-            $result.PeakBandwidth | Should -Be $script:resourceProperties.PeakBandwidth
+            $result.NicDevice | Should -Be $script:resourceProperties.NicDevice
+            $result.BeaconInterval | Should -Be $script:resourceProperties.BeaconInterval
+            $result.LinkDiscoveryProtocolProtocol | Should -Be $script:resourceProperties.LinkDiscoveryProtocolProtocol
+            $result.LinkDiscoveryProtocolOperation | Should -Be $script:resourceProperties.LinkDiscoveryProtocolOperation
         }
     }
 }
