@@ -293,16 +293,16 @@ function Invoke-TestSetup {
             VmotionRate = $script:constants.DrsMigrationThreshold
             Option = @(
                 [VMware.Vim.OptionValue] @{
+                    Key = 'LimitVMsPerESXHostPercent'
+                    Value = ($script:constants.DrsDistribution).ToString()
+                },
+                [VMware.Vim.OptionValue] @{
                     Key = 'PercentIdleMBInMemDemand'
                     Value = ($script:constants.MemoryLoadBalancing).ToString()
                 },
                 [VMware.Vim.OptionValue] @{
                     Key = 'MaxVcpusPerClusterPct'
                     Value = ($script:constants.CPUOverCommitment).ToString()
-                },
-                [VMware.Vim.OptionValue] @{
-                    Key = 'LimitVMsPerESXHostPercent'
-                    Value = ($script:constants.DrsDistribution).ToString()
                 }
             )
         }
