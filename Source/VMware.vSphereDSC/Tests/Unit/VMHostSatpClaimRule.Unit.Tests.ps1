@@ -66,14 +66,14 @@ try {
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhostObject = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhostObject = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -167,10 +167,10 @@ try {
                 $esxcliObject | Add-Member -MemberType NoteProperty -Name 'id' -Value 'esxCli Id'
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{}
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -265,10 +265,10 @@ try {
                 $esxcliObject | Add-Member -MemberType NoteProperty -Name 'id' -Value 'esxCli Id'
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{}
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -367,10 +367,10 @@ try {
                 $script:resourceProperties.Ensure = 'Absent'
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{}
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -469,10 +469,10 @@ try {
                 $script:resourceProperties.Ensure = 'Absent'
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{}
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -564,14 +564,14 @@ try {
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhostObject = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhostObject = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -641,10 +641,10 @@ try {
             BeforeAll {
                 # Arrange
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{}
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -692,10 +692,10 @@ try {
             BeforeAll {
                 # Arrange
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{}
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -747,10 +747,10 @@ try {
                 $script:resourceProperties.Ensure = 'Absent'
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{}
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -802,10 +802,10 @@ try {
                 $script:resourceProperties.Ensure = 'Absent'
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{}
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -858,14 +858,14 @@ try {
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhostObject = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhostObject = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -935,10 +935,10 @@ try {
             BeforeAll {
                 # Arrange
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Name = '10.23.82.112' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112' }
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject
@@ -1004,10 +1004,10 @@ try {
             BeforeAll {
                 # Arrange
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Name = '10.23.82.112' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112' }
                 }
                 $esxCliMock = {
                     $esxcli = New-Object PSObject

@@ -48,15 +48,15 @@ function Invoke-TestSetup {
     $script:resourcePropertiesAbsent.Ensure = 'Absent'
     $script:netObjectEdit = 'edit'
     $script:viServerCode = @'
-        return [VMware.Vim.VIServer] @{
+        return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
             Name = '$($script:resourceProperties.Server)'
             User = '$($script:Constants.VIServerUser)'
         }
 '@
     $script:vmHostCode = @'
-        return [VMware.Vim.VMHost] @{
+        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
             Name = '$($script:resourceProperties.Name)'
-            ExtensionData = [VMware.Vim.HostExtensionData] @{
+            ExtensionData = [VMware.Vim.HostSystem] @{
                 ConfigManager = [VMware.Vim.HostConfigManager] @{
                     NetworkSystem = [VMware.Vim.ManagedObjectReference] @{
                         Type = '$($script:Constants.NetworkSystemMoRefType)'
@@ -136,7 +136,7 @@ function Invoke-TestSetup {
 
     Import-Module -Name VMware.VimAutomation.Core
 
-    $script:viServer = [VMware.Vim.VIServer] @{
+    $script:viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
         Name = $script:resourceProperties.Server
         User = $script:Constants.VIServerUser
     }

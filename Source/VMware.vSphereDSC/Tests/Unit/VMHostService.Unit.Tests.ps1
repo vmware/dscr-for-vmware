@@ -32,7 +32,7 @@ $script:resourceProperties = @{
     Server = '10.23.82.112'
     Credential = $credential
     Key = 'TSM-SSH'
-    Policy = [ServicePolicy]::Unset
+    Policy = 'Unset'
     Running = $false
     Label = 'SSH'
     Required = $false
@@ -61,25 +61,25 @@ try {
     Describe 'VMHostService\Set' -Tag 'Set' {
         AfterEach {
             $script:resourceProperties.Key = [string]::Empty
-            $script:resourceProperties.Policy = [ServicePolicy]::Unset
+            $script:resourceProperties.Policy = 'Unset'
             $script:resourceProperties.Running = $false
         }
 
         Context 'Invoking with empty settings' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
-                $vmHostService = [VMware.Vim.VMHostService] @{ Key = 'TSM-SSH'}
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $vmHostService = [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{ Key = 'TSM-SSH'}
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $vmHostService = {
-                    return [VMware.Vim.VMHostService] @{ Key = 'TSM-SSH'; Policy = [ServicePolicy]::Off; Running = $false }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{ Key = 'TSM-SSH'; Policy = 'Off'; Running = $false }
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -116,7 +116,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $vmhost } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -125,19 +125,19 @@ try {
             BeforeAll {
                 # Arrange
                 $script:resourceProperties.Key = 'TSM-SSH'
-                $script:resourceProperties.Policy = [ServicePolicy]::On
+                $script:resourceProperties.Policy = 'On'
                 $script:resourceProperties.Running = $true
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
 
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 $getServiceSettingsMock = {
-                    return [VMware.Vim.VMHostService] @{Key = 'TSM-SSH'; Policy = [VMware.Vim.ServicePolicy]::Off; Running = $false}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{Key = 'TSM-SSH'; Policy = 'Off'; Running = $false}
                 }
 
                 $setServiceSettingMock = {
@@ -169,19 +169,19 @@ try {
             BeforeAll {
                 # Arrange
                 $script:resourceProperties.Key = 'TSM-SSH'
-                $script:resourceProperties.Policy = [ServicePolicy]::On
+                $script:resourceProperties.Policy = 'On'
                 $script:resourceProperties.Running = $true
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
 
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 $getServiceSettingsMock = {
-                    return [VMware.Vim.VMHostService] @{Key = 'TSM-SSH'; Policy = [ServicePolicy]::On; Running = $false}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{Key = 'TSM-SSH'; Policy = 'On'; Running = $false}
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -208,19 +208,19 @@ try {
             BeforeAll {
                 # Arrange
                 $script:resourceProperties.Key = 'TSM-SSH'
-                $script:resourceProperties.Policy = [ServicePolicy]::On
+                $script:resourceProperties.Policy = 'On'
                 $script:resourceProperties.Running = $false
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
 
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 $getServiceSettingsMock = {
-                    return [VMware.Vim.VMHostService] @{Key = 'TSM-SSH'; Policy = [ServicePolicy]::On; Running = $true}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{Key = 'TSM-SSH'; Policy = 'On'; Running = $true}
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -247,19 +247,19 @@ try {
             BeforeAll {
                 # Arrange
                 $script:resourceProperties.Key = 'TSM-SSH'
-                $script:resourceProperties.Policy = [ServicePolicy]::On
+                $script:resourceProperties.Policy = 'On'
                 $script:resourceProperties.Running = $false
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
 
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 $serviceSettingsMock = {
-                    return [VMware.Vim.VMHostService] @{Key = 'TSM-SSH'; Policy = [ServicePolicy]::On; Running = $false}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{Key = 'TSM-SSH'; Policy = 'On'; Running = $false}
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -296,25 +296,25 @@ try {
     Describe 'VMHostService\Test' -Tag 'Test' {
         AfterEach {
             $script:resourceProperties.Key = [string]::Empty
-            $script:resourceProperties.Policy = [ServicePolicy]::Unset
+            $script:resourceProperties.Policy = 'Unset'
             $script:resourceProperties.Running = [bool]::FalseString
         }
 
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
-                $vmHostService = [VMware.Vim.VMHostService] @{ Key = 'TSM-SSH'}
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $vmHostService = [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{ Key = 'TSM-SSH'}
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user'}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user'}
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId'}
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId'}
                 }
                 $serviceSettingsMock = {
-                    return [VMware.Vim.VMHostService] @{Key = 'TSM-SSH'; Policy = [ServicePolicy]::On; Running = $false }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{Key = 'TSM-SSH'; Policy = 'On'; Running = $false }
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -351,7 +351,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $vmhost } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -360,22 +360,22 @@ try {
             BeforeAll {
                 # Arrange
                 $script:resourceProperties.Key = 'TSM-SSH'
-                $script:resourceProperties.Policy = [ServicePolicy]::Automatic
+                $script:resourceProperties.Policy = 'Automatic'
                 $script:resourceProperties.Running = [bool]::TrueString
 
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 $serviceSettingsMock = {
-                    return [VMware.Vim.VMHostService] @{
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{
                         Key = 'TSM-SSH'
-                        Policy = [ServicePolicy]::On
+                        Policy = 'On'
                         Running = $true
                     }
                 }
@@ -415,7 +415,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $vmhost } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -424,19 +424,19 @@ try {
             BeforeAll {
                 # Arrange
                 $script:resourceProperties.Key = 'TSM-SSH'
-                $script:resourceProperties.Policy = [ServicePolicy]::On
+                $script:resourceProperties.Policy = 'On'
                 $script:resourceProperties.Running = $true
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $vmhostServiceMock = {
-                    return [VMware.Vim.VMHostService] @{
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{
                         Key = 'TSM-SSH'
-                        Policy = [ServicePolicy]::Unset
+                        Policy = 'Unset'
                         Running = $false
                     }
                 }
@@ -475,7 +475,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $vmhost } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -488,7 +488,7 @@ try {
     Describe 'VMHostService\Get' -Tag 'Get' {
         AfterAll {
             $script:resourceProperties.Key = [string]::Empty
-            $script:resourceProperties.Policy = [ServicePolicy]::Unset
+            $script:resourceProperties.Policy = 'Unset'
             $script:resourceProperties.Running = [bool]::FalseString
         }
 
@@ -497,17 +497,17 @@ try {
                 # Arrange
                 $script:resourceProperties.Key = 'TSM-SSH'
 
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
                 }
                 $vmhostServiceMock = {
-                    return [VMware.Vim.VMHostService] @{
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{
                         Key = 'TSM-SSH'
                         Label = 'SSH'
                         Policy = 'Automatic'
@@ -551,7 +551,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $vmhost } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -567,7 +567,7 @@ try {
                 $result.Running | Should -Be $script:resourceProperties.Running.ToString()
                 $result.Label | Should -Be $script:resourceProperties.Label
                 $result.Required | Should -Be $script:resourceProperties.Required.ToString()
-                $result.Ruleset | Should -Be ($script:resourceProperties.RuleSet -join ' ')
+                ($result.Ruleset | ConvertTo-Json) | Should -Be ($script:resourceProperties.RuleSet | ConvertTo-Json)
             }
         }
     }

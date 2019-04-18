@@ -63,14 +63,14 @@ try {
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -121,24 +121,24 @@ try {
                 $script:resourceProperties.ShareForceSalting = 51
 
                 $advancedSettings = @(
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
                 )
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
                     )
                 }
 
@@ -180,24 +180,24 @@ try {
                 $script:resourceProperties.ShareForceSalting = 50
 
                 $advancedSettings = @(
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
                 )
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
                     )
                 }
 
@@ -242,14 +242,14 @@ try {
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -300,17 +300,17 @@ try {
                 $script:resourceProperties.ShareForceSalting = 51
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
                     )
                 }
 
@@ -340,17 +340,17 @@ try {
                 $script:resourceProperties.ShareForceSalting = 50
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
                     )
                 }
 
@@ -383,27 +383,27 @@ try {
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
                 $advancedSettings = @(
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
                 )
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
                 }
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanTime'; Value = 20 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareScanGHz'; Value = 30 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareRateMax'; Value = 40 }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Mem.ShareForceSalting'; Value = 50 }
                     )
                 }
 

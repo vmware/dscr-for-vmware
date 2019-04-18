@@ -61,10 +61,10 @@ function Invoke-TestSetup {
     }
 
     $script:vCenterWithRootFolderScriptBlock = @'
-        return [VMware.Vim.VCenter] @{
+        return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
             Name = '$($script:resourceProperties.Server)'
             User = '$($script:user)'
-            ExtensionData = [VMware.Vim.VCenterExtensionData] @{
+            ExtensionData = [VMware.Vim.ServiceInstance] @{
                 Content = [VMware.Vim.ServiceContent] @{
                     RootFolder = [VMware.Vim.ManagedObjectReference] @{
                         Type = '$($script:constants.FolderType)'
@@ -106,6 +106,12 @@ function Invoke-TestSetup {
     $script:datacenterPathItemTwoScriptBlock = @'
         return [VMware.Vim.Folder] @{
             Name = '$($script:constants.DatacenterPathItemTwo)'
+            ChildEntity = @(
+                [VMware.Vim.ManagedObjectReference] @{
+                    Type = '$($script:constants.FolderType)'
+                    Value = 'DatacenterPathItemTwo Child Entity'
+                }
+            )
             MoRef = [VMware.Vim.ManagedObjectReference] @{
                 Type = '$($script:constants.FolderType)'
                 Value = '$($script:constants.DatacenterPathItemTwoId)'
@@ -121,7 +127,7 @@ function Invoke-TestSetup {
 '@
 
     $script:datacenterWithPathItemTwoAsParentScriptBlock = @'
-        return [VMware.VimAutomation.VICore.Impl.V1.Inventory.DatacenterImpl] @{
+        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
             Id = '$($script:constants.DatacenterId)'
             Name = '$($script:constants.DatacenterName)'
             ParentFolderId = '$($script:constants.DatacenterPathItemTwoId)'
@@ -153,11 +159,8 @@ function Invoke-TestSetup {
 
     $script:locationsScriptBlock = @'
         return @(
-            @{
-                Id = [VMware.Vim.ManagedObjectReference] @{
-                    Type = '$($script:constants.FolderType)'
-                    Value = '$($script:constants.DatacenterInventoryPathItemTwoId)'
-                }
+            [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+                Id = '$($script:constants.DatacenterInventoryPathItemTwoId)'
                 ExtensionData = [VMware.Vim.Folder] @{
                     Name = '$($script:constants.DatacenterInventoryPathItemTwo)'
                     MoRef = [VMware.Vim.ManagedObjectReference] @{
@@ -193,10 +196,7 @@ function Invoke-TestSetup {
         return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
             Id = '$($script:constants.ClusterId)'
             Name = '$($script:constants.ClusterName)'
-            ParentId = [VMware.Vim.ManagedObjectReference] @{
-                Type = '$($script:constants.FolderType)'
-                Value = '$($script:constants.DatacenterInventoryPathItemTwoId)'
-            }
+            ParentId = '$($script:constants.DatacenterInventoryPathItemTwoId)'
             ExtensionData = [VMware.Vim.ClusterComputeResource] @{
                 ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
                     DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{
@@ -231,24 +231,29 @@ function Invoke-TestSetup {
 
     Import-Module -Name VMware.VimAutomation.Core
 
-    $script:vCenter = [VMware.Vim.VCenter] @{
+    $script:vCenter = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
         Name = $script:resourceProperties.Server
         User = $script:user
     }
 
-    $script:rootFolder = [VMware.Vim.ManagedObjectReference] @{
+    $script:rootFolder = @([VMware.Vim.ManagedObjectReference] @{
         Type = $script:constants.FolderType
         Value = $script:constants.RootFolderValue
-    }
+    })
 
-    $script:datacenterPathItemOne = [VMware.Vim.ManagedObjectReference] @{
+    $script:datacenterPathItemOne = @([VMware.Vim.ManagedObjectReference] @{
         Type = $script:constants.FolderType
         Value = $script:constants.DatacenterPathItemOne
-    }
+    })
 
-    $script:datacenterPathItemTwo = [VMware.Vim.ManagedObjectReference] @{
+    $script:datacenterPathItemTwo = @([VMware.Vim.ManagedObjectReference] @{
         Type = $script:constants.FolderType
         Value = $script:constants.DatacenterPathItemTwo
+    })
+
+    $script:datacenterLocation = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.FolderType
+        Value = $script:constants.DatacenterPathItemTwoId
     }
 
     $script:hostFolder = [VMware.Vim.ManagedObjectReference] @{
@@ -261,21 +266,9 @@ function Invoke-TestSetup {
         Name = $script:constants.HostFolderName
     }
 
-    $script:location = [VMware.Vim.ManagedObjectReference] @{
-        Type = $script:constants.FolderType
-        Value = $script:constants.DatacenterInventoryPathItemTwoId
-    }
-
     $script:locationParent = [VMware.Vim.ManagedObjectReference] @{
         Type = $script:constants.FolderType
         Value = $script:constants.DatacenterInventoryPathItemOneId
-    }
-
-    $script:clusterLocation = @{
-        Id = [VMware.Vim.ManagedObjectReference] @{
-            Type = $script:constants.FolderType
-            Value = $script:constants.DatacenterInventoryPathItemTwoId
-        }
     }
 
     $script:folder = [VMware.Vim.Folder] @{
@@ -300,16 +293,16 @@ function Invoke-TestSetup {
             VmotionRate = $script:constants.DrsMigrationThreshold
             Option = @(
                 [VMware.Vim.OptionValue] @{
-                    Key = 'LimitVMsPerESXHostPercent'
-                    Value = $script:constants.DrsDistribution.ToString()
-                },
-                [VMware.Vim.OptionValue] @{
                     Key = 'PercentIdleMBInMemDemand'
-                    Value = $script:constants.MemoryLoadBalancing.ToString()
+                    Value = ($script:constants.MemoryLoadBalancing).ToString()
                 },
                 [VMware.Vim.OptionValue] @{
                     Key = 'MaxVcpusPerClusterPct'
-                    Value = $script:constants.CPUOverCommitment.ToString()
+                    Value = ($script:constants.CPUOverCommitment).ToString()
+                },
+                [VMware.Vim.OptionValue] @{
+                    Key = 'LimitVMsPerESXHostPercent'
+                    Value = ($script:constants.DrsDistribution).ToString()
                 }
             )
         }
@@ -357,8 +350,8 @@ try {
 
             $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterWithRootFolderScriptBlock))
             $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
-            $datacenterPathItemOne = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
-            $datacenterPathItemTwo = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
+            $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
+            $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
             $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
             $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterWithPathItemTwoAsParentScriptBlock))
             $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
@@ -368,15 +361,15 @@ try {
             $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
 
             Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemOne -ParameterFilter { $Server -eq $script:vCenter -and $Id -Contains $script:datacenterPathItemOne } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemTwo -ParameterFilter { $Server -eq $script:vCenter -and $Id -Contains $script:datacenterPathItemTwo } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:rootFolder | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
             Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:location } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
@@ -390,7 +383,7 @@ try {
         Context 'Invoking with Ensure Present, non existing Cluster and no Drs settings specified' {
             BeforeAll {
                 # Arrange
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
                 Mock -CommandName Add-Cluster -MockWith { return $null } -ModuleName $script:moduleName
             }
 
@@ -424,7 +417,7 @@ try {
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
                 Mock -CommandName Add-Cluster -MockWith { return $null } -ModuleName $script:moduleName
             }
 
@@ -460,7 +453,7 @@ try {
                 # Arrange
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
 
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
                 Mock -CommandName Update-ClusterComputeResource -MockWith { return $null } -ModuleName $script:moduleName
             }
 
@@ -496,7 +489,7 @@ try {
 
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
 
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
                 Mock -CommandName Update-ClusterComputeResource -MockWith { return $null } -ModuleName $script:moduleName
             }
 
@@ -535,7 +528,7 @@ try {
 
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
 
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
                 Mock -CommandName Remove-ClusterComputeResource -MockWith { return $null } -ModuleName $script:moduleName
             }
 
@@ -567,7 +560,7 @@ try {
                 $script:resourceProperties.Ensure = 'Absent'
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
                 Mock -CommandName Remove-ClusterComputeResource -MockWith { return $null } -ModuleName $script:moduleName
             }
 
@@ -602,8 +595,8 @@ try {
 
             $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterWithRootFolderScriptBlock))
             $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
-            $datacenterPathItemOne = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
-            $datacenterPathItemTwo = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
+            $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
+            $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
             $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
             $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterWithPathItemTwoAsParentScriptBlock))
             $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
@@ -613,15 +606,15 @@ try {
             $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
 
             Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemOne -ParameterFilter { $Server -eq $script:vCenter -and $Id -Contains $script:datacenterPathItemOne } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemTwo -ParameterFilter { $Server -eq $script:vCenter -and $Id -Contains $script:datacenterPathItemTwo } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:rootFolder | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
             Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:location } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
@@ -635,7 +628,7 @@ try {
         Context 'Invoking with Ensure Present and non existing Cluster' {
             BeforeAll {
                 # Arrange
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
             }
 
             It 'Should return $false' {
@@ -658,7 +651,7 @@ try {
                 $script:resourceProperties.CPUOverCommitment = 400
 
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
             }
@@ -692,7 +685,7 @@ try {
                 $script:resourceProperties.CPUOverCommitment = $script:constants.CPUOverCommitment
 
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
             }
@@ -721,7 +714,7 @@ try {
                 $script:resourceProperties.Ensure = 'Absent'
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
             }
 
             AfterAll {
@@ -744,7 +737,7 @@ try {
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
             }
 
             AfterAll {
@@ -775,8 +768,8 @@ try {
 
             $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterWithRootFolderScriptBlock))
             $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
-            $datacenterPathItemOne = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
-            $datacenterPathItemTwo = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
+            $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
+            $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
             $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
             $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterWithPathItemTwoAsParentScriptBlock))
             $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
@@ -786,15 +779,15 @@ try {
             $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
 
             Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemOne -ParameterFilter { $Server -eq $script:vCenter -and $Id -Contains $script:datacenterPathItemOne } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemTwo -ParameterFilter { $Server -eq $script:vCenter -and $Id -Contains $script:datacenterPathItemTwo } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:rootFolder | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
             Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:location } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
 
             $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
@@ -814,7 +807,7 @@ try {
         Context 'Invoking with Ensure Present and non existing Cluster' {
             BeforeAll {
                 # Arrange
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
             }
 
             It 'Should retrieve the correct settings from the server' {
@@ -841,7 +834,7 @@ try {
                 # Arrange
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
 
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
             }
 
             It 'Should retrieve the correct settings from the server' {
@@ -855,7 +848,7 @@ try {
                 $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Ensure | Should -Be 'Present'
                 $result.DrsEnabled | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.Enabled
-                $result.DrsAutomationLevel | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.DefaultVmBehavior
+                $result.DrsAutomationLevel.ToString() | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.DefaultVmBehavior.ToString()
                 $result.DrsMigrationThreshold | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.VmotionRate
                 $result.DrsDistribution | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'LimitVMsPerESXHostPercent' }).Value
                 $result.MemoryLoadBalancing | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'PercentIdleMBInMemDemand' }).Value
@@ -869,7 +862,7 @@ try {
                 $script:resourceProperties.Ensure = 'Absent'
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
             }
 
             AfterAll {
@@ -902,7 +895,7 @@ try {
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
 
                 $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
             }
 
             AfterAll {
@@ -920,7 +913,7 @@ try {
                 $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Ensure | Should -Be 'Present'
                 $result.DrsEnabled | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.Enabled
-                $result.DrsAutomationLevel | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.DefaultVmBehavior
+                $result.DrsAutomationLevel.ToString() | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.DefaultVmBehavior.ToString()
                 $result.DrsMigrationThreshold | Should -Be $script:clusterComputeResource.ConfigurationEx.DrsConfig.VmotionRate
                 $result.DrsDistribution | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'LimitVMsPerESXHostPercent' }).Value
                 $result.MemoryLoadBalancing | Should -Be ($script:clusterComputeResource.ConfigurationEx.DrsConfig.Option | Where-Object { $_.Key -eq 'PercentIdleMBInMemDemand' }).Value

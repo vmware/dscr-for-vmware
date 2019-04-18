@@ -135,7 +135,7 @@ try {
             BeforeAll {
                 # Arrange
                 $powerCLIConfigurationMock = {
-                    return [VMware.Vim.PowerCLIConfiguration] @{ Id = 1; Scope = 'User'; CEIPDataTransferProxyPolicy = [VMware.Vim.ProxyPolicy]::UseSystemProxy; `
+                    return [VMware.VimAutomation.ViCore.Impl.V1.PowerCLIConfigurationImpl] @{ Scope = 'User'; CEIPDataTransferProxyPolicy = [VMware.VimAutomation.ViCore.Types.V1.ProxyPolicy]::UseSystemProxy; `
                                                                  DisplayDeprecationWarnings = $true; WebOperationTimeoutSeconds = 100 }
                 }
 
@@ -178,7 +178,7 @@ try {
             BeforeAll {
                 # Arrange
                 $powerCLIConfigurationMock = {
-                    return [VMware.Vim.PowerCLIConfiguration] @{ Id = 1; Scope = 'User'; CEIPDataTransferProxyPolicy = [VMware.Vim.ProxyPolicy]::UseSystemProxy; `
+                    return [VMware.VimAutomation.ViCore.Impl.V1.PowerCLIConfigurationImpl] @{ Scope = 'User'; CEIPDataTransferProxyPolicy = [VMware.VimAutomation.ViCore.Types.V1.ProxyPolicy]::UseSystemProxy; `
                                                                  DisplayDeprecationWarnings = $true; WebOperationTimeoutSeconds = 100 }
                 }
 
@@ -222,9 +222,9 @@ try {
         BeforeAll {
             # Arrange
             $powerCLIConfigurationMock = {
-                return [VMware.Vim.PowerCLIConfiguration] @{ Id = 1; Scope = 'User'; CEIPDataTransferProxyPolicy = [VMware.Vim.ProxyPolicy]::UseSystemProxy; `
-                                                             DefaultVIServerMode = [VMware.Vim.DefaultVIServerMode]::Multiple; InvalidCertificateAction = [VMware.Vim.BadCertificateAction]::Fail; `
-                                                             ParticipateInCeip = $false; ProxyPolicy = [VMware.Vim.ProxyPolicy]::UseSystemProxy; DisplayDeprecationWarnings = $true; `
+                return [VMware.VimAutomation.ViCore.Impl.V1.PowerCLIConfigurationImpl] @{ Scope = 'User'; CEIPDataTransferProxyPolicy = [VMware.VimAutomation.ViCore.Types.V1.ProxyPolicy]::UseSystemProxy; `
+                                                             DefaultVIServerMode = [VMware.VimAutomation.ViCore.Types.V1.DefaultVIServerMode]::Multiple; InvalidCertificateAction = [VMware.VimAutomation.ViCore.Types.V1.BadCertificateAction]::Fail; `
+                                                             ParticipateInCeip = $false; ProxyPolicy = [VMware.VimAutomation.ViCore.Types.V1.ProxyPolicy]::UseSystemProxy; DisplayDeprecationWarnings = $true; `
                                                              WebOperationTimeoutSeconds = 100 }
             }
 
