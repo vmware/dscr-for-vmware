@@ -51,15 +51,15 @@ $script:netObjectAdd = 'add'
 $script:netObjectEdit = 'edit'
 $script:netObjectRemove = 'remove'
 $script:viServerCode = @'
-        return [VMware.Vim.VIServer] @{
+        return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
             Name = '$($script:resourceProperties.Server)'
             User = '$($script:Constants.VIServerUser)'
     }
 '@
 $script:vmHostCode = @'
-        return [VMware.Vim.VMHost] @{
+        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
             Name = '$($script:resourceProperties.Name)'
-            ExtensionData = [VMware.Vim.HostExtensionData] @{
+            ExtensionData = [VMware.Vim.HostSystem] @{
                 ConfigManager = [VMware.Vim.HostConfigManager] @{
                     NetworkSystem = [VMware.Vim.ManagedObjectReference] @{
                         Type = '$($script:Constants.NetworkSystemMoRefType)'
@@ -156,7 +156,7 @@ if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'Tes
 
 Import-Module -Name VMware.VimAutomation.Core
 
-$script:viServer = [VMware.Vim.VIServer] @{
+$script:viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
     Name = $script:resourceProperties.Server
     User = $script:Constants.VIServerUser
 }

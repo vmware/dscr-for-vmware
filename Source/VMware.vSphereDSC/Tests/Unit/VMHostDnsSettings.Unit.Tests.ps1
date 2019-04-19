@@ -64,17 +64,17 @@ try {
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ ExtensionData = [VMware.Vim.HostSystem] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
                          = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
                 }
                 $networkSystemMock = {
-                    return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                    return [VMware.Vim.HostNetworkSystem] @{}
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -109,22 +109,22 @@ try {
         Context 'Invoking with Dhcp set to $false' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 $networkSystemMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' }
-                $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{}
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ ExtensionData = [VMware.Vim.HostSystem] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
                          = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
                 }
                 $dnsConfigMock = {
                     return [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name' }
                 }
                 $networkSystemMock = {
-                    return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                    return [VMware.Vim.HostNetworkSystem] @{}
                 }
 
                 $dnsConfigObject = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name' }
@@ -174,22 +174,22 @@ try {
         Context 'Invoking with Dhcp set to $true' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 $networkSystemMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' }
-                $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                $networkSystemObject = [VMware.Vim.HostNetworkSystem] @{}
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ ExtensionData = [VMware.Vim.HostSystem] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
                          = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
                 }
                 $dnsConfigMock = {
                     return [VMware.Vim.HostDnsConfig] @{ Dhcp = $true; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'VirtualNicDevice' }
                 }
                 $networkSystemMock = {
-                    return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                    return [VMware.Vim.HostNetworkSystem] @{}
                 }
 
                 $script:resourceProperties.Dhcp = $true
@@ -251,17 +251,17 @@ try {
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ ExtensionData = [VMware.Vim.HostSystem] @{ ConfigManager = [VMware.Vim.HostConfigManager] @{ NetworkSystem `
                          = [VMware.Vim.ManagedObjectReference] @{ Type = 'HostNetworkSystem'; Value = 'networkSystem' } } } }
                 }
                 $networkSystemMock = {
-                    return [VMware.Vim.HostNetworkSystem] @{ Id = 'HostNetworkSystem' }
+                    return [VMware.Vim.HostNetworkSystem] @{}
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -297,10 +297,10 @@ try {
             BeforeAll {
                 # Arrange
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ ExtensionData = [VMware.Vim.HostSystem] @{ Config = [VMware.Vim.HostConfigInfo] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
                          = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('search domain 1') } } } } }
                 }
 
@@ -327,10 +327,10 @@ try {
             BeforeAll {
                 # Arrange
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ ExtensionData = [VMware.Vim.HostSystem] @{ Config = [VMware.Vim.HostConfigInfo] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
                          = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('search domain 1') } } } } }
                 }
 
@@ -357,10 +357,10 @@ try {
             BeforeAll {
                 # Arrange
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ ExtensionData = [VMware.Vim.HostSystem] @{ Config = [VMware.Vim.HostConfigInfo] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
                          = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; VirtualNicDevice = 'Fake Virtual Nic Device' } } } } }
                 }
 
@@ -386,13 +386,13 @@ try {
     Describe 'VMHostDnsSettings\Get' -Tag 'Get' {
         BeforeAll {
             # Arrange
-            $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+            $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
 
             $viServerMock = {
-                return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
             }
             $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ Name = '10.23.82.112'; ExtensionData = [VMware.Vim.HostExtensionData] @{ Config = [VMware.Vim.HostConfig] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
+                return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112'; ExtensionData = [VMware.Vim.HostSystem] @{ Config = [VMware.Vim.HostConfigInfo] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
                      = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('Search Domain 1'); VirtualNicDevice = 'Virtual Nic Device'; Ipv6VirtualNicDevice = 'Ipv6' } } } } }
             }
 

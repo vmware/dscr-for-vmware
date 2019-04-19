@@ -61,14 +61,14 @@ try {
         Context 'Invoking with empty settings' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -117,22 +117,22 @@ try {
                 $script:resourceProperties.Issue = 'Hello World from isue!'
 
                 $advancedSettings = @(
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = 'Hello World from motd!' }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = 'Hello World from issue!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = 'Hello World from motd!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = 'Hello World from issue!' }
                 )
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
 
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = '' }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = '' }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = '' }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = '' }
                     )
                 }
 
@@ -151,10 +151,10 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                    -ParameterFilter { $AdvancedSetting -eq $advancedSettings[0] -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
+                    -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[0].Name -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                    -ParameterFilter { $AdvancedSetting -eq $advancedSettings[1] -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
+                    -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[1].Name -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -166,27 +166,28 @@ try {
                 $script:resourceProperties.Issue = 'Hello World from issue!'
 
                 $advancedSettings = @(
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = 'Hello World from motd!' }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = 'Hello World from issue!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = 'Hello World from motd!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = 'Hello World from issue!' }
                 )
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
 
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = 'Hello World from motd!' }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = 'Hello World from issue!' }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = 'Hello World from motd!' }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = 'Hello World from issue!' }
                     )
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
                 Mock -CommandName Get-VMHost -MockWith $vmHostMock -ModuleName $script:moduleName
+                Mock -CommandName Get-AdvancedSetting -MockWith $advancedSettingsMock -ModuleName $script:moduleName
                 Mock -CommandName Set-AdvancedSetting -MockWith { return $null } -ModuleName $script:moduleName
             }
 
@@ -199,10 +200,10 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                    -ParameterFilter { $AdvancedSetting -eq $advancedSettings[0] -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
+                    -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[0].Name -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
                     -ModuleName $script:moduleName -Exactly 0 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                    -ParameterFilter { $AdvancedSetting -eq $advancedSettings[1] -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
+                    -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[1].Name -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
                     -ModuleName $script:moduleName -Exactly 0 -Scope It
             }
         }
@@ -219,14 +220,14 @@ try {
         Context 'Invoking with default resource properties' {
             BeforeAll {
                 # Arrange
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
 
                 Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
@@ -276,18 +277,18 @@ try {
                 $script:resourceProperties.Issue = 'Hello World!'
                 $script:resourceProperties.IssueClear = $false
 
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = 'Hello World!' }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = 'Hello World!' }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = 'Hello World!' }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = 'Hello World!' }
                     )
                 }
 
@@ -350,22 +351,22 @@ try {
                 $script:resourceProperties.IssueClear = $false
 
                 $advancedSettings = @(
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = 'Hello World!' }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = 'Hello World!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = 'Hello World!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = 'Hello World!' }
                 )
 
-                $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 $viServerMock = {
-                    return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
                 $vmHostMock = {
-                    return [VMware.Vim.VMHost] @{ Id = 'VMHostId' }
+                    return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 }
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = 'Hello Brave New World!' }
-                        [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = 'Hello Brave New World!' }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = 'Hello Brave New World!' }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = 'Hello Brave New World!' }
                     )
                 }
 
@@ -421,23 +422,23 @@ try {
 
         BeforeAll {
             # Arrange
-            $viServer = [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
-            $vmhost = [VMware.Vim.VMHost] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
+            $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+            $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
             $advancedSettings = @(
-                [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = 'Hello Brave New World!' }
-                [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = 'Hello Brave New World!' }
+                [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = 'Hello Brave New World!' }
+                [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = 'Hello Brave New World!' }
             )
 
             $viServerMock = {
-                return [VMware.Vim.VIServer] @{ Name = '10.23.82.112'; User = 'user' }
+                return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
             }
             $vmHostMock = {
-                return [VMware.Vim.VMHost] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
+                return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId'; Name = '10.23.82.112' }
             }
             $advancedSettingsMock = {
                 return @(
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.issue'; Value = 'Hello World!' }
-                    [VMware.Vim.AdvancedSetting] @{ Name = 'Config.Etc.motd'; Value = 'Hello World!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = 'Hello World!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = 'Hello World!' }
                 )
             }
 
