@@ -22,3 +22,33 @@ You can set your name and email with the following template:
  git config --global user.name <Your Name>
  git config --global user.email <Your Email>
 ```
+
+## Keeping a fork up to date
+
+### 1. Clone your fork:
+```
+git clone git@github.com:YOUR-USERNAME/YOUR-FORKED-REPO.git
+```
+
+### 2. Add remote from original repository in your forked repository:
+```
+cd into/cloned/fork-repo
+git remote add upstream git://github.com/ORIGINAL-DEV-USERNAME/REPO-YOU-FORKED-FROM.git
+git fetch upstream
+```
+
+### 3. Updating your fork from original repo to keep up with their changes:
+
+#### 3.1 Keep your master branch up to date:
+```
+git rebase upstream/master
+```
+
+#### 3.2 Keep your feature branch up to date:
+```
+git stash
+git checkout master
+git rebase upstream/master
+git checkout <your-feature-branch>
+git rebase master
+```

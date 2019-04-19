@@ -96,6 +96,16 @@ This is the branch to which contributions should be proposed by contributors as 
 
 The Desired State Configuration Resources for VMware project team welcomes contributions from the community. For more detailed information, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Join us on Slack
+
+If you have any questions about the project you can join us on Slack:
+
+1. Join [VMware Code](https://code.vmware.com/web/code/join)
+2. Join the following channel:
+    ```
+    powercli-dsc-contrib
+    ```
+
 ## License
 The Desired State Configuration Resources for VMware is distributed under the [BSD-2](https://github.com/vmware/dscr-for-vmware/blob/master/LICENSE.txt).
 
