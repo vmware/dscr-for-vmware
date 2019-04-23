@@ -69,7 +69,7 @@ try {
             BeforeAll {
                 # Arrange
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 $vmHostService = [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{ Key = 'TSM-SSH'}
 
                 $viServerMock = {
@@ -116,7 +116,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -304,7 +304,7 @@ try {
             BeforeAll {
                 # Arrange
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 $vmHostService = [VMware.VimAutomation.ViCore.Impl.V1.Host.HostServiceImpl] @{ Key = 'TSM-SSH'}
 
                 $viServerMock = {
@@ -351,7 +351,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -364,7 +364,8 @@ try {
                 $script:resourceProperties.Running = [bool]::TrueString
 
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+
                 $viServerMock = {
                     return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
                 }
@@ -415,7 +416,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -426,6 +427,9 @@ try {
                 $script:resourceProperties.Key = 'TSM-SSH'
                 $script:resourceProperties.Policy = 'On'
                 $script:resourceProperties.Running = $true
+
+                $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
                     return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
@@ -475,7 +479,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -498,7 +502,7 @@ try {
                 $script:resourceProperties.Key = 'TSM-SSH'
 
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
 
                 $viServerMock = {
                     return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
@@ -551,7 +555,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostService `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -560,7 +564,7 @@ try {
                 $result = $resource.Get()
 
                 # Assert
-                $result.Name | Should -Be $vmhost.Name
+                $result.Name | Should -Be $retrievedVMHost.Name
                 $result.Server | Should -Be $viServer.Name
                 $result.Key | Should -Be $script:resourceProperties.Key
                 $result.Policy | Should -Be 'Automatic'

@@ -215,6 +215,14 @@ function Invoke-TestSetup {
     $script:vCenter = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
         Name = $script:resourceProperties.Server
         User = $script:user
+        ExtensionData = [VMware.Vim.ServiceInstance] @{
+            Content = [VMware.Vim.ServiceContent] @{
+                RootFolder = [VMware.Vim.ManagedObjectReference] @{
+                    Type = $script:constants.FolderType
+                    Value = $script:constants.RootFolderValue
+                }
+            }
+        }
     }
 
     $script:rootFolder = [VMware.Vim.ManagedObjectReference] @{
@@ -308,7 +316,7 @@ try {
             $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
 
             Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:rootFolder | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
@@ -341,7 +349,7 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'New-Cluster'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id -and $Location.ExtensionData -eq $script:clusterLocation.ExtensionData -and !$Confirm }
+                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location -eq $script:clusterLocation -and !$Confirm }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -382,9 +390,9 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'New-Cluster'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location.Id -eq $script:clusterLocation.Id -and `
-                                        $Location.ExtensionData -eq $script:clusterLocation.ExtensionData -and !$Confirm -and $HAEnabled -eq $true -and `
-                                        $HAAdmissionControlEnabled -eq $true -and $HAFailoverLevel -eq 4 -and $HAIsolationResponse -eq 'DoNothing' -and $HARestartPriority -eq 'High' }
+                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:resourceProperties.Name -and $Location -eq $script:clusterLocation -and `
+                                        !$Confirm -and $HAEnabled -eq $true -and $HAAdmissionControlEnabled -eq $true -and $HAFailoverLevel -eq 4 -and `
+                                        $HAIsolationResponse -eq 'DoNothing' -and $HARestartPriority -eq 'High' }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -411,11 +419,7 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Set-Cluster'
-                    ParameterFilter = { $Cluster.Id -eq $script:cluster.Id -and $Cluster.Name -eq $script:cluster.Name -and $Cluster.ParentId -eq $script:cluster.ParentId -and `
-                                        $Cluster.HAEnabled -eq $script:cluster.HAEnabled -and $Cluster.HAAdmissionControlEnabled -eq $script:cluster.HAAdmissionControlEnabled -and `
-                                        $Cluster.HAFailoverLevel -eq $script:cluster.HAFailoverLevel -and $Cluster.HAIsolationResponse -eq $script:cluster.HAIsolationResponse -and `
-                                        $Cluster.HARestartPriority -eq $script:cluster.HARestartPriority -and $Cluster.ExtensionData -eq $script:cluster.ExtensionData -and `
-                                        $Server -eq $script:vCenter -and !$Confirm }
+                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -458,12 +462,8 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Set-Cluster'
-                    ParameterFilter = { $Cluster.Id -eq $script:cluster.Id -and $Cluster.Name -eq $script:cluster.Name -and $Cluster.ParentId -eq $script:cluster.ParentId -and `
-                                        $Cluster.HAEnabled -eq $script:cluster.HAEnabled -and $Cluster.HAAdmissionControlEnabled -eq $script:cluster.HAAdmissionControlEnabled -and `
-                                        $Cluster.HAFailoverLevel -eq $script:cluster.HAFailoverLevel -and $Cluster.HAIsolationResponse -eq $script:cluster.HAIsolationResponse -and `
-                                        $Cluster.HARestartPriority -eq $script:cluster.HARestartPriority -and $Cluster.ExtensionData -eq $script:cluster.ExtensionData -and `
-                                        $Server -eq $script:vCenter -and !$Confirm -and $HAEnabled -eq $false -and $HAAdmissionControlEnabled -eq $false -and $HAFailoverLevel -eq 4 -and `
-                                        $HAIsolationResponse -eq 'DoNothing' -and $HARestartPriority -eq 'High' }
+                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm -and $HAEnabled -eq $false -and `
+                                        $HAAdmissionControlEnabled -eq $false -and $HAFailoverLevel -eq 4 -and $HAIsolationResponse -eq 'DoNothing' -and $HARestartPriority -eq 'High' }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -497,11 +497,7 @@ try {
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Remove-Cluster'
-                    ParameterFilter = { $Cluster.Id -eq $script:cluster.Id -and $Cluster.Name -eq $script:cluster.Name -and $Cluster.ParentId -eq $script:cluster.ParentId -and `
-                                        $Cluster.HAEnabled -eq $script:cluster.HAEnabled -and $Cluster.HAAdmissionControlEnabled -eq $script:cluster.HAAdmissionControlEnabled -and `
-                                        $Cluster.HAFailoverLevel -eq $script:cluster.HAFailoverLevel -and $Cluster.HAIsolationResponse -eq $script:cluster.HAIsolationResponse -and `
-                                        $Cluster.HARestartPriority -eq $script:cluster.HARestartPriority -and $Cluster.ExtensionData -eq $script:cluster.ExtensionData -and `
-                                        $Server -eq $script:vCenter -and !$Confirm }
+                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:vCenter -and !$Confirm }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -564,7 +560,7 @@ try {
             $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
 
             Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:rootFolder | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
@@ -732,7 +728,7 @@ try {
             $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
 
             Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:rootFolder | ConvertTo-Json)) } -ModuleName $script:moduleName
+            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
             Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
             Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName

@@ -66,7 +66,7 @@ try {
         Context 'Invoking with syslog not configured' {
             BeforeAll {
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
                     return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
@@ -134,7 +134,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id -and $V2 } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost -and $V2 } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -144,7 +144,6 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostSyslogConfig `
-                    -ParameterFilter { } `
                     -ModuleName $script:moduleName -Exactly 0 -Scope It
             }
 
@@ -162,7 +161,7 @@ try {
         Context 'Invoking with default syslog settings' {
             BeforeAll {
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 $syslogConfig = [VMware.Vim.SyslogConfig] @{
                     LogHost = $script:resourceProperties.LogHost
                     CheckSslCerts = $script:resourceProperties.CheckSslCerts
@@ -239,7 +238,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id -and $V2 } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost -and $V2 } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -249,7 +248,6 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostSyslogConfig `
-                    -ParameterFilter { } `
                     -ModuleName $script:moduleName -Exactly 0 -Scope It
             }
 
@@ -259,7 +257,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-VMHostSyslogConfig `
-                    -ParameterFilter { $EsxCli.VMHost.Id -eq $VMHost.Id -and $VMHostSyslogConfig.LogHost -eq $script:resourceProperties.LogHost  } `
+                    -ParameterFilter { $EsxCli.VMHost.Id -eq $retrievedVMHost.Id -and $VMHostSyslogConfig.LogHost -eq $script:resourceProperties.LogHost  } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -267,7 +265,7 @@ try {
         Context 'Invoking with new syslog settings' {
             BeforeAll {
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 $syslogConfig = [VMware.Vim.SyslogConfig] @{
                     LogHost = $script:resourceProperties.LogHost
                     CheckSslCerts = -not $script:resourceProperties.CheckSslCerts
@@ -344,7 +342,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id -and $V2 } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost -and $V2 } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -354,7 +352,6 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostSyslogConfig `
-                    -ParameterFilter { } `
                     -ModuleName $script:moduleName -Exactly 0 -Scope It
             }
 
@@ -364,7 +361,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-VMHostSyslogConfig `
-                    -ParameterFilter { $EsxCli.VMHost.Id -eq $VMHost.Id -and $VMHostSyslogConfig.LogHost -eq $script:resourceProperties.LogHost  } `
+                    -ParameterFilter { $EsxCli.VMHost.Id -eq $retrievedVMHost.Id -and $VMHostSyslogConfig.LogHost -eq $script:resourceProperties.LogHost  } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -374,7 +371,7 @@ try {
         Context 'Invoking with syslog not configured' {
             BeforeAll {
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
 
                 $viServerMock = {
                     return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
@@ -442,7 +439,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id -and $V2 } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost -and $V2 } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -452,7 +449,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostSyslogConfig `
-                    -ParameterFilter { $EsxCli.VMHost.Id -eq $VMHost.Id } `
+                    -ParameterFilter { $EsxCli.VMHost.Id -eq $retrievedVMHost.Id } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -470,7 +467,7 @@ try {
         Context 'Invoking with default syslog settings' {
             BeforeAll {
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 $syslogConfig = [VMware.Vim.SyslogConfig] @{
                     LogHost = $script:resourceProperties.LogHost
                     CheckSslCerts = $script:resourceProperties.CheckSslCerts
@@ -547,7 +544,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id -and $V2 } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost -and $V2 } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -557,7 +554,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostSyslogConfig `
-                    -ParameterFilter { $EsxCli.VMHost.Id -eq $VMHost.Id } `
+                    -ParameterFilter { $EsxCli.VMHost.Id -eq $retrievedVMHost.Id } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -567,7 +564,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-VMHostSyslogConfig `
-                    -ParameterFilter { $EsxCli.VMHost.Id -eq $VMHost.Id -and $VMHostSyslogConfig.LogHost -eq $script:resourceProperties.LogHost  } `
+                    -ParameterFilter { $EsxCli.VMHost.Id -eq $retrievedVMHost.Id -and $VMHostSyslogConfig.LogHost -eq $script:resourceProperties.LogHost  } `
                     -ModuleName $script:moduleName -Exactly 0 -Scope It
             }
         }
@@ -575,7 +572,7 @@ try {
         Context 'Invoking with new syslog settings' {
             BeforeAll {
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Id = 'VMHostId' }
                 $syslogConfig = [VMware.Vim.SyslogConfig] @{
                     LogHost = $script:resourceProperties.LogHost
                     CheckSslCerts = -not $script:resourceProperties.CheckSslCerts
@@ -652,7 +649,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id -and $V2 } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost -and $V2 } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -662,7 +659,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostSyslogConfig `
-                    -ParameterFilter { $EsxCli.VMHost.Id -eq $VMHost.Id } `
+                    -ParameterFilter { $EsxCli.VMHost.Id -eq $retrievedVMHost.Id } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -672,7 +669,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-VMHostSyslogConfig `
-                    -ParameterFilter { $EsxCli.VMHost.Id -eq $VMHost.Id -and $VMHostSyslogConfig.LogHost -eq $script:resourceProperties.LogHost  } `
+                    -ParameterFilter { $EsxCli.VMHost.Id -eq $retrievedVMHost.Id -and $VMHostSyslogConfig.LogHost -eq $script:resourceProperties.LogHost  } `
                     -ModuleName $script:moduleName -Exactly 0 -Scope It
             }
         }
@@ -682,7 +679,7 @@ try {
         Context 'Invoking with syslog not configured' {
             BeforeAll {
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
                 $syslogConfig = [VMware.Vim.SyslogConfig] @{
                     LogHost = $script:resourceProperties.LogHost
                     CheckSslCerts = $script:resourceProperties.CheckSslCerts
@@ -760,7 +757,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-EsxCli `
-                    -ParameterFilter { $Server -eq $viServer -and $VMHost.Id -eq $vmhost.Id -and $V2 } `
+                    -ParameterFilter { $Server -eq $viServer -and $VMHost -eq $retrievedVMHost -and $V2 } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -770,7 +767,7 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Get-VMHostSyslogConfig `
-                    -ParameterFilter { $EsxCli.VMHost.Id -eq $VMHost.Id } `
+                    -ParameterFilter { $EsxCli.VMHost.Id -eq $retrievedVMHost.Id } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
@@ -788,7 +785,7 @@ try {
         Context 'Invoking with default syslog settings' {
             BeforeAll {
                 $viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
-                $vmhost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
+                $retrievedVMHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ Name = '10.23.82.112'; Id = 'VMHostId' }
 
                 $viServerMock = {
                     return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }

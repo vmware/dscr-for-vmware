@@ -111,13 +111,13 @@ try {
                 $script:resourceProperties.Issue = 'Hello World from isue!'
 
                 $advancedSettings = @(
-                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'log.level'; Value = 'Warning' }
-                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'event.maxAgeEnabled'; Value = $true }
-                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'event.maxAge'; Value = 41 }
-                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'task.maxAgeEnabled'; Value = $true }
-                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'task.maxAge'; Value = 41 }
-                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'etc.motd'; Value = 'Hello World from motd!' }
-                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'etc.issue'; Value = 'Hello World from issue!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'log.level'; Value = 'Info' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'event.maxAgeEnabled'; Value = $false }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'event.maxAge'; Value = 40 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'task.maxAgeEnabled'; Value = $false }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'task.maxAge'; Value = 40 }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'etc.motd'; Value = [string]::Empty }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'etc.issue'; Value = [string]::Empty }
                 )
 
                 $vCenterMock = {
@@ -149,25 +149,25 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                                  -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[0].Name -and $Value -eq $script:resourceProperties.LoggingLevel -and !$Confirm } `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[0] -and $Value -eq $script:resourceProperties.LoggingLevel -and !$Confirm } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                                  -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[1].Name -and $Value -eq $script:resourceProperties.EventMaxAgeEnabled -and !$Confirm } `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[1] -and $Value -eq $script:resourceProperties.EventMaxAgeEnabled -and !$Confirm } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                                  -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[2].Name -and $Value -eq $script:resourceProperties.EventMaxAge -and !$Confirm } `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[2] -and $Value -eq $script:resourceProperties.EventMaxAge -and !$Confirm } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                                  -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[3].Name -and $Value -eq $script:resourceProperties.TaskMaxAgeEnabled -and !$Confirm } `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[3] -and $Value -eq $script:resourceProperties.TaskMaxAgeEnabled -and !$Confirm } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                                  -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[4].Name -and $Value -eq $script:resourceProperties.TaskMaxAge -and !$Confirm } `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[4] -and $Value -eq $script:resourceProperties.TaskMaxAge -and !$Confirm } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                                  -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[5].Name -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[5] -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                                  -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[6].Name -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
+                                  -ParameterFilter { $AdvancedSetting -eq $advancedSettings[6] -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }

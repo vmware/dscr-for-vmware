@@ -117,8 +117,8 @@ try {
                 $script:resourceProperties.Issue = 'Hello World from isue!'
 
                 $advancedSettings = @(
-                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = 'Hello World from motd!' }
-                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = 'Hello World from issue!' }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = [string]::Empty }
+                    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = [string]::Empty }
                 )
 
                 $viServerMock = {
@@ -131,8 +131,8 @@ try {
 
                 $advancedSettingsMock = {
                     return @(
-                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = '' }
-                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = '' }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.motd'; Value = [string]::Empty }
+                        [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{ Name = 'Config.Etc.issue'; Value = [string]::Empty }
                     )
                 }
 
@@ -151,10 +151,10 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                    -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[0].Name -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
+                    -ParameterFilter { $AdvancedSetting -eq $advancedSettings[0] -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                    -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[1].Name -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
+                    -ParameterFilter { $AdvancedSetting -eq $advancedSettings[1] -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
                     -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
         }
@@ -200,10 +200,10 @@ try {
 
                 # Assert
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                    -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[0].Name -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
+                    -ParameterFilter { $AdvancedSetting -eq $advancedSettings[0] -and $Value -eq $script:resourceProperties.Motd -and !$Confirm } `
                     -ModuleName $script:moduleName -Exactly 0 -Scope It
                 Assert-MockCalled -CommandName Set-AdvancedSetting `
-                    -ParameterFilter { $AdvancedSetting.Name -eq $advancedSettings[1].Name -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
+                    -ParameterFilter { $AdvancedSetting -eq $advancedSettings[1] -and $Value -eq $script:resourceProperties.Issue -and !$Confirm } `
                     -ModuleName $script:moduleName -Exactly 0 -Scope It
             }
         }
