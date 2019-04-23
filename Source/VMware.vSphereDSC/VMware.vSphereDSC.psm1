@@ -3741,7 +3741,7 @@ class DrsCluster : DatacenterInventoryBaseDSC {
         $this.PopulateDrsConfigProperty($clusterSpec.DrsConfig, $this.DrsAutomationLevelConfigPropertyName, $this.DrsAutomationLevel)
         $this.PopulateDrsConfigProperty($clusterSpec.DrsConfig, $this.DrsMigrationThresholdConfigPropertyName, $this.DrsMigrationThreshold)
 
-        $allOptions = @{
+        $allOptions = [ordered] @{
             $this.DrsDistributionSettingName = $this.DrsDistribution
             $this.MemoryLoadBalancingSettingName = $this.MemoryLoadBalancing
             $this.CPUOverCommitmentSettingName = $this.CPUOverCommitment
