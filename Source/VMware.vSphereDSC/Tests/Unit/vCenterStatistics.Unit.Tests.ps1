@@ -62,7 +62,9 @@ try {
 
         Context 'Invoking with default resource properties' {
             BeforeAll {
-                $vCenter = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vCenter = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
+                [VMware.Vim.ServiceInstance] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
                 $perfManagerMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' }
                 $perfManager = [VMware.Vim.PerformanceManager] @{ HistoricalInterval = @([VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; `
                 SamplingPeriod = 600; Length = 2629800; Level = 1 }) }
@@ -200,7 +202,9 @@ try {
 
         Context 'Invoking with default resource properties' {
             BeforeAll {
-                $vCenter = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+                $vCenter = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
+                [VMware.Vim.ServiceInstance] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
+                [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
                 $perfManagerMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' }
                 $perfManager = [VMware.Vim.PerformanceManager] @{}
 
@@ -431,7 +435,9 @@ try {
         }
 
         BeforeAll {
-            $vCenter = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user' }
+            $vCenter = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{ Name = '10.23.82.112'; User = 'user'; ExtensionData = `
+            [VMware.Vim.ServiceInstance] @{ Content = [VMware.Vim.ServiceContent] @{ PerfManager = `
+            [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' } } } }
             $perfManagerMoRef = [VMware.Vim.ManagedObjectReference] @{ Type = 'PerformanceManager'; Value = 'PerfMgr' }
             $perfManager = [VMware.Vim.PerformanceManager] @{}
             $perfInterval = [VMware.Vim.PerfInterval] @{ Key = 1; Name = 'Month'; Enabled = $false; SamplingPeriod = 600; Length = 2629800; Level = 1 }
