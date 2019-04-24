@@ -85,34 +85,13 @@ Currently the coverage of the module should be at least **90 percent**, so when 
   }
  ```
 
-For every PowerCLI cmdlet you use, you need to create mock implementation in the [VMware.VimAutomation.Core Test Module](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMware.VimAutomation.Core.psm1).
+In your unit test file you need to replace VMware PowerCLI modules with the script module that allows PowerCLI cmdlets and types to be mocked.
  ```powershell
-  function <PowerCLI cmdlet> {
-     param(
-        [<Type of parameter>] $<Parameter of cmdlet>,
-     )
-
-     return <Mocked result of the cmdlet>
-  }
- ```
-
-For every VMware.Vim type you use, you need to provide .NET implementation of that type in the [VMware.Vim Types File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/VMware.VimAutomation.Core/VMwareVimTypes.cs).
- ```cs
-  namespace VMware.Vim
-  {
-      public class <Type Name>
-      {
-      }
-  }
- ```
-
-In your unit test file you need to replace VMware PowerCLI modules with the script modules that allows PowerCLI cmdlets and types to be mocked.
- ```powershell
-  $script:modulePath = $env:PSModulePath
-  $script:unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
-  $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
-
   function Invoke-TestSetup {
+    $script:modulePath = $env:PSModulePath
+    $script:unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
+    $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
+
     $env:PSModulePath = $script:mockModuleLocation
     $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
     if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
@@ -232,6 +211,28 @@ Documentation for every resource should currently be structured like so:
         * DSCResources
             * MyResource
                 * `MyResources.md`
+
+### Writing Composite Resources
+
+There are many vSphere objects that can be present in different variations. For example we can create a HA Cluster, Drs Cluster or a Cluster that has both HA and Drs settings specified. Another good example is the Virtual Switch (VSS) which has Security, Shaping, Teaming and Bridge settings.
+
+So for each complex vSphere object, separate DSC Resources should be created and then a Composite Resource should be created that wraps all other Resources into one. You can find more information [here](https://docs.microsoft.com/en-us/powershell/dsc/resources/authoringresourcecomposite) on how to write Composite Resources.
+
+For every complex vSphere object, separate Folder needs to be created that consists of the DSC Resources and the Composite Resource. The folder structure should look like this:
+
+* Root folder of module
+    * DSCResources
+        * MyResource
+            * MyResource.psd1
+            * MyResource.schema.psm1
+            * MyResourceOne.ps1
+            * MyResourceTwo.ps1
+
+To use the Composite Resource it is required to place the **vSphere object folder** below the DSCResources folder. Also the **psd1** and **schema.psm1** should have the same name as the **vSphere object folder** otherwise the Resource would not be found. The different Resources should also be created in the **vSphere object folder**. You can check how the [Cluster Resource](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/DSCResources/Cluster) was implemented for reference.
+
+**Issue** should be created first to discuss if a vSphere object should be separated into multiple DSC Resources and one Composite on the top of it. If the object is found to be too complex for one Resource, the guideline is to separate it into multiple Resources for better maintainability. With this only parts of the object can be configured and if needed with the Composite Resource the whole vSphere object can be configured.
+
+For Composite Resources no Unit and Integration Tests are needed because the different DSC Resources that when combined create the Composite Resource are already tested with both Unit and Integration Tests.
 
 ### Style Guidelines
 
