@@ -54,7 +54,7 @@ To configure PowerCLI you can use the **PowerCLISettings DSC Resource** and spec
 # Example
 The following example uses [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) and configures the NTP Server and the 'ntpd' Service Policy.
 
-1. You need to compile the [Configuration File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Configurations/ESXiConfigs/VMHostNtpSettings_Config.ps1) to [MOF](https://docs.microsoft.com/en-us/windows/desktop/wmisdk/managed-object-format--mof-):
+1. You need to compile the [Configuration File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Configurations/PowerShell/ESXiConfigs/VMHostNtpSettings_Config.ps1) to [MOF](https://docs.microsoft.com/en-us/windows/desktop/wmisdk/managed-object-format--mof-):
    ```
     $ntpConfigPath = Join-Path (Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Configurations') 'ESXiConfigs')'VMHostNtpSettings_Config.ps1'
     . $ntpConfigPath -Name '<VMHost Name>' -Server 'Server Name>' -User '<User Name>' -Password '<Password for User>'
