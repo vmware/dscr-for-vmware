@@ -71,63 +71,12 @@ class DatacenterInventoryBaseDSC : BaseDSC {
     Returns the Datacenter we will use from the Inventory.
     #>
     [PSObject] GetDatacenterFromPath() {
-        if ($this.Datacenter -eq [string]::Empty) {
-            throw "You have passed an empty path which is not a valid value."
-        }
+        $inventory = $this.Connection
 
-        $vCenter = $this.Connection
-        $rootFolder = Get-View -Server $this.Connection -Id $vCenter.ExtensionData.Content.RootFolder
-        $foundDatacenter = $null
+        $rootFolderAsViewObject = Get-View -Server $this.Connection -Id $inventory.ExtensionData.Content.RootFolder
+        $rootFolder = Get-Inventory -Server $this.Connection -Id $rootFolderAsViewObject.MoRef
 
-        <#
-        This is a special case where only the Datacenter name is passed.
-        So we check if there is a Datacenter with that name at root folder.
-        #>
-        if ($this.Datacenter -NotMatch '/') {
-            $datacentersFolder = Get-Inventory -Server $this.Connection -Id $rootFolder.MoRef
-            $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $this.Datacenter -Location $datacentersFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $datacentersFolder.Id }
-
-            if ($null -eq $foundDatacenter) {
-                throw "Datacenter with name $($this.Datacenter) was not found at $($datacentersFolder.Name)."
-            }
-
-            return $foundDatacenter
-        }
-
-        $pathItems = $this.Datacenter -Split '/'
-        $datacenterName = $pathItems[$pathItems.Length - 1]
-
-        # Removes the Datacenter name from the path items array as we already retrieved it.
-        $pathItems = $pathItems[0..($pathItems.Length - 2)]
-
-        $childEntities = Get-View -Server $this.Connection -Id $rootFolder.ChildEntity
-        $foundPathItem = $null
-
-        foreach ($pathItem in $pathItems) {
-            $foundPathItem = $childEntities | Where-Object -Property Name -eq $pathItem
-
-            if ($null -eq $foundPathItem) {
-                throw "Datacenter with path $($this.Datacenter) was not found because $pathItem folder cannot be found under."
-            }
-
-            # If the found path item does not have 'ChildEntity' member, the item is a Datacenter.
-            $childEntityMember = $foundPathItem | Get-Member -Name 'ChildEntity'
-            if ($null -eq $childEntityMember) {
-                throw "The path $($this.Datacenter) contains another Datacenter $pathItem."
-            }
-
-            # If the found path item is Folder and not Datacenter we start looking in the items of this Folder.
-            $childEntities = Get-View -Server $this.Connection -Id $foundPathItem.ChildEntity
-        }
-
-        $datacenterLocation = Get-Inventory -Server $this.Connection -Id $foundPathItem.MoRef
-        $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $datacenterName -Location $datacenterLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $datacenterLocation.Id }
-
-        if ($null -eq $foundDatacenter) {
-            throw "Datacenter with name $datacenterName was not found."
-        }
-
-        return $foundDatacenter
+        return [InventoryHelper]::GetDatacenterFromPath($this.Connection, $rootFolder, $this.Datacenter)
     }
 
     <#
@@ -136,62 +85,11 @@ class DatacenterInventoryBaseDSC : BaseDSC {
     Returns the Location of the Inventory Item we will use from the specified Datacenter.
     #>
     [PSObject] GetDatacenterInventoryItemLocationFromPath($foundDatacenter) {
-        $validLocation = $null
         $datacenterFolderName = "$($this.DatacenterFolderType)Folder"
         $datacenterFolderAsViewObject = Get-View -Server $this.Connection -Id $foundDatacenter.ExtensionData.$datacenterFolderName
         $datacenterFolder = Get-Inventory -Server $this.Connection -Id $datacenterFolderAsViewObject.MoRef
 
-        # Special case where the path does not contain any folders.
-        if ($this.DatacenterInventoryPath -eq [string]::Empty) {
-            return $datacenterFolder
-        }
-
-        # Special case where the path is just one folder.
-        if ($this.DatacenterInventoryPath -NotMatch '/') {
-            $validLocation = Get-Inventory -Server $this.Connection -Name $this.DatacenterInventoryPath -Location $datacenterFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $datacenterFolder.Id }
-
-            if ($null -eq $validLocation) {
-                throw "The provided path $($this.DatacenterInventoryPath) is not a valid path in the Folder $($datacenterFolder.Name)."
-            }
-
-            return $validLocation
-        }
-
-        $pathItems = $this.DatacenterInventoryPath -Split '/'
-
-        # Reverses the path items so that we can start from the bottom and go to the top of the Inventory.
-        [array]::Reverse($pathItems)
-
-        $datacenterInventoryItemLocationName = $pathItems[0]
-        $locations = Get-Inventory -Server $this.Connection -Name $datacenterInventoryItemLocationName -Location $datacenterFolder -ErrorAction SilentlyContinue
-
-        # Removes the Inventory Item Location from the path items array as we already retrieved it.
-        $pathItems = $pathItems[1..($pathItems.Length - 1)]
-
-        <#
-        For every location in the Datacenter with the specified name we start to go up through the parents to check if the path is valid.
-        If one of the Parents does not meet the criteria of the path, we continue with the next found location.
-        If we find a valid path we stop iterating through the locations and return the location which is part of the path.
-        #>
-        foreach ($location in $locations) {
-            $locationAsViewObject = Get-View -Server $this.Connection -Id $location.Id -Property Parent
-            $validPath = $true
-
-            foreach ($pathItem in $pathItems) {
-                $locationAsViewObject = Get-View -Server $this.Connection -Id $locationAsViewObject.Parent -Property Name, Parent
-                if ($locationAsViewObject.Name -ne $pathItem) {
-                    $validPath = $false
-                    break
-                }
-            }
-
-            if ($validPath) {
-                $validLocation = $location
-                break
-            }
-        }
-
-        return $validLocation
+        return [InventoryHelper]::GetInventoryItemLocationInDatacenter($this.Connection, $datacenterFolder, $this.DatacenterInventoryPath)
     }
 
     <#
@@ -199,11 +97,7 @@ class DatacenterInventoryBaseDSC : BaseDSC {
 
     Returns the Inventory Item from the specified Datacenter if it exists, otherwise returns $null.
     #>
-    [PSObject] GetInventoryItem($foundDatacenter, $datacenterInventoryItemLocation) {
-        if ($null -eq $datacenterInventoryItemLocation) {
-            throw "The provided path $($this.DatacenterInventoryPath) is not a valid path in the Datacenter $($foundDatacenter.Name)."
-        }
-
+    [PSObject] GetInventoryItem($datacenterInventoryItemLocation) {
         return Get-Inventory -Server $this.Connection -Name $this.Name -Location $datacenterInventoryItemLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $datacenterInventoryItemLocation.Id }
     }
 }

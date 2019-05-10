@@ -75,7 +75,7 @@ class HACluster : DatacenterInventoryBaseDSC {
 
         $foundDatacenter = $this.GetDatacenterFromPath()
         $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
+        $cluster = $this.GetInventoryItem($clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $cluster) {
@@ -97,7 +97,7 @@ class HACluster : DatacenterInventoryBaseDSC {
 
         $foundDatacenter = $this.GetDatacenterFromPath()
         $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
+        $cluster = $this.GetInventoryItem($clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $cluster) {
@@ -121,7 +121,7 @@ class HACluster : DatacenterInventoryBaseDSC {
 
         $foundDatacenter = $this.GetDatacenterFromPath()
         $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
+        $cluster = $this.GetInventoryItem($clusterLocation)
 
         $this.PopulateResult($cluster, $result)
 
