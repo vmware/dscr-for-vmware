@@ -103,7 +103,7 @@ class Folder : InventoryBaseDSC {
             $folderLocation = $this.GetInventoryItemLocationFromPath($rootFolder)
         }
         else {
-            $foundDatacenter = [InventoryHelper]::GetDatacenterFromPath($this.Connection, $rootFolder, $this.Path)
+            $foundDatacenter = [InventoryHelper]::GetDatacenterFromPath($this.Connection, $rootFolder, $this.Datacenter)
             $datacenterFolderName = "$($this.FolderType)Folder"
             $datacenterFolderAsViewObject = Get-View -Server $this.Connection -Id $foundDatacenter.ExtensionData.$datacenterFolderName
             $datacenterFolder = Get-Inventory -Server $this.Connection -Id $datacenterFolderAsViewObject.MoRef
