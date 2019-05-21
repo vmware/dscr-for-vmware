@@ -17,7 +17,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 [DscResource()]
 class HACluster : DatacenterInventoryBaseDSC {
     HACluster() {
-        $this.DatacenterFolderType = [DatacenterFolderType]::Host
+        $this.InventoryItemFolderType = [FolderType]::Host
     }
 
     <#
@@ -73,9 +73,10 @@ class HACluster : DatacenterInventoryBaseDSC {
     [void] Set() {
         $this.ConnectVIServer()
 
-        $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
+        $datacenter = $this.GetDatacenter()
+        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+        $cluster = $this.GetInventoryItem($clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $cluster) {
@@ -95,9 +96,10 @@ class HACluster : DatacenterInventoryBaseDSC {
     [bool] Test() {
         $this.ConnectVIServer()
 
-        $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
+        $datacenter = $this.GetDatacenter()
+        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+        $cluster = $this.GetInventoryItem($clusterLocation)
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $cluster) {
@@ -114,14 +116,16 @@ class HACluster : DatacenterInventoryBaseDSC {
     [HACluster] Get() {
         $result = [HACluster]::new()
         $result.Server = $this.Server
-        $result.DatacenterInventoryPath = $this.DatacenterInventoryPath
-        $result.Datacenter = $this.Datacenter
+        $result.Location = $this.Location
+        $result.DatacenterName = $this.DatacenterName
+        $result.DatacenterLocation = $this.DatacenterLocation
 
         $this.ConnectVIServer()
 
-        $foundDatacenter = $this.GetDatacenterFromPath()
-        $clusterLocation = $this.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-        $cluster = $this.GetInventoryItem($foundDatacenter, $clusterLocation)
+        $datacenter = $this.GetDatacenter()
+        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+        $cluster = $this.GetInventoryItem($clusterLocation)
 
         $this.PopulateResult($cluster, $result)
 
