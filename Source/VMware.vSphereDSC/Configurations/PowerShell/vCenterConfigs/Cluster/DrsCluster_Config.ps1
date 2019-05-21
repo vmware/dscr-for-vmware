@@ -29,8 +29,9 @@ param(
 )
 
 $script:clusterName = 'MyCluster'
-$script:datacenterInventoryPath = [string]::Empty
-$script:datacenter = 'Datacenter'
+$script:location = [string]::Empty
+$script:datacenterName = 'Datacenter'
+$script:datacenterLocation = [string]::Empty
 
 $script:configurationData = @{
     AllNodes = @(
@@ -52,8 +53,9 @@ Configuration DrsCluster_WithClusterToAdd_Config {
             Server = $Server
             Credential = $Credential
             Ensure = 'Present'
-            DatacenterInventoryPath = $script:datacenterInventoryPath
-            Datacenter = $script:datacenter
+            Location = $script:location
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocation
             Name = $script:clusterName
             DrsEnabled = $true
             DrsAutomationLevel = 'FullyAutomated'
@@ -76,8 +78,9 @@ Configuration DrsCluster_WithClusterToRemove_Config {
             Server = $Server
             Credential = $Credential
             Ensure = 'Absent'
-            DatacenterInventoryPath = $script:datacenterInventoryPath
-            Datacenter = $script:datacenter
+            Location = $script:location
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocation
             Name = $script:clusterName
         }
     }
