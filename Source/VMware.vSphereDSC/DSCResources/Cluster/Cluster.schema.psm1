@@ -27,10 +27,13 @@ Configuration Cluster {
 
         [Parameter(Mandatory = $true)]
         [AllowEmptyString()]
-        [string] $DatacenterInventoryPath,
+        [string] $Location,
 
         [Parameter(Mandatory = $true)]
-        [string] $Datacenter,
+        [string] $DatacenterName,
+
+        [Parameter(Mandatory = $true)]
+        [string] $DatacenterLocation,
 
         [Parameter(Mandatory = $true)]
         [ValidateSet('Present', 'Absent')]
@@ -79,8 +82,9 @@ Configuration Cluster {
         Server = $Server
         Credential = $Credential
         Ensure = $Ensure
-        DatacenterInventoryPath = $DatacenterInventoryPath
-        Datacenter = $Datacenter
+        Location = $Location
+        DatacenterName = $DatacenterName
+        DatacenterLocation = $DatacenterLocation
         Name = $Name
         HAEnabled = $HAEnabled
         HAAdmissionControlEnabled = $HAAdmissionControlEnabled
@@ -93,8 +97,9 @@ Configuration Cluster {
         Server = $Server
         Credential = $Credential
         Ensure = $Ensure
-        DatacenterInventoryPath = $DatacenterInventoryPath
-        Datacenter = $Datacenter
+        Location = $Location
+        DatacenterName = $DatacenterName
+        DatacenterLocation = $DatacenterLocation
         Name = $Name
         DrsEnabled = $DrsEnabled
         DrsAutomationLevel = $DrsAutomationLevel
