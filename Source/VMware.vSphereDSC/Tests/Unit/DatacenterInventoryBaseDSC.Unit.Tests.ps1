@@ -33,6 +33,7 @@ function Invoke-TestSetup {
         Credential = $credential
         Name = 'InventoryItemName'
         Ensure = 'Present'
+        DatacenterName = 'MyDatacenter'
     }
 
     $script:constants = @{
@@ -52,16 +53,11 @@ function Invoke-TestSetup {
         DatacenterInventoryPathItemOne = 'MyInventoryItemFolderOne'
         DatacenterInventoryPathItemTwoId = 'my-inventory-item-location-two'
         DatacenterInventoryPathItemTwo = 'MyInventoryItemFolderTwo'
+        InventoryItemId = 'inventory-item-id'
+        InventoryItemName = 'Inventory Item Cluster'
     }
 
-	$script:vCenterScriptBlock = @'
-        return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
-            Name = '$($script:datacenterInventoryBaseDSCProperties.Server)'
-            User = '$($script:user)'
-        }
-'@
-
-    $script:vCenterScriptBlock = @'
+    $script:viServerScriptBlock = @'
         return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
             Name = '$($script:datacenterInventoryBaseDSCProperties.Server)'
             User = '$($script:user)'
@@ -83,12 +79,6 @@ function Invoke-TestSetup {
                 Type = '$($script:constants.FolderType)'
                 Value = '$($script:constants.RootFolderValue)'
             }
-            ChildEntity = @(
-                [VMware.Vim.ManagedObjectReference] @{
-                    Type = '$($script:constants.FolderType)'
-                    Value = '$($script:constants.DatacenterPathItemOne)'
-                }
-            )
         }
 '@
 
@@ -96,6 +86,14 @@ function Invoke-TestSetup {
         return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
             Id = '$($script:constants.DatacentersFolderId)'
             Name = '$($script:constants.DatacentersFolderName)'
+            ExtensionData = [VMware.Vim.Folder] @{
+                ChildEntity = @(
+                    [VMware.Vim.ManagedObjectReference] @{
+                        Type = '$($script:constants.FolderType)'
+                        Value = '$($script:constants.DatacenterPathItemOne)'
+                    }
+                )
+            }
         }
 '@
 
@@ -170,6 +168,9 @@ function Invoke-TestSetup {
         return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
             Id = '$($script:constants.HostFolderId)'
             Name = '$($script:constants.HostFolderName)'
+            Parent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
+                Name = '$($script:constants.DatacenterName)'
+            }
         }
 '@
 
@@ -219,6 +220,14 @@ function Invoke-TestSetup {
         }
 '@
 
+    $script:inventoryItemScriptBlock = @'
+        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
+            Id = '$($script:constants.InventoryItemId)'
+            Name = '$($script:constants.InventoryItemName)'
+            ParentId = '$($script:constants.DatacenterInventoryPathItemTwoId)'
+        }
+'@
+
 	$env:PSModulePath = $script:mockModuleLocation
     $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
     if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
@@ -227,7 +236,7 @@ function Invoke-TestSetup {
 
     Import-Module -Name VMware.VimAutomation.Core
 
-    $script:vCenter = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
+    $script:viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
         Name = $script:datacenterInventoryBaseDSCProperties.Server
         User = $script:user
         ExtensionData = [VMware.Vim.ServiceInstance] @{
@@ -248,6 +257,14 @@ function Invoke-TestSetup {
     $script:datacentersFolder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
         Id = $script:constants.DatacentersFolderId
         Name = $script:constants.DatacentersFolderName
+        ExtensionData = [VMware.Vim.Folder] @{
+            ChildEntity = @(
+                [VMware.Vim.ManagedObjectReference] @{
+                    Type = $script:constants.FolderType
+                    Value = $script:constants.DatacenterPathItemOne
+                }
+            )
+        }
     }
 
     $script:datacenterPathItemOne = @([VMware.Vim.ManagedObjectReference] @{
@@ -278,6 +295,9 @@ function Invoke-TestSetup {
     $script:hostFolderLocation = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
         Id = $script:constants.HostFolderId
         Name = $script:constants.HostFolderName
+        Parent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
+            Name = $script:constants.DatacenterName
+        }
     }
 
     $script:locationParent = [VMware.Vim.ManagedObjectReference] @{
@@ -287,6 +307,12 @@ function Invoke-TestSetup {
 
     $script:validLocation = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
         Id = $script:constants.DatacenterInventoryPathItemTwoId
+    }
+
+    $script:inventoryItem = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
+        Id = $script:constants.InventoryItemId
+        Name = $script:constants.InventoryItemName
+        ParentId = $script:constants.DatacenterInventoryPathItemTwoId
     }
 }
 
@@ -299,39 +325,17 @@ try {
 	# Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
     Invoke-TestSetup
 
-	Describe 'InventoryBaseDSC\GetDatacenterFromPath' -Tag 'GetDatacenterFromPath' {
+	Describe 'DatacenterInventoryBaseDSC\GetDatacenter' -Tag 'GetDatacenter' {
         Context 'Empty Datacenter path is passed' {
             BeforeAll {
                 # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-
-                $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
-                $datacenterInventoryBaseDSC.ConnectVIServer()
-            }
-
-            AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-            }
-
-            It 'Should throw when Empty Datacenter path is passed' {
-                # Act && Assert
-                { $datacenterInventoryBaseDSC.GetDatacenterFromPath() } | Should -Throw 'You have passed an empty path which is not a valid value.'
-            }
-        }
-
-        Context 'Datacenter Path consists only of the Datacenter name and the Datacenter does not exist' {
-            BeforeAll {
-                # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = $script:constants.DatacenterName
-
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
                 $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
                 $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
                 Mock -CommandName Get-View -MockWith $rootFolderMock -ModuleName $script:moduleName
                 Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ModuleName $script:moduleName
                 Mock -CommandName Get-Datacenter -MockWith { return $null } -ModuleName $script:moduleName
@@ -341,173 +345,33 @@ try {
             }
 
             AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
             }
 
-            It 'Should throw when Datacenter Path consists only of the Datacenter name and the Datacenter does not exist' {
+            It 'Should throw when Empty Datacenter path is passed' {
                 # Act && Assert
-                { $datacenterInventoryBaseDSC.GetDatacenterFromPath() } | Should -Throw "Datacenter with name $($script:datacenterInventoryBaseDSCProperties.Datacenter) was not found at Datacenters."
-            }
-
-            It 'Should call the Get-View mock with the passed Server and vCenter Root Folder once' {
-                try {
-                    # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterFromPath()
-                }
-                catch {
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $rootFolder }
-                        ModuleName = $script:moduleName
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-            }
-
-            It 'Should call the Get-Inventory mock with the passed Server and Root Folder ViewBase Object once' {
-                try {
-                    # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterFromPath()
-                }
-                catch {
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-Inventory'
-                        ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $rootFolder }
-                        ModuleName = $script:moduleName
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-            }
-
-            It 'Should call the Get-Datacenter mock with the passed Server, Datacenter Name and Datacenters Folder Location once' {
-                try {
-                    # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterFromPath()
-                }
-                catch {
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-Datacenter'
-                        ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Datacenter -and $Location -eq $script:datacentersFolder }
-                        ModuleName = $script:moduleName
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-            }
-        }
-
-        Context 'Datacenter Path consists only of the Datacenter name and the Datacenter exists' {
-            BeforeAll {
-                # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = $script:constants.DatacenterName
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
-
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
-                $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
-                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
-                $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterScriptBlock))
-
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ModuleName $script:moduleName
-                Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-
-                $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
-                $datacenterInventoryBaseDSC.ConnectVIServer()
-            }
-
-            AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
-            }
-
-            It 'Should not throw when Datacenter Path consists only of the Datacenter name and the Datacenter exists' {
-                # Act && Assert
-                { $datacenterInventoryBaseDSC.GetDatacenterFromPath() } | Should -Not -Throw
-            }
-
-            It 'Should call the Get-View mock with the passed Server and vCenter Root Folder once' {
-                # Act
-                $datacenterInventoryBaseDSC.GetDatacenterFromPath()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-
-            It 'Should call the Get-Inventory mock with the passed Server and Root Folder ViewBase Object once' {
-                # Act
-                $datacenterInventoryBaseDSC.GetDatacenterFromPath()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $rootFolder }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-
-            It 'Should call the Get-Datacenter mock with the passed Server, Datacenter Name and Datacenters Folder Location once' {
-                # Act
-                $datacenterInventoryBaseDSC.GetDatacenterFromPath()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-Datacenter'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Datacenter -and $Location -eq $script:datacentersFolder }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
+                { $datacenterInventoryBaseDSC.GetDatacenter() } | Should -Throw "Datacenter $($script:constants.DatacenterName) was not found at $($script:constants.DatacentersFolderName)."
             }
         }
 
         Context 'Datacenter Path consists of two Folders and the Datacenter name and the Datacenter does not exist' {
             BeforeAll {
                 # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
 
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
                 $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
+                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
                 $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
                 $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
                 $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ModuleName $script:moduleName
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
                 Mock -CommandName Get-Datacenter -MockWith { return $null } -ModuleName $script:moduleName
 
                 $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
@@ -515,24 +379,44 @@ try {
             }
 
             AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
             }
 
             It 'Should throw when Datacenter Path consists of two Folders and the Datacenter name and the Datacenter does not exist' {
                 # Act && Assert
-                { $datacenterInventoryBaseDSC.GetDatacenterFromPath() } | Should -Throw "Datacenter with name $($script:constants.datacenterName) was not found."
+                { $datacenterInventoryBaseDSC.GetDatacenter() } | Should -Throw "Datacenter $($script:constants.datacenterName) with Location $($script:datacenterInventoryBaseDSCProperties.DatacenterLocation) was not found."
             }
 
-            It 'Should call the Get-View mock with the passed Server and vCenter Root Folder once' {
+            It 'Should call the Get-View mock with the passed Server and VIServer Root Folder once' {
                 try {
                     # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                    $datacenterInventoryBaseDSC.GetDatacenter()
                 }
                 catch {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder }
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:rootFolder }
+                        ModuleName = $script:moduleName
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
+            }
+
+            It 'Should call the Get-Inventory mock with the passed Server and Root Folder ViewBase Object once' {
+                try {
+                    # Act
+                    $datacenterInventoryBaseDSC.GetDatacenter()
+                }
+                catch {
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Get-Inventory'
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:rootFolder }
                         ModuleName = $script:moduleName
                         Exactly = $true
                         Times = 1
@@ -546,13 +430,13 @@ try {
             It 'Should call the Get-View mock with the passed Server and MyDatacenterFolderOne once' {
                 try {
                     # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                    $datacenterInventoryBaseDSC.GetDatacenter()
                 }
                 catch {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) }
+                        ParameterFilter = { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) }
                         ModuleName = $script:moduleName
                         Exactly = $true
                         Times = 1
@@ -566,13 +450,13 @@ try {
             It 'Should call the Get-View mock with the passed Server and MyDatacenterFolderTwo once' {
                 try {
                     # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                    $datacenterInventoryBaseDSC.GetDatacenter()
                 }
                 catch {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) }
+                        ParameterFilter = { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) }
                         ModuleName = $script:moduleName
                         Exactly = $true
                         Times = 1
@@ -586,13 +470,13 @@ try {
             It 'Should call the Get-Inventory mock with the passed Server and MyDatacenterFolderTwo once' {
                 try {
                     # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                    $datacenterInventoryBaseDSC.GetDatacenter()
                 }
                 catch {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Get-Inventory'
-                        ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation }
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation }
                         ModuleName = $script:moduleName
                         Exactly = $true
                         Times = 1
@@ -606,13 +490,13 @@ try {
             It 'Should call the Get-Datacenter mock with the passed Server, Datacenter Name and MyDatacenterFolderTwo Location once' {
                 try {
                     # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                    $datacenterInventoryBaseDSC.GetDatacenter()
                 }
                 catch {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Get-Datacenter'
-                        ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterName -and $Location -eq $script:datacenterFolder }
+                        ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterName -and $Location -eq $script:datacenterFolder }
                         ModuleName = $script:moduleName
                         Exactly = $true
                         Times = 1
@@ -627,20 +511,22 @@ try {
         Context 'Datacenter Path consists of two Folders and the Datacenter name and the Datacenter exists' {
             BeforeAll {
                 # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
 
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
                 $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
+                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
                 $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
                 $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
                 $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
                 $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterWithPathItemTwoAsParentScriptBlock))
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ModuleName $script:moduleName
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
                 Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
 
                 $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
@@ -648,22 +534,22 @@ try {
             }
 
             AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
             }
 
             It 'Should not throw when Datacenter Path consists of two Folders and the Datacenter name and the Datacenter exists' {
                 # Act && Assert
-                { $datacenterInventoryBaseDSC.GetDatacenterFromPath() } | Should -Not -Throw
+                { $datacenterInventoryBaseDSC.GetDatacenter() } | Should -Not -Throw
             }
 
-            It 'Should call the Get-View mock with the passed Server and vCenter Root Folder once' {
+            It 'Should call the Get-View mock with the passed Server and VIServer Root Folder once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $datacenterInventoryBaseDSC.GetDatacenter()
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:rootFolder }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -673,14 +559,34 @@ try {
                 Assert-MockCalled @assertMockCalledParams
             }
 
+            It 'Should call the Get-Inventory mock with the passed Server and Root Folder ViewBase Object once' {
+                try {
+                    # Act
+                    $datacenterInventoryBaseDSC.GetDatacenter()
+                }
+                catch {
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Get-Inventory'
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:rootFolder }
+                        ModuleName = $script:moduleName
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
+            }
+
             It 'Should call the Get-View mock with the passed Server and MyDatacenterFolderOne once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $datacenterInventoryBaseDSC.GetDatacenter()
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) }
+                    ParameterFilter = { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -692,12 +598,12 @@ try {
 
             It 'Should call the Get-View mock with the passed Server and MyDatacenterFolderTwo once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $datacenterInventoryBaseDSC.GetDatacenter()
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) }
+                    ParameterFilter = { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -709,12 +615,12 @@ try {
 
             It 'Should call the Get-Inventory mock with the passed Server and MyDatacenterFolderTwo once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $datacenterInventoryBaseDSC.GetDatacenter()
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -726,12 +632,12 @@ try {
 
             It 'Should call the Get-Datacenter mock with the passed Server, Datacenter Name and MyDatacenterFolderTwo Location once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $datacenterInventoryBaseDSC.GetDatacenter()
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-Datacenter'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterName -and $Location -eq $script:datacenterFolder }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterName -and $Location -eq $script:datacenterFolder }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -743,15 +649,16 @@ try {
         }
     }
 
-    Describe 'InventoryBaseDSC\GetDatacenterInventoryItemLocationFromPath' -Tag 'GetDatacenterInventoryItemLocationFromPath' {
+    Describe 'DatacenterInventoryBaseDSC\GetInventoryItemLocationInDatacenter' -Tag 'GetInventoryItemLocationInDatacenter' {
         Context 'Empty Datacenter Inventory Path is passed' {
             BeforeAll {
                 # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.Location = [string]::Empty
 
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
                 $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
+                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
                 $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
                 $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
                 $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
@@ -759,39 +666,39 @@ try {
                 $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
                 $hostFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderScriptBlock))
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
                 Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
 
                 $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
-                $datacenterInventoryBaseDSC.DatacenterFolderType = $script:constants.DatacenterFolderType
                 $datacenterInventoryBaseDSC.ConnectVIServer()
-                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenter()
             }
 
             AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.Location = [string]::Empty
             }
 
             It 'Should not throw when Empty Datacenter Inventory Path is passed' {
                 # Act && Assert
-                { $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter) } | Should -Not -Throw
+                { $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder') } | Should -Not -Throw
             }
 
             It 'Should call the Get-View mock with the passed Server and HostFolder of the Datacenter once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -803,12 +710,12 @@ try {
 
             It 'Should call the Get-Inventory mock with the passed Server and HostFolder of the Datacenter once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -822,11 +729,12 @@ try {
         Context 'Datacenter Inventory Path consists only of one Folder and the path is not valid' {
             BeforeAll {
                 # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = "$($script:constants.DatacenterInventoryPathItemOne)"
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.Location = "$($script:constants.DatacenterInventoryPathItemOne)"
 
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
                 $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
+                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
                 $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
                 $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
                 $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
@@ -834,42 +742,42 @@ try {
                 $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
                 $hostFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderScriptBlock))
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
                 Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
                 Mock -CommandName Get-Inventory -MockWith { return $null } -ModuleName $script:moduleName
 
                 $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
-                $datacenterInventoryBaseDSC.DatacenterFolderType = $script:constants.DatacenterFolderType
                 $datacenterInventoryBaseDSC.ConnectVIServer()
-                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenter()
             }
 
             AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.Location = [string]::Empty
             }
 
             It 'Should throw when Datacenter Inventory Path consists only of one Folder and the path is not valid' {
                 # Act && Assert
-                { $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter) } | Should -Throw "The provided path $($script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath) is not a valid path in the Folder $($script:constants.HostFolderName)."
+                { $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder') } | Should -Throw "Location $($script:datacenterInventoryBaseDSCProperties.Location) of Inventory Item $($script:datacenterInventoryBaseDSCProperties.Name) was not found in Folder $($script:constants.HostFolderName)."
             }
 
             It 'Should call the Get-View mock with the passed Server and HostFolder of the Datacenter once' {
                 try {
                     # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                    $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
                 }
                 catch {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
                         ModuleName = $script:moduleName
                         Exactly = $true
                         Times = 1
@@ -883,13 +791,13 @@ try {
             It 'Should call the Get-Inventory mock with the passed Server and HostFolder of the Datacenter once' {
                 try {
                     # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                    $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
                 }
                 catch {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Get-Inventory'
-                        ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
                         ModuleName = $script:moduleName
                         Exactly = $true
                         Times = 1
@@ -903,13 +811,13 @@ try {
             It 'Should call the Get-Inventory mock with the passed Server, MyInventoryItemFolderOne and HostFolder Location once' {
                 try {
                     # Act
-                    $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                    $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
                 }
                 catch {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Get-Inventory'
-                        ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath -and $Location -eq $script:hostFolderLocation }
+                        ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Location -and $Location -eq $script:hostFolderLocation }
                         ModuleName = $script:moduleName
                         Exactly = $true
                         Times = 1
@@ -924,11 +832,12 @@ try {
         Context 'Datacenter Inventory Path consists only of one Folder and the path is valid' {
             BeforeAll {
                 # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = "$($script:constants.DatacenterInventoryPathItemOne)"
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.Location = "$($script:constants.DatacenterInventoryPathItemOne)"
 
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
                 $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
+                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
                 $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
                 $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
                 $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
@@ -937,40 +846,40 @@ try {
                 $hostFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderScriptBlock))
                 $inventoryItemPathItemOneLocationMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:inventoryItemPathItemOneLocationScriptBlock))
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
                 Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
                 Mock -CommandName Get-Inventory -MockWith $inventoryItemPathItemOneLocationMock -ModuleName $script:moduleName
 
                 $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
-                $datacenterInventoryBaseDSC.DatacenterFolderType = $script:constants.DatacenterFolderType
                 $datacenterInventoryBaseDSC.ConnectVIServer()
-                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenter()
             }
 
             AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.Location = [string]::Empty
             }
 
             It 'Should not throw when Datacenter Inventory Path consists only of one Folder and the path is valid' {
                 # Act && Assert
-                { $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter) } | Should -Not -Throw
+                { $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder') } | Should -Not -Throw
             }
 
             It 'Should call the Get-View mock with the passed Server and HostFolder of the Datacenter once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -982,12 +891,12 @@ try {
 
             It 'Should call the Get-Inventory mock with the passed Server and HostFolder of the Datacenter once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -999,12 +908,12 @@ try {
 
             It 'Should call the Get-Inventory mock with the passed Server, MyInventoryItemFolderOne and HostFolder Location once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath -and $Location -eq $script:hostFolderLocation }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Location -and $Location -eq $script:hostFolderLocation }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -1018,11 +927,12 @@ try {
         Context 'Datacenter Inventory Path consists of two Folders and the path is not valid' {
             BeforeAll {
                 # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.Location = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
 
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
                 $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
+                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
                 $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
                 $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
                 $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
@@ -1033,131 +943,144 @@ try {
                 $locationViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationViewBaseObjectScriptBlock))
                 $locationInvalidParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationInvalidParentScriptBlock))
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
                 Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
                 Mock -CommandName Get-Inventory -MockWith $locationsMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $locationInvalidParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $locationInvalidParentMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
 
                 $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
-                $datacenterInventoryBaseDSC.DatacenterFolderType = $script:constants.DatacenterFolderType
                 $datacenterInventoryBaseDSC.ConnectVIServer()
-                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenter()
             }
 
             AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.Location = [string]::Empty
             }
 
-            It 'Should return $null when Datacenter Inventory Path consists of two Folders and the path is not valid' {
-                # Act
-                $result = $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-
-                # Assert
-                $result | Should -Be $null
+            It 'Should throw when Datacenter Inventory Path consists of two Folders and the path is not valid' {
+                # Act && Assert
+                { $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder') } | Should -Throw "Location $($script:datacenterInventoryBaseDSCProperties.Location) of Inventory Item $($script:datacenterInventoryBaseDSCProperties.Name) was not found in Datacenter $($script:constants.DatacenterName)."
             }
 
             It 'Should call the Get-View mock with the passed Server and HostFolder of the Datacenter once' {
-                # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
+                try {
+                    # Act
+                    $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
                 }
+                catch {
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Get-View'
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
+                        ModuleName = $script:moduleName
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
 
-                Assert-MockCalled @assertMockCalledParams
+                    Assert-MockCalled @assertMockCalledParams
+                }
             }
 
             It 'Should call the Get-Inventory mock with the passed Server and HostFolder of the Datacenter once' {
-                # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
+                try {
+                    # Act
+                    $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
                 }
+                catch {
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Get-Inventory'
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
+                        ModuleName = $script:moduleName
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
 
-                Assert-MockCalled @assertMockCalledParams
+                    Assert-MockCalled @assertMockCalledParams
+                }
             }
 
             It 'Should call the Get-Inventory mock with the passed Server, MyInventoryItemFolderTwo and HostFolder Location once' {
-                # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
+                try {
+                    # Act
+                    $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
                 }
+                catch {
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Get-Inventory'
+                        ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation }
+                        ModuleName = $script:moduleName
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
 
-                Assert-MockCalled @assertMockCalledParams
+                    Assert-MockCalled @assertMockCalledParams
+                }
             }
 
             It 'Should call the Get-View mock with the passed Server and MyInventoryItemFolderTwo once' {
-                # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
+                try {
+                    # Act
+                    $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
                 }
+                catch {
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Get-View'
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId }
+                        ModuleName = $script:moduleName
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
 
-                Assert-MockCalled @assertMockCalledParams
+                    Assert-MockCalled @assertMockCalledParams
+                }
             }
 
             It 'Should call the Get-View mock with the passed Server and MyInventoryItemFolderOne once' {
-                # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:locationParent }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
+                try {
+                    # Act
+                    $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
                 }
+                catch {
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Get-View'
+                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:locationParent }
+                        ModuleName = $script:moduleName
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
 
-                Assert-MockCalled @assertMockCalledParams
+                    Assert-MockCalled @assertMockCalledParams
+                }
             }
         }
 
         Context 'Datacenter Inventory Path consists of two Folders and the path is valid' {
             BeforeAll {
                 # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.Location = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
 
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
                 $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
+                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
                 $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
                 $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
                 $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
@@ -1168,32 +1091,32 @@ try {
                 $locationViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationViewBaseObjectScriptBlock))
                 $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
                 Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
 
                 $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
-                $datacenterInventoryBaseDSC.DatacenterFolderType = $script:constants.DatacenterFolderType
                 $datacenterInventoryBaseDSC.ConnectVIServer()
-                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenterFromPath()
+                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenter()
             }
 
             AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.Location = [string]::Empty
             }
 
             It 'Should return the correct Location when Datacenter Inventory Path consists of two Folders and the path is valid' {
                 # Act
-                $result = $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $result = $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $result | Should -Be $script:validLocation
@@ -1201,12 +1124,12 @@ try {
 
             It 'Should call the Get-View mock with the passed Server and HostFolder of the Datacenter once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -1218,12 +1141,12 @@ try {
 
             It 'Should call the Get-Inventory mock with the passed Server and HostFolder of the Datacenter once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:hostFolder }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -1235,12 +1158,12 @@ try {
 
             It 'Should call the Get-Inventory mock with the passed Server, MyInventoryItemFolderTwo and HostFolder Location once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -1252,12 +1175,12 @@ try {
 
             It 'Should call the Get-View mock with the passed Server and MyInventoryItemFolderTwo once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -1269,12 +1192,12 @@ try {
 
             It 'Should call the Get-View mock with the passed Server and MyInventoryItemFolderOne once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-View'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Id -eq $script:locationParent }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:locationParent }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1
@@ -1286,63 +1209,16 @@ try {
         }
     }
 
-    Describe 'InventoryBaseDSC\GetInventoryItem' -Tag 'GetInventoryItem' {
-        Context 'Datacenter Inventory Path consists of two Folders and the path is not valid' {
+    Describe 'DatacenterInventoryBaseDSC\GetInventoryItem' -Tag 'GetInventoryItem' {
+        Context 'Datacenter Inventory Path consists of two Folders, the path is valid and the Inventory Item does not exist' {
             BeforeAll {
                 # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.Location = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
 
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
                 $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
-                $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
-                $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
-                $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
-                $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterWithPathItemTwoAsParentScriptBlock))
-                $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
-                $hostFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderScriptBlock))
-                $locationsMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationsScriptBlock))
-                $locationViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationViewBaseObjectScriptBlock))
-                $locationInvalidParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationInvalidParentScriptBlock))
-
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
-                Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $locationInvalidParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
-
-                $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
-                $datacenterInventoryBaseDSC.DatacenterFolderType = $script:constants.DatacenterFolderType
-                $datacenterInventoryBaseDSC.ConnectVIServer()
-                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenterFromPath()
-                $inventoryItemLocation = $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
-            }
-
-            AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
-            }
-
-            It 'Should throw when Datacenter Inventory Path consists of two Folders and the path is not valid' {
-                # Act && Assert
-                { $datacenterInventoryBaseDSC.GetInventoryItem($foundDatacenter, $inventoryItemLocation) } | Should -Throw "The provided path $($script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath) is not a valid path in the Datacenter $($script:constants.DatacenterName)."
-            }
-        }
-
-        Context 'Datacenter Inventory Path consists of two Folders and the path is valid' {
-            BeforeAll {
-                # Arrange
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)/$($script:constants.DatacenterName)"
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
-
-                $vCenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vCenterScriptBlock))
-                $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
+                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
                 $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
                 $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
                 $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
@@ -1353,44 +1229,118 @@ try {
                 $locationViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationViewBaseObjectScriptBlock))
                 $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
 
-                Mock -CommandName Connect-VIServer -MockWith $vCenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:vCenter -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
                 Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
-                Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:vCenter -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:vCenter -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Name -and $Location -eq $script:validLocation } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Name -and $Location -eq $script:validLocation } -ModuleName $script:moduleName
 
                 $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
-                $datacenterInventoryBaseDSC.DatacenterFolderType = $script:constants.DatacenterFolderType
                 $datacenterInventoryBaseDSC.ConnectVIServer()
-                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenterFromPath()
-                $inventoryItemLocation = $datacenterInventoryBaseDSC.GetDatacenterInventoryItemLocationFromPath($foundDatacenter)
+                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenter()
+                $inventoryItemLocation = $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
             }
 
             AfterAll {
-                $script:datacenterInventoryBaseDSCProperties.Datacenter = [string]::Empty
-                $script:datacenterInventoryBaseDSCProperties.DatacenterInventoryPath = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.Location = [string]::Empty
             }
 
-            It 'Should not throw when Datacenter Inventory Path consists of two Folders and the path is valid' {
-                # Act && Assert
-                { $datacenterInventoryBaseDSC.GetInventoryItem($foundDatacenter, $inventoryItemLocation) } | Should -Not -Throw
+            It 'Should return $null when the Inventory Item does not exist' {
+                # Act
+                $result = $datacenterInventoryBaseDSC.GetInventoryItem($inventoryItemLocation)
+
+                # Assert
+                $result | Should -Be $null
             }
 
             It 'Should call the Get-Inventory mock with the passed Server, InventoryItem Name and valid Location once' {
                 # Act
-                $datacenterInventoryBaseDSC.GetInventoryItem($foundDatacenter, $inventoryItemLocation)
+                $datacenterInventoryBaseDSC.GetInventoryItem($inventoryItemLocation)
 
                 # Assert
                 $assertMockCalledParams = @{
                     CommandName = 'Get-Inventory'
-                    ParameterFilter = { $Server -eq $script:vCenter -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Name -and $Location -eq $script:validLocation }
+                    ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Name -and $Location -eq $script:validLocation }
+                    ModuleName = $script:moduleName
+                    Exactly = $true
+                    Times = 1
+                    Scope = 'It'
+                }
+
+                Assert-MockCalled @assertMockCalledParams
+            }
+        }
+
+        Context 'Datacenter Inventory Path consists of two Folders, the path is valid and the Inventory Item exists' {
+            BeforeAll {
+                # Arrange
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
+                $script:datacenterInventoryBaseDSCProperties.Location = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
+
+                $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerScriptBlock))
+                $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
+                $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
+                $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
+                $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
+                $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
+                $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterWithPathItemTwoAsParentScriptBlock))
+                $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
+                $hostFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderScriptBlock))
+                $locationsMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationsScriptBlock))
+                $locationViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationViewBaseObjectScriptBlock))
+                $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
+                $inventoryItemMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:inventoryItemScriptBlock))
+
+                Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
+                Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
+                Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
+                Mock -CommandName Get-Inventory -MockWith $inventoryItemMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Name -and $Location -eq $script:validLocation } -ModuleName $script:moduleName
+
+                $datacenterInventoryBaseDSC = New-Object -TypeName $script:datacenterInventoryBaseDSCClassName -Property $script:datacenterInventoryBaseDSCProperties
+                $datacenterInventoryBaseDSC.ConnectVIServer()
+                $foundDatacenter = $datacenterInventoryBaseDSC.GetDatacenter()
+                $inventoryItemLocation = $datacenterInventoryBaseDSC.GetInventoryItemLocationInDatacenter($foundDatacenter, 'HostFolder')
+            }
+
+            AfterAll {
+                $script:datacenterInventoryBaseDSCProperties.DatacenterLocation = [string]::Empty
+                $script:datacenterInventoryBaseDSCProperties.Location = [string]::Empty
+            }
+
+            It 'Should return the Inventory Item when it exists' {
+                # Act
+                $result = $datacenterInventoryBaseDSC.GetInventoryItem($inventoryItemLocation)
+
+                # Assert
+                $result | Should -Be $script:inventoryItem
+            }
+
+            It 'Should call the Get-Inventory mock with the passed Server, InventoryItem Name and valid Location once' {
+                # Act
+                $datacenterInventoryBaseDSC.GetInventoryItem($inventoryItemLocation)
+
+                # Assert
+                $assertMockCalledParams = @{
+                    CommandName = 'Get-Inventory'
+                    ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:datacenterInventoryBaseDSCProperties.Name -and $Location -eq $script:validLocation }
                     ModuleName = $script:moduleName
                     Exactly = $true
                     Times = 1

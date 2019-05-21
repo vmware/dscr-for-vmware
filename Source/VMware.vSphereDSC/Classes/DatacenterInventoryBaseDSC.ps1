@@ -110,7 +110,7 @@ class DatacenterInventoryBaseDSC : BaseDSC {
         }
 
         $locationItems = $this.DatacenterLocation -Split '/'
-        $childEntities = Get-View -Server $this.Connection -Id $rootFolder.ChildEntity
+        $childEntities = Get-View -Server $this.Connection -Id $rootFolder.ExtensionData.ChildEntity
         $foundLocationItem = $null
 
         foreach ($locationItem in $locationItems) {
