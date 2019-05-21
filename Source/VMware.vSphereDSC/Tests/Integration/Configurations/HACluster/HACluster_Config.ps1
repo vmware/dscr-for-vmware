@@ -32,9 +32,10 @@ $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
 $script:vCenterCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
 $script:clusterName = 'MyCluster'
-$script:datacenterInventoryPath = [string]::Empty
-$script:datacenterInventoryPathWithCustomFolder = 'MyClusterFolder'
-$script:datacenter = 'Datacenter'
+$script:location = [string]::Empty
+$script:locationWithCustomFolder = 'MyClusterFolder'
+$script:datacenterName = 'Datacenter'
+$script:datacenterLocation = [string]::Empty
 
 $script:configurationData = @{
     AllNodes = @(
@@ -56,8 +57,9 @@ Configuration HACluster_WithClusterToAdd_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            DatacenterInventoryPath = $script:datacenterInventoryPath
-            Datacenter = $script:datacenter
+            Location = $script:location
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocation
             Name = $script:clusterName
             HAEnabled = $true
             HAAdmissionControlEnabled = $true
@@ -76,8 +78,9 @@ Configuration HACluster_WithClusterToAddInCustomFolder_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            DatacenterInventoryPath = $script:datacenterInventoryPathWithCustomFolder
-            Datacenter = $script:datacenter
+            Location = $script:locationWithCustomFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocation
             Name = $script:clusterName
             HAEnabled = $true
             HAAdmissionControlEnabled = $true
@@ -96,8 +99,9 @@ Configuration HACluster_WithClusterToUpdate_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            DatacenterInventoryPath = $script:datacenterInventoryPath
-            Datacenter = $script:datacenter
+            Location = $script:location
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocation
             Name = $script:clusterName
             HAAdmissionControlEnabled = $false
             HAIsolationResponse = 'PowerOff'
@@ -113,8 +117,9 @@ Configuration HACluster_WithClusterToUpdateInCustomFolder_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Present'
-            DatacenterInventoryPath = $script:datacenterInventoryPathWithCustomFolder
-            Datacenter = $script:datacenter
+            Location = $script:locationWithCustomFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocation
             Name = $script:clusterName
             HAFailoverLevel = 4
             HARestartPriority = 'Medium'
@@ -130,8 +135,9 @@ Configuration HACluster_WithClusterToRemove_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Absent'
-            DatacenterInventoryPath = $script:datacenterInventoryPath
-            Datacenter = $script:datacenter
+            Location = $script:location
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocation
             Name = $script:clusterName
         }
     }
@@ -145,8 +151,9 @@ Configuration HACluster_WithClusterToRemoveInCustomFolder_Config {
             Server = $Server
             Credential = $script:vCenterCredential
             Ensure = 'Absent'
-            DatacenterInventoryPath = $script:datacenterInventoryPathWithCustomFolder
-            Datacenter = $script:datacenter
+            Location = $script:locationWithCustomFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocation
             Name = $script:clusterName
         }
     }
