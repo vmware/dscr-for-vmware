@@ -50,7 +50,7 @@ class DatacenterInventoryBaseDSC : BaseDSC {
 
     Location of the Datacenter we will use from the Inventory.
     Root Folder of the Inventory is not part of the Location.
-    Empty Location means that the Datacenter in in the Root Folder of the Inventory.
+    Empty Location means that the Datacenter is in the Root Folder of the Inventory.
     Folder names in Location are separated by "/".
     Example Location: "MyDatacentersFolder".
     #>
