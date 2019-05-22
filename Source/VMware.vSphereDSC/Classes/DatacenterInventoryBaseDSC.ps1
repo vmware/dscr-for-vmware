@@ -79,9 +79,7 @@ class DatacenterInventoryBaseDSC : BaseDSC {
     Returns the Datacenter we will use from the Inventory.
     #>
     [PSObject] GetDatacenter() {
-        $inventory = $this.Connection
-
-        $rootFolderAsViewObject = Get-View -Server $this.Connection -Id $inventory.ExtensionData.Content.RootFolder
+        $rootFolderAsViewObject = Get-View -Server $this.Connection -Id $this.Connection.ExtensionData.Content.RootFolder
         $rootFolder = Get-Inventory -Server $this.Connection -Id $rootFolderAsViewObject.MoRef
 
         # Special case where the Location does not contain any folders.
