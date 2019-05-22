@@ -42,44 +42,20 @@ InModuleScope -ModuleName $script:moduleName {
                     $inventoryBaseDSC.ConnectVIServer()
                 }
 
-                It 'Should return the Inventory Root Folder' {
+                It 'Should call all defined mocks' {
+                    # Act
+                    $inventoryBaseDSC.GetInventoryItemLocation()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return the correct Location: Inventory Root Folder' {
                     # Act
                     $result = $inventoryBaseDSC.GetInventoryItemLocation()
 
                     # Assert
                     $result | Should -Be $script:inventoryRootFolder
-                }
-
-                It 'Should call the Get-View mock with the passed Server and Inventory Root Folder once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:viServer.ExtensionData.Content.RootFolder }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Get-Inventory mock with the passed Server and Inventory Root Folder MoRef once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-Inventory'
-                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
                 }
             }
 
@@ -92,66 +68,20 @@ InModuleScope -ModuleName $script:moduleName {
                     $inventoryBaseDSC.ConnectVIServer()
                 }
 
-                It 'Should throw when the Location does not exist' {
+                It 'Should call all defined mocks' {
+                    try {
+                        # Act
+                        $inventoryBaseDSC.GetInventoryItemLocation()
+                    }
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
+                }
+
+                It 'Should throw the correct error when the Location does not exist' {
                     # Act && Assert
                     { $inventoryBaseDSC.GetInventoryItemLocation() } | Should -Throw "Folder $($inventoryBaseDSCProperties.Location) was not found at $($script:inventoryRootFolder.Name)."
-                }
-
-                It 'Should call the Get-View mock with the passed Server and Inventory Root Folder once' {
-                    try {
-                        # Act
-                        $inventoryBaseDSC.GetInventoryItemLocation()
-                    }
-                    catch {
-                        # Assert
-                        $assertMockCalledParams = @{
-                            CommandName = 'Get-View'
-                            ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:viServer.ExtensionData.Content.RootFolder }
-                            Exactly = $true
-                            Times = 1
-                            Scope = 'It'
-                        }
-
-                        Assert-MockCalled @assertMockCalledParams
-                    }
-                }
-
-                It 'Should call the Get-Inventory mock with the passed Server and Inventory Root Folder MoRef once' {
-                    try {
-                        # Act
-                        $inventoryBaseDSC.GetInventoryItemLocation()
-                    }
-                    catch {
-                        # Assert
-                        $assertMockCalledParams = @{
-                            CommandName = 'Get-Inventory'
-                            ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef }
-                            Exactly = $true
-                            Times = 1
-                            Scope = 'It'
-                        }
-
-                        Assert-MockCalled @assertMockCalledParams
-                    }
-                }
-
-                It 'Should call the Get-Inventory mock with the passed Server, Datacenter Location Item One and Inventory Root Folder Location once' {
-                    try {
-                        # Act
-                        $inventoryBaseDSC.GetInventoryItemLocation()
-                    }
-                    catch {
-                        # Assert
-                        $assertMockCalledParams = @{
-                            CommandName = 'Get-Inventory'
-                            ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $inventoryBaseDSCProperties.Location -and $Location -eq $script:inventoryRootFolder }
-                            Exactly = $true
-                            Times = 1
-                            Scope = 'It'
-                        }
-
-                        Assert-MockCalled @assertMockCalledParams
-                    }
                 }
             }
 
@@ -164,60 +94,72 @@ InModuleScope -ModuleName $script:moduleName {
                     $inventoryBaseDSC.ConnectVIServer()
                 }
 
-                It 'Should return the Location: Datacenter Location Item One' {
+                It 'Should call all defined mocks' {
+                    # Act
+                    $inventoryBaseDSC.GetInventoryItemLocation()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return the correct Location: Datacenter Location Item One' {
                     # Act
                     $result = $inventoryBaseDSC.GetInventoryItemLocation()
 
                     # Assert
                     $result | Should -Be $script:locationDatacenterLocationItemOne
                 }
+            }
 
-                It 'Should call the Get-View mock with the passed Server and Inventory Root Folder once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
+            Context 'Location consists of two Inventory Items and one of them is a Datacenter' {
+                BeforeAll {
+                    # Arrange
+                    $inventoryBaseDSCProperties = New-MocksWhenLocationConsistsOfTwoInventoryItemsAndOneOfThemIsADatacenter
 
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:viServer.ExtensionData.Content.RootFolder }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
+                    $inventoryBaseDSC = New-Object -TypeName $inventoryBaseDSCClassName -Property $inventoryBaseDSCProperties
+                    $inventoryBaseDSC.ConnectVIServer()
                 }
 
-                It 'Should call the Get-Inventory mock with the passed Server and Inventory Root Folder MoRef once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-Inventory'
-                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
+                It 'Should call all defined mocks' {
+                    try {
+                        # Act
+                        $inventoryBaseDSC.GetInventoryItemLocation()
                     }
-
-                    Assert-MockCalled @assertMockCalledParams
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
                 }
 
-                It 'Should call the Get-Inventory mock with the passed Server, Datacenter Location Item One and Inventory Root Folder Location once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
+                It 'Should throw the correct error when the Location contains a Datacenter' {
+                    # Act && Assert
+                    { $inventoryBaseDSC.GetInventoryItemLocation() } | Should -Throw "The Location $($inventoryBaseDSCProperties.Location) contains Datacenter $($script:constants.DatacenterName) which is not valid."
+                }
+            }
 
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-Inventory'
-                        ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $inventoryBaseDSCProperties.Location -and $Location -eq $script:inventoryRootFolder }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
+            Context 'Location consists of two Folders and the Location is not valid' {
+                BeforeAll {
+                    # Arrange
+                    $inventoryBaseDSCProperties = New-MocksWhenLocationConsistsOfTwoFoldersAndTheLocationIsNotValid
+
+                    $inventoryBaseDSC = New-Object -TypeName $inventoryBaseDSCClassName -Property $inventoryBaseDSCProperties
+                    $inventoryBaseDSC.ConnectVIServer()
+                }
+
+                It 'Should call all defined mocks' {
+                    try {
+                        # Act
+                        $inventoryBaseDSC.GetInventoryItemLocation()
                     }
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
+                }
 
-                    Assert-MockCalled @assertMockCalledParams
+                It 'Should throw the correct error when the Location is not valid' {
+                    # Act && Assert
+                    { $inventoryBaseDSC.GetInventoryItemLocation() } | Should -Throw "Inventory Item $($inventoryBaseDSCProperties.Name) with Location $($inventoryBaseDSCProperties.Location) was not found because $($script:constants.DatacenterLocationItemThree) folder cannot be found below $($script:constants.InventoryRootFolderName)."
                 }
             }
 
@@ -230,108 +172,20 @@ InModuleScope -ModuleName $script:moduleName {
                     $inventoryBaseDSC.ConnectVIServer()
                 }
 
-                It 'Should return the Location: Datacenter Location Item Two' {
+                It 'Should call all defined mocks' {
+                    # Act
+                    $inventoryBaseDSC.GetInventoryItemLocation()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return the correct Location: Datacenter Location Item Two' {
                     # Act
                     $result = $inventoryBaseDSC.GetInventoryItemLocation()
 
                     # Assert
                     $result | Should -Be $script:locationDatacenterLocationItemTwo
-                }
-
-                It 'Should call the Get-View mock with the passed Server and Inventory Root Folder once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:viServer.ExtensionData.Content.RootFolder }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Get-Inventory mock with the passed Server and Inventory Root Folder MoRef once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-Inventory'
-                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Get-View mock with the passed Server and Inventory Root Folder Child Entity once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:inventoryRootFolder.ExtensionData.ChildEntity | ConvertTo-Json)) }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Get-View mock with the passed Server and Datacenter Location Item One Child Entity once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterLocationItemOne.ChildEntity | ConvertTo-Json)) }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Get-View mock with the passed Server and Datacenter Location Item Two Child Entity once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-View'
-                        ParameterFilter = { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterLocationItemTwo.ChildEntity | ConvertTo-Json)) }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Get-Inventory mock with the passed Server and Datacenter Location Item Two MoRef once' {
-                    # Act
-                    $inventoryBaseDSC.GetInventoryItemLocation()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Get-Inventory'
-                        ParameterFilter = { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocationItemTwo.MoRef }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
                 }
             }
         }

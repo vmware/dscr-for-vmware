@@ -20,6 +20,7 @@ $script:constants = @{
     VIServerPassword = 'TestPassword' | ConvertTo-SecureString -AsPlainText -Force
     InventoryItemName = 'TestInventoryItem'
     FolderType = 'Folder'
+    DatacenterType = 'Datacenter'
     RootFolderValue = 'group-d1'
     InventoryRootFolderId = 'Folder-group-d1'
     InventoryRootFolderName = 'Datacenters'
@@ -28,6 +29,7 @@ $script:constants = @{
     DatacenterLocationItemTwoId = 'my-datacenter-folder-two-id'
     DatacenterLocationItemTwo = 'MyDatacenterFolderTwo'
     DatacenterLocationItemThree = 'MyDatacenterFolderThree'
+    DatacenterName = 'MyDatacenter'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -67,6 +69,10 @@ $script:inventoryRootFolder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.Fol
             [VMware.Vim.ManagedObjectReference] @{
                 Type = $script:constants.FolderType
                 Value = $script:constants.DatacenterLocationItemOne
+            },
+            [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.DatacenterType
+                Value = $script:constants.DatacenterName
             }
         )
     }
@@ -98,6 +104,10 @@ $script:datacenterLocationItemTwo = [VMware.Vim.Folder] @{
 
 $script:datacenterLocationItemThree = [VMware.Vim.Folder] @{
     Name = $script:constants.DatacenterLocationItemThree
+}
+
+$script:datacenterChildEntity = [VMware.Vim.Datacenter] @{
+    Name = $script:constants.DatacenterName
 }
 
 $script:locationDatacenterLocationItemOne = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{

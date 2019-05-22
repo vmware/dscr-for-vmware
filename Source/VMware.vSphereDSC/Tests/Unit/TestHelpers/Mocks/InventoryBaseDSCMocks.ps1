@@ -39,9 +39,9 @@ function New-MocksWhenEmptyLocationIsPassed {
     $rootFolderViewBaseObjectMock = $script:rootFolderViewBaseObject
     $inventoryRootFolderMock = $script:inventoryRootFolder
 
-    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure()
-    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure()
-    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure()
+    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure() -Verifiable
 
     $inventoryBaseDSCProperties
 }
@@ -57,10 +57,10 @@ function New-MocksWhenLocationConsistsOfOnlyOneFolderAndTheFolderDoesNotExist {
     $rootFolderViewBaseObjectMock = $script:rootFolderViewBaseObject
     $inventoryRootFolderMock = $script:inventoryRootFolder
 
-    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure()
-    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure()
-    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef }
-    Mock -CommandName Get-Inventory -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $inventoryBaseDSCProperties.Location -and $Location -eq $script:inventoryRootFolder }
+    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef } -Verifiable
+    Mock -CommandName Get-Inventory -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $inventoryBaseDSCProperties.Location -and $Location -eq $script:inventoryRootFolder } -Verifiable
 
     $inventoryBaseDSCProperties
 }
@@ -77,10 +77,50 @@ function New-MocksWhenLocationConsistsOfOnlyOneFolderAndTheFolderExists {
     $inventoryRootFolderMock = $script:inventoryRootFolder
     $locationDatacenterLocationItemOneMock = $script:locationDatacenterLocationItemOne
 
-    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure()
-    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure()
-    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef }
-    Mock -CommandName Get-Inventory -MockWith { return $locationDatacenterLocationItemOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $inventoryBaseDSCProperties.Location -and $Location -eq $script:inventoryRootFolder }
+    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef } -Verifiable
+    Mock -CommandName Get-Inventory -MockWith { return $locationDatacenterLocationItemOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $inventoryBaseDSCProperties.Location -and $Location -eq $script:inventoryRootFolder } -Verifiable
+
+    $inventoryBaseDSCProperties
+}
+
+function New-MocksWhenLocationConsistsOfTwoInventoryItemsAndOneOfThemIsADatacenter {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $inventoryBaseDSCProperties = New-InventoryBaseDSCProperties
+    $inventoryBaseDSCProperties.Location = "$($script:constants.DatacenterName)/$($script:constants.DatacenterLocationItemTwo)"
+
+    $viServerMock = $script:viServer
+    $rootFolderViewBaseObjectMock = $script:rootFolderViewBaseObject
+    $inventoryRootFolderMock = $script:inventoryRootFolder
+    $datacenterChildEntityMock = $script:datacenterChildEntity
+
+    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:viServer.ExtensionData.Content.RootFolder } -Verifiable
+    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef } -Verifiable
+    Mock -CommandName Get-View -MockWith { return $datacenterChildEntityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:inventoryRootFolder.ExtensionData.ChildEntity | ConvertTo-Json)) } -Verifiable
+
+    $inventoryBaseDSCProperties
+}
+
+function New-MocksWhenLocationConsistsOfTwoFoldersAndTheLocationIsNotValid {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $inventoryBaseDSCProperties = New-InventoryBaseDSCProperties
+    $inventoryBaseDSCProperties.Location = "$($script:constants.DatacenterLocationItemThree)/$($script:constants.DatacenterLocationItemTwo)"
+
+    $viServerMock = $script:viServer
+    $rootFolderViewBaseObjectMock = $script:rootFolderViewBaseObject
+    $inventoryRootFolderMock = $script:inventoryRootFolder
+    $datacenterLocationItemOneMock = $script:datacenterLocationItemOne
+
+    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:viServer.ExtensionData.Content.RootFolder } -Verifiable
+    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef } -Verifiable
+    Mock -CommandName Get-View -MockWith { return $datacenterLocationItemOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:inventoryRootFolder.ExtensionData.ChildEntity | ConvertTo-Json)) } -Verifiable
 
     $inventoryBaseDSCProperties
 }
@@ -100,13 +140,13 @@ function New-MocksWhenLocationConsistsOfTwoFoldersAndTheLocationIsValid {
     $datacenterLocationItemThreeMock = $script:datacenterLocationItemThree
     $locationDatacenterLocationItemTwoMock = $script:locationDatacenterLocationItemTwo
 
-    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure()
-    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:viServer.ExtensionData.Content.RootFolder }
-    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef }
-    Mock -CommandName Get-View -MockWith { return $datacenterLocationItemOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:inventoryRootFolder.ExtensionData.ChildEntity | ConvertTo-Json)) }
-    Mock -CommandName Get-View -MockWith { return $datacenterLocationItemTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterLocationItemOne.ChildEntity | ConvertTo-Json)) }
-    Mock -CommandName Get-View -MockWith { return $datacenterLocationItemThreeMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterLocationItemTwo.ChildEntity | ConvertTo-Json)) }
-    Mock -CommandName Get-Inventory -MockWith { return $locationDatacenterLocationItemTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocationItemTwo.MoRef }
+    Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Get-View -MockWith { return $rootFolderViewBaseObjectMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:viServer.ExtensionData.Content.RootFolder } -Verifiable
+    Mock -CommandName Get-Inventory -MockWith { return $inventoryRootFolderMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolderViewBaseObject.MoRef } -Verifiable
+    Mock -CommandName Get-View -MockWith { return $datacenterLocationItemOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:inventoryRootFolder.ExtensionData.ChildEntity | ConvertTo-Json)) } -Verifiable
+    Mock -CommandName Get-View -MockWith { return $datacenterLocationItemTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterLocationItemOne.ChildEntity | ConvertTo-Json)) } -Verifiable
+    Mock -CommandName Get-View -MockWith { return $datacenterLocationItemThreeMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterLocationItemTwo.ChildEntity | ConvertTo-Json)) } -Verifiable
+    Mock -CommandName Get-Inventory -MockWith { return $locationDatacenterLocationItemTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocationItemTwo.MoRef } -Verifiable
 
     $inventoryBaseDSCProperties
 }
