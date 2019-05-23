@@ -21,6 +21,7 @@ $script:constants = @{
     InventoryItemName = 'TestInventoryItem'
     FolderType = 'Folder'
     DatacenterType = 'Datacenter'
+    ResourcePoolType = 'Resource Pool'
     RootFolderValue = 'group-d1'
     InventoryRootFolderId = 'Folder-group-d1'
     InventoryRootFolderName = 'Datacenters'
@@ -29,7 +30,16 @@ $script:constants = @{
     DatacenterLocationItemTwoId = 'my-datacenter-folder-two-id'
     DatacenterLocationItemTwo = 'MyDatacenterFolderTwo'
     DatacenterLocationItemThree = 'MyDatacenterFolderThree'
+    DatacenterId = 'my-datacenter-inventory-root-folder-parent-id'
     DatacenterName = 'MyDatacenter'
+    DatacenterHostFolderId = 'group-h4'
+    DatacenterHostFolderName = 'HostFolder'
+    InventoryItemLocationItemOneId = 'my-inventory-item-location-item-one'
+    InventoryItemLocationItemOne = 'MyInventoryItemOne'
+    InventoryItemLocationItemTwoId = 'my-inventory-item-location-item-two'
+    InventoryItemLocationItemTwo = 'MyInventoryItemTwo'
+    ResourcePoolId = 'my-resource-pool-id'
+    ResourcePoolName = 'MyResourcePool'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -120,4 +130,91 @@ $script:locationDatacenterLocationItemTwo = [VMware.VimAutomation.ViCore.Impl.V1
     Id = $script:constants.DatacenterLocationItemTwoId
     Name = $script:constants.DatacenterLocationItemTwo
     ParentId = $script:constants.DatacenterLocationItemOneId
+}
+
+$script:datacenterWithInventoryRootFolderAsParent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
+    Id = $script:constants.DatacenterId
+    Name = $script:constants.DatacenterName
+    ParentFolderId = $script:constants.InventoryRootFolderId
+}
+
+$script:datacenterWithDatacenterLocationItemOneAsParent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
+    Id = $script:constants.DatacenterId
+    Name = $script:constants.DatacenterName
+    ParentFolderId = $script:constants.DatacenterLocationItemOneId
+    ExtensionData = [VMware.Vim.Datacenter] @{
+        HostFolder = [VMware.Vim.ManagedObjectReference] @{
+            Type = $script:constants.FolderType
+            Value = $script:constants.DatacenterHostFolderId
+        }
+    }
+}
+
+$script:datacenterWithDatacenterLocationItemTwoAsParent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
+    Id = $script:constants.DatacenterId
+    Name = $script:constants.DatacenterName
+    ParentFolderId = $script:constants.DatacenterLocationItemTwoId
+}
+
+$script:datacenterHostFolderViewBaseObject = [VMware.Vim.Folder] @{
+    Name = $script:constants.DatacenterHostFolderName
+    MoRef = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.FolderType
+        Value = $script:constants.DatacenterHostFolderId
+    }
+}
+
+$script:datacenterHostFolder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+    Id = $script:constants.DatacenterHostFolderId
+    Name = $script:constants.DatacenterHostFolderName
+    Parent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
+        Name = $script:constants.DatacenterName
+    }
+}
+
+$script:inventoryItemLocationItemOne = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+    Id = $script:constants.InventoryItemLocationItemOneId
+    Name = $script:constants.InventoryItemLocationItemOne
+    ParentId = $script:constants.DatacenterHostFolderId
+}
+
+$script:foundLocations = @(
+    [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ResourcePoolImpl] @{
+        Id = $script:constants.InventoryItemLocationItemTwoId
+        Name = $script:constants.InventoryItemLocationItemTwo
+        Parent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+            Id = $script:constants.InventoryItemLocationItemOneId
+            Name = $script:constants.InventoryItemLocationItemOne
+        }
+    }
+)
+
+$script:inventoryItemLocationViewBaseObject = [VMware.Vim.ResourcePool] @{
+    Name = $script:constants.InventoryItemLocationItemTwo
+    Parent = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.ResourcePoolType
+        Value = $script:constants.InventoryItemLocationItemOneId
+    }
+}
+
+$script:inventoryItemLocationWithDatacenterHostFolderAsParent = [VMware.Vim.Folder] @{
+    Name = $script:constants.DatacenterHostFolderName
+    Parent = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.FolderType
+        Value = $script:constants.DatacenterHostFolderId
+    }
+}
+
+$script:inventoryItemLocationWithInventoryItemLocationItemOneAsParent = [VMware.Vim.Folder] @{
+    Name = $script:constants.InventoryItemLocationItemOne
+    Parent = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.FolderType
+        Value = $script:constants.InventoryItemLocationItemOneId
+    }
+}
+
+$script:inventoryItemWithInventoryItemLocationItemTwoAsParent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ResourcePoolImpl] @{
+    Id = $script:constants.ResourcePoolId
+    Name = $script:constants.ResourcePoolName
+    ParentId = $script:constants.InventoryItemLocationItemTwoId
 }
