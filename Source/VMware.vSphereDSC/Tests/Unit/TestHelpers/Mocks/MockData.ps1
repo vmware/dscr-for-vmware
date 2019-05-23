@@ -40,6 +40,13 @@ $script:constants = @{
     InventoryItemLocationItemTwo = 'MyInventoryItemTwo'
     ResourcePoolId = 'my-resource-pool-id'
     ResourcePoolName = 'MyResourcePool'
+    ClusterId = 'my-cluster-id'
+    ClusterName = 'MyCluster'
+    HAEnabled = $true
+    HAAdmissionControlEnabled = $true
+    HAFailoverLevel = 4
+    HAIsolationResponse = 'DoNothing'
+    HARestartPriority = 'High'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -217,4 +224,20 @@ $script:inventoryItemWithInventoryItemLocationItemTwoAsParent = [VMware.VimAutom
     Id = $script:constants.ResourcePoolId
     Name = $script:constants.ResourcePoolName
     ParentId = $script:constants.InventoryItemLocationItemTwoId
+}
+
+$script:cluster = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
+    Id = $script:constants.ClusterId
+    Name = $script:constants.ClusterName
+    ParentId = $script:constants.InventoryItemLocationItemTwoId
+    HAEnabled = $script:constants.HAEnabled
+    HAAdmissionControlEnabled = $script:constants.HAAdmissionControlEnabled
+    HAFailoverLevel = $script:constants.HAFailoverLevel
+    HAIsolationResponse = $script:constants.HAIsolationResponse
+    HARestartPriority = $script:constants.HARestartPriority
+    ExtensionData = [VMware.Vim.ClusterComputeResource] @{
+        ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
+            DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{}
+        }
+    }
 }

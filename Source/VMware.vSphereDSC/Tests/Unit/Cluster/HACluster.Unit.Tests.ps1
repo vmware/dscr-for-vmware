@@ -16,877 +16,498 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 using module VMware.vSphereDSC
 
-function Invoke-TestSetup {
-    $script:modulePath = $env:PSModulePath
-    $script:unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
-    $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
+$script:moduleName = 'VMware.vSphereDSC'
 
-    $script:moduleName = 'VMware.vSphereDSC'
-    $script:resourceName = 'HACluster'
+InModuleScope -ModuleName $script:moduleName {
+    try {
+        $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
+        $modulePath = $env:PSModulePath
+        $resourceName = 'HACluster'
 
-    $script:user = 'user'
-    $password = 'password' | ConvertTo-SecureString -AsPlainText -Force
-    $credential = New-Object System.Management.Automation.PSCredential($script:user, $password)
+        . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
-    $script:resourceProperties = @{
-        Server = '10.23.80.58'
-        Credential = $credential
-        Name = 'MyCluster'
-        Ensure = 'Present'
-        DatacenterName = 'MyDatacenter'
-    }
+        # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
+        Invoke-TestSetup
 
-    $script:constants = @{
-        FolderType = 'Folder'
-        RootFolderValue = 'group-d1'
-        DatacentersFolderName = 'Datacenters'
-        DatacenterId = 'MyDatacenter-datacenter-1'
-        DatacenterName = 'MyDatacenter'
-        DatacenterPathItemOne = 'MyDatacenterFolderOne'
-        DatacenterPathItemTwoId = 'my-datacenter-folder-two'
-        DatacenterPathItemTwo = 'MyDatacenterFolderTwo'
-        HostFolderId = 'group-h4'
-        HostFolderName = 'HostFolder'
-        DatacenterInventoryPathItemOneId = 'my-cluster-location-one'
-        DatacenterInventoryPathItemOne = 'MyClusterFolderOne'
-        DatacenterInventoryPathItemTwoId = 'my-cluster-location-two'
-        DatacenterInventoryPathItemTwo = 'MyClusterFolderTwo'
-        ClusterId = 'my-cluster-id'
-        ClusterName = 'MyCluster'
-    }
+        . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\HAClusterMocks.ps1"
 
-    $script:viServerWithRootFolderScriptBlock = @'
-        return [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
-            Name = '$($script:resourceProperties.Server)'
-            User = '$($script:user)'
-            ExtensionData = [VMware.Vim.ServiceInstance] @{
-                Content = [VMware.Vim.ServiceContent] @{
-                    RootFolder = [VMware.Vim.ManagedObjectReference] @{
-                        Type = '$($script:constants.FolderType)'
-                        Value = '$($script:constants.RootFolderValue)'
+        Describe 'HACluster\Set' -Tag 'Set' {
+            BeforeAll {
+                # Arrange
+                New-MocksForHACluster
+            }
+
+            Context 'Invoking with Ensure Present, non existing Cluster and no HA settings specified' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnsurePresentNonExistingClusterAndNoHASettingsSpecified
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should call the New-Cluster mock without HA settings specified once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'New-Cluster'
+                        ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $resourceProperties.Name -and $Location -eq $script:foundLocations[0] -and !$Confirm }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
                     }
+
+                    Assert-MockCalled @assertMockCalledParams
                 }
             }
-        }
-'@
 
-    $script:rootFolderViewBaseObjectScriptBlock = @'
-        return [VMware.Vim.Folder] @{
-            Name = '$($script:constants.DatacentersFolderName)'
-            MoRef = [VMware.Vim.ManagedObjectReference] @{
-                Type = '$($script:constants.FolderType)'
-                Value = '$($script:constants.RootFolderValue)'
-            }
-        }
-'@
+            Context 'Invoking with Ensure Present, non existing Cluster and HA settings specified' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnsurePresentNonExistingClusterAndHASettingsSpecified
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
 
-    $script:datacentersFolderScriptBlock = @'
-        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
-            Id = '$($script:constants.DatacentersFolderId)'
-            Name = '$($script:constants.DatacentersFolderName)'
-            ExtensionData = [VMware.Vim.Folder] @{
-                ChildEntity = @(
-                    [VMware.Vim.ManagedObjectReference] @{
-                        Type = '$($script:constants.FolderType)'
-                        Value = '$($script:constants.DatacenterPathItemOne)'
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should call the New-Cluster mock with HA settings specified once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'New-Cluster'
+                        ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $resourceProperties.Name -and $Location -eq $script:foundLocations[0] -and `
+                                            !$Confirm -and $HAEnabled -eq $script:constants.HAEnabled -and $HAAdmissionControlEnabled -eq $script:constants.HAAdmissionControlEnabled -and `
+                                            $HAFailoverLevel -eq $script:constants.HAFailoverLevel -and $HAIsolationResponse -eq $script:constants.HAIsolationResponse -and `
+                                            $HARestartPriority -eq $script:constants.HARestartPriority }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
                     }
-                )
-            }
-        }
-'@
 
-    $script:datacenterPathItemOneScriptBlock = @'
-        return [VMware.Vim.Folder] @{
-            Name = '$($script:constants.DatacenterPathItemOne)'
-            ChildEntity = @(
-                [VMware.Vim.ManagedObjectReference] @{
-                    Type = '$($script:constants.FolderType)'
-                    Value = '$($script:constants.DatacenterPathItemTwo)'
-                }
-            )
-        }
-'@
-
-    $script:datacenterPathItemTwoScriptBlock = @'
-        return [VMware.Vim.Folder] @{
-            Name = '$($script:constants.DatacenterPathItemTwo)'
-            ChildEntity = @(
-                [VMware.Vim.ManagedObjectReference] @{
-                    Type = '$($script:constants.FolderType)'
-                    Value = 'DatacenterPathItemTwo Child Entity'
-                }
-            )
-            MoRef = [VMware.Vim.ManagedObjectReference] @{
-                Type = '$($script:constants.FolderType)'
-                Value = '$($script:constants.DatacenterPathItemTwoId)'
-            }
-        }
-'@
-
-    $script:datacenterFolderScriptBlock = @'
-        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
-            Id = '$($script:constants.DatacenterPathItemTwoId)'
-            Name = '$($script:constants.DatacenterPathItemTwo)'
-        }
-'@
-
-    $script:datacenterWithPathItemTwoAsParentScriptBlock = @'
-        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
-            Id = '$($script:constants.DatacenterId)'
-            Name = '$($script:constants.DatacenterName)'
-            ParentFolderId = '$($script:constants.DatacenterPathItemTwoId)'
-            ExtensionData = [VMware.Vim.Datacenter] @{
-                HostFolder = [VMware.Vim.ManagedObjectReference] @{
-                    Type = '$($script:constants.FolderType)'
-                    Value = '$($script:constants.HostFolderId)'
+                    Assert-MockCalled @assertMockCalledParams
                 }
             }
-        }
-'@
 
-    $script:hostFolderOfDatacenterViewBaseObjectScriptBlock = @'
-        return [VMware.Vim.Folder] @{
-            Name = '$($script:constants.HostFolderName)'
-            MoRef = [VMware.Vim.ManagedObjectReference] @{
-                Type = '$($script:constants.FolderType)'
-                Value = '$($script:constants.HostFolderId)'
-            }
-    }
-'@
+            Context 'Invoking with Ensure Present, existing Cluster and no HA settings specified' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnsurePresentExistingClusterAndNoHASettingsSpecified
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
 
-    $script:hostFolderScriptBlock = @'
-        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
-            Id = '$($script:constants.HostFolderId)'
-            Name = '$($script:constants.HostFolderName)'
-        }
-'@
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Set()
 
-    $script:locationsScriptBlock = @'
-        return @(
-            [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
-                Id = '$($script:constants.DatacenterInventoryPathItemTwoId)'
-                ExtensionData = [VMware.Vim.Folder] @{
-                    Name = '$($script:constants.DatacenterInventoryPathItemTwo)'
-                    MoRef = [VMware.Vim.ManagedObjectReference] @{
-                        Type = '$($script:constants.FolderType)'
-                        Value = '$($script:constants.DatacenterInventoryPathItemTwoId)'
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should call the Set-Cluster mock without HA settings specified once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Set-Cluster'
+                        ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
                     }
+
+                    Assert-MockCalled @assertMockCalledParams
                 }
             }
-        )
-'@
 
-    $script:locationViewBaseObjectScriptBlock = @'
-        return [VMware.Vim.Folder] @{
-            Name = '$($script:constants.DatacenterInventoryPathItemTwo)'
-            Parent = [VMware.Vim.ManagedObjectReference] @{
-                Type = '$($script:constants.FolderType)'
-                Value = '$($script:constants.DatacenterInventoryPathItemOneId)'
+            Context 'Invoking with Ensure Present, existing Cluster and HA settings specified' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnsurePresentExistingClusterAndHASettingsSpecified
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should call the Set-Cluster mock with HA settings specified once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Set-Cluster'
+                        ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm -and $HAEnabled -eq !$script:constants.HAEnabled -and `
+                                            $HAAdmissionControlEnabled -eq !$script:constants.HAAdmissionControlEnabled -and $HAFailoverLevel -eq $script:constants.HAFailoverLevel -and `
+                                            $HAIsolationResponse -eq $script:constants.HAIsolationResponse -and $HARestartPriority -eq $script:constants.HARestartPriority }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
             }
-        }
-'@
 
-    $script:locationParentScriptBlock = @'
-        return [VMware.Vim.Folder] @{
-            Name = '$($script:constants.DatacenterInventoryPathItemOne)'
-            Parent = [VMware.Vim.ManagedObjectReference] @{
-                Type = '$($script:constants.FolderType)'
-                Value = '$($script:constants.DatacenterInventoryPathItemOneId)'
+            Context 'Invoking with Ensure Absent and existing Cluster' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnsureAbsentAndExistingCluster
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should call the Remove-Cluster mock once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Remove-Cluster'
+                        ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
             }
-        }
-'@
 
-    $script:clusterScriptBlock = @'
-        return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
-            Id = '$($script:constants.ClusterId)'
-            Name = '$($script:constants.ClusterName)'
-            ParentId = '$($script:constants.DatacenterInventoryPathItemTwoId)'
-            HAEnabled = '$($true)'
-            HAAdmissionControlEnabled = '$($true)'
-            HAFailoverLevel = 4
-            HAIsolationResponse = 'DoNothing'
-            HARestartPriority = 'High'
-            ExtensionData = [VMware.Vim.ClusterComputeResource] @{
-                ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
-                    DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{}
+            Context 'Invoking with Ensure Absent and non existing Cluster' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnsureAbsentAndNonExistingCluster
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should not call the Remove-Cluster mock' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Remove-Cluster'
+                        ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm }
+                        Exactly = $true
+                        Times = 0
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
                 }
             }
         }
-'@
 
-    $env:PSModulePath = $script:mockModuleLocation
-    $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
-    if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
-        throw 'The Original VMware.VimAutomation.Core Module is loaded in the current session. If you want to run the unit tests please open a new PowerShell session.'
-    }
+        Describe 'HACluster\Test' -Tag 'Test' {
+            BeforeAll {
+                # Arrange
+                New-MocksForHACluster
+            }
 
-    Import-Module -Name VMware.VimAutomation.Core
+            Context 'Invoking with Ensure Present and non existing Cluster' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnsurePresentAndNonExistingCluster
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
 
-    $script:viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
-        Name = $script:resourceProperties.Server
-        User = $script:user
-        ExtensionData = [VMware.Vim.ServiceInstance] @{
-            Content = [VMware.Vim.ServiceContent] @{
-                RootFolder = [VMware.Vim.ManagedObjectReference] @{
-                    Type = $script:constants.FolderType
-                    Value = $script:constants.RootFolderValue
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $false when the Cluster does not exist' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -Be $false
+                }
+            }
+
+            Context 'Invoking with Ensure Present, existing Cluster and matching settings' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnsurePresentExistingClusterAndMatchingSettings
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $true when the Cluster exists and the HA settings are equal' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -Be $true
+                }
+            }
+
+            Context 'Invoking with Ensure Present, existing Cluster and non matching settings' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnsurePresentExistingClusterAndNonMatchingSettings
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $false when the Cluster exists and the HA settings are not equal' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -Be $false
+                }
+            }
+
+            Context 'Invoking with Ensure Absent and non existing Cluster' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksInTestWhenEnsureAbsentAndNonExistingCluster
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $true when the Cluster does not exist' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -Be $true
+                }
+            }
+
+            Context 'Invoking with Ensure Absent and existing Cluster' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksInTestWhenEnsureAbsentAndExistingCluster
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $false when the Cluster exists' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -Be $false
+                }
+            }
+        }
+
+        Describe 'HACluster\Get' -Tag 'Get' {
+            BeforeAll {
+                # Arrange
+                New-MocksForHACluster
+            }
+
+            Context 'Invoking with Ensure Present and non existing Cluster' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksInGetWhenEnsurePresentAndNonExistingCluster
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Get()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should retrieve the correct settings from the Resource properties and Ensure should be set to Absent' {
+                    # Act
+                    $result = $resource.Get()
+
+                    # Assert
+                    $result.Server | Should -Be $resourceProperties.Server
+                    $result.Name | Should -Be $resourceProperties.Name
+                    $result.Location | Should -Be $resourceProperties.Location
+                    $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
+                    $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
+                    $result.Ensure | Should -Be 'Absent'
+                    $result.HAEnabled | Should -Be $resourceProperties.HAEnabled
+                    $result.HAAdmissionControlEnabled | Should -Be $resourceProperties.HAAdmissionControlEnabled
+                    $result.HAFailoverLevel | Should -Be $resourceProperties.HAFailoverLevel
+                    $result.HAIsolationResponse | Should -Be $resourceProperties.HAIsolationResponse
+                    $result.HARestartPriority | Should -Be $resourceProperties.HARestartPriority
+                }
+            }
+
+            Context 'Invoking with Ensure Present and existing Cluster' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksInGetWhenEnsurePresentAndExistingCluster
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Get()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should retrieve the correct settings from the Server and Ensure should be set to Present' {
+                    # Act
+                    $result = $resource.Get()
+
+                    # Assert
+                    $result.Server | Should -Be $resourceProperties.Server
+                    $result.Name | Should -Be $script:cluster.Name
+                    $result.Location | Should -Be $resourceProperties.Location
+                    $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
+                    $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
+                    $result.Ensure | Should -Be 'Present'
+                    $result.HAEnabled | Should -Be $script:cluster.HAEnabled
+                    $result.HAAdmissionControlEnabled | Should -Be $script:cluster.HAAdmissionControlEnabled
+                    $result.HAFailoverLevel | Should -Be $script:cluster.HAFailoverLevel
+                    $result.HAIsolationResponse.ToString() | Should -Be $script:cluster.HAIsolationResponse.ToString()
+                    $result.HARestartPriority.ToString() | Should -Be $script:cluster.HARestartPriority.ToString()
+                }
+            }
+
+            Context 'Invoking with Ensure Absent and non existing Cluster' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksInGetWhenEnsureAbsentAndNonExistingCluster
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Get()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should retrieve the correct settings from the Resource properties and Ensure should be set to Absent' {
+                    # Act
+                    $result = $resource.Get()
+
+                    # Assert
+                    $result.Server | Should -Be $resourceProperties.Server
+                    $result.Name | Should -Be $resourceProperties.Name
+                    $result.Location | Should -Be $resourceProperties.Location
+                    $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
+                    $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
+                    $result.Ensure | Should -Be 'Absent'
+                    $result.HAEnabled | Should -Be $resourceProperties.HAEnabled
+                    $result.HAAdmissionControlEnabled | Should -Be $resourceProperties.HAAdmissionControlEnabled
+                    $result.HAFailoverLevel | Should -Be $resourceProperties.HAFailoverLevel
+                    $result.HAIsolationResponse | Should -Be $resourceProperties.HAIsolationResponse
+                    $result.HARestartPriority | Should -Be $resourceProperties.HARestartPriority
+                }
+            }
+
+            Context 'Invoking with Ensure Absent and existing Cluster' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksInGetWhenEnsureAbsentAndExistingCluster
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $resource.Get()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should retrieve the correct settings from the Server and Ensure should be set to Present' {
+                    # Act
+                    $result = $resource.Get()
+
+                    # Assert
+                    $result.Server | Should -Be $resourceProperties.Server
+                    $result.Name | Should -Be $script:cluster.Name
+                    $result.Location | Should -Be $resourceProperties.Location
+                    $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
+                    $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
+                    $result.Ensure | Should -Be 'Present'
+                    $result.HAEnabled | Should -Be $script:cluster.HAEnabled
+                    $result.HAAdmissionControlEnabled | Should -Be $script:cluster.HAAdmissionControlEnabled
+                    $result.HAFailoverLevel | Should -Be $script:cluster.HAFailoverLevel
+                    $result.HAIsolationResponse.ToString() | Should -Be $script:cluster.HAIsolationResponse.ToString()
+                    $result.HARestartPriority.ToString() | Should -Be $script:cluster.HARestartPriority.ToString()
                 }
             }
         }
     }
-
-    $script:rootFolder = [VMware.Vim.ManagedObjectReference] @{
-        Type = $script:constants.FolderType
-        Value = $script:constants.RootFolderValue
+    finally {
+        # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
+        Invoke-TestCleanup -ModulePath $modulePath
     }
-
-    $script:datacenterPathItemOne = [VMware.Vim.ManagedObjectReference] @{
-        Type = $script:constants.FolderType
-        Value = $script:constants.DatacenterPathItemOne
-    }
-
-    $script:datacenterPathItemTwo = [VMware.Vim.ManagedObjectReference] @{
-        Type = $script:constants.FolderType
-        Value = $script:constants.DatacenterPathItemTwo
-    }
-
-    $script:datacenterLocation = [VMware.Vim.ManagedObjectReference] @{
-        Type = $script:constants.FolderType
-        Value = $script:constants.DatacenterPathItemTwoId
-    }
-
-    $script:hostFolder = [VMware.Vim.ManagedObjectReference] @{
-        Type = $script:constants.FolderType
-        Value = $script:constants.HostFolderId
-    }
-
-    $script:hostFolderLocation = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
-        Id = $script:constants.HostFolderId
-        Name = $script:constants.HostFolderName
-    }
-
-    $script:clusterLocation = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
-        Id = $script:constants.DatacenterInventoryPathItemTwoId
-        ExtensionData = [VMware.Vim.Folder] @{
-            Name = $script:constants.DatacenterInventoryPathItemTwo
-            MoRef = [VMware.Vim.ManagedObjectReference] @{
-                Type = $script:constants.FolderType
-                Value = $script:constants.DatacenterInventoryPathItemTwoId
-            }
-        }
-    }
-
-    $script:locationParent = [VMware.Vim.ManagedObjectReference] @{
-        Type = $script:constants.FolderType
-        Value = $script:constants.DatacenterInventoryPathItemOneId
-    }
-
-    $script:cluster = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
-        Id = $script:constants.ClusterId
-        Name = $script:constants.ClusterName
-        ParentId = $script:constants.DatacenterInventoryPathItemTwoId
-        HAEnabled = $true
-        HAAdmissionControlEnabled = $true
-        HAFailoverLevel = 4
-        HAIsolationResponse = 'DoNothing'
-        HARestartPriority = 'High'
-        ExtensionData = [VMware.Vim.ClusterComputeResource] @{
-            ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
-                DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{}
-            }
-        }
-    }
-}
-
-function Invoke-TestCleanup {
-    Remove-Module -Name VMware.VimAutomation.Core
-    $env:PSModulePath = $script:modulePath
-}
-
-try {
-    # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
-    Invoke-TestSetup
-
-    Describe 'HACluster\Set' -Tag 'Set' {
-        BeforeEach {
-            # Arrange
-            $script:resourceProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
-            $script:resourceProperties.Location = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
-
-            $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerWithRootFolderScriptBlock))
-            $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
-            $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
-            $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
-            $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
-            $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
-            $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterWithPathItemTwoAsParentScriptBlock))
-            $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
-            $hostFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderScriptBlock))
-            $locationsMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationsScriptBlock))
-            $locationViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationViewBaseObjectScriptBlock))
-            $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
-
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
-            Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
-
-            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-        }
-
-        AfterEach {
-            $script:resourceProperties.DatacenterLocation = [string]::Empty
-            $script:resourceProperties.Location = [string]::Empty
-        }
-
-        Context 'Invoking with Ensure Present, non existing Cluster and no HA settings specified' {
-            BeforeAll {
-                # Arrange
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-                Mock -CommandName New-Cluster -MockWith { return $null } -ModuleName $script:moduleName
-            }
-
-            It 'Should call the New-Cluster mock with the passed parameters once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'New-Cluster'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name -and $Location -eq $script:clusterLocation -and !$Confirm }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-        }
-
-        Context 'Invoking with Ensure Present, non existing Cluster and HA settings specified' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.HAEnabled = $true
-                $script:resourceProperties.HAAdmissionControlEnabled = $true
-                $script:resourceProperties.HAFailoverLevel = 4
-                $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-                $script:resourceProperties.HARestartPriority = 'High'
-
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-                Mock -CommandName New-Cluster -MockWith { return $null } -ModuleName $script:moduleName
-            }
-
-            AfterAll {
-                $script:resourceProperties.HAEnabled = $null
-                $script:resourceProperties.HAAdmissionControlEnabled = $null
-                $script:resourceProperties.HAFailoverLevel = $null
-                $script:resourceProperties.HAIsolationResponse = 'Unset'
-                $script:resourceProperties.HARestartPriority = 'Unset'
-            }
-
-            It 'Should call the New-Cluster mock with the passed parameters once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'New-Cluster'
-                    ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name -and $Location -eq $script:clusterLocation -and `
-                                        !$Confirm -and $HAEnabled -eq $true -and $HAAdmissionControlEnabled -eq $true -and $HAFailoverLevel -eq 4 -and `
-                                        $HAIsolationResponse -eq 'DoNothing' -and $HARestartPriority -eq 'High' }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-        }
-
-        Context 'Invoking with Ensure Present, existing Cluster and no HA settings specified' {
-            BeforeAll {
-                # Arrange
-                $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-                Mock -CommandName Set-Cluster -MockWith { return $null } -ModuleName $script:moduleName
-            }
-
-            It 'Should call the Set-Cluster mock with the passed parameters once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Set-Cluster'
-                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-        }
-
-        Context 'Invoking with Ensure Present, existing Cluster and HA settings specified' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.HAEnabled = $false
-                $script:resourceProperties.HAAdmissionControlEnabled = $false
-                $script:resourceProperties.HAFailoverLevel = 4
-                $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-                $script:resourceProperties.HARestartPriority = 'High'
-
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-                $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-                Mock -CommandName Set-Cluster -MockWith { return $null } -ModuleName $script:moduleName
-            }
-
-            AfterAll {
-                $script:resourceProperties.HAEnabled = $null
-                $script:resourceProperties.HAAdmissionControlEnabled = $null
-                $script:resourceProperties.HAFailoverLevel = $null
-                $script:resourceProperties.HAIsolationResponse = 'Unset'
-                $script:resourceProperties.HARestartPriority = 'Unset'
-            }
-
-            It 'Should call the Set-Cluster mock with the passed parameters once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Set-Cluster'
-                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm -and $HAEnabled -eq $false -and `
-                                        $HAAdmissionControlEnabled -eq $false -and $HAFailoverLevel -eq 4 -and $HAIsolationResponse -eq 'DoNothing' -and $HARestartPriority -eq 'High' }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-        }
-
-        Context 'Invoking with Ensure Absent and existing Cluster' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.Ensure = 'Absent'
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-                $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-                Mock -CommandName Remove-Cluster -MockWith { return $null } -ModuleName $script:moduleName
-            }
-
-            AfterAll {
-                $script:resourceProperties.Ensure = 'Present'
-            }
-
-            It 'Should call the Remove-Cluster mock with the passed parameters once' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Remove-Cluster'
-                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 1
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-        }
-
-        Context 'Invoking with Ensure Absent and non existing Cluster' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.Ensure = 'Absent'
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-                Mock -CommandName Remove-Cluster -MockWith { return $null } -ModuleName $script:moduleName
-            }
-
-            AfterAll {
-                $script:resourceProperties.Ensure = 'Present'
-            }
-
-            It 'Should not call the Remove-Cluster mock' {
-                # Act
-                $resource.Set()
-
-                # Assert
-                $assertMockCalledParams = @{
-                    CommandName = 'Remove-Cluster'
-                    ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm }
-                    ModuleName = $script:moduleName
-                    Exactly = $true
-                    Times = 0
-                    Scope = 'It'
-                }
-
-                Assert-MockCalled @assertMockCalledParams
-            }
-        }
-    }
-
-    Describe 'HACluster\Test' -Tag 'Test' {
-        BeforeEach {
-            # Arrange
-            $script:resourceProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
-            $script:resourceProperties.Location = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
-
-            $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerWithRootFolderScriptBlock))
-            $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
-            $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
-            $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
-            $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
-            $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
-            $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterWithPathItemTwoAsParentScriptBlock))
-            $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
-            $hostFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderScriptBlock))
-            $locationsMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationsScriptBlock))
-            $locationViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationViewBaseObjectScriptBlock))
-            $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
-
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
-            Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
-
-            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-        }
-
-        AfterEach {
-            $script:resourceProperties.DatacenterLocation = [string]::Empty
-            $script:resourceProperties.Location = [string]::Empty
-        }
-
-        Context 'Invoking with Ensure Present and non existing Cluster' {
-            BeforeAll {
-                # Arrange
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-            }
-
-            It 'Should return $false' {
-                # Act
-                $result = $resource.Test()
-
-                # Assert
-                $result | Should -Be $false
-            }
-        }
-
-        Context 'Invoking with Ensure Present, existing Cluster and matching settings' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.HAEnabled = $true
-                $script:resourceProperties.HAAdmissionControlEnabled = $true
-                $script:resourceProperties.HAFailoverLevel = 4
-                $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-                $script:resourceProperties.HARestartPriority = 'High'
-
-                $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-            }
-
-            AfterAll {
-                $script:resourceProperties.HAEnabled = $null
-                $script:resourceProperties.HAAdmissionControlEnabled = $null
-                $script:resourceProperties.HAFailoverLevel = $null
-                $script:resourceProperties.HAIsolationResponse = 'Unset'
-                $script:resourceProperties.HARestartPriority = 'Unset'
-            }
-
-            It 'Should return $true' {
-                # Act
-                $result = $resource.Test()
-
-                # Assert
-                $result | Should -Be $true
-            }
-        }
-
-        Context 'Invoking with Ensure Present, existing Cluster and non matching settings' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.HAEnabled = $true
-                $script:resourceProperties.HAAdmissionControlEnabled = $true
-                $script:resourceProperties.HAFailoverLevel = 3
-                $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-                $script:resourceProperties.HARestartPriority = 'High'
-
-                $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-            }
-
-            AfterAll {
-                $script:resourceProperties.HAEnabled = $null
-                $script:resourceProperties.HAAdmissionControlEnabled = $null
-                $script:resourceProperties.HAFailoverLevel = $null
-                $script:resourceProperties.HAIsolationResponse = 'Unset'
-                $script:resourceProperties.HARestartPriority = 'Unset'
-            }
-
-            It 'Should return $false' {
-                # Act
-                $result = $resource.Test()
-
-                # Assert
-                $result | Should -Be $false
-            }
-        }
-
-        Context 'Invoking with Ensure Absent and non existing Cluster' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.Ensure = 'Absent'
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-            }
-
-            AfterAll {
-                $script:resourceProperties.Ensure = 'Present'
-            }
-
-            It 'Should return $true' {
-                # Act
-                $result = $resource.Test()
-
-                # Assert
-                $result | Should -Be $true
-            }
-        }
-
-        Context 'Invoking with Ensure Absent and existing Cluster' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.Ensure = 'Absent'
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-                $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-            }
-
-            AfterAll {
-                $script:resourceProperties.Ensure = 'Present'
-            }
-
-            It 'Should return $false' {
-                # Act
-                $result = $resource.Test()
-
-                # Assert
-                $result | Should -Be $false
-            }
-        }
-    }
-
-    Describe 'HACluster\Get' -Tag 'Get' {
-        BeforeEach {
-            # Arrange
-            $script:resourceProperties.DatacenterLocation = "$($script:constants.DatacenterPathItemOne)/$($script:constants.DatacenterPathItemTwo)"
-            $script:resourceProperties.Location = "$($script:constants.DatacenterInventoryPathItemOne)/$($script:constants.DatacenterInventoryPathItemTwo)"
-            $script:resourceProperties.HAEnabled = $true
-            $script:resourceProperties.HAAdmissionControlEnabled = $true
-            $script:resourceProperties.HAFailoverLevel = 4
-            $script:resourceProperties.HAIsolationResponse = 'DoNothing'
-            $script:resourceProperties.HARestartPriority = 'High'
-
-            $viServerMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerWithRootFolderScriptBlock))
-            $rootFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rootFolderViewBaseObjectScriptBlock))
-            $datacentersFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacentersFolderScriptBlock))
-            $datacenterPathItemOneMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemOneScriptBlock))
-            $datacenterPathItemTwoMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterPathItemTwoScriptBlock))
-            $datacenterFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterFolderScriptBlock))
-            $datacenterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:datacenterWithPathItemTwoAsParentScriptBlock))
-            $hostFolderViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderOfDatacenterViewBaseObjectScriptBlock))
-            $hostFolderMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:hostFolderScriptBlock))
-            $locationsMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationsScriptBlock))
-            $locationViewBaseObjectMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationViewBaseObjectScriptBlock))
-            $locationParentMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:locationParentScriptBlock))
-
-            Mock -CommandName Connect-VIServer -MockWith $viServerMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $rootFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $datacentersFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:rootFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemOneMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemOne | ConvertTo-Json)) } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $datacenterPathItemTwoMock -ParameterFilter { $Server -eq $script:viServer -and (($Id | ConvertTo-Json) -eq ($script:datacenterPathItemTwo | ConvertTo-Json)) } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $datacenterFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:datacenterLocation } -ModuleName $script:moduleName
-            Mock -CommandName Get-Datacenter -MockWith $datacenterMock -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $hostFolderViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $hostFolderMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostFolder } -ModuleName $script:moduleName
-            Mock -CommandName Get-Inventory -MockWith $locationsMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatacenterInventoryPathItemTwo -and $Location -eq $script:hostFolderLocation } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $locationViewBaseObjectMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:constants.DatacenterInventoryPathItemTwoId } -ModuleName $script:moduleName
-            Mock -CommandName Get-View -MockWith $locationParentMock -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:locationParent } -ModuleName $script:moduleName
-
-            $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-        }
-
-        AfterEach {
-            $script:resourceProperties.DatacenterLocation = [string]::Empty
-            $script:resourceProperties.Location = [string]::Empty
-            $script:resourceProperties.HAEnabled = $null
-            $script:resourceProperties.HAAdmissionControlEnabled = $null
-            $script:resourceProperties.HAFailoverLevel = $null
-            $script:resourceProperties.HAIsolationResponse = 'Unset'
-            $script:resourceProperties.HARestartPriority = 'Unset'
-        }
-
-        Context 'Invoking with Ensure Present and non existing Cluster' {
-            BeforeAll {
-                # Arrange
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-            }
-
-            It 'Should retrieve the correct settings from the server' {
-                # Act
-                $result = $resource.Get()
-
-                # Assert
-                $result.Server | Should -Be $script:resourceProperties.Server
-                $result.Location | Should -Be $script:resourceProperties.Location
-                $result.DatacenterName | Should -Be $script:resourceProperties.DatacenterName
-                $result.DatacenterLocation | Should -Be $script:resourceProperties.DatacenterLocation
-                $result.Name | Should -Be $script:resourceProperties.Name
-                $result.Ensure | Should -Be 'Absent'
-                $result.HAEnabled | Should -Be $script:resourceProperties.HAEnabled
-                $result.HAAdmissionControlEnabled | Should -Be $script:resourceProperties.HAAdmissionControlEnabled
-                $result.HAFailoverLevel | Should -Be $script:resourceProperties.HAFailoverLevel
-                $result.HAIsolationResponse | Should -Be $script:resourceProperties.HAIsolationResponse
-                $result.HARestartPriority | Should -Be $script:resourceProperties.HARestartPriority
-            }
-        }
-
-        Context 'Invoking with Ensure Present and existing Cluster' {
-            BeforeAll {
-                # Arrange
-                $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-            }
-
-            It 'Should retrieve the correct settings from the server' {
-                # Act
-                $result = $resource.Get()
-
-                # Assert
-                $result.Server | Should -Be $script:resourceProperties.Server
-                $result.Location | Should -Be $script:resourceProperties.Location
-                $result.DatacenterName | Should -Be $script:resourceProperties.DatacenterName
-                $result.DatacenterLocation | Should -Be $script:resourceProperties.DatacenterLocation
-                $result.Name | Should -Be $script:cluster.Name
-                $result.Ensure | Should -Be 'Present'
-                $result.HAEnabled | Should -Be $script:cluster.HAEnabled
-                $result.HAAdmissionControlEnabled | Should -Be $script:cluster.HAAdmissionControlEnabled
-                $result.HAFailoverLevel | Should -Be $script:cluster.HAFailoverLevel
-                $result.HAIsolationResponse.ToString() | Should -Be $script:cluster.HAIsolationResponse.ToString()
-                $result.HARestartPriority | Should -Be $script:cluster.HARestartPriority
-            }
-        }
-
-        Context 'Invoking with Ensure Absent and non existing Cluster' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.Ensure = 'Absent'
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-                Mock -CommandName Get-Inventory -MockWith { return $null } -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-            }
-
-            AfterAll {
-                $script:resourceProperties.Ensure = 'Present'
-            }
-
-            It 'Should retrieve the correct settings from the server' {
-                # Act
-                $result = $resource.Get()
-
-                # Assert
-                $result.Server | Should -Be $script:resourceProperties.Server
-                $result.Location | Should -Be $script:resourceProperties.Location
-                $result.DatacenterName | Should -Be $script:resourceProperties.DatacenterName
-                $result.DatacenterLocation | Should -Be $script:resourceProperties.DatacenterLocation
-                $result.Name | Should -Be $script:resourceProperties.Name
-                $result.Ensure | Should -Be 'Absent'
-                $result.HAEnabled | Should -Be $script:resourceProperties.HAEnabled
-                $result.HAAdmissionControlEnabled | Should -Be $script:resourceProperties.HAAdmissionControlEnabled
-                $result.HAFailoverLevel | Should -Be $script:resourceProperties.HAFailoverLevel
-                $result.HAIsolationResponse | Should -Be $script:resourceProperties.HAIsolationResponse
-                $result.HARestartPriority | Should -Be $script:resourceProperties.HARestartPriority
-            }
-        }
-
-        Context 'Invoking with Ensure Absent and existing Cluster' {
-            BeforeAll {
-                # Arrange
-                $script:resourceProperties.Ensure = 'Absent'
-                $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
-
-                $clusterMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:clusterScriptBlock))
-                Mock -CommandName Get-Inventory -MockWith $clusterMock -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:resourceProperties.Name } -ModuleName $script:moduleName
-            }
-
-            AfterAll {
-                $script:resourceProperties.Ensure = 'Present'
-            }
-
-            It 'Should retrieve the correct settings from the server' {
-                # Act
-                $result = $resource.Get()
-
-                # Assert
-                $result.Server | Should -Be $script:resourceProperties.Server
-                $result.Location | Should -Be $script:resourceProperties.Location
-                $result.DatacenterName | Should -Be $script:resourceProperties.DatacenterName
-                $result.DatacenterLocation | Should -Be $script:resourceProperties.DatacenterLocation
-                $result.Name | Should -Be $script:cluster.Name
-                $result.Ensure | Should -Be 'Present'
-                $result.HAEnabled | Should -Be $script:cluster.HAEnabled
-                $result.HAAdmissionControlEnabled | Should -Be $script:cluster.HAAdmissionControlEnabled
-                $result.HAFailoverLevel | Should -Be $script:cluster.HAFailoverLevel
-                $result.HAIsolationResponse.ToString() | Should -Be $script:cluster.HAIsolationResponse.ToString()
-                $result.HARestartPriority | Should -Be $script:cluster.HARestartPriority
-            }
-        }
-    }
-}
-finally {
-    # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
-    Invoke-TestCleanup
 }
