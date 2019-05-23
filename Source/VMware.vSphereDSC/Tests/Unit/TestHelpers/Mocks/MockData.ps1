@@ -47,6 +47,12 @@ $script:constants = @{
     HAFailoverLevel = 4
     HAIsolationResponse = 'DoNothing'
     HARestartPriority = 'High'
+    DrsEnabled = $true
+    DrsAutomationLevel = 'FullyAutomated'
+    DrsMigrationThreshold = 5
+    DrsDistribution = 0
+    MemoryLoadBalancing = 100
+    CPUOverCommitment = 500
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -196,6 +202,24 @@ $script:foundLocations = @(
     }
 )
 
+$script:foundLocationsForCluster = @(
+    [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+        Id = $script:constants.InventoryItemLocationItemTwoId
+        Name = $script:constants.InventoryItemLocationItemTwo
+        Parent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+            Id = $script:constants.InventoryItemLocationItemOneId
+            Name = $script:constants.InventoryItemLocationItemOne
+        }
+        ExtensionData = [VMware.Vim.Folder] @{
+            Name = $script:constants.InventoryItemLocationItemTwo
+            MoRef = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.FolderType
+                Value = $script:constants.InventoryItemLocationItemTwoId
+            }
+        }
+    }
+)
+
 $script:inventoryItemLocationViewBaseObject = [VMware.Vim.ResourcePool] @{
     Name = $script:constants.InventoryItemLocationItemTwo
     Parent = [VMware.Vim.ManagedObjectReference] @{
@@ -237,7 +261,78 @@ $script:cluster = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
     HARestartPriority = $script:constants.HARestartPriority
     ExtensionData = [VMware.Vim.ClusterComputeResource] @{
         ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
-            DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{}
+            DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{
+                Enabled = $true
+                DefaultVmBehavior = 'Manual'
+                VmotionRate = 3
+                Option = @(
+                    [VMware.Vim.OptionValue] @{
+                        Key = 'LimitVMsPerESXHostPercent'
+                        Value = '10'
+                    },
+                    [VMware.Vim.OptionValue] @{
+                        Key = 'PercentIdleMBInMemDemand'
+                        Value = '200'
+                    },
+                    [VMware.Vim.OptionValue] @{
+                        Key = 'MaxVcpusPerClusterPct'
+                        Value = '400'
+                    }
+                )
+            }
+        }
+    }
+}
+
+$script:clusterSpecWithoutDrsSettings = [VMware.Vim.ClusterConfigSpecEx] @{
+    DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{
+        Option = @(
+        )
+    }
+}
+
+$script:clusterSpecWithDrsSettings = [VMware.Vim.ClusterConfigSpecEx] @{
+    DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{
+        Enabled = $script:constants.DrsEnabled
+        DefaultVmBehavior = $script:constants.DrsAutomationLevel
+        VmotionRate = $script:constants.DrsMigrationThreshold
+        Option = @(
+            [VMware.Vim.OptionValue] @{
+                Key = 'LimitVMsPerESXHostPercent'
+                Value = ($script:constants.DrsDistribution).ToString()
+            },
+            [VMware.Vim.OptionValue] @{
+                Key = 'PercentIdleMBInMemDemand'
+                Value = ($script:constants.MemoryLoadBalancing).ToString()
+            },
+            [VMware.Vim.OptionValue] @{
+                Key = 'MaxVcpusPerClusterPct'
+                Value = ($script:constants.CPUOverCommitment).ToString()
+            }
+        )
+    }
+}
+
+$script:clusterComputeResource = [VMware.Vim.ClusterComputeResource] @{
+    ConfigurationEx = [VMware.Vim.ClusterConfigInfoEx] @{
+        DrsConfig = [VMware.Vim.ClusterDrsConfigInfo] @{
+            Enabled = $true
+            DefaultVmBehavior = 'Manual'
+            VmotionRate = 3
+            Option = @(
+                [VMware.Vim.OptionValue] @{
+                    Key = 'LimitVMsPerESXHostPercent'
+                    Value = '10'
+                },
+                [VMware.Vim.OptionValue] @{
+                    Key = 'PercentIdleMBInMemDemand'
+                    Value = '200'
+                },
+                [VMware.Vim.OptionValue] @{
+                    Key = 'MaxVcpusPerClusterPct'
+                    Value = '400'
+                }
+            )
         }
     }
 }
