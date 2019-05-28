@@ -111,7 +111,8 @@ class DatacenterInventoryBaseDSC : BaseDSC {
         $childEntities = Get-View -Server $this.Connection -Id $rootFolder.ExtensionData.ChildEntity
         $foundLocationItem = $null
 
-        foreach ($locationItem in $locationItems) {
+        for ($i = 0; $i -lt $locationItems.Length; $i++) {
+            $locationItem = $locationItems[$i]
             $foundLocationItem = $childEntities | Where-Object -Property Name -eq $locationItem
 
             if ($null -eq $foundLocationItem) {
@@ -124,8 +125,19 @@ class DatacenterInventoryBaseDSC : BaseDSC {
                 throw "The Location $($this.DatacenterLocation) contains another Datacenter $locationItem."
             }
 
-            # If the found location item is Folder and not Datacenter we start looking in the items of this Folder.
-            $childEntities = Get-View -Server $this.Connection -Id $foundLocationItem.ChildEntity
+            <#
+            If the found location item is a Folder we check how many Child Entities the folder has:
+            If the Folder has zero Child Entities and the Folder is not the last location item, the Location is not valid.
+            Otherwise we start looking in the items of this Folder.
+            #>
+            if ($foundLocationItem.ChildEntity.Length -eq 0) {
+                if ($i -ne $locationItems.Length - 1) {
+                    throw "The Location $($this.DatacenterLocation) is not valid because Folder $locationItem does not have Child Entities and the Location $($this.DatacenterLocation) contains other Inventory Items."
+                }
+            }
+            else {
+                $childEntities = Get-View -Server $this.Connection -Id $foundLocationItem.ChildEntity
+            }
         }
 
         $foundLocation = Get-Inventory -Server $this.Connection -Id $foundLocationItem.MoRef
