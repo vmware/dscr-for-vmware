@@ -55,6 +55,8 @@ $script:constants = @{
     CPUOverCommitment = 500
     FolderId = 'my-folder-id'
     FolderName = 'MyFolder'
+    DatacenterFolderId = 'my-datacenter-folder-id'
+    DatacenterFolderName = 'MyDatacenterFolder'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -343,4 +345,10 @@ $script:folder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
     Id = $script:constants.FolderId
     Name = $script:constants.FolderName
     ParentId = $script:constants.InventoryItemLocationItemTwoId
+}
+
+$script:datacenterFolder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+    Id = $script:constants.DatacenterFolderId
+    Name = $script:constants.DatacenterFolderName
+    ParentId = $script:constants.DatacenterLocationItemTwoId
 }
