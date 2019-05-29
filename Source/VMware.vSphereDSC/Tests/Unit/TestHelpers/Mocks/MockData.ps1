@@ -53,6 +53,8 @@ $script:constants = @{
     DrsDistribution = 0
     MemoryLoadBalancing = 100
     CPUOverCommitment = 500
+    FolderId = 'my-folder-id'
+    FolderName = 'MyFolder'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -335,4 +337,10 @@ $script:clusterComputeResource = [VMware.Vim.ClusterComputeResource] @{
             )
         }
     }
+}
+
+$script:folder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+    Id = $script:constants.FolderId
+    Name = $script:constants.FolderName
+    ParentId = $script:constants.InventoryItemLocationItemTwoId
 }
