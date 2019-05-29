@@ -52,9 +52,10 @@ $script:datacenter = Get-Datacenter -Server $script:vCenter -Name 'Datacenter'
 $script:clusterLocation = Get-Inventory -Server $script:vCenter -Name 'host' -Location $script:datacenter | Where-Object { $_.ParentId -eq $script:datacenter.Id }
 
 $script:clusterName = 'MyCluster'
-$script:datacenterInventoryPath = [string]::Empty
-$script:datacenterInventoryPathWithCustomFolder = 'MyClusterFolder'
-$script:datacenter = 'Datacenter'
+$script:location = [string]::Empty
+$script:locationWithCustomFolder = 'MyClusterFolder'
+$script:datacenterName = 'Datacenter'
+$script:datacenterLocation = [string]::Empty
 
 $script:resourceWithClusterToAdd = @{
     Ensure = 'Present'
@@ -101,7 +102,7 @@ $script:mofFileWithClusterToRemovePath = "$script:integrationTestsFolderPath\$($
 $script:mofFileWithClusterToRemoveInCustomFolderPath = "$script:integrationTestsFolderPath\$($script:configWithClusterToRemoveInCustomFolder)"
 
 function New-CustomFolder {
-    return New-Folder -Server $script:vCenter -Name $script:datacenterInventoryPathWithCustomFolder -Location $script:clusterLocation
+    return New-Folder -Server $script:vCenter -Name $script:locationWithCustomFolder -Location $script:clusterLocation
 }
 
 function Invoke-TestSetup {
@@ -157,7 +158,7 @@ function Invoke-TestSetup {
 
 function Invoke-TestCleanup {
     Get-Cluster -Server $script:vCenter -Name $script:clusterName -ErrorAction SilentlyContinue | Remove-Cluster -Server $script:vCenter -Confirm:$false
-    Get-Folder -Server $script:vCenter -Name $script:datacenterInventoryPathWithCustomFolder -ErrorAction SilentlyContinue | Remove-Folder -Server $script:vCenter -Confirm:$false
+    Get-Folder -Server $script:vCenter -Name $script:locationWithCustomFolder -ErrorAction SilentlyContinue | Remove-Folder -Server $script:vCenter -Confirm:$false
 }
 
 try {
@@ -205,8 +206,9 @@ try {
                 # Assert
                 $configuration.Server | Should -Be $Server
                 $configuration.Ensure | Should -Be $script:resourceWithClusterToAdd.Ensure
-                $configuration.DatacenterInventoryPath | Should -Be $script:datacenterInventoryPath
-                $configuration.Datacenter | Should -Be $script:datacenter
+                $configuration.Location | Should -Be $script:location
+                $configuration.DatacenterName | Should -Be $script:datacenterName
+                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
                 $configuration.Name | Should -Be $script:clusterName
                 $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAdd.DrsEnabled
                 $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToAdd.DrsAutomationLevel
@@ -269,8 +271,9 @@ try {
                 # Assert
                 $configuration.Server | Should -Be $Server
                 $configuration.Ensure | Should -Be $script:resourceWithClusterToAddInCustomFolder.Ensure
-                $configuration.DatacenterInventoryPath | Should -Be $script:datacenterInventoryPathWithCustomFolder
-                $configuration.Datacenter | Should -Be $script:datacenter
+                $configuration.Location | Should -Be $script:locationWithCustomFolder
+                $configuration.DatacenterName | Should -Be $script:datacenterName
+                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
                 $configuration.Name | Should -Be $script:clusterName
                 $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsEnabled
                 $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsAutomationLevel
@@ -333,8 +336,9 @@ try {
                 # Assert
                 $configuration.Server | Should -Be $Server
                 $configuration.Ensure | Should -Be $script:resourceWithClusterToAdd.Ensure
-                $configuration.DatacenterInventoryPath | Should -Be $script:datacenterInventoryPath
-                $configuration.Datacenter | Should -Be $script:datacenter
+                $configuration.Location | Should -Be $script:location
+                $configuration.DatacenterName | Should -Be $script:datacenterName
+                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
                 $configuration.Name | Should -Be $script:clusterName
                 $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAdd.DrsEnabled
                 $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToUpdate.DrsAutomationLevel
@@ -397,8 +401,9 @@ try {
                 # Assert
                 $configuration.Server | Should -Be $Server
                 $configuration.Ensure | Should -Be $script:resourceWithClusterToAddInCustomFolder.Ensure
-                $configuration.DatacenterInventoryPath | Should -Be $script:datacenterInventoryPathWithCustomFolder
-                $configuration.Datacenter | Should -Be $script:datacenter
+                $configuration.Location | Should -Be $script:locationWithCustomFolder
+                $configuration.DatacenterName | Should -Be $script:datacenterName
+                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
                 $configuration.Name | Should -Be $script:clusterName
                 $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsEnabled
                 $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsAutomationLevel
@@ -461,8 +466,9 @@ try {
                 # Assert
                 $configuration.Server | Should -Be $Server
                 $configuration.Ensure | Should -Be $script:resourceWithClusterToRemove.Ensure
-                $configuration.DatacenterInventoryPath | Should -Be $script:datacenterInventoryPath
-                $configuration.Datacenter | Should -Be $script:datacenter
+                $configuration.Location | Should -Be $script:location
+                $configuration.DatacenterName | Should -Be $script:datacenterName
+                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
                 $configuration.Name | Should -Be $script:clusterName
                 $configuration.DrsEnabled | Should -Be $null
                 $configuration.DrsAutomationLevel | Should -Be 'Unset'
@@ -525,8 +531,9 @@ try {
                 # Assert
                 $configuration.Server | Should -Be $Server
                 $configuration.Ensure | Should -Be $script:resourceWithClusterToRemove.Ensure
-                $configuration.DatacenterInventoryPath | Should -Be $script:datacenterInventoryPathWithCustomFolder
-                $configuration.Datacenter | Should -Be $script:datacenter
+                $configuration.Location | Should -Be $script:locationWithCustomFolder
+                $configuration.DatacenterName | Should -Be $script:datacenterName
+                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
                 $configuration.Name | Should -Be $script:clusterName
                 $configuration.DrsEnabled | Should -Be $null
                 $configuration.DrsAutomationLevel | Should -Be 'Unset'

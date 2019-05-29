@@ -6,10 +6,11 @@
 | --- | --- | --- | --- | --- |
 | **Server** | Key | string | Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
-| **Name** | Key | string | Name of the resource under the Datacenter of 'Datacenter' key property. ||
-| **DatacenterInventoryPath** | Key | string | Inventory folder path location of the resource with name specified in 'Name' key property in the Datacenter specified in the 'Datacenter' key property. The path consists of 0 or more folders. Empty path means the resource is in the root inventory folder. The Root folders of the Datacenter are not part of the path. Folder names in path are separated by "/". Example path for a VM resource: "Discovered Virtual Machines/My Ubuntu VMs". ||
-| **Datacenter** | Key | string | The full path to the Datacenter we will use from the Inventory. Root 'datacenters' folder is not part of the path. Path can't be empty. Last item in the path is the Datacenter Name. If only the Datacenter Name is specified, Datacenter will be searched under the root 'datacenters' folder. The parts of the path are separated with "/". Example path: "MyDatacentersFolder/MyDatacenter". ||
-| **Ensure** | Mandatory | Ensure | Value indicating if the Resource should be Present or Absent. | Present, Absent |
+| **Name** | Key | string | Name of the Cluster located in the Datacenter specified in 'DatacenterName' key property. ||
+| **Location** | Key | string | Location of the Cluster with name specified in 'Name' key property in the Datacenter specified in the 'DatacenterName' key property. Location consists of 0 or more Inventory Items. Empty Location means that the Cluster is in the Host Folder of the Datacenter. The Root Folders of the Datacenter are not part of the Location. Inventory Item names in Location are separated by "/". Example Location for a Cluster Inventory Item: "MyClusters/DrsClusters". ||
+| **DatacenterName** | Key | string | Name of the Datacenter we will use from the specified Inventory. ||
+| **DatacenterLocation** | Key | string | Location of the Datacenter we will use from the Inventory. Root Folder of the Inventory is not part of the Location. Empty Location means that the Datacenter is in the Root Folder of the Inventory. Folder names in Location are separated by "/". Example Location: "MyDatacentersFolder". ||
+| **Ensure** | Mandatory | Ensure | Value indicating if the Cluster should be Present or Absent. | Present, Absent |
 | **HAEnabled** | Optional | bool | Indicates that VMware HA (High Availability) is enabled. ||
 | **HAAdmissionControlEnabled** | Optional | bool | Indicates that virtual machines cannot be powered on if they violate availability constraints. ||
 | **HAFailoverLevel** | Optional | int | Specifies a configured failover level. This is the number of physical host failures that can be tolerated without impacting the ability to meet minimum thresholds for all running virtual machines. The valid values range from 1 to 4. ||
@@ -66,8 +67,9 @@ Configuration Cluster_Config {
             Server = $Server
             Credential = $Credential
             Ensure = 'Present'
-            DatacenterInventoryPath = [string]::Empty
-            Datacenter = 'Datacenter'
+            Location = [string]::Empty
+            DatacenterName = 'Datacenter'
+            DatacenterLocation = [string]::Empty
             Name = 'MyCluster'
             HAEnabled = $true
             HAAdmissionControlEnabled = $true
