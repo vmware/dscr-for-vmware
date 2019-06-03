@@ -33,6 +33,7 @@ Configuration Cluster {
         [string] $DatacenterName,
 
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string] $DatacenterLocation,
 
         [Parameter(Mandatory = $true)]
