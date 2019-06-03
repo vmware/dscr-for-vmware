@@ -70,6 +70,10 @@ class DatacenterFolder : InventoryBaseDSC {
     Returns the Datacenter Folder from the specified Location if it exists, otherwise returns $null.
     #>
     [PSObject] GetDatacenterFolder($datacenterFolderLocation) {
+        <#
+        The client side filtering here is used so we can retrieve only the Folder which is located directly below the found Folder Location
+        because Get-Folder searches recursively and can return more than one Folder located below the found Folder Location.
+        #>
         return Get-Folder -Server $this.Connection -Name $this.Name -Location $datacenterFolderLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $datacenterFolderLocation.Id }
     }
 
