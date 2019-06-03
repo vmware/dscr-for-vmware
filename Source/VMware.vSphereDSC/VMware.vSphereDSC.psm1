@@ -557,6 +557,133 @@ class VMHostVssBaseDSC : VMHostNetworkBaseDSC {
 }
 
 [DscResource()]
+class Folder : DatacenterInventoryBaseDSC {
+    <#
+    .DESCRIPTION
+
+    The type of Root Folder in the Datacenter in which the Folder is located.
+    Possible values are VM, Network, Datastore, Host.
+    #>
+    [DscProperty(Key)]
+    [FolderType] $FolderType
+
+    [void] Set() {
+        $this.ConnectVIServer()
+
+        $datacenter = $this.GetDatacenter()
+        $datacenterFolderName = "$($this.FolderType)Folder"
+        $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+        $folder = $this.GetInventoryItem($folderLocation)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            if ($null -eq $folder) {
+                $this.AddFolder($folderLocation)
+            }
+        }
+        else {
+            if ($null -ne $folder) {
+                $this.RemoveFolder($folder)
+            }
+        }
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+
+        $datacenter = $this.GetDatacenter()
+        $datacenterFolderName = "$($this.FolderType)Folder"
+        $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+        $folder = $this.GetInventoryItem($folderLocation)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            return ($null -ne $folder)
+        }
+        else {
+            return ($null -eq $folder)
+        }
+    }
+
+    [Folder] Get() {
+        $result = [Folder]::new()
+
+        $result.Server = $this.Server
+        $result.Location = $this.Location
+        $result.DatacenterName = $this.DatacenterName
+        $result.DatacenterLocation = $this.DatacenterLocation
+        $result.FolderType = $this.FolderType
+
+        $this.ConnectVIServer()
+
+        $datacenter = $this.GetDatacenter()
+        $datacenterFolderName = "$($this.FolderType)Folder"
+        $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+        $folder = $this.GetInventoryItem($folderLocation)
+
+        $this.PopulateResult($folder, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Folder with the specified properties at the specified Location.
+    #>
+    [void] AddFolder($folderLocation) {
+        $folderParams = @{}
+
+        $folderParams.Server = $this.Connection
+        $folderParams.Name = $this.Name
+        $folderParams.Location = $folderLocation
+        $folderParams.Confirm = $false
+        $folderParams.ErrorAction = 'Stop'
+
+        try {
+            New-Folder @folderParams
+        }
+        catch {
+            throw "Cannot create Folder $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the Folder from the specified Location.
+    #>
+    [void] RemoveFolder($folder) {
+        $folderParams = @{}
+
+        $folderParams.Server = $this.Connection
+        $folderParams.Confirm = $false
+        $folderParams.ErrorAction = 'Stop'
+
+        try {
+            $folder | Remove-Folder @folderParams
+        }
+        catch {
+            throw "Cannot remove Folder $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Folder from the server.
+    #>
+    [void] PopulateResult($folder, $result) {
+        if ($null -ne $folder) {
+            $result.Name = $folder.Name
+            $result.Ensure = [Ensure]::Present
+        }
+        else {
+            $result.Name = $this.Name
+            $result.Ensure = [Ensure]::Absent
+        }
+    }
+}
+
+[DscResource()]
 class PowerCLISettings {
     <#
     .DESCRIPTION
