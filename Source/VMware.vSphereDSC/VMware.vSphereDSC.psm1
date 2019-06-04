@@ -557,6 +557,128 @@ class VMHostVssBaseDSC : VMHostNetworkBaseDSC {
 }
 
 [DscResource()]
+class Datacenter : InventoryBaseDSC {
+    [void] Set() {
+        $this.ConnectVIServer()
+
+        $datacenterLocation = $this.GetInventoryItemLocation()
+        $datacenter = $this.GetDatacenter($datacenterLocation)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            if ($null -eq $datacenter) {
+                $this.AddDatacenter($datacenterLocation)
+            }
+        }
+        else {
+            if ($null -ne $datacenter) {
+                $this.RemoveDatacenter($datacenter)
+            }
+        }
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+
+        $datacenterLocation = $this.GetInventoryItemLocation()
+        $datacenter = $this.GetDatacenter($datacenterLocation)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            return ($null -ne $datacenter)
+        }
+        else {
+            return ($null -eq $datacenter)
+        }
+    }
+
+    [Datacenter] Get() {
+        $result = [Datacenter]::new()
+
+        $result.Server = $this.Server
+        $result.Location = $this.Location
+
+        $this.ConnectVIServer()
+
+        $datacenterLocation = $this.GetInventoryItemLocation()
+        $datacenter = $this.GetDatacenter($datacenterLocation)
+
+        $this.PopulateResult($datacenter, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the Datacenter from the specified Location if it exists, otherwise returns $null.
+    #>
+    [PSObject] GetDatacenter($datacenterLocation) {
+        <#
+        The client side filtering here is used so we can retrieve only the Datacenter which is located directly below the found Folder Location
+        because Get-Datacenter searches recursively and can return more than one Datacenter located below the found Folder Location.
+        #>
+        return Get-Datacenter -Server $this.Connection -Name $this.Name -Location $datacenterLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $datacenterLocation.Id }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Datacenter with the specified properties at the specified Location.
+    #>
+    [void] AddDatacenter($datacenterLocation) {
+        $datacenterParams = @{}
+
+        $datacenterParams.Server = $this.Connection
+        $datacenterParams.Name = $this.Name
+        $datacenterParams.Location = $datacenterLocation
+        $datacenterParams.Confirm = $false
+        $datacenterParams.ErrorAction = 'Stop'
+
+        try {
+            New-Datacenter @datacenterParams
+        }
+        catch {
+            throw "Cannot create Datacenter $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the Datacenter from the specified Location.
+    #>
+    [void] RemoveDatacenter($datacenter) {
+        $datacenterParams = @{}
+
+        $datacenterParams.Server = $this.Connection
+        $datacenterParams.Confirm = $false
+        $datacenterParams.ErrorAction = 'Stop'
+
+        try {
+            $datacenter | Remove-Datacenter @datacenterParams
+        }
+        catch {
+            throw "Cannot remove Datacenter $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Datacenter from the server.
+    #>
+    [void] PopulateResult($datacenter, $result) {
+        if ($null -ne $datacenter) {
+            $result.Name = $datacenter.Name
+            $result.Ensure = [Ensure]::Present
+        }
+        else {
+            $result.Name = $this.Name
+            $result.Ensure = [Ensure]::Absent
+        }
+    }
+}
+
+[DscResource()]
 class Folder : DatacenterInventoryBaseDSC {
     <#
     .DESCRIPTION
