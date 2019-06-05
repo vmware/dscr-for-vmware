@@ -28,21 +28,13 @@ param(
     $Password
 )
 
+$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
+$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
+
+. (Join-Path -Path (Join-Path -Path $integrationTestsFolderPath -ChildPath 'TestHelpers') -ChildPath 'IntegrationTests.Constants.ps1')
+
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
 $script:viServerCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-$script:folderName = 'MyTestDatacenterFolder'
-$script:emptyLocation = [string]::Empty
-$script:locationWithOneFolder = $script:folderName
-$script:locationWithTwoFolders = "$script:folderName/$script:folderName"
-
-$script:folderWithEmptyLocationResourceName = 'DatacenterFolder_With_EmptyLocation'
-$script:folderWithLocationWithOneFolderResourceName = 'DatacenterFolder_With_LocationWithOneFolder'
-$script:folderWithLocationWithTwoFoldersResourceName = 'DatacenterFolder_With_LocationWithTwoFolders'
-
-$script:folderWithEmptyLocationResourceId = "[DatacenterFolder]$script:folderWithEmptyLocationResourceName"
-$script:folderWithLocationWithOneFolderResourceId = "[DatacenterFolder]$script:folderWithLocationWithOneFolderResourceName"
-$script:folderWithLocationWithTwoFoldersResourceId = "[DatacenterFolder]$script:folderWithLocationWithTwoFoldersResourceName"
 
 $script:configurationData = @{
     AllNodes = @(
@@ -53,18 +45,15 @@ $script:configurationData = @{
     )
 }
 
-$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
-$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
-
 Configuration DatacenterFolder_WhenAddingFolderWithEmptyLocation_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DatacenterFolder $script:folderWithEmptyLocationResourceName {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:emptyLocation
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Present'
         }
     }
@@ -73,22 +62,22 @@ Configuration DatacenterFolder_WhenAddingFolderWithEmptyLocation_Config {
 Configuration DatacenterFolder_WhenAddingFolderWithLocationWithOneFolder_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DatacenterFolder $script:folderWithEmptyLocationResourceName {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:emptyLocation
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Present'
         }
 
-        DatacenterFolder $script:folderWithLocationWithOneFolderResourceName {
+        DatacenterFolder $script:datacenterFolderWithLocationWithOneFolderResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:locationWithOneFolder
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderLocationWithOneFolder
             Ensure = 'Present'
-            DependsOn = $script:folderWithEmptyLocationResourceId
+            DependsOn = $script:datacenterFolderWithEmptyLocationResourceId
         }
     }
 }
@@ -96,31 +85,31 @@ Configuration DatacenterFolder_WhenAddingFolderWithLocationWithOneFolder_Config 
 Configuration DatacenterFolder_WhenAddingFolderWithLocationWithTwoFolders_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DatacenterFolder $script:folderWithEmptyLocationResourceName {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:emptyLocation
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Present'
         }
 
-        DatacenterFolder $script:folderWithLocationWithOneFolderResourceName {
+        DatacenterFolder $script:datacenterFolderWithLocationWithOneFolderResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:locationWithOneFolder
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderLocationWithOneFolder
             Ensure = 'Present'
-            DependsOn = $script:folderWithEmptyLocationResourceId
+            DependsOn = $script:datacenterFolderWithEmptyLocationResourceId
         }
 
-        DatacenterFolder $script:folderWithLocationWithTwoFoldersResourceName {
+        DatacenterFolder $script:datacenterFolderWithLocationWithTwoFoldersResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:locationWithTwoFolders
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderLocationWithTwoFolders
             Ensure = 'Present'
-            DependsOn = $script:folderWithLocationWithOneFolderResourceId
+            DependsOn = $script:datacenterFolderWithLocationWithOneFolderResourceId
         }
     }
 }
@@ -128,12 +117,12 @@ Configuration DatacenterFolder_WhenAddingFolderWithLocationWithTwoFolders_Config
 Configuration DatacenterFolder_WhenRemovingFolderWithEmptyLocation_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DatacenterFolder $script:folderWithEmptyLocationResourceName {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:emptyLocation
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Absent'
         }
     }
@@ -142,22 +131,22 @@ Configuration DatacenterFolder_WhenRemovingFolderWithEmptyLocation_Config {
 Configuration DatacenterFolder_WhenRemovingFolderWithLocationWithOneFolder_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DatacenterFolder $script:folderWithLocationWithOneFolderResourceName {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithLocationWithOneFolderResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:locationWithOneFolder
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderLocationWithOneFolder
             Ensure = 'Absent'
         }
 
-        DatacenterFolder $script:folderWithEmptyLocationResourceName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:emptyLocation
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Absent'
-            DependsOn = $script:folderWithLocationWithOneFolderResourceId
+            DependsOn = $script:datacenterFolderWithLocationWithOneFolderResourceId
         }
     }
 }
@@ -165,31 +154,31 @@ Configuration DatacenterFolder_WhenRemovingFolderWithLocationWithOneFolder_Confi
 Configuration DatacenterFolder_WhenRemovingFolderWithLocationWithTwoFolders_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DatacenterFolder $script:folderWithLocationWithTwoFoldersResourceName {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithLocationWithTwoFoldersResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:locationWithTwoFolders
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderLocationWithTwoFolders
             Ensure = 'Absent'
         }
 
-        DatacenterFolder $script:folderWithLocationWithOneFolderResourceName {
+        DatacenterFolder $script:datacenterFolderWithLocationWithOneFolderResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:locationWithOneFolder
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderLocationWithOneFolder
             Ensure = 'Absent'
-            DependsOn = $script:folderWithLocationWithTwoFoldersResourceId
+            DependsOn = $script:datacenterFolderWithLocationWithTwoFoldersResourceId
         }
 
-        DatacenterFolder $script:folderWithEmptyLocationResourceName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
             Credential = $script:viServerCredential
-            Name = $script:folderName
-            Location = $script:emptyLocation
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Absent'
-            DependsOn = $script:folderWithLocationWithOneFolderResourceId
+            DependsOn = $script:datacenterFolderWithLocationWithOneFolderResourceId
         }
     }
 }
