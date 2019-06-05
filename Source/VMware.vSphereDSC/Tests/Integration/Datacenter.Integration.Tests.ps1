@@ -47,25 +47,6 @@ $script:configWhenRemovingDatacenterWithEmptyLocation = "$($script:dscResourceNa
 $script:configWhenRemovingDatacenterWithLocationWithOneFolder = "$($script:dscResourceName)_WhenRemovingDatacenterWithLocationWithOneFolder_Config"
 $script:configWhenRemovingDatacenterWithLocationWithTwoFolders = "$($script:dscResourceName)_WhenRemovingDatacenterWithLocationWithTwoFolders_Config"
 
-$script:datacenterName = 'MyTestDatacenter'
-$script:folderName = 'MyTestDatacenterFolder'
-$script:emptyLocation = [string]::Empty
-$script:locationWithOneFolder = $script:folderName
-$script:locationWithTwoFolders = "$script:folderName/$script:folderName"
-
-$script:folderWithEmptyLocationResourceName = 'DatacenterFolder_With_EmptyLocation'
-$script:folderWithLocationWithOneFolderResourceName = 'DatacenterFolder_With_LocationWithOneFolder'
-
-$script:folderWithEmptyLocationResourceId = "[DatacenterFolder]$script:folderWithEmptyLocationResourceName"
-$script:folderWithLocationWithOneFolderResourceId = "[DatacenterFolder]$script:folderWithLocationWithOneFolderResourceName"
-
-$script:datacenterWithEmptyLocationResourceName = 'Datacenter_With_EmptyLocation'
-$script:datacenterWithLocationWithOneFolderResourceName = 'Datacenter_With_LocationWithOneFolder'
-$script:datacenterWithLocationWithTwoFoldersResourceName = 'Datacenter_With_LocationWithTwoFolders'
-
-$script:datacenterWithLocationWithOneFolderResourceId = "[Datacenter]$script:datacenterWithLocationWithOneFolderResourceName"
-$script:datacenterWithLocationWithTwoFoldersResourceId = "[Datacenter]$script:datacenterWithLocationWithTwoFoldersResourceName"
-
 . $script:configurationFile -Server $Server -User $User -Password $Password
 
 $script:mofFileWhenAddingDatacenterWithEmptyLocationPath = "$script:integrationTestsFolderPath\$($script:configWhenAddingDatacenterWithEmptyLocation)\"
@@ -115,7 +96,7 @@ Describe "$($script:dscResourceName)_Integration" {
             # Assert
             $configuration.Server | Should -Be $Server
             $configuration.Name | Should -Be $script:datacenterName
-            $configuration.Location | Should -Be $script:emptyLocation
+            $configuration.Location | Should -Be $script:datacenterEmptyLocation
             $configuration.Ensure | Should -Be 'Present'
         }
 
@@ -172,21 +153,21 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange && Act
-            $configurations = Get-DscConfiguration
+            $configuration = Get-DscConfiguration
 
-            $folderWithEmptyLocation = $configurations | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
-            $datacenterWithLocationWithOneFolder = $configurations | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
 
             # Assert
-            $folderWithEmptyLocation.Server | Should -Be $Server
-            $folderWithEmptyLocation.Name | Should -Be $script:folderName
-            $folderWithEmptyLocation.Location | Should -Be $script:emptyLocation
-            $folderWithEmptyLocation.Ensure | Should -Be 'Present'
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Present'
 
-            $datacenterWithLocationWithOneFolder.Server | Should -Be $Server
-            $datacenterWithLocationWithOneFolder.Name | Should -Be $script:datacenterName
-            $datacenterWithLocationWithOneFolder.Location | Should -Be $script:locationWithOneFolder
-            $datacenterWithLocationWithOneFolder.Ensure | Should -Be 'Present'
+            $datacenterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterWithLocationWithOneFolderResource.Ensure | Should -Be 'Present'
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {
@@ -194,12 +175,12 @@ Describe "$($script:dscResourceName)_Integration" {
             Test-DscConfiguration | Should -Be $true
         }
 
-        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithOneFolderResourceName) should depend on Resource $($script:folderWithEmptyLocationResourceName)" {
+        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithOneFolderResourceName) should depend on Resource $($script:datacenterFolderWithEmptyLocationResourceName)" {
             # Arrange && Act
-            $datacenterWithLocationWithOneFolder = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+            $datacenterWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
 
             # Assert
-            $datacenterWithLocationWithOneFolder.DependsOn | Should -Be $script:folderWithEmptyLocationResourceId
+            $datacenterWithLocationWithOneFolderResource.DependsOn | Should -Be $script:datacenterFolderWithEmptyLocationResourceId
         }
 
         AfterAll {
@@ -250,27 +231,27 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange && Act
-            $configurations = Get-DscConfiguration
+            $configuration = Get-DscConfiguration
 
-            $folderWithEmptyLocation = $configurations | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
-            $folderWithLocationWithOneFolder = $configurations | Where-Object { $_.ResourceId -eq $script:folderWithLocationWithOneFolderResourceId }
-            $datacenterWithLocationWithTwoFolders = $configurations | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithTwoFoldersResourceId }
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterFolderWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithLocationWithOneFolderResourceId }
+            $datacenterWithLocationWithTwoFoldersResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithTwoFoldersResourceId }
 
             # Assert
-            $folderWithEmptyLocation.Server | Should -Be $Server
-            $folderWithEmptyLocation.Name | Should -Be $script:folderName
-            $folderWithEmptyLocation.Location | Should -Be $script:emptyLocation
-            $folderWithEmptyLocation.Ensure | Should -Be 'Present'
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Present'
 
-            $folderWithLocationWithOneFolder.Server | Should -Be $Server
-            $folderWithLocationWithOneFolder.Name | Should -Be $script:folderName
-            $folderWithLocationWithOneFolder.Location | Should -Be $script:locationWithOneFolder
-            $folderWithLocationWithOneFolder.Ensure | Should -Be 'Present'
+            $datacenterFolderWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterFolderWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterFolderWithLocationWithOneFolderResource.Ensure | Should -Be 'Present'
 
-            $datacenterWithLocationWithTwoFolders.Server | Should -Be $Server
-            $datacenterWithLocationWithTwoFolders.Name | Should -Be $script:datacenterName
-            $datacenterWithLocationWithTwoFolders.Location | Should -Be $script:locationWithTwoFolders
-            $datacenterWithLocationWithTwoFolders.Ensure | Should -Be 'Present'
+            $datacenterWithLocationWithTwoFoldersResource.Server | Should -Be $Server
+            $datacenterWithLocationWithTwoFoldersResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithTwoFoldersResource.Location | Should -Be $script:datacenterLocationWithTwoFolders
+            $datacenterWithLocationWithTwoFoldersResource.Ensure | Should -Be 'Present'
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {
@@ -278,20 +259,20 @@ Describe "$($script:dscResourceName)_Integration" {
             Test-DscConfiguration | Should -Be $true
         }
 
-        It "Should have the following dependency: Resource $($script:folderWithLocationWithOneFolderResourceName) should depend on Resource $($script:folderWithEmptyLocationResourceName)" {
+        It "Should have the following dependency: Resource $($script:datacenterFolderWithLocationWithOneFolderResourceName) should depend on Resource $($script:datacenterFolderWithEmptyLocationResourceName)" {
             # Arrange && Act
-            $folderWithLocationWithOneFolder = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:folderWithLocationWithOneFolderResourceId }
+            $datacenterFolderWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithLocationWithOneFolderResourceId }
 
             # Assert
-            $folderWithLocationWithOneFolder.DependsOn | Should -Be $script:folderWithEmptyLocationResourceId
+            $datacenterFolderWithLocationWithOneFolderResource.DependsOn | Should -Be $script:datacenterFolderWithEmptyLocationResourceId
         }
 
-        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithTwoFoldersResourceName) should depend on Resource $($script:folderWithLocationWithOneFolderResourceName)" {
+        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithTwoFoldersResourceName) should depend on Resource $($script:datacenterFolderWithLocationWithOneFolderResourceName)" {
             # Arrange && Act
-            $datacenterWithLocationWithTwoFolders = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithTwoFoldersResourceId }
+            $datacenterWithLocationWithTwoFoldersResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithTwoFoldersResourceId }
 
             # Assert
-            $datacenterWithLocationWithTwoFolders.DependsOn | Should -Be $script:folderWithLocationWithOneFolderResourceId
+            $datacenterWithLocationWithTwoFoldersResource.DependsOn | Should -Be $script:datacenterFolderWithLocationWithOneFolderResourceId
         }
 
         AfterAll {
@@ -355,13 +336,173 @@ Describe "$($script:dscResourceName)_Integration" {
             # Assert
             $configuration.Server | Should -Be $Server
             $configuration.Name | Should -Be $script:datacenterName
-            $configuration.Location | Should -Be $script:emptyLocation
+            $configuration.Location | Should -Be $script:datacenterEmptyLocation
             $configuration.Ensure | Should -Be 'Absent'
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {
             # Arrange && Act && Assert
             Test-DscConfiguration | Should -Be $true
+        }
+    }
+
+    Context "When using configuration $($script:configWhenRemovingDatacenterWithLocationWithOneFolder)" {
+        BeforeAll {
+            # Arrange
+            $startDscConfigurationParametersWhenAddingDatacenter = @{
+                Path = $script:mofFileWhenAddingDatacenterWithLocationWithOneFolderPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            $startDscConfigurationParametersWhenRemovingDatacenter = @{
+                Path = $script:mofFileWhenRemovingDatacenterWithLocationWithOneFolderPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParametersWhenAddingDatacenter
+            Start-DscConfiguration @startDscConfigurationParametersWhenRemovingDatacenter
+        }
+
+        It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenRemovingDatacenterWithLocationWithOneFolderPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
+
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Absent'
+
+            $datacenterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterWithLocationWithOneFolderResource.Ensure | Should -Be 'Absent'
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterFolderWithEmptyLocationResourceName) should depend on Resource $($script:datacenterWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $datacenterFolderWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.DependsOn | Should -Be $script:datacenterWithLocationWithOneFolderResourceId
+        }
+    }
+
+    Context "When using configuration $($script:configWhenRemovingDatacenterWithLocationWithTwoFolders)" {
+        BeforeAll {
+            # Arrange
+            $startDscConfigurationParametersWhenAddingDatacenter = @{
+                Path = $script:mofFileWhenAddingDatacenterWithLocationWithTwoFoldersPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            $startDscConfigurationParametersWhenRemovingDatacenter = @{
+                Path = $script:mofFileWhenRemovingDatacenterWithLocationWithTwoFoldersPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParametersWhenAddingDatacenter
+            Start-DscConfiguration @startDscConfigurationParametersWhenRemovingDatacenter
+        }
+
+        It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenRemovingDatacenterWithLocationWithTwoFoldersPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
+
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterFolderWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithLocationWithOneFolderResourceId }
+            $datacenterWithLocationWithTwoFoldersResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithTwoFoldersResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Absent'
+
+            $datacenterFolderWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterFolderWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterFolderWithLocationWithOneFolderResource.Ensure | Should -Be 'Absent'
+
+            $datacenterWithLocationWithTwoFoldersResource.Server | Should -Be $Server
+            $datacenterWithLocationWithTwoFoldersResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithTwoFoldersResource.Location | Should -Be $script:datacenterLocationWithTwoFolders
+            $datacenterWithLocationWithTwoFoldersResource.Ensure | Should -Be 'Absent'
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterFolderWithLocationWithOneFolderResourceName) should depend on Resource $($script:datacenterWithLocationWithTwoFoldersResourceName)" {
+            # Arrange && Act
+            $datacenterFolderWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterFolderWithLocationWithOneFolderResource.DependsOn | Should -Be $script:datacenterWithLocationWithTwoFoldersResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterFolderWithEmptyLocationResourceName) should depend on Resource $($script:datacenterFolderWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $datacenterFolderWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.DependsOn | Should -Be $script:datacenterFolderWithLocationWithOneFolderResourceId
         }
     }
 }
