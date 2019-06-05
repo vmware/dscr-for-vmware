@@ -28,14 +28,13 @@ param(
     $Password
 )
 
-$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-$script:vCenterCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
+$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
+$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-$script:clusterName = 'MyCluster'
-$script:location = [string]::Empty
-$script:locationWithCustomFolder = 'MyClusterFolder'
-$script:datacenterName = 'Datacenter'
-$script:datacenterLocation = [string]::Empty
+. (Join-Path -Path (Join-Path -Path $integrationTestsFolderPath -ChildPath 'TestHelpers') -ChildPath 'IntegrationTests.Constants.ps1')
+
+$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+$script:viServerCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
 $script:configurationData = @{
     AllNodes = @(
@@ -46,122 +45,319 @@ $script:configurationData = @{
     )
 }
 
-$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
-$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
-
-Configuration HACluster_WithClusterToAdd_Config {
+Configuration HACluster_WhenAddingClusterWithEmptyLocation_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        HACluster haCluster {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Present'
-            Location = $script:location
-            DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            DependsOn = $script:datacenterFolderWithEmptyLocationResourceId
+        }
+
+        HACluster $script:haClusterWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
             Name = $script:clusterName
+            Location = $script:clusterWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
             HAEnabled = $true
             HAAdmissionControlEnabled = $true
             HAFailoverLevel = 3
             HAIsolationResponse = 'DoNothing'
             HARestartPriority = 'Low'
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
         }
     }
 }
 
-Configuration HACluster_WithClusterToAddInCustomFolder_Config {
+Configuration HACluster_WhenAddingClusterWithLocationWithOneFolder_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        HACluster haCluster {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Present'
-            Location = $script:locationWithCustomFolder
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            DependsOn = $script:datacenterFolderWithEmptyLocationResourceId
+        }
+
+        Folder $script:folderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithEmptyLocation
             DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            FolderType = $script:folderType
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
+        }
+
+        HACluster $script:haClusterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
             Name = $script:clusterName
+            Location = $script:clusterWithLocationWithOneFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
             HAEnabled = $true
-            HAAdmissionControlEnabled = $true
             HAFailoverLevel = 2
             HAIsolationResponse = 'PowerOff'
             HARestartPriority = 'High'
+            DependsOn = $script:folderWithEmptyLocationResourceId
         }
     }
 }
 
-Configuration HACluster_WithClusterToUpdate_Config {
+Configuration HACluster_WhenAddingClusterWithLocationWithTwoFolders_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        HACluster haCluster {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Present'
-            Location = $script:location
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            DependsOn = $script:datacenterFolderWithEmptyLocationResourceId
+        }
+
+        Folder $script:folderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithEmptyLocation
             DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            FolderType = $script:folderType
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
+        }
+
+        Folder $script:folderWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithLocationWithOneFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            FolderType = $script:folderType
+            DependsOn = $script:folderWithEmptyLocationResourceId
+        }
+
+        HACluster $script:haClusterWithLocationWithTwoFoldersResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
             Name = $script:clusterName
+            Location = $script:clusterWithLocationWithTwoFolders
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            HAEnabled = $true
+            HAAdmissionControlEnabled = $true
+            HAFailoverLevel = 1
+            HAIsolationResponse = 'Shutdown'
+            HARestartPriority = 'Medium'
+            DependsOn = $script:folderWithLocationWithOneFolderResourceId
+        }
+    }
+}
+
+Configuration HACluster_WhenUpdatingCluster_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        HACluster $script:haClusterWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:clusterName
+            Location = $script:clusterWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
             HAAdmissionControlEnabled = $false
             HAIsolationResponse = 'PowerOff'
+            HARestartPriority = 'Disabled'
         }
     }
 }
 
-Configuration HACluster_WithClusterToUpdateInCustomFolder_Config {
+Configuration HACluster_WhenRemovingClusterWithEmptyLocation_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        HACluster haCluster {
+    Node $AllNodes.NodeName {
+        HACluster $script:haClusterWithEmptyLocationResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
-            Ensure = 'Present'
-            Location = $script:locationWithCustomFolder
-            DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+            Credential = $script:viServerCredential
             Name = $script:clusterName
-            HAFailoverLevel = 4
-            HARestartPriority = 'Medium'
-        }
-    }
-}
-
-Configuration HACluster_WithClusterToRemove_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        HACluster haCluster {
-            Server = $Server
-            Credential = $script:vCenterCredential
+            Location = $script:clusterWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
             Ensure = 'Absent'
-            Location = $script:location
-            DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
-            Name = $script:clusterName
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            DependsOn = $script:haClusterWithEmptyLocationResourceId
+        }
+
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
+            Ensure = 'Absent'
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
         }
     }
 }
 
-Configuration HACluster_WithClusterToRemoveInCustomFolder_Config {
+Configuration HACluster_WhenRemovingClusterWithLocationWithOneFolder_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        HACluster haCluster {
+    Node $AllNodes.NodeName {
+        HACluster $script:haClusterWithLocationWithOneFolderResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
-            Ensure = 'Absent'
-            Location = $script:locationWithCustomFolder
-            DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+            Credential = $script:viServerCredential
             Name = $script:clusterName
+            Location = $script:clusterWithLocationWithOneFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+        }
+
+        Folder $script:folderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            FolderType = $script:folderType
+            DependsOn = $script:haClusterWithLocationWithOneFolderResourceId
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            DependsOn = $script:folderWithEmptyLocationResourceId
+        }
+
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
+            Ensure = 'Absent'
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
         }
     }
 }
 
-HACluster_WithClusterToAdd_Config -OutputPath "$integrationTestsFolderPath\HACluster_WithClusterToAdd_Config" -ConfigurationData $script:configurationData
-HACluster_WithClusterToAddInCustomFolder_Config -OutputPath "$integrationTestsFolderPath\HACluster_WithClusterToAddInCustomFolder_Config" -ConfigurationData $script:configurationData
-HACluster_WithClusterToUpdate_Config -OutputPath "$integrationTestsFolderPath\HACluster_WithClusterToUpdate_Config" -ConfigurationData $script:configurationData
-HACluster_WithClusterToUpdateInCustomFolder_Config -OutputPath "$integrationTestsFolderPath\HACluster_WithClusterToUpdateInCustomFolder_Config" -ConfigurationData $script:configurationData
-HACluster_WithClusterToRemove_Config -OutputPath "$integrationTestsFolderPath\HACluster_WithClusterToRemove_Config" -ConfigurationData $script:configurationData
-HACluster_WithClusterToRemoveInCustomFolder_Config -OutputPath "$integrationTestsFolderPath\HACluster_WithClusterToRemoveInCustomFolder_Config" -ConfigurationData $script:configurationData
+Configuration HACluster_WhenRemovingClusterWithLocationWithTwoFolders_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        HACluster $script:haClusterWithLocationWithTwoFoldersResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:clusterName
+            Location = $script:clusterWithLocationWithTwoFolders
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+        }
+
+        Folder $script:folderWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithLocationWithOneFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            FolderType = $script:folderType
+            DependsOn = $script:haClusterWithLocationWithTwoFoldersResourceId
+        }
+
+        Folder $script:folderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            FolderType = $script:folderType
+            DependsOn = $script:folderWithLocationWithOneFolderResourceId
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            DependsOn = $script:folderWithEmptyLocationResourceId
+        }
+
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
+            Ensure = 'Absent'
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
+        }
+    }
+}
+
+HACluster_WhenAddingClusterWithEmptyLocation_Config -OutputPath "$integrationTestsFolderPath\HACluster_WhenAddingClusterWithEmptyLocation_Config" -ConfigurationData $script:configurationData
+HACluster_WhenAddingClusterWithLocationWithOneFolder_Config -OutputPath "$integrationTestsFolderPath\HACluster_WhenAddingClusterWithLocationWithOneFolder_Config" -ConfigurationData $script:configurationData
+HACluster_WhenAddingClusterWithLocationWithTwoFolders_Config -OutputPath "$integrationTestsFolderPath\HACluster_WhenAddingClusterWithLocationWithTwoFolders_Config" -ConfigurationData $script:configurationData
+HACluster_WhenUpdatingCluster_Config -OutputPath "$integrationTestsFolderPath\HACluster_WhenUpdatingCluster_Config" -ConfigurationData $script:configurationData
+HACluster_WhenRemovingClusterWithEmptyLocation_Config -OutputPath "$integrationTestsFolderPath\HACluster_WhenRemovingClusterWithEmptyLocation_Config" -ConfigurationData $script:configurationData
+HACluster_WhenRemovingClusterWithLocationWithOneFolder_Config -OutputPath "$integrationTestsFolderPath\HACluster_WhenRemovingClusterWithLocationWithOneFolder_Config" -ConfigurationData $script:configurationData
+HACluster_WhenRemovingClusterWithLocationWithTwoFolders_Config -OutputPath "$integrationTestsFolderPath\HACluster_WhenRemovingClusterWithLocationWithTwoFolders_Config" -ConfigurationData $script:configurationData
