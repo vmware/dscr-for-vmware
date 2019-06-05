@@ -11,7 +11,7 @@ Redistributions of source code must retain the above copyright notice, this list
 
 Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCDrsNTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SDrsLL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
 param(
@@ -28,14 +28,13 @@ param(
     $Password
 )
 
-$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-$script:vCenterCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
+$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
+$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-$script:clusterName = 'MyCluster'
-$script:location = [string]::Empty
-$script:locationWithCustomFolder = 'MyClusterFolder'
-$script:datacenterName = 'Datacenter'
-$script:datacenterLocation = [string]::Empty
+. (Join-Path -Path (Join-Path -Path $integrationTestsFolderPath -ChildPath 'TestHelpers') -ChildPath 'IntegrationTests.Constants.ps1')
+
+$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+$script:viServerCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
 $script:configurationData = @{
     AllNodes = @(
@@ -46,125 +45,325 @@ $script:configurationData = @{
     )
 }
 
-$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
-$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
-
-Configuration DrsCluster_WithClusterToAdd_Config {
+Configuration DrsCluster_WhenAddingClusterWithEmptyLocation_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DrsCluster drsCluster {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Present'
-            Location = $script:location
-            DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            DependsOn = $script:datacenterFolderWithEmptyLocationResourceId
+        }
+
+        DrsCluster $script:drsClusterWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
             Name = $script:clusterName
+            Location = $script:clusterWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
             DrsEnabled = $true
             DrsAutomationLevel = 'FullyAutomated'
             DrsMigrationThreshold = 5
             DrsDistribution = 0
             MemoryLoadBalancing = 100
             CPUOverCommitment = 500
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
         }
     }
 }
 
-Configuration DrsCluster_WithClusterToAddInCustomFolder_Config {
+Configuration DrsCluster_WhenAddingClusterWithLocationWithOneFolder_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DrsCluster drsCluster {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Present'
-            Location = $script:locationWithCustomFolder
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            DependsOn = $script:datacenterFolderWithEmptyLocationResourceId
+        }
+
+        Folder $script:folderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithEmptyLocation
             DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            FolderType = $script:folderType
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
+        }
+
+        DrsCluster $script:drsClusterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
             Name = $script:clusterName
+            Location = $script:clusterWithLocationWithOneFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
             DrsEnabled = $true
-            DrsAutomationLevel = 'PartiallyAutomated'
+            DrsAutomationLevel = 'Manual'
             DrsMigrationThreshold = 3
             DrsDistribution = 1
             MemoryLoadBalancing = 200
             CPUOverCommitment = 400
+            DependsOn = $script:folderWithEmptyLocationResourceId
         }
     }
 }
 
-Configuration DrsCluster_WithClusterToUpdate_Config {
+Configuration DrsCluster_WhenAddingClusterWithLocationWithTwoFolders_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DrsCluster drsCluster {
+    Node $AllNodes.NodeName {
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
             Ensure = 'Present'
-            Location = $script:location
-            DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
-            Name = $script:clusterName
-            DrsAutomationLevel = 'Manual'
-            DrsMigrationThreshold = 1
         }
-    }
-}
 
-Configuration DrsCluster_WithClusterToUpdateInCustomFolder_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node localhost {
-        DrsCluster drsCluster {
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
             Ensure = 'Present'
-            Location = $script:locationWithCustomFolder
+            DependsOn = $script:datacenterFolderWithEmptyLocationResourceId
+        }
+
+        Folder $script:folderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithEmptyLocation
             DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            FolderType = $script:folderType
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
+        }
+
+        Folder $script:folderWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithLocationWithOneFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            FolderType = $script:folderType
+            DependsOn = $script:folderWithEmptyLocationResourceId
+        }
+
+        DrsCluster $script:drsClusterWithLocationWithTwoFoldersResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
             Name = $script:clusterName
+            Location = $script:clusterWithLocationWithTwoFolders
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            DrsEnabled = $true
+            DrsAutomationLevel = 'PartiallyAutomated'
+            DrsMigrationThreshold = 4
             DrsDistribution = 2
-            MemoryLoadBalancing = 50
-            CPUOverCommitment = 300
+            MemoryLoadBalancing = 300
+            CPUOverCommitment = 100
+            DependsOn = $script:folderWithLocationWithOneFolderResourceId
         }
     }
 }
 
-Configuration DrsCluster_WithClusterToRemove_Config {
+Configuration DrsCluster_WhenUpdatingCluster_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DrsCluster drsCluster {
+    Node $AllNodes.NodeName {
+        DrsCluster $script:drsClusterWithEmptyLocationResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
-            Ensure = 'Absent'
-            Location = $script:location
-            DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+            Credential = $script:viServerCredential
             Name = $script:clusterName
+            Location = $script:clusterWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Present'
+            DrsAutomationLevel = 'PartiallyAutomated'
+            DrsMigrationThreshold = 4
+            DrsDistribution = 2
+            MemoryLoadBalancing = 300
+            CPUOverCommitment = 100
         }
     }
 }
 
-Configuration DrsCluster_WithClusterToRemoveInCustomFolder_Config {
+Configuration DrsCluster_WhenRemovingClusterWithEmptyLocation_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
-        DrsCluster drsCluster {
+    Node $AllNodes.NodeName {
+        DrsCluster $script:drsClusterWithEmptyLocationResourceName {
             Server = $Server
-            Credential = $script:vCenterCredential
-            Ensure = 'Absent'
-            Location = $script:locationWithCustomFolder
-            DatacenterName = $script:datacenterName
-            DatacenterLocation = $script:datacenterLocation
+            Credential = $script:viServerCredential
             Name = $script:clusterName
+            Location = $script:clusterWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            DependsOn = $script:drsClusterWithEmptyLocationResourceId
+        }
+
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
+            Ensure = 'Absent'
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
         }
     }
 }
 
-DrsCluster_WithClusterToAdd_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WithClusterToAdd_Config" -ConfigurationData $script:configurationData
-DrsCluster_WithClusterToAddInCustomFolder_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WithClusterToAddInCustomFolder_Config" -ConfigurationData $script:configurationData
-DrsCluster_WithClusterToUpdate_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WithClusterToUpdate_Config" -ConfigurationData $script:configurationData
-DrsCluster_WithClusterToUpdateInCustomFolder_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WithClusterToUpdateInCustomFolder_Config" -ConfigurationData $script:configurationData
-DrsCluster_WithClusterToRemove_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WithClusterToRemove_Config" -ConfigurationData $script:configurationData
-DrsCluster_WithClusterToRemoveInCustomFolder_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WithClusterToRemoveInCustomFolder_Config" -ConfigurationData $script:configurationData
+Configuration DrsCluster_WhenRemovingClusterWithLocationWithOneFolder_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        DrsCluster $script:drsClusterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:clusterName
+            Location = $script:clusterWithLocationWithOneFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+        }
+
+        Folder $script:folderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            FolderType = $script:folderType
+            DependsOn = $script:drsClusterWithLocationWithOneFolderResourceId
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            DependsOn = $script:folderWithEmptyLocationResourceId
+        }
+
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
+            Ensure = 'Absent'
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
+        }
+    }
+}
+
+Configuration DrsCluster_WhenRemovingClusterWithLocationWithTwoFolders_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        DrsCluster $script:drsClusterWithLocationWithTwoFoldersResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:clusterName
+            Location = $script:clusterWithLocationWithTwoFolders
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+        }
+
+        Folder $script:folderWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithLocationWithOneFolder
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            FolderType = $script:folderType
+            DependsOn = $script:drsClusterWithLocationWithTwoFoldersResourceId
+        }
+
+        Folder $script:folderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:folderName
+            Location = $script:folderWithEmptyLocation
+            DatacenterName = $script:datacenterName
+            DatacenterLocation = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            FolderType = $script:folderType
+            DependsOn = $script:folderWithLocationWithOneFolderResourceId
+        }
+
+        Datacenter $script:datacenterWithLocationWithOneFolderResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterName
+            Location = $script:datacenterLocationWithOneFolder
+            Ensure = 'Absent'
+            DependsOn = $script:folderWithEmptyLocationResourceId
+        }
+
+        DatacenterFolder $script:datacenterFolderWithEmptyLocationResourceName {
+            Server = $Server
+            Credential = $script:viServerCredential
+            Name = $script:datacenterFolderName
+            Location = $script:datacenterFolderEmptyLocation
+            Ensure = 'Absent'
+            DependsOn = $script:datacenterWithLocationWithOneFolderResourceId
+        }
+    }
+}
+
+DrsCluster_WhenAddingClusterWithEmptyLocation_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WhenAddingClusterWithEmptyLocation_Config" -ConfigurationData $script:configurationData
+DrsCluster_WhenAddingClusterWithLocationWithOneFolder_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WhenAddingClusterWithLocationWithOneFolder_Config" -ConfigurationData $script:configurationData
+DrsCluster_WhenAddingClusterWithLocationWithTwoFolders_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WhenAddingClusterWithLocationWithTwoFolders_Config" -ConfigurationData $script:configurationData
+DrsCluster_WhenUpdatingCluster_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WhenUpdatingCluster_Config" -ConfigurationData $script:configurationData
+DrsCluster_WhenRemovingClusterWithEmptyLocation_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WhenRemovingClusterWithEmptyLocation_Config" -ConfigurationData $script:configurationData
+DrsCluster_WhenRemovingClusterWithLocationWithOneFolder_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WhenRemovingClusterWithLocationWithOneFolder_Config" -ConfigurationData $script:configurationData
+DrsCluster_WhenRemovingClusterWithLocationWithTwoFolders_Config -OutputPath "$integrationTestsFolderPath\DrsCluster_WhenRemovingClusterWithLocationWithTwoFolders_Config" -ConfigurationData $script:configurationData
