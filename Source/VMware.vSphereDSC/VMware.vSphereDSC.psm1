@@ -241,6 +241,22 @@ class DatacenterInventoryBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
+    Ensures the correct behaviour when the Location is not valid based on the passed Ensure value.
+    If Ensure is set to 'Present' and the Location is not valid, the method should throw with the passed error message.
+    Otherwise Ensure is set to 'Absent' and $null result is returned because with invalid Location, the Inventory Item is 'Absent'
+    from that Location and no error should be thrown.
+    #>
+    [PSObject] EnsureCorrectBehaviourForInvalidLocation($expression) {
+        if ($this.Ensure -eq [Ensure]::Present) {
+            throw $expression
+        }
+
+        return $null
+    }
+
+    <#
+    .DESCRIPTION
+
     Returns the Datacenter we will use from the Inventory.
     #>
     [PSObject] GetDatacenter() {
@@ -251,7 +267,7 @@ class DatacenterInventoryBaseDSC : BaseDSC {
         if ($this.DatacenterLocation -eq [string]::Empty) {
             $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $this.DatacenterName -Location $rootFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $rootFolder.Id }
             if ($null -eq $foundDatacenter) {
-                throw "Datacenter $($this.DatacenterName) was not found at $($rootFolder.Name)."
+                return $this.EnsureCorrectBehaviourForInvalidLocation("Datacenter $($this.DatacenterName) was not found at $($rootFolder.Name).")
             }
 
             return $foundDatacenter
@@ -261,12 +277,12 @@ class DatacenterInventoryBaseDSC : BaseDSC {
         if ($this.DatacenterLocation -NotMatch '/') {
             $foundLocation = Get-Folder -Server $this.Connection -Name $this.DatacenterLocation -Location $rootFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $rootFolder.Id }
             if ($null -eq $foundLocation) {
-                throw "Folder $($this.DatacenterLocation) was not found at $($rootFolder.Name)."
+                return $this.EnsureCorrectBehaviourForInvalidLocation("Folder $($this.DatacenterLocation) was not found at $($rootFolder.Name).")
             }
 
             $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $this.DatacenterName -Location $foundLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $foundLocation.Id }
             if ($null -eq $foundDatacenter) {
-                throw "Datacenter $($this.DatacenterName) was not found at $($foundLocation.Name)."
+                return $this.EnsureCorrectBehaviourForInvalidLocation("Datacenter $($this.DatacenterName) was not found at $($foundLocation.Name).")
             }
 
             return $foundDatacenter
@@ -281,13 +297,13 @@ class DatacenterInventoryBaseDSC : BaseDSC {
             $foundLocationItem = $childEntities | Where-Object -Property Name -eq $locationItem
 
             if ($null -eq $foundLocationItem) {
-                throw "Datacenter $($this.DatacenterName) with Location $($this.DatacenterLocation) was not found because $locationItem folder cannot be found below $($rootFolder.Name)."
+                return $this.EnsureCorrectBehaviourForInvalidLocation("Datacenter $($this.DatacenterName) with Location $($this.DatacenterLocation) was not found because $locationItem folder cannot be found below $($rootFolder.Name).")
             }
 
             # If the found location item does not have 'ChildEntity' member, the item is a Datacenter.
             $childEntityMember = $foundLocationItem | Get-Member -Name 'ChildEntity'
             if ($null -eq $childEntityMember) {
-                throw "The Location $($this.DatacenterLocation) contains another Datacenter $locationItem."
+                return $this.EnsureCorrectBehaviourForInvalidLocation("The Location $($this.DatacenterLocation) contains another Datacenter $locationItem.")
             }
 
             <#
@@ -297,7 +313,7 @@ class DatacenterInventoryBaseDSC : BaseDSC {
             #>
             if ($foundLocationItem.ChildEntity.Length -eq 0) {
                 if ($i -ne $locationItems.Length - 1) {
-                    throw "The Location $($this.DatacenterLocation) is not valid because Folder $locationItem does not have Child Entities and the Location $($this.DatacenterLocation) contains other Inventory Items."
+                    return $this.EnsureCorrectBehaviourForInvalidLocation("The Location $($this.DatacenterLocation) is not valid because Folder $locationItem does not have Child Entities and the Location $($this.DatacenterLocation) contains other Inventory Items.")
                 }
             }
             else {
@@ -309,7 +325,7 @@ class DatacenterInventoryBaseDSC : BaseDSC {
         $foundDatacenter = Get-Datacenter -Server $this.Connection -Name $this.DatacenterName -Location $foundLocation -ErrorAction SilentlyContinue | Where-Object { $_.ParentFolderId -eq $foundLocation.Id }
 
         if ($null -eq $foundDatacenter) {
-            throw "Datacenter $($this.DatacenterName) with Location $($this.DatacenterLocation) was not found."
+            return $this.EnsureCorrectBehaviourForInvalidLocation("Datacenter $($this.DatacenterName) with Location $($this.DatacenterLocation) was not found.")
         }
 
         return $foundDatacenter
@@ -321,6 +337,14 @@ class DatacenterInventoryBaseDSC : BaseDSC {
     Returns the Location of the Inventory Item from the specified Datacenter.
     #>
     [PSObject] GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName) {
+        <#
+        Here if the Ensure property is set to 'Absent', we do not need to check if the Location is valid
+        because the Datacenter does not exist and this means that the Inventory Item does not exist in the specified Datacenter.
+        #>
+        if ($null -eq $datacenter -and $this.Ensure -eq [Ensure]::Absent) {
+            return $null
+        }
+
         $validInventoryItemLocation = $null
         $datacenterFolderAsViewObject = Get-View -Server $this.Connection -Id $datacenter.ExtensionData.$datacenterFolderName
         $datacenterFolder = Get-Inventory -Server $this.Connection -Id $datacenterFolderAsViewObject.MoRef
@@ -335,7 +359,7 @@ class DatacenterInventoryBaseDSC : BaseDSC {
             $validInventoryItemLocation = Get-Inventory -Server $this.Connection -Name $this.Location -Location $datacenterFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $datacenterFolder.Id }
 
             if ($null -eq $validInventoryItemLocation) {
-                throw "Location $($this.Location) of Inventory Item $($this.Name) was not found in Folder $($datacenterFolder.Name)."
+                return $this.EnsureCorrectBehaviourForInvalidLocation("Location $($this.Location) of Inventory Item $($this.Name) was not found in Folder $($datacenterFolder.Name).")
             }
 
             return $validInventoryItemLocation
@@ -376,7 +400,7 @@ class DatacenterInventoryBaseDSC : BaseDSC {
         }
 
         if ($null -eq $validInventoryItemLocation) {
-            throw "Location $($this.Location) of Inventory Item $($this.Name) was not found in Datacenter $($datacenter.Name)."
+            return $this.EnsureCorrectBehaviourForInvalidLocation("Location $($this.Location) of Inventory Item $($this.Name) was not found in Datacenter $($datacenter.Name).")
         }
 
         return $validInventoryItemLocation
@@ -424,6 +448,22 @@ class InventoryBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
+    Ensures the correct behaviour when the Location is not valid based on the passed Ensure value.
+    If Ensure is set to 'Present' and the Location is not valid, the method should throw with the passed error message.
+    Otherwise Ensure is set to 'Absent' and $null result is returned because with invalid Location, the Inventory Item is 'Absent'
+    from that Location and no error should be thrown.
+    #>
+    [PSObject] EnsureCorrectBehaviourForInvalidLocation($expression) {
+        if ($this.Ensure -eq [Ensure]::Present) {
+            throw $expression
+        }
+
+        return $null
+    }
+
+    <#
+    .DESCRIPTION
+
     Returns the Location of the Inventory Item (Folder or Datacenter) from the specified Inventory.
     #>
     [PSObject] GetInventoryItemLocation() {
@@ -439,7 +479,7 @@ class InventoryBaseDSC : BaseDSC {
         if ($this.Location -NotMatch '/') {
             $foundLocation = Get-Inventory -Server $this.Connection -Name $this.Location -Location $rootFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $rootFolder.Id }
             if ($null -eq $foundLocation) {
-                throw "Folder $($this.Location) was not found at $($rootFolder.Name)."
+                return $this.EnsureCorrectBehaviourForInvalidLocation("Folder $($this.Location) was not found at $($rootFolder.Name).")
             }
 
             return $foundLocation
@@ -454,13 +494,13 @@ class InventoryBaseDSC : BaseDSC {
             $foundLocationItem = $childEntities | Where-Object -Property Name -eq $locationItem
 
             if ($null -eq $foundLocationItem) {
-                throw "Inventory Item $($this.Name) with Location $($this.Location) was not found because $locationItem folder cannot be found below $($rootFolder.Name)."
+                return $this.EnsureCorrectBehaviourForInvalidLocation("Inventory Item $($this.Name) with Location $($this.Location) was not found because $locationItem folder cannot be found below $($rootFolder.Name).")
             }
 
             # If the found location item does not have 'ChildEntity' member, the item is a Datacenter.
             $childEntityMember = $foundLocationItem | Get-Member -Name 'ChildEntity'
             if ($null -eq $childEntityMember) {
-                throw "The Location $($this.Location) contains Datacenter $locationItem which is not valid."
+                return $this.EnsureCorrectBehaviourForInvalidLocation("The Location $($this.Location) contains Datacenter $locationItem which is not valid.")
             }
 
             <#
@@ -470,7 +510,7 @@ class InventoryBaseDSC : BaseDSC {
             #>
             if ($foundLocationItem.ChildEntity.Length -eq 0) {
                 if ($i -ne $locationItems.Length - 1) {
-                    throw "The Location $($this.Location) is not valid because Folder $locationItem does not have Child Entities and the Location $($this.Location) contains other Inventory Items."
+                    return $this.EnsureCorrectBehaviourForInvalidLocation("The Location $($this.Location) is not valid because Folder $locationItem does not have Child Entities and the Location $($this.Location) contains other Inventory Items.")
                 }
             }
             else {
