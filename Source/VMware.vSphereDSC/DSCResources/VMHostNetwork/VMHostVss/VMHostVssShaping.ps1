@@ -22,7 +22,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     The average bandwidth in bits per second if shaping is enabled on the port.
     #>
     [DscProperty()]
-    [long] $AverageBandwidth
+    [nullable[long]] $AverageBandwidth
 
     <#
     .DESCRIPTION
@@ -30,7 +30,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     The maximum burst size allowed in bytes if shaping is enabled on the port.
     #>
     [DscProperty()]
-    [long] $BurstSize
+    [nullable[long]] $BurstSize
 
     <#
     .DESCRIPTION
@@ -38,7 +38,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     The flag to indicate whether or not traffic shaper is enabled on the port.
     #>
     [DscProperty()]
-    [boolean] $Enabled
+    [nullable[bool]] $Enabled
 
     <#
     .DESCRIPTION
@@ -46,7 +46,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     The peak bandwidth during bursts in bits per second if traffic shaping is enabled on the port.
     #>
     [DscProperty()]
-    [long] $PeakBandwidth
+    [nullable[long]] $PeakBandwidth
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
@@ -172,6 +172,10 @@ class VMHostVssShaping : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSShaping.VssName = $this.Name
+            $vmHostVSSShaping.AverageBandwidth = $this.AverageBandwidth
+            $vmHostVSSShaping.BurstSize = $this.BurstSize
+            $vmHostVSSShaping.Enabled = $this.Enabled
+            $vmHostVSSShaping.PeakBandwidth = $this.PeakBandwidth
         }
     }
 }

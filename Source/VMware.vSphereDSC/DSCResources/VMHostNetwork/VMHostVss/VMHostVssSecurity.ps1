@@ -22,7 +22,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     The flag to indicate whether or not all traffic is seen on the port.
     #>
     [DscProperty()]
-    [boolean] $AllowPromiscuous
+    [nullable[bool]] $AllowPromiscuous
 
     <#
     .DESCRIPTION
@@ -32,7 +32,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     the virtual network adapter.
     #>
     [DscProperty()]
-    [boolean] $ForgedTransmits
+    [nullable[bool]] $ForgedTransmits
 
     <#
     .DESCRIPTION
@@ -41,7 +41,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     can be changed.
     #>
     [DscProperty()]
-    [boolean] $MacChanges
+    [nullable[bool]] $MacChanges
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
@@ -162,6 +162,9 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSSecurity.VssName = $this.VssName
+            $vmHostVSSSecurity.AllowPromiscuous = $this.AllowPromiscuous
+            $vmHostVSSSecurity.ForgedTransmits = $this.ForgedTransmits
+            $vmHostVSSSecurity.MacChanges = $this.MacChanges
         }
     }
 }

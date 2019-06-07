@@ -22,7 +22,7 @@ class VMHostVss : VMHostVssBaseDSC {
     The maximum transmission unit (MTU) associated with this virtual switch in bytes.
     #>
     [DscProperty()]
-    [int] $Mtu
+    [nullable[int]] $Mtu
 
     <#
     .DESCRIPTION

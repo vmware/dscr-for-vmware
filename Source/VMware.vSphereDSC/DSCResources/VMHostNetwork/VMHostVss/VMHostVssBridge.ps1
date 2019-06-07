@@ -32,7 +32,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Determines how often, in seconds, a beacon should be sent.
     #>
     [DscProperty()]
-    [int] $BeaconInterval
+    [nullable[int]] $BeaconInterval
 
     <#
     .DESCRIPTION
@@ -196,6 +196,10 @@ class VMHostVssBridge : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSBridge.VssName = $this.VssName
+            $vmHostVSSBridge.NicDevice = $this.NicDevice
+            $vmHostVSSBridge.BeaconInterval = $this.BeaconInterval
+            $vmHostVSSBridge.LinkDiscoveryProtocolOperation = $this.LinkDiscoveryProtocolOperation
+            $vmHostVSSBridge.LinkDiscoveryProtocolProtocol = $this.LinkDiscoveryProtocolProtocol
         }
     }
 }
