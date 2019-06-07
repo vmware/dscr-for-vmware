@@ -30,7 +30,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Verify remote SSL certificates against the local CA Store.
     #>
     [DscProperty()]
-    [bool] $CheckSslCerts
+    [nullable[bool]] $CheckSslCerts
 
     <#
     .DESCRIPTION
@@ -38,7 +38,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Default network retry timeout in seconds if a remote server fails to respond.
     #>
     [DscProperty()]
-    [long] $DefaultTimeout
+    [nullable[long]] $DefaultTimeout
 
     <#
     .DESCRIPTION
@@ -46,7 +46,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Message queue capacity after which messages are dropped.
     #>
     [DscProperty()]
-    [long] $QueueDropMark
+    [nullable[long]] $QueueDropMark
 
     <#
     .DESCRIPTION
@@ -62,7 +62,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Place logs in a unique subdirectory of logdir, based on hostname.
     #>
     [DscProperty()]
-    [bool] $LogdirUnique
+    [nullable[bool]] $LogdirUnique
 
     <#
     .DESCRIPTION
@@ -70,7 +70,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Default number of rotated local logs to keep.
     #>
     [DscProperty()]
-    [long] $DefaultRotate
+    [nullable[long]] $DefaultRotate
 
     <#
     .DESCRIPTION
@@ -78,7 +78,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Default size of local logs before rotation, in KiB.
     #>
     [DscProperty()]
-    [long] $DefaultSize
+    [nullable[long]] $DefaultSize
 
     <#
     .DESCRIPTION
@@ -86,7 +86,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Number of rotated dropped log files to keep.
     #>
     [DscProperty()]
-    [long] $DropLogRotate
+    [nullable[long]] $DropLogRotate
 
     <#
     .DESCRIPTION
@@ -94,7 +94,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Size of dropped log file before rotation, in KiB.
     #>
     [DscProperty()]
-    [long] $DropLogSize
+    [nullable[long]] $DropLogSize
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"

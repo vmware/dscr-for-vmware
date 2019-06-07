@@ -23,7 +23,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     as a method to validate the link status of a physical network adapter.
     #>
     [DscProperty()]
-    [boolean] $CheckBeacon
+    [nullable[bool]] $CheckBeacon
 
     <#
     .DESCRIPTION
@@ -47,7 +47,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Flag to specify whether or not to notify the physical switch if a link fails.
     #>
     [DscProperty()]
-    [boolean] $NotifySwitches
+    [nullable[bool]] $NotifySwitches
 
     <#
     .DESCRIPTION
@@ -63,7 +63,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     The flag to indicate whether or not to use a rolling policy when restoring links.
     #>
     [DscProperty()]
-    [boolean] $RollingOrder
+    [nullable[bool]] $RollingOrder
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
@@ -226,6 +226,12 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSTeaming.VssName = $this.Name
+            $vmHostVSSTeaming.CheckBeacon = $this.CheckBeacon
+            $vmHostVSSTeaming.ActiveNic = $this.ActiveNic
+            $vmHostVSSTeaming.StandbyNic = $this.StandbyNic
+            $vmHostVSSTeaming.NotifySwitches = $this.NotifySwitches
+            $vmHostVSSTeaming.Policy = $this.Policy
+            $vmHostVSSTeaming.RollingOrder = $this.RollingOrder
         }
     }
 }
