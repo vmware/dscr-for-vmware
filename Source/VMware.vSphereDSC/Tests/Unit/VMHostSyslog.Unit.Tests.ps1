@@ -850,6 +850,8 @@ try {
                 # Assert
                 $result.Name | Should -Be $script:resourceProperties.Name
                 $result.Server | Should -Be $script:resourceProperties.Server
+                # The Syslog object for the Unit Tests should be modified to reflect the values retrieved from the Server.
+
                 # $result.LogHost | Should -Be $script:resourceProperties.LogHost
                 # $result.CheckSslCerts | Should -Be $script:resourceProperties.CheckSslCerts
                 # $result.DefaultRotate | Should -Be $script:resourceProperties.DefaultRotate
