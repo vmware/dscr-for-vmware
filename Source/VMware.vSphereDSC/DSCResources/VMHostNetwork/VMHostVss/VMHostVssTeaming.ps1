@@ -128,7 +128,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
 
         if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic) {
-            if ($null -ne $this.ActiveNic) {
+            if ($null -ne $this.ActiveNic -and $this.ActiveNic.Length -ne 0) {
                 $vssTeamingTest += $false
             }
             else {
@@ -142,7 +142,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         }
 
         if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic) {
-            if ($null -ne $this.StandbyNic) {
+            if ($null -ne $this.StandbyNic -and $this.StandbyNic.Length -ne 0) {
                 $vssTeamingTest += $false
             }
             else {
