@@ -2973,12 +2973,12 @@ class VMHostSyslog : VMHostBaseDSC {
 
         $shouldUpdateVMHostSyslog = @()
 
-        $shouldUpdateVMHostSyslog += $this.LogHost -ne $current.LogHost
+        $shouldUpdateVMHostSyslog += ![string]::IsNullOrEmpty($this.LogHost) -or ($current.RemoteHost -ne '<none>' -and $this.LogHost -ne $current.RemoteHost)
         $shouldUpdateVMHostSyslog += $this.CheckSslCerts -ne $current.EnforceSSLCertificates
         $shouldUpdateVMHostSyslog += $this.DefaultTimeout -ne $current.DefaultNetworkRetryTimeout
         $shouldUpdateVMHostSyslog += $this.QueueDropMark -ne $current.MessageQueueDropMark
         $shouldUpdateVMHostSyslog += $this.Logdir -ne $current.LocalLogOutput
-        $shouldUpdateVMHostSyslog += $this.LogdirUnique -ne $current.LogToUniqueSubdirectory
+        $shouldUpdateVMHostSyslog += $this.LogdirUnique -ne [System.Convert]::ToBoolean($current.LogToUniqueSubdirectory)
         $shouldUpdateVMHostSyslog += $this.DefaultRotate -ne $current.LocalLoggingDefaultRotations
         $shouldUpdateVMHostSyslog += $this.DefaultSize -ne $current.LocalLoggingDefaultRotationSize
         $shouldUpdateVMHostSyslog += $this.DropLogRotate -ne $current.DroppedLogFileRotations
@@ -2998,7 +2998,6 @@ class VMHostSyslog : VMHostBaseDSC {
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
 
         $VMHostSyslogConfig = @{
-            loghost = $this.Loghost
             checksslcerts = $this.CheckSslCerts
             defaulttimeout = $this.DefaultTimeout
             queuedropmark = $this.QueueDropMark
@@ -3009,6 +3008,11 @@ class VMHostSyslog : VMHostBaseDSC {
             droplogrotate = $this.DropLogRotate
             droplogsize = $this.DropLogSize
         }
+
+        if (![string]::IsNullOrEmpty($this.LogHost)) {
+            $VMHostSyslogConfig.loghost = $this.Loghost
+        }
+
         Set-VMHostSyslogConfig -EsxCli $esxcli -VMHostSyslogConfig $VMHostSyslogConfig
     }
 
@@ -3026,15 +3030,15 @@ class VMHostSyslog : VMHostBaseDSC {
         $syslog.Server = $this.Server
         $syslog.Name = $VMHost.Name
         $syslog.Loghost = $currentVMHostSyslog.RemoteHost
-        $syslog.CheckSslCerts = $currentVMHostSyslog.CheckSslCerts
-        $syslog.DefaultTimeout = $currentVMHostSyslog.DefaultTimeout
-        $syslog.QueueDropMark = $currentVMHostSyslog.QueueDropMark
-        $syslog.Logdir = $currentVMHostSyslog.Logdir
-        $syslog.LogdirUnique = $currentVMHostSyslog.LogdirUnique
-        $syslog.DefaultRotate = $currentVMHostSyslog.DefaultRotate
-        $syslog.DefaultSize = $currentVMHostSyslog.DefaultSize
-        $syslog.DropLogRotate = $currentVMHostSyslog.DropLogRotate
-        $syslog.DropLogSize = $currentVMHostSyslog.DropLogSize
+        $syslog.CheckSslCerts = $currentVMHostSyslog.EnforceSSLCertificates
+        $syslog.DefaultTimeout = $currentVMHostSyslog.DefaultNetworkRetryTimeout
+        $syslog.QueueDropMark = $currentVMHostSyslog.MessageQueueDropMark
+        $syslog.Logdir = $currentVMHostSyslog.LocalLogOutput
+        $syslog.LogdirUnique = [System.Convert]::ToBoolean($currentVMHostSyslog.LogToUniqueSubdirectory)
+        $syslog.DefaultRotate = $currentVMHostSyslog.LocalLoggingDefaultRotations
+        $syslog.DefaultSize = $currentVMHostSyslog.LocalLoggingDefaultRotationSize
+        $syslog.DropLogRotate = $currentVMHostSyslog.DroppedLogFileRotations
+        $syslog.DropLogSize = $currentVMHostSyslog.DroppedLogFileRotationSize
     }
 }
 
