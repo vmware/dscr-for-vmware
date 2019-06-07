@@ -2864,7 +2864,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Verify remote SSL certificates against the local CA Store.
     #>
     [DscProperty()]
-    [bool] $CheckSslCerts
+    [nullable[bool]] $CheckSslCerts
 
     <#
     .DESCRIPTION
@@ -2872,7 +2872,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Default network retry timeout in seconds if a remote server fails to respond.
     #>
     [DscProperty()]
-    [long] $DefaultTimeout
+    [nullable[long]] $DefaultTimeout
 
     <#
     .DESCRIPTION
@@ -2880,7 +2880,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Message queue capacity after which messages are dropped.
     #>
     [DscProperty()]
-    [long] $QueueDropMark
+    [nullable[long]] $QueueDropMark
 
     <#
     .DESCRIPTION
@@ -2896,7 +2896,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Place logs in a unique subdirectory of logdir, based on hostname.
     #>
     [DscProperty()]
-    [bool] $LogdirUnique
+    [nullable[bool]] $LogdirUnique
 
     <#
     .DESCRIPTION
@@ -2904,7 +2904,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Default number of rotated local logs to keep.
     #>
     [DscProperty()]
-    [long] $DefaultRotate
+    [nullable[long]] $DefaultRotate
 
     <#
     .DESCRIPTION
@@ -2912,7 +2912,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Default size of local logs before rotation, in KiB.
     #>
     [DscProperty()]
-    [long] $DefaultSize
+    [nullable[long]] $DefaultSize
 
     <#
     .DESCRIPTION
@@ -2920,7 +2920,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Number of rotated dropped log files to keep.
     #>
     [DscProperty()]
-    [long] $DropLogRotate
+    [nullable[long]] $DropLogRotate
 
     <#
     .DESCRIPTION
@@ -2928,7 +2928,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Size of dropped log file before rotation, in KiB.
     #>
     [DscProperty()]
-    [long] $DropLogSize
+    [nullable[long]] $DropLogSize
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
@@ -3155,7 +3155,7 @@ class VMHostVss : VMHostVssBaseDSC {
     The maximum transmission unit (MTU) associated with this virtual switch in bytes.
     #>
     [DscProperty()]
-    [int] $Mtu
+    [nullable[int]] $Mtu
 
     <#
     .DESCRIPTION
@@ -3340,7 +3340,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Determines how often, in seconds, a beacon should be sent.
     #>
     [DscProperty()]
-    [int] $BeaconInterval
+    [nullable[int]] $BeaconInterval
 
     <#
     .DESCRIPTION
@@ -3504,6 +3504,10 @@ class VMHostVssBridge : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSBridge.VssName = $this.VssName
+            $vmHostVSSBridge.NicDevice = $this.NicDevice
+            $vmHostVSSBridge.BeaconInterval = $this.BeaconInterval
+            $vmHostVSSBridge.LinkDiscoveryProtocolOperation = $this.LinkDiscoveryProtocolOperation
+            $vmHostVSSBridge.LinkDiscoveryProtocolProtocol = $this.LinkDiscoveryProtocolProtocol
         }
     }
 }
@@ -3516,7 +3520,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     The flag to indicate whether or not all traffic is seen on the port.
     #>
     [DscProperty()]
-    [boolean] $AllowPromiscuous
+    [nullable[bool]] $AllowPromiscuous
 
     <#
     .DESCRIPTION
@@ -3526,7 +3530,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     the virtual network adapter.
     #>
     [DscProperty()]
-    [boolean] $ForgedTransmits
+    [nullable[bool]] $ForgedTransmits
 
     <#
     .DESCRIPTION
@@ -3535,7 +3539,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     can be changed.
     #>
     [DscProperty()]
-    [boolean] $MacChanges
+    [nullable[bool]] $MacChanges
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
@@ -3656,6 +3660,9 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSSecurity.VssName = $this.VssName
+            $vmHostVSSSecurity.AllowPromiscuous = $this.AllowPromiscuous
+            $vmHostVSSSecurity.ForgedTransmits = $this.ForgedTransmits
+            $vmHostVSSSecurity.MacChanges = $this.MacChanges
         }
     }
 }
@@ -3668,7 +3675,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     The average bandwidth in bits per second if shaping is enabled on the port.
     #>
     [DscProperty()]
-    [long] $AverageBandwidth
+    [nullable[long]] $AverageBandwidth
 
     <#
     .DESCRIPTION
@@ -3676,7 +3683,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     The maximum burst size allowed in bytes if shaping is enabled on the port.
     #>
     [DscProperty()]
-    [long] $BurstSize
+    [nullable[long]] $BurstSize
 
     <#
     .DESCRIPTION
@@ -3684,7 +3691,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     The flag to indicate whether or not traffic shaper is enabled on the port.
     #>
     [DscProperty()]
-    [boolean] $Enabled
+    [nullable[bool]] $Enabled
 
     <#
     .DESCRIPTION
@@ -3692,7 +3699,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     The peak bandwidth during bursts in bits per second if traffic shaping is enabled on the port.
     #>
     [DscProperty()]
-    [long] $PeakBandwidth
+    [nullable[long]] $PeakBandwidth
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
@@ -3818,6 +3825,10 @@ class VMHostVssShaping : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSShaping.VssName = $this.Name
+            $vmHostVSSShaping.AverageBandwidth = $this.AverageBandwidth
+            $vmHostVSSShaping.BurstSize = $this.BurstSize
+            $vmHostVSSShaping.Enabled = $this.Enabled
+            $vmHostVSSShaping.PeakBandwidth = $this.PeakBandwidth
         }
     }
 }
@@ -3831,7 +3842,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     as a method to validate the link status of a physical network adapter.
     #>
     [DscProperty()]
-    [boolean] $CheckBeacon
+    [nullable[bool]] $CheckBeacon
 
     <#
     .DESCRIPTION
@@ -3855,7 +3866,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Flag to specify whether or not to notify the physical switch if a link fails.
     #>
     [DscProperty()]
-    [boolean] $NotifySwitches
+    [nullable[bool]] $NotifySwitches
 
     <#
     .DESCRIPTION
@@ -3871,7 +3882,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     The flag to indicate whether or not to use a rolling policy when restoring links.
     #>
     [DscProperty()]
-    [boolean] $RollingOrder
+    [nullable[bool]] $RollingOrder
 
     [void] Set() {
         Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
@@ -4034,6 +4045,12 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         }
         else {
             $vmHostVSSTeaming.VssName = $this.Name
+            $vmHostVSSTeaming.CheckBeacon = $this.CheckBeacon
+            $vmHostVSSTeaming.ActiveNic = $this.ActiveNic
+            $vmHostVSSTeaming.StandbyNic = $this.StandbyNic
+            $vmHostVSSTeaming.NotifySwitches = $this.NotifySwitches
+            $vmHostVSSTeaming.Policy = $this.Policy
+            $vmHostVSSTeaming.RollingOrder = $this.RollingOrder
         }
     }
 }
