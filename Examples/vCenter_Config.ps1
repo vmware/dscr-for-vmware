@@ -14,7 +14,7 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-$configurationData = @{
+$script:configurationData = @{
     AllNodes = @(
         @{
             NodeName = 'localhost'
@@ -38,25 +38,36 @@ $configurationData = @{
 Configuration vCenter_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
+    Node $AllNodes.NodeName {
         foreach ($vCenter in $AllNodes.VCenters) {
             $Server = $vCenter.Server
             $User = $vCenter.User
             $Password = $vCenter.Password | ConvertTo-SecureString -asPlainText -Force
             $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-            Cluster "Cluster_$($Server)" {
+            HACluster "HACluster_$($Server)" {
                 Server = $Server
                 Credential = $Credential
+                Name = 'MyHACluster'
+                Location = ''
+                DatacenterName = 'Datacenter'
+                DatacenterLocation = ''
                 Ensure = 'Present'
-                DatacenterInventoryPath = [string]::Empty
-                Datacenter = 'Datacenter'
-                Name = 'MyCluster'
                 HAEnabled = $true
                 HAAdmissionControlEnabled = $true
                 HAFailoverLevel = 3
                 HAIsolationResponse = 'DoNothing'
                 HARestartPriority = 'Low'
+            }
+
+            DrsCluster "DrsCluster_$($Server)" {
+                Server = $Server
+                Credential = $Credential
+                Name = 'MyDrsCluster'
+                Location = ''
+                DatacenterName = 'Datacenter'
+                DatacenterLocation = ''
+                Ensure = 'Present'
                 DrsEnabled = $true
                 DrsAutomationLevel = 'FullyAutomated'
                 DrsMigrationThreshold = 5
@@ -90,4 +101,4 @@ Configuration vCenter_Config {
     }
 }
 
-vCenter_Config -ConfigurationData $configurationData
+vCenter_Config -ConfigurationData $script:configurationData

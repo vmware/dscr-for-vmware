@@ -35,7 +35,7 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostSettings_Config {
+Configuration Vss_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -45,42 +45,69 @@ Configuration VMHostSettings_Config {
             $Password = $vmHost.Password | ConvertTo-SecureString -asPlainText -Force
             $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
-            VMHostNtpSettings "VMHostNtpSettings_$($Server)" {
+            VMHostVss "VMHostVSS_$Server" {
                 Name = $Server
                 Server = $Server
                 Credential = $Credential
-                NtpServer = @('0.bg.pool.ntp.org', '1.bg.pool.ntp.org', '2.bg.pool.ntp.org')
-                NtpServicePolicy = 'automatic'
+                Ensure = 'Present'
+                VssName = 'VSSDSC'
+                Mtu = 1500
             }
 
-            VMHostTpsSettings "VMHostTpsSettings_$($Server)" {
+            VMHostVssSecurity "VMHostVSSSecurity_$Server" {
                 Name = $Server
                 Server = $Server
                 Credential = $Credential
-                ShareScanTime = 50
-                ShareScanGHz = 2
-                ShareRateMax = 1000
-                ShareForceSalting = 1
+                Ensure = 'Present'
+                VssName = 'VSSDSC'
+                AllowPromiscuous = $true
+                ForgedTransmits = $true
+                MacChanges = $true
+                DependsOn = "[VMHostVss]VMHostVSS_$Server"
             }
 
-            VMHostSettings "VMHostSettings_$($Server)" {
+            VMHostVssShaping "VMHostVSSShaping_$Server" {
                 Name = $Server
                 Server = $Server
                 Credential = $Credential
-                Motd = 'Hello World from motd!'
-                Issue = 'Hello World from issue!'
+                Ensure = 'Present'
+                VssName = 'VSSDSC'
+                AverageBandwidth = 100000
+                BurstSize = 100000
+                Enabled = $true
+                PeakBandwidth = 100000
+                DependsOn = "[VMHostVss]VMHostVSS_$Server"
             }
 
-            VMHostService "VMHostService_$($Server)" {
+            VMHostVssBridge "VMHostVSSBridge_$Server" {
                 Name = $Server
                 Server = $Server
                 Credential = $Credential
-                Key = 'TSM-SSH'
-                Policy = 'On'
-                Running = $true
+                Ensure = 'Present'
+                VssName = 'VSSDSC'
+                BeaconInterval = 1
+                LinkDiscoveryProtocolOperation = 'Listen'
+                LinkDiscoveryProtocolProtocol = 'CDP'
+                NicDevice = @('vmnic2', 'vmnic3')
+                DependsOn = "[VMHostVss]VMHostVSS_$Server"
+            }
+
+            VMHostVssTeaming "VMHostVSSTeaming_$Server" {
+                Name = $Server
+                Server = $Server
+                Credential = $Credential
+                Ensure = 'Present'
+                VssName = 'VSSDSC'
+                CheckBeacon = $false
+                ActiveNic = @('vmnic2')
+                StandbyNic = @('vmnic3')
+                NotifySwitches = $true
+                Policy = 'Loadbalance_srcid'
+                RollingOrder = $false
+                DependsOn = "[VMHostVssBridge]VMHostVSSBridge_$Server"
             }
         }
     }
 }
 
-VMHostSettings_Config -ConfigurationData $script:configurationData
+Vss_Config -ConfigurationData $script:configurationData
