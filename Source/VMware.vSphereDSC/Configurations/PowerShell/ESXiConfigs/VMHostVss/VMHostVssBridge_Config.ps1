@@ -14,20 +14,24 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-param(
+Param(
     [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
     [string]
     $Name,
 
     [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
     [string]
     $Server,
 
     [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
     [string]
     $User,
 
     [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
     [string]
     $Password
 )
@@ -44,7 +48,7 @@ $script:configurationData = @{
 Configuration VMHostVssBridge_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
+    Node $AllNodes.NodeName {
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
@@ -52,8 +56,8 @@ Configuration VMHostVssBridge_Config {
             Name = $Name
             Server = $Server
             Credential = $Credential
-            VssName = 'VSS1'
             Ensure = 'Present'
+            VssName = 'VSS1'
             Mtu = 1500
         }
 
@@ -61,12 +65,12 @@ Configuration VMHostVssBridge_Config {
             Name = $Name
             Server = $Server
             Credential = $Credential
-            VssName = 'VSS1'
             Ensure = 'Present'
+            VssName = 'VSS1'
             BeaconInterval = 1
             LinkDiscoveryProtocolOperation = 'Listen'
-            LinkDiscoveryProtocolType = 'CDP'
-            NicDevice = @('vmnic1','vmnic2')
+            LinkDiscoveryProtocolProtocol = 'CDP'
+            NicDevice = @('vmnic2', 'vmnic3')
             DependsOn = "[VMHostVss]vmHostVssSettings"
         }
     }
