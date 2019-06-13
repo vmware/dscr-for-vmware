@@ -32,19 +32,25 @@ param(
     $Password
 )
 
-<#
-Integration test environment information
+# Retrieves the pNics that are unused from the Server. If there are not available unused pNics on the Server, it throws an error.
+function Invoke-TestSetup {
+    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password
+    $availableNetworkAdapters = Get-VMHostNetworkAdapter -Server $viServer | Where-Object { $_.Id -Match 'PhysicalNic' -and $_.BitRatePerSec -eq 0 }
+    if ($availableNetworkAdapters.Length -lt 2) {
+        throw "The VSS that is used in the Integration Tests requires 2 unused pNICs to be available on the ESXi node."
+    }
 
-Requirements
+    $script:activeNic = @($availableNetworkAdapters[0].Name, $availableNetworkAdapters[1].Name)
+    $script:activeNicAlt = @($availableNetworkAdapters[0].Name)
+    $script:standbyNic = @()
+    $script:standbyNicAlt = @($availableNetworkAdapters[1].Name)
+}
 
-1) The VSS that is created (VSSDSC) shall have 2 pNICs connected, but unused.
-See $script:ActiveNic
-2) The Policy value (enum NicTeamingPolicy) is case-sensitive and shall be in lowercase
-#>
+Invoke-TestSetup
 
 $script:moduleName = 'VMware.vSphereDSC'
 $script:dscResourceName = 'VMHostVssTeaming'
-$script:dscDependResourceName = 'VMHostVss'
+$script:dscDependResourceName = 'VMHostVssBridge'
 $script:moduleFolderPath = (Get-Module -Name $script:moduleName -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -55,10 +61,6 @@ $script:configWithRemoveVssTeaming = "$($script:dscResourceName)_Remove_Config"
 $script:VssName = 'VSSDSC'
 $script:AverageBandwidth = 100000
 $script:CheckBeacon = $false
-$script:ActiveNic = @('vmnic4', 'vmnic5')
-$script:ActiveNicAlt = @('vmnic4')
-$script:StandbyNic = @()
-$script:StandbyNicAlt = @('vmnic5')
 $script:NotifySwitches = $true
 $script:Policy = 'loadbalance_srcid'
 $script:PolicyAlt = 'loadbalance_ip'
@@ -72,12 +74,11 @@ $script:resourceWithModifyVssTeaming = @{
     Ensure = $script:Present
     VssName = $script:VssName
     CheckBeacon = -not $script:CheckBeacon
-    ActiveNic = $script:ActiveNicAlt
-    StandbyNic = $script:StandbyNicAlt
+    ActiveNic = $script:activeNic
+    StandbyNic = $script:standbyNic
     NotifySwitches = -not $script:NotifySwitches
     Policy = $script:PolicyAlt
     RollingOrder = -not $script:RollingOrder
-    DependsOn = "[VMHostVss]vmHostVssSettings"
 }
 $script:resourceWithRemoveVssTeaming = @{
     Name = $Name
@@ -85,15 +86,14 @@ $script:resourceWithRemoveVssTeaming = @{
     Ensure = $script:Absent
     VssName = $script:VssName
     CheckBeacon = $script:CheckBeacon
-    ActiveNic = $script:ActiveNic
-    StandbyNic = $script:StandbyNic
+    ActiveNic = @()
+    StandbyNic = @()
     NotifySwitches = $script:NotifySwitches
     Policy = $script:Policy
     RollingOrder = $script:RollingOrder
-    DependsOn = "[VMHostVss]vmHostVssSettings"
 }
 
-. $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
+. $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password -ActiveNic $script:activeNic -ActiveNicAlt $script:activeNicAlt -StandbyNic $script:standbyNic -StandbyNicAlt $script:standbyNicAlt
 
 $script:mofFileWithModifyVssTeaming = "$script:integrationTestsFolderPath\$($script:configWithModifyVssTeaming)\"
 $script:mofFileWithRemoveVssTeaming = "$script:integrationTestsFolderPath\$($script:configWithRemoveVssTeaming)\"
@@ -154,7 +154,7 @@ try {
                 Test-DscConfiguration | Should -Be $true
             }
 
-            It 'Should depend on resource VMHostVss' {
+            It 'Should depend on resource VMHostVssBridge' {
                 # Act
                 $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
 
@@ -204,6 +204,12 @@ try {
                 $configuration.Name | Should -Be $script:resourceWithRemoveVssTeaming.Name
                 $configuration.Ensure | Should -Be $script:Present
                 $configuration.VssName | Should -Be $script:resourceWithRemoveVssTeaming.VssName
+                $configuration.CheckBeacon | Should -Be $script:resourceWithRemoveVssTeaming.CheckBeacon
+                $configuration.ActiveNic | Should -Be $script:resourceWithRemoveVssTeaming.ActiveNic
+                $configuration.StandbyNic | Should -Be $script:resourceWithRemoveVssTeaming.StandbyNic
+                $configuration.NotifySwitches | Should -Be $script:resourceWithRemoveVssTeaming.NotifySwitches
+                $configuration.Policy | Should -Be $script:resourceWithRemoveVssTeaming.Policy
+                $configuration.RollingOrder | Should -Be $script:resourceWithRemoveVssTeaming.RollingOrder
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -211,7 +217,7 @@ try {
                 Test-DscConfiguration | Should -Be $true
             }
 
-            It 'Should depend on resource VMHostVss' {
+            It 'Should depend on resource VMHostVssBridge' {
                 # Act
                 $currentResource = Get-DscConfiguration | Where-Object { $_.ResourceId -match $script:dscResourceName }
 
@@ -222,4 +228,5 @@ try {
     }
 }
 finally {
+    Disconnect-VIServer -Server $Server -Confirm:$false
 }
