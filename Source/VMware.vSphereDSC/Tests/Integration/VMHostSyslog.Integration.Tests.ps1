@@ -32,76 +32,31 @@ param(
     $Password
 )
 
-<#
-Integration test environment information
+# Retrieves the needed LogHosts from the Server. If there are no LogHosts on the Server, it throws an error.
+function Invoke-TestSetup {
+    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password
+    $vmHost = Get-VMHost -Server $viServer -Name $Name
+    $networkSystem = Get-View -Server $viServer -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
+    $dnsAddress = $networkSystem.NetworkConfig.DnsConfig.Address
+    if ($dnsAddress.Length -lt 2) {
+        throw "The DNS should have at least two configured addresses because they will be used in the Integration Tests for specifying the Remote Hosts for the Syslog config."
+    }
 
-Requirements
+    $script:logHostOne = "udp://$($dnsAddress[0]):514"
+    $script:logHostTwo = "udp://$($dnsAddress[1]):514"
+}
 
-A) Syslog server
-1) a working syslog server should be present
-2) the URI for the syslog server shall be specified in $script:LogHost
-3) a 2nd syslog server can be defined via a DNS CName, pointing to the working syslog server from earlier (1)
-4) the URI for the 2nd syslog server needs to be specified in $script:LogHost2
-
-B) Scratch folder
-1) the scratch folder ($script:Logdir) shall exist on the targetted ESXi node
-2) a 2nd scratch folder ($script:Logdir2) shall exist on the targetted ESXi node
-#>
+Invoke-TestSetup
 
 $script:dscResourceName = 'VMHostSyslog'
-$script:dscConfig = $null
-$script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
+$script:moduleFolderPath = (Get-Module 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
 $script:configWithDefaultSettings = "$($script:dscResourceName)_WithDefaultSettings_Config"
 $script:configWithNotDefaultSettings = "$($script:dscResourceName)_WithNotDefaultSettings_Config"
 
-$script:vmHost = $null
-
-$script:LogHost = 'udp://vli.eng.vmware.com:514'
-$script:LogHost2 = 'udp://vli2.eng.vmware.com:514'
-$script:CheckSslCerts = $true
-$script:DefaultRotate = 10
-$script:DefaultSize = 100
-$script:DefaultTimeout = 180
-$script:DropLogRotate = 10
-$script:DropLogSize = 100
-$script:Logdir = '/scratch/log'
-$script:Logdir2 = '/scratch/log2'
-$script:LogdirUnique = $false
-$script:QueueDropMark = 90
-
-$script:resource_WithDefaultSettings = @{
-    Name = $Name
-    Server = $Server
-    LogHost = $script:LogHost
-    CheckSslCerts = $script:CheckSslCerts
-    DefaultRotate = $script:DefaultRotate
-    DefaultSize = $script:DefaultSize
-    DefaultTimeout = $script:DefaultTimeout
-    DropLogRotate = $script:DropLogRotate
-    DropLogSize = $script:DropLogSize
-    Logdir = $script:Logdir
-    LogdirUnique = $script:LogdirUnique
-    QueueDropMark = $script:QueueDropMark
-}
-$script:resource_WithNotDefaultSettings = @{
-    Name = $Name
-    Server = $Server
-    LogHost = $script:LogHost1
-    CheckSslCerts = -not $script:CheckSslCerts
-    DefaultRotate = $script:DefaultRotate + 1
-    DefaultSize = $script:DefaultSize + 1
-    DefaultTimeout = $script:DefaultTimeout + 1
-    DropLogRotate = $script:DropLogRotate + 1
-    DropLogSize = $script:DropLogSize + 1
-    Logdir = $script:Logdir2
-    LogdirUnique = -not $script:LogdirUnique
-    QueueDropMark = $script:QueueDropMark + 1
-}
-
-. $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
+. $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password -LogHostOne $script:logHostOne -LogHostTwo $script:logHostTwo
 
 $script:mofFileWithDefaultSettings = "$script:integrationTestsFolderPath\$($script:configWithDefaultSettings)\"
 $script:mofFileWithNotDefaultSettings = "$script:integrationTestsFolderPath\$($script:configWithNotDefaultSettings)\"
@@ -144,18 +99,18 @@ try {
                 $configuration = Get-DscConfiguration
 
                 # Assert
-                $configuration.Name | Should -Be $script:resourceProperties.Name
-                $configuration.Server | Should -Be $script:resourceProperties.Server
-                $configuration.LogHost | Should -Be $script:resource_WithDefaultSettings.LogHost
-                $configuration.CheckSslCerts = $script:resource_WithDefaultSettings.CheckSslCerts
-                $configuration.DefaultRotate = $script:resource_WithDefaultSettings.DefaultRotate
-                $configuration.DefaultSize = $script:resource_WithDefaultSettings.DefaultSize
-                $configuration.DefaultTimeout = $script:resource_WithDefaultSettings.DefaultTimeout
-                $configuration.DropLogRotate = $script:resource_WithDefaultSettings.DropLogRotate
-                $configuration.DropLogSize = $script:resource_WithDefaultSettings.DropLogSize
-                $configuration.Logdir = $script:resource_WithDefaultSettings.Logdir
-                $configuration.LogdirUnique = $script:resource_WithDefaultSettings.LogdirUnique
-                $configuration.QueueDropMark = $script:resource_WithDefaultSettings.QueueDropMark
+                $configuration.Name | Should -Be $Name
+                $configuration.Server | Should -Be $Server
+                $configuration.LogHost | Should -Be $script:logHostOne
+                $configuration.CheckSslCerts = $script:checkSslCerts
+                $configuration.DefaultRotate = $script:defaultRotate
+                $configuration.DefaultSize = $script:defaultSize
+                $configuration.DefaultTimeout = $script:defaultTimeout
+                $configuration.Logdir = $script:logdirOne
+                $configuration.LogdirUnique = $script:logdirUnique
+                $configuration.DropLogRotate = $script:dropLogRotate
+                $configuration.DropLogSize = $script:dropLogSize
+                $configuration.QueueDropMark = $script:queueDropMark
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -200,18 +155,18 @@ try {
                 $configuration = Get-DscConfiguration
 
                 # Assert
-                $configuration.Name | Should -Be $script:resourceProperties.Name
-                $configuration.Server | Should -Be $script:resourceProperties.Server
-                $configuration.LogHost | Should -Be $script:resource_WithNotDefaultSettings.LogHost
-                $configuration.CheckSslCerts = $script:resource_WithNotDefaultSettings.CheckSslCerts
-                $configuration.DefaultRotate = $script:resource_WithDefaultSettings.DefaultRotate
-                $configuration.DefaultSize = $script:resource_WithDefaultSettings.DefaultSize
-                $configuration.DefaultTimeout = $script:resource_WithDefaultSettings.DefaultTimeout
-                $configuration.DropLogRotate = $script:resource_WithNotDefaultSettings.DropLogRotate
-                $configuration.DropLogSize = $script:resource_WithNotDefaultSettings.DropLogSize
-                $configuration.Logdir = $script:resource_WithNotDefaultSettings.Logdir
-                $configuration.LogdirUnique = $script:resource_WithNotDefaultSettings.LogdirUnique
-                $configuration.QueueDropMark = $script:resource_WithNotDefaultSettings.QueueDropMark
+                $configuration.Name | Should -Be $Name
+                $configuration.Server | Should -Be $Server
+                $configuration.LogHost | Should -Be $script:logHostTwo
+                $configuration.CheckSslCerts = !$script:checkSslCerts
+                $configuration.DefaultRotate = $script:defaultRotate + 1
+                $configuration.DefaultSize = $script:defaultSize + 1
+                $configuration.DefaultTimeout = $script:defaultTimeout + 1
+                $configuration.Logdir = $script:logdirTwo
+                $configuration.LogdirUnique = !$script:logdirUnique
+                $configuration.DropLogRotate = $script:dropLogRotate + 1
+                $configuration.DropLogSize = $script:dropLogSize + 1
+                $configuration.QueueDropMark = $script:queueDropMark + 1
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -222,4 +177,5 @@ try {
     }
 }
 finally {
+    Disconnect-VIServer -Server $Server -Confirm:$false
 }

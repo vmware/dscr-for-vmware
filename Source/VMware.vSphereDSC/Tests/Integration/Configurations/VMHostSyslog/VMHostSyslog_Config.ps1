@@ -29,24 +29,24 @@ param(
 
     [Parameter(Mandatory = $true)]
     [string]
-    $Password
+    $Password,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $LogHostOne,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $LogHostTwo
 )
 
-$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-$script:vmHostCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
+$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
+$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-$script:LogHost = 'udp://vli.local.lab:514'    # RemoteHost
-$script:LogHost2 = 'udp://vli2.local.lab:514'  # RemoteHost
-$script:CheckSslCerts = $true                  # EnforceSSLCertificates
-$script:DefaultRotate = 10                     # LocalLoggingDefaultRotation
-$script:DefaultSize = 100                      # LocalLoggingDefaultRotationSize
-$script:DefaultTimeout = 180                   # DefaultNetworkRetryTimeout
-$script:Logdir = '/scratch/log'                # LocalLogOutput
-$script:Logdir2 = '/scratch/log2'              # LocalLogOutput
-$script:LogdirUnique = $false                  # LogToUniqueSubdirectory
-$script:DropLogRotate = 10                     # DroppedLogFileRotations
-$script:DropLogSize = 100                      # DroppedLogFileRotationSize
-$script:QueueDropMark = 90                     # MessageQueueDropMark
+. (Join-Path -Path (Join-Path -Path $integrationTestsFolderPath -ChildPath 'TestHelpers') -ChildPath 'IntegrationTests.Constants.ps1')
+
+$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+$Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
 $script:configurationData = @{
     AllNodes = @(
@@ -57,27 +57,24 @@ $script:configurationData = @{
     )
 }
 
-$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
-$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
-
 Configuration VMHostSyslog_WithDefaultSettings_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
+    Node $AllNodes.NodeName {
         VMHostSyslog vmHostSyslogSettings {
             Name = $Name
             Server = $Server
-            Credential = $script:vmHostCredential
-            Loghost = $script:LogHost
-            CheckSslCerts = $script:CheckSslCerts
-            DefaultRotate = $script:DefaultRotate
-            DefaultSize = $script:DefaultSize
-            DefaultTimeout = $script:DefaultTimeout
-            Logdir = $script:Logdir
-            LogdirUnique = $script:LogdirUnique
-            DropLogRotate = $script:DropLogRotate
-            DropLogSize = $script:DropLogSize
-            QueueDropMark = $script:QueueDropMark
+            Credential = $Credential
+            Loghost = $LogHostOne
+            CheckSslCerts = $script:checkSslCerts
+            DefaultRotate = $script:defaultRotate
+            DefaultSize = $script:defaultSize
+            DefaultTimeout = $script:defaultTimeout
+            Logdir = $script:logdirOne
+            LogdirUnique = $script:logdirUnique
+            DropLogRotate = $script:dropLogRotate
+            DropLogSize = $script:dropLogSize
+            QueueDropMark = $script:queueDropMark
         }
     }
 }
@@ -85,21 +82,21 @@ Configuration VMHostSyslog_WithDefaultSettings_Config {
 Configuration VMHostSyslog_WithNotDefaultSettings_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
+    Node $AllNodes.NodeName {
         VMHostSyslog vmHostSyslogSettings {
             Name = $Name
             Server = $Server
-            Credential = $script:vmHostCredential
-            Loghost = $script:LogHost2
-            CheckSslCerts = -not $script:CheckSslCerts
-            DefaultRotate = $script:DefaultRotate + 1
-            DefaultSize = $script:DefaultSize + 1
-            DefaultTimeout = $script:DefaultTimeout + 1
-            Logdir = $script:Logdir2
-            LogdirUnique = -not $script:LogdirUnique
-            DropLogRotate = $script:DropLogRotate + 1
-            DropLogSize = $script:DropLogSize + 1
-            QueueDropMark = $script:QueueDropMark + 1
+            Credential = $Credential
+            Loghost = $LogHostTwo
+            CheckSslCerts = !$script:checkSslCerts
+            DefaultRotate = $script:defaultRotate + 1
+            DefaultSize = $script:defaultSize + 1
+            DefaultTimeout = $script:defaultTimeout + 1
+            Logdir = $script:logdirTwo
+            LogdirUnique = !$script:logdirUnique
+            DropLogRotate = $script:dropLogRotate + 1
+            DropLogSize = $script:dropLogSize + 1
+            QueueDropMark = $script:queueDropMark + 1
         }
     }
 }
