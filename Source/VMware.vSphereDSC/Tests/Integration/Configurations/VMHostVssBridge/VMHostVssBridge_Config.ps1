@@ -29,7 +29,17 @@ param(
 
     [Parameter(Mandatory = $true)]
     [string]
-    $Password
+    $Password,
+
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyCollection()]
+    [string[]]
+    $NicDevice,
+
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyCollection()]
+    [string[]]
+    $NicDeviceAlt
 )
 
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
@@ -39,8 +49,6 @@ $script:VssName = 'VSSDSC'
 $script:Mtu = 1500
 $script:EnsurePresent = 'Present'
 $script:EnsureAbsent = 'Absent'
-$script:NicDevice = @('vmnic4', 'vmnic5')
-$script:NicDeviceAlt = @('vmnic4')
 $script:BeaconInterval = 1
 $script:BeaconIntervalAlt = 5
 $script:LinkDiscoveryProtocolProtocol = 'CDP'
@@ -79,7 +87,7 @@ Configuration VMHostVssBridge_Create_Config {
             Credential = $script:vmHostCredential
             VssName = $script:VssName
             Ensure = $script:EnsurePresent
-            NicDevice = $script:NicDevice
+            NicDevice = $NicDevice
             BeaconInterval = $script:BeaconInterval
             LinkDiscoveryProtocolProtocol = $script:LinkDiscoveryProtocolProtocol
             LinkDiscoveryProtocolOperation = $script:LinkDiscoveryProtocolOperation
@@ -107,7 +115,7 @@ Configuration VMHostVssBridge_Modify_Config {
             Credential = $script:vmHostCredential
             VssName = $script:VssName
             Ensure = $script:EnsurePresent
-            NicDevice = $script:NicDeviceAlt
+            NicDevice = $NicDeviceAlt
             BeaconInterval = $script:BeaconIntervalAlt
             LinkDiscoveryProtocolProtocol = $script:LinkDiscoveryProtocolProtocolAlt
             LinkDiscoveryProtocolOperation = $script:LinkDiscoveryProtocolOperationAlt

@@ -29,7 +29,27 @@ param(
 
     [Parameter(Mandatory = $true)]
     [string]
-    $Password
+    $Password,
+
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyCollection()]
+    [string[]]
+    $ActiveNic,
+
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyCollection()]
+    [string[]]
+    $ActiveNicAlt,
+
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyCollection()]
+    [string[]]
+    $StandbyNic,
+
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyCollection()]
+    [string[]]
+    $StandbyNicAlt
 )
 
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
@@ -40,10 +60,6 @@ $script:Mtu = 1500
 $script:EnsurePresent = 'Present'
 $script:EnsureAbsent = 'Absent'
 $script:CheckBeacon = $false
-$script:ActiveNic = @('vmnic4','vmnic5')
-$script:ActiveNicAlt = @('vmnic4')
-$script:StandbyNic = @()
-$script:StandbyNicAlt = @('vmnic5')
 $script:NotifySwitches = $true
 $script:Policy = 'loadbalance_srcid'
 $script:PolicyAlt = 'loadbalance_ip'
@@ -64,7 +80,7 @@ $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'I
 Configuration VMHostVssTeaming_Modify_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
+    Node $AllNodes.NodeName {
         VMHostVss vmHostVssSettings {
             Name = $Name
             Server = $Server
@@ -72,6 +88,19 @@ Configuration VMHostVssTeaming_Modify_Config {
             VssName = $script:VssName
             Ensure = $script:EnsurePresent
             Mtu = $script:Mtu
+        }
+
+        VMHostVssBridge vmHostVssBridge {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            Ensure = $script:EnsurePresent
+            VssName = $script:VssName
+            BeaconInterval = 1
+            LinkDiscoveryProtocolOperation = 'Listen'
+            LinkDiscoveryProtocolProtocol = 'CDP'
+            NicDevice = $ActiveNic
+            DependsOn = "[VMHostVss]vmHostVssSettings"
         }
 
         VMHostVssTeaming vmHostVssTeamingSettings {
@@ -81,12 +110,12 @@ Configuration VMHostVssTeaming_Modify_Config {
             VssName = $script:VssName
             Ensure = $script:EnsurePresent
             CheckBeacon = -not $script:CheckBeacon
-            ActiveNic = $script:ActiveNicAlt
-            StandbyNic = $script:StandbyNicAlt
+            ActiveNic = $ActiveNic
+            StandbyNic = $StandbyNic
             NotifySwitches = -not $script:NotifySwitches
             Policy = $script:PolicyAlt
             RollingOrder = -not $script:RollingOrder
-            DependsOn = "[VMHostVss]vmHostVssSettings"
+            DependsOn = "[VMHostVssBridge]vmHostVssBridge"
         }
     }
 }
@@ -94,7 +123,7 @@ Configuration VMHostVssTeaming_Modify_Config {
 Configuration VMHostVssTeaming_Remove_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost {
+    Node $AllNodes.NodeName {
         VMHostVss vmHostVssSettings {
             Name = $Name
             Server = $Server
@@ -104,6 +133,19 @@ Configuration VMHostVssTeaming_Remove_Config {
             Mtu = $script:Mtu
         }
 
+        VMHostVssBridge vmHostVssBridge {
+            Name = $Name
+            Server = $Server
+            Credential = $script:vmHostCredential
+            Ensure = $script:EnsurePresent
+            VssName = $script:VssName
+            BeaconInterval = 1
+            LinkDiscoveryProtocolOperation = 'Listen'
+            LinkDiscoveryProtocolProtocol = 'CDP'
+            NicDevice = $ActiveNic
+            DependsOn = "[VMHostVss]vmHostVssSettings"
+        }
+
         VMHostVssTeaming vmHostVssTeamingSettings {
             Name = $Name
             Server = $Server
@@ -111,12 +153,12 @@ Configuration VMHostVssTeaming_Remove_Config {
             VssName = $script:VssName
             Ensure = $script:Absent
             CheckBeacon = $script:CheckBeacon
-            ActiveNic = $script:ActiveNic
-            StandbyNic = $script:StandbyNic
+            ActiveNic = $ActiveNicAlt
+            StandbyNic = $StandbyNicAlt
             NotifySwitches = $script:NotifySwitches
             Policy = $script:Policy
             RollingOrder = $script:RollingOrder
-            DependsOn = "[VMHostVss]vmHostVssSettings"
+            DependsOn = "[VMHostVssBridge]vmHostVssBridge"
         }
     }
 }

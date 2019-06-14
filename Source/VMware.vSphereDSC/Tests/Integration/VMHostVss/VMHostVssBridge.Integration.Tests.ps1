@@ -32,15 +32,19 @@ param(
     $Password
 )
 
-<#
-Integration test environment information
+# Retrieves the pNics that are unused from the Server. If there are not available unused pNics on the Server, it throws an error.
+function Invoke-TestSetup {
+    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password
+    $availableNetworkAdapters = Get-VMHostNetworkAdapter -Server $viServer | Where-Object { $_.Id -Match 'PhysicalNic' -and $_.BitRatePerSec -eq 0 }
+    if ($availableNetworkAdapters.Length -lt 2) {
+        throw "The VSS that is used in the Integration Tests requires 2 unused pNICs to be available on the ESXi node."
+    }
 
-Requirements :
+    $script:nicDevice = @($availableNetworkAdapters[0].Name, $availableNetworkAdapters[1].Name)
+    $script:nicDeviceAlt = @($availableNetworkAdapters[0].Name)
+}
 
-1) The VSS that is created (VSSDSC) requires 2 unused pNICs to be available on the ESXi node.
-The names are speficied in $script:NicDevice and $script:NicDeviceAlt
-
-#>
+Invoke-TestSetup
 
 $script:moduleName = 'VMware.vSphereDSC'
 $script:dscResourceName = 'VMHostVssBridge'
@@ -54,8 +58,6 @@ $script:configWithModifyVssBridge = "$($script:dscResourceName)_Modify_Config"
 $script:configWithRemoveVssBridge = "$($script:dscResourceName)_Remove_Config"
 
 $script:VssName = 'VSSDSC'
-$script:NicDevice = @('vmnic4', 'vmnic5')
-$script:NicDeviceAlt = @('vmnic4')
 $script:BeaconInterval = 1
 $script:BeaconIntervalAlt = 5
 $script:LinkDiscoveryProtocolProtocol = 'CDP'
@@ -70,7 +72,7 @@ $script:resourceWithCreateVssBridge = @{
     Server = $Server
     Ensure = $script:Present
     VssName = $script:VssName
-    NicDevice = $script:NicDevice
+    NicDevice = $script:nicDevice
     BeaconInterval = $script:BeaconInterval
     LinkDiscoveryProtocolProtocol = $script:LinkDiscoveryProtocolProtocol
     LinkDiscoveryProtocolOperation = $script:LinkDiscoveryProtocolOperation
@@ -81,7 +83,7 @@ $script:resourceWithModifyVssBridge = @{
     Server = $Server
     Ensure = $script:Present
     VssName = $script:VssName
-    NicDevice = $script:NicDeviceAlt
+    NicDevice = $script:nicDeviceAlt
     BeaconInterval = $script:BeaconIntervalAlt
     LinkDiscoveryProtocolProtocol = $script:LinkDiscoveryProtocolProtocolAlt
     LinkDiscoveryProtocolOperation = $script:LinkDiscoveryProtocolOperationAlt
@@ -95,7 +97,7 @@ $script:resourceWithRemoveVssBridge = @{
     DependsOn = "[VMHostVss]vmHostVssSettings"
 }
 
-. $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password
+. $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password -NicDevice $script:nicDevice -NicDeviceAlt $script:nicDeviceAlt
 
 $script:mofFileWithCreateVssBridge = "$script:integrationTestsFolderPath\$($script:configWithCreateVssBridge)\"
 $script:mofFileWithModifyVssBridge = "$script:integrationTestsFolderPath\$($script:configWithModifyVssBridge)\"
@@ -284,4 +286,5 @@ try {
     }
 }
 finally {
+    Disconnect-VIServer -Server $Server -Confirm:$false
 }
