@@ -40,516 +40,787 @@ $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleB
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
-$script:configWithClusterToAdd = "$($script:dscResourceName)_WithClusterToAdd_Config"
-$script:configWithClusterToAddInCustomFolder = "$($script:dscResourceName)_WithClusterToAddInCustomFolder_Config"
-$script:configWithClusterToUpdate = "$($script:dscResourceName)_WithClusterToUpdate_Config"
-$script:configWithClusterToUpdateInCustomFolder = "$($script:dscResourceName)_WithClusterToUpdateInCustomFolder_Config"
-$script:configWithClusterToRemove = "$($script:dscResourceName)_WithClusterToRemove_Config"
-$script:configWithClusterToRemoveInCustomFolder = "$($script:dscResourceName)_WithClusterToRemoveInCustomFolder_Config"
-
-$script:vCenter = Connect-VIServer -Server $Server -User $User -Password $Password
-$script:datacenter = Get-Datacenter -Server $script:vCenter -Name 'Datacenter'
-$script:clusterLocation = Get-Inventory -Server $script:vCenter -Name 'host' -Location $script:datacenter | Where-Object { $_.ParentId -eq $script:datacenter.Id }
-
-$script:clusterName = 'MyCluster'
-$script:location = [string]::Empty
-$script:locationWithCustomFolder = 'MyClusterFolder'
-$script:datacenterName = 'Datacenter'
-$script:datacenterLocation = [string]::Empty
-
-$script:resourceWithClusterToAdd = @{
-    Ensure = 'Present'
-    DrsEnabled = $true
-    DrsAutomationLevel = 'FullyAutomated'
-    DrsMigrationThreshold = 5
-    DrsDistribution = 0
-    MemoryLoadBalancing = 100
-    CPUOverCommitment = 500
-}
-
-$script:resourceWithClusterToAddInCustomFolder = @{
-    Ensure = 'Present'
-    DrsEnabled = $true
-    DrsAutomationLevel = 'PartiallyAutomated'
-    DrsMigrationThreshold = 3
-    DrsDistribution = 1
-    MemoryLoadBalancing = 200
-    CPUOverCommitment = 400
-}
-
-$script:resourceWithClusterToUpdate = @{
-    DrsAutomationLevel = 'Manual'
-    DrsMigrationThreshold = 1
-}
-
-$script:resourceWithClusterToUpdateInCustomFolder = @{
-    DrsDistribution = 2
-    MemoryLoadBalancing = 50
-    CPUOverCommitment = 300
-}
-
-$script:resourceWithClusterToRemove = @{
-    Ensure = 'Absent'
-}
+$script:configWhenAddingClusterWithEmptyLocation = "$($script:dscResourceName)_WhenAddingClusterWithEmptyLocation_Config"
+$script:configWhenAddingClusterWithLocationWithOneFolder = "$($script:dscResourceName)_WhenAddingClusterWithLocationWithOneFolder_Config"
+$script:configWhenAddingClusterWithLocationWithTwoFolders = "$($script:dscResourceName)_WhenAddingClusterWithLocationWithTwoFolders_Config"
+$script:configWhenUpdatingCluster = "$($script:dscResourceName)_WhenUpdatingCluster_Config"
+$script:configWhenRemovingClusterWithEmptyLocation = "$($script:dscResourceName)_WhenRemovingClusterWithEmptyLocation_Config"
+$script:configWhenRemovingClusterWithLocationWithOneFolder = "$($script:dscResourceName)_WhenRemovingClusterWithLocationWithOneFolder_Config"
+$script:configWhenRemovingClusterWithLocationWithTwoFolders = "$($script:dscResourceName)_WhenRemovingClusterWithLocationWithTwoFolders_Config"
 
 . $script:configurationFile -Server $Server -User $User -Password $Password
 
-$script:mofFileWithClusterToAddPath = "$script:integrationTestsFolderPath\$($script:configWithClusterToAdd)\"
-$script:mofFileWithClusterToAddInCustomFolderPath = "$script:integrationTestsFolderPath\$($script:configWithClusterToAddInCustomFolder)\"
-$script:mofFileWithClusterToUpdatePath = "$script:integrationTestsFolderPath\$($script:configWithClusterToUpdate)\"
-$script:mofFileWithClusterToUpdateInCustomFolderPath = "$script:integrationTestsFolderPath\$($script:configWithClusterToUpdateInCustomFolder)\"
-$script:mofFileWithClusterToRemovePath = "$script:integrationTestsFolderPath\$($script:configWithClusterToRemove)"
-$script:mofFileWithClusterToRemoveInCustomFolderPath = "$script:integrationTestsFolderPath\$($script:configWithClusterToRemoveInCustomFolder)"
+$script:mofFileWhenAddingClusterWithEmptyLocationPath = "$script:integrationTestsFolderPath\$($script:configWhenAddingClusterWithEmptyLocation)\"
+$script:mofFileWhenAddingClusterWithLocationWithOneFolderPath = "$script:integrationTestsFolderPath\$($script:configWhenAddingClusterWithLocationWithOneFolder)\"
+$script:mofFileWhenAddingClusterWithLocationWithTwoFoldersPath = "$script:integrationTestsFolderPath\$($script:configWhenAddingClusterWithLocationWithTwoFolders)\"
+$script:mofFileWhenUpdatingClusterPath = "$script:integrationTestsFolderPath\$($script:configWhenUpdatingCluster)\"
+$script:mofFileWhenRemovingClusterWithEmptyLocationPath = "$script:integrationTestsFolderPath\$($script:configWhenRemovingClusterWithEmptyLocation)\"
+$script:mofFileWhenRemovingClusterWithLocationWithOneFolderPath = "$script:integrationTestsFolderPath\$($script:configWhenRemovingClusterWithLocationWithOneFolder)\"
+$script:mofFileWhenRemovingClusterWithLocationWithTwoFoldersPath = "$script:integrationTestsFolderPath\$($script:configWhenRemovingClusterWithLocationWithTwoFolders)\"
 
-function New-CustomFolder {
-    return New-Folder -Server $script:vCenter -Name $script:locationWithCustomFolder -Location $script:clusterLocation
-}
-
-function Invoke-TestSetup {
-    # Cluster Location is the Host folder of the Datacenter.
-    $clusterSpec = New-Object VMware.Vim.ClusterConfigSpecEx
-    $clusterSpec.DrsConfig = New-Object VMware.Vim.ClusterDrsConfigInfo
-
-    $clusterSpec.DrsConfig.Enabled = $script:resourceWithClusterToAdd.DrsEnabled
-    $clusterSpec.DrsConfig.DefaultVmBehavior = $script:resourceWithClusterToAdd.DrsAutomationLevel
-    $clusterSpec.DrsConfig.VmotionRate = $script:resourceWithClusterToAdd.DrsMigrationThreshold
-    $clusterSpec.DrsConfig.Option = @(
-        [VMware.Vim.OptionValue] @{
-            Key = 'LimitVMsPerESXHostPercent'
-            Value = $script:resourceWithClusterToAdd.DrsDistribution.ToString()
-        },
-        [VMware.Vim.OptionValue] @{
-            Key = 'PercentIdleMBInMemDemand'
-            Value = $script:resourceWithClusterToAdd.MemoryLoadBalancing.ToString()
-        },
-        [VMware.Vim.OptionValue] @{
-            Key = 'MaxVcpusPerClusterPct'
-            Value = $script:resourceWithClusterToAdd.CPUOverCommitment.ToString()
-        }
-    )
-
-    $script:clusterLocation.ExtensionData.CreateClusterEx($script:clusterName, $clusterSpec)
-
-    # Cluster Location is a Folder inside the Host Folder of the Datacenter.
-    $clusterSpec = New-Object VMware.Vim.ClusterConfigSpecEx
-    $clusterSpec.DrsConfig = New-Object VMware.Vim.ClusterDrsConfigInfo
-
-    $clusterSpec.DrsConfig.Enabled = $script:resourceWithClusterToAddInCustomFolder.DrsEnabled
-    $clusterSpec.DrsConfig.DefaultVmBehavior = $script:resourceWithClusterToAddInCustomFolder.DrsAutomationLevel
-    $clusterSpec.DrsConfig.VmotionRate = $script:resourceWithClusterToAddInCustomFolder.DrsMigrationThreshold
-    $clusterSpec.DrsConfig.Option = @(
-        [VMware.Vim.OptionValue] @{
-            Key = 'LimitVMsPerESXHostPercent'
-            Value = $script:resourceWithClusterToAddInCustomFolder.DrsDistribution.ToString()
-        },
-        [VMware.Vim.OptionValue] @{
-            Key = 'PercentIdleMBInMemDemand'
-            Value = $script:resourceWithClusterToAddInCustomFolder.MemoryLoadBalancing.ToString()
-        },
-        [VMware.Vim.OptionValue] @{
-            Key = 'MaxVcpusPerClusterPct'
-            Value = $script:resourceWithClusterToAddInCustomFolder.CPUOverCommitment.ToString()
-        }
-    )
-
-    $customFolderAsLocation = New-CustomFolder
-    $customFolderAsLocation.ExtensionData.CreateClusterEx($script:clusterName, $clusterSpec)
-}
-
-function Invoke-TestCleanup {
-    Get-Cluster -Server $script:vCenter -Name $script:clusterName -ErrorAction SilentlyContinue | Remove-Cluster -Server $script:vCenter -Confirm:$false
-    Get-Folder -Server $script:vCenter -Name $script:locationWithCustomFolder -ErrorAction SilentlyContinue | Remove-Folder -Server $script:vCenter -Confirm:$false
-}
-
-try {
-    Describe "$($script:dscResourceName)_Integration" {
-        Context "When using configuration $($script:configWithClusterToAdd)" {
-            AfterAll {
-                Invoke-TestCleanup
+Describe "$($script:dscResourceName)_Integration" {
+    Context "When using configuration $($script:configWhenAddingClusterWithEmptyLocation)" {
+        BeforeAll {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenAddingClusterWithEmptyLocationPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
             }
 
-            BeforeEach {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToAddPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToAddPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Arrange && Act && Assert
-                { Get-DscConfiguration } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-                # Arrange && Act
-                $configuration = Get-DscConfiguration
-
-                # Assert
-                $configuration.Server | Should -Be $Server
-                $configuration.Ensure | Should -Be $script:resourceWithClusterToAdd.Ensure
-                $configuration.Location | Should -Be $script:location
-                $configuration.DatacenterName | Should -Be $script:datacenterName
-                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
-                $configuration.Name | Should -Be $script:clusterName
-                $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAdd.DrsEnabled
-                $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToAdd.DrsAutomationLevel
-                $configuration.DrsMigrationThreshold | Should -Be $script:resourceWithClusterToAdd.DrsMigrationThreshold
-                $configuration.DrsDistribution | Should -Be $script:resourceWithClusterToAdd.DrsDistribution
-                $configuration.MemoryLoadBalancing | Should -Be $script:resourceWithClusterToAdd.MemoryLoadBalancing
-                $configuration.CPUOverCommitment | Should -Be $script:resourceWithClusterToAdd.CPUOverCommitment
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
-            }
+            # Act
+            Start-DscConfiguration @startDscConfigurationParameters
         }
 
-        Context "When using configuration $($script:configWithClusterToAddInCustomFolder)" {
-            BeforeAll {
-                New-CustomFolder
+        It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenAddingClusterWithEmptyLocationPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
             }
 
-            AfterAll {
-                Invoke-TestCleanup
-            }
-
-            BeforeEach {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToAddInCustomFolderPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToAddInCustomFolderPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Arrange && Act && Assert
-                { Get-DscConfiguration } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-                # Arrange && Act
-                $configuration = Get-DscConfiguration
-
-                # Assert
-                $configuration.Server | Should -Be $Server
-                $configuration.Ensure | Should -Be $script:resourceWithClusterToAddInCustomFolder.Ensure
-                $configuration.Location | Should -Be $script:locationWithCustomFolder
-                $configuration.DatacenterName | Should -Be $script:datacenterName
-                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
-                $configuration.Name | Should -Be $script:clusterName
-                $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsEnabled
-                $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsAutomationLevel
-                $configuration.DrsMigrationThreshold | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsMigrationThreshold
-                $configuration.DrsDistribution | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsDistribution
-                $configuration.MemoryLoadBalancing | Should -Be $script:resourceWithClusterToAddInCustomFolder.MemoryLoadBalancing
-                $configuration.CPUOverCommitment | Should -Be $script:resourceWithClusterToAddInCustomFolder.CPUOverCommitment
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
-            }
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
         }
 
-        Context "When using configuration $($script:configWithClusterToUpdate)" {
-            BeforeAll {
-                Invoke-TestSetup
-            }
-
-            AfterAll {
-                Invoke-TestCleanup
-            }
-
-            BeforeEach {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToUpdatePath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToUpdatePath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Arrange && Act && Assert
-                { Get-DscConfiguration } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-                # Arrange && Act
-                $configuration = Get-DscConfiguration
-
-                # Assert
-                $configuration.Server | Should -Be $Server
-                $configuration.Ensure | Should -Be $script:resourceWithClusterToAdd.Ensure
-                $configuration.Location | Should -Be $script:location
-                $configuration.DatacenterName | Should -Be $script:datacenterName
-                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
-                $configuration.Name | Should -Be $script:clusterName
-                $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAdd.DrsEnabled
-                $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToUpdate.DrsAutomationLevel
-                $configuration.DrsMigrationThreshold | Should -Be $script:resourceWithClusterToUpdate.DrsMigrationThreshold
-                $configuration.DrsDistribution | Should -Be $script:resourceWithClusterToAdd.DrsDistribution
-                $configuration.MemoryLoadBalancing | Should -Be $script:resourceWithClusterToAdd.MemoryLoadBalancing
-                $configuration.CPUOverCommitment | Should -Be $script:resourceWithClusterToAdd.CPUOverCommitment
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
-            }
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
         }
 
-        Context "When using configuration $($script:configWithClusterToUpdateInCustomFolder)" {
-            BeforeAll {
-                Invoke-TestSetup
-            }
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
 
-            AfterAll {
-                Invoke-TestCleanup
-            }
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+            $clusterWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:drsClusterWithEmptyLocationResourceId }
 
-            BeforeEach {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToUpdateInCustomFolderPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterFolderEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Present'
 
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
+            $datacenterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterWithLocationWithOneFolderResource.Ensure | Should -Be 'Present'
 
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToUpdateInCustomFolderPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Arrange && Act && Assert
-                { Get-DscConfiguration } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-                # Arrange && Act
-                $configuration = Get-DscConfiguration
-
-                # Assert
-                $configuration.Server | Should -Be $Server
-                $configuration.Ensure | Should -Be $script:resourceWithClusterToAddInCustomFolder.Ensure
-                $configuration.Location | Should -Be $script:locationWithCustomFolder
-                $configuration.DatacenterName | Should -Be $script:datacenterName
-                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
-                $configuration.Name | Should -Be $script:clusterName
-                $configuration.DrsEnabled | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsEnabled
-                $configuration.DrsAutomationLevel | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsAutomationLevel
-                $configuration.DrsMigrationThreshold | Should -Be $script:resourceWithClusterToAddInCustomFolder.DrsMigrationThreshold
-                $configuration.DrsDistribution | Should -Be $script:resourceWithClusterToUpdateInCustomFolder.DrsDistribution
-                $configuration.MemoryLoadBalancing | Should -Be $script:resourceWithClusterToUpdateInCustomFolder.MemoryLoadBalancing
-                $configuration.CPUOverCommitment | Should -Be $script:resourceWithClusterToUpdateInCustomFolder.CPUOverCommitment
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
-            }
+            $clusterWithEmptyLocationResource.Server | Should -Be $Server
+            $clusterWithEmptyLocationResource.Name | Should -Be $script:clusterName
+            $clusterWithEmptyLocationResource.Location | Should -Be $script:clusterWithEmptyLocation
+            $clusterWithEmptyLocationResource.DatacenterName | Should -Be $script:datacenterName
+            $clusterWithEmptyLocationResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $clusterWithEmptyLocationResource.Ensure | Should -Be 'Present'
+            $clusterWithEmptyLocationResource.DrsEnabled | Should -Be $true
+            $clusterWithEmptyLocationResource.DrsAutomationLevel | Should -Be 'FullyAutomated'
+            $clusterWithEmptyLocationResource.DrsMigrationThreshold | Should -Be 5
+            $clusterWithEmptyLocationResource.DrsDistribution | Should -Be 0
+            $clusterWithEmptyLocationResource.MemoryLoadBalancing | Should -Be 100
+            $clusterWithEmptyLocationResource.CPUOverCommitment | Should -Be 500
         }
 
-        Context "When using configuration $($script:configWithClusterToRemove)" {
-            BeforeAll {
-                Invoke-TestSetup
-            }
-
-            AfterAll {
-                Invoke-TestCleanup
-            }
-
-            BeforeEach {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToRemovePath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToRemovePath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Arrange && Act && Assert
-                { Get-DscConfiguration } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-                # Arrange && Act
-                $configuration = Get-DscConfiguration
-
-                # Assert
-                $configuration.Server | Should -Be $Server
-                $configuration.Ensure | Should -Be $script:resourceWithClusterToRemove.Ensure
-                $configuration.Location | Should -Be $script:location
-                $configuration.DatacenterName | Should -Be $script:datacenterName
-                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
-                $configuration.Name | Should -Be $script:clusterName
-                $configuration.DrsEnabled | Should -Be $null
-                $configuration.DrsAutomationLevel | Should -Be 'Unset'
-                $configuration.DrsMigrationThreshold | Should -Be $null
-                $configuration.DrsDistribution | Should -Be $null
-                $configuration.MemoryLoadBalancing | Should -Be $null
-                $configuration.CPUOverCommitment | Should -Be $null
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
-            }
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
         }
 
-        Context "When using configuration $($script:configWithClusterToRemoveInCustomFolder)" {
-            BeforeAll {
-                Invoke-TestSetup
+        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithOneFolderResourceName) should depend on Resource $($script:datacenterFolderWithEmptyLocationResourceName)" {
+            # Arrange && Act
+            $datacenterWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterWithLocationWithOneFolderResource.DependsOn | Should -Be $script:datacenterFolderWithEmptyLocationResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:drsClusterWithEmptyLocationResourceName) should depend on Resource $($script:datacenterWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $clusterWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:drsClusterWithEmptyLocationResourceId }
+
+            # Assert
+            $clusterWithEmptyLocationResource.DependsOn | Should -Be $script:datacenterWithLocationWithOneFolderResourceId
+        }
+
+        AfterAll {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenRemovingClusterWithEmptyLocationPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
             }
 
-            AfterAll {
-                Invoke-TestCleanup
-            }
-
-            BeforeEach {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToRemoveInCustomFolderPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWithClusterToRemoveInCustomFolderPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                }
-
-                # Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Arrange && Act && Assert
-                { Get-DscConfiguration } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-                # Arrange && Act
-                $configuration = Get-DscConfiguration
-
-                # Assert
-                $configuration.Server | Should -Be $Server
-                $configuration.Ensure | Should -Be $script:resourceWithClusterToRemove.Ensure
-                $configuration.Location | Should -Be $script:locationWithCustomFolder
-                $configuration.DatacenterName | Should -Be $script:datacenterName
-                $configuration.DatacenterLocation | Should -Be $script:datacenterLocation
-                $configuration.Name | Should -Be $script:clusterName
-                $configuration.DrsEnabled | Should -Be $null
-                $configuration.DrsAutomationLevel | Should -Be 'Unset'
-                $configuration.DrsMigrationThreshold | Should -Be $null
-                $configuration.DrsDistribution | Should -Be $null
-                $configuration.MemoryLoadBalancing | Should -Be $null
-                $configuration.CPUOverCommitment | Should -Be $null
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration | Should -Be $true
-            }
+            # Act
+            Start-DscConfiguration @startDscConfigurationParameters
         }
     }
-}
-finally {
-    Disconnect-VIServer -Server $Server -Confirm:$false
+
+    Context "When using configuration $($script:configWhenAddingClusterWithLocationWithOneFolder)" {
+        BeforeAll {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenAddingClusterWithLocationWithOneFolderPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParameters
+        }
+
+        It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenAddingClusterWithLocationWithOneFolderPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
+
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+            $folderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
+            $clusterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:drsClusterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterFolderEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Present'
+
+            $datacenterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterWithLocationWithOneFolderResource.Ensure | Should -Be 'Present'
+
+            $folderWithEmptyLocationResource.Server | Should -Be $Server
+            $folderWithEmptyLocationResource.Name | Should -Be $script:folderName
+            $folderWithEmptyLocationResource.Location | Should -Be $script:folderWithEmptyLocation
+            $folderWithEmptyLocationResource.DatacenterName | Should -Be $script:datacenterName
+            $folderWithEmptyLocationResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $folderWithEmptyLocationResource.Ensure | Should -Be 'Present'
+            $folderWithEmptyLocationResource.FolderType | Should -Be $script:folderType
+
+            $clusterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $clusterWithLocationWithOneFolderResource.Name | Should -Be $script:clusterName
+            $clusterWithLocationWithOneFolderResource.Location | Should -Be $script:clusterWithLocationWithOneFolder
+            $clusterWithLocationWithOneFolderResource.DatacenterName | Should -Be $script:datacenterName
+            $clusterWithLocationWithOneFolderResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $clusterWithLocationWithOneFolderResource.Ensure | Should -Be 'Present'
+            $clusterWithLocationWithOneFolderResource.DrsEnabled | Should -Be $true
+            $clusterWithLocationWithOneFolderResource.DrsAutomationLevel | Should -Be 'Manual'
+            $clusterWithLocationWithOneFolderResource.DrsMigrationThreshold | Should -Be 3
+            $clusterWithLocationWithOneFolderResource.DrsDistribution | Should -Be 1
+            $clusterWithLocationWithOneFolderResource.MemoryLoadBalancing | Should -Be 200
+            $clusterWithLocationWithOneFolderResource.CPUOverCommitment | Should -Be 400
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithOneFolderResourceName) should depend on Resource $($script:datacenterFolderWithEmptyLocationResourceName)" {
+            # Arrange && Act
+            $datacenterWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterWithLocationWithOneFolderResource.DependsOn | Should -Be $script:datacenterFolderWithEmptyLocationResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:folderWithEmptyLocationResourceName) should depend on Resource $($script:datacenterWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $folderWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
+
+            # Assert
+            $folderWithEmptyLocationResource.DependsOn | Should -Be $script:datacenterWithLocationWithOneFolderResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:drsClusterWithLocationWithOneFolderResourceName) should depend on Resource $($script:folderWithEmptyLocationResourceName)" {
+            # Arrange && Act
+            $clusterWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:drsClusterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $clusterWithLocationWithOneFolderResource.DependsOn | Should -Be $script:folderWithEmptyLocationResourceId
+        }
+
+        AfterAll {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenRemovingClusterWithLocationWithOneFolderPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParameters
+        }
+    }
+
+    Context "When using configuration $($script:configWhenAddingClusterWithLocationWithTwoFolders)" {
+        BeforeAll {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenAddingClusterWithLocationWithTwoFoldersPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParameters
+        }
+
+        It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenAddingClusterWithLocationWithTwoFoldersPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
+
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+            $folderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
+            $folderWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:folderWithLocationWithOneFolderResourceId }
+            $clusterWithLocationWithTwoFoldersResource = $configuration | Where-Object { $_.ResourceId -eq $script:drsClusterWithLocationWithTwoFoldersResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterFolderEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Present'
+
+            $datacenterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterWithLocationWithOneFolderResource.Ensure | Should -Be 'Present'
+
+            $folderWithEmptyLocationResource.Server | Should -Be $Server
+            $folderWithEmptyLocationResource.Name | Should -Be $script:folderName
+            $folderWithEmptyLocationResource.Location | Should -Be $script:folderWithEmptyLocation
+            $folderWithEmptyLocationResource.DatacenterName | Should -Be $script:datacenterName
+            $folderWithEmptyLocationResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $folderWithEmptyLocationResource.Ensure | Should -Be 'Present'
+            $folderWithEmptyLocationResource.FolderType | Should -Be $script:folderType
+
+            $folderWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $folderWithLocationWithOneFolderResource.Name | Should -Be $script:folderName
+            $folderWithLocationWithOneFolderResource.Location | Should -Be $script:folderWithLocationWithOneFolder
+            $folderWithLocationWithOneFolderResource.DatacenterName | Should -Be $script:datacenterName
+            $folderWithLocationWithOneFolderResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $folderWithLocationWithOneFolderResource.Ensure | Should -Be 'Present'
+            $folderWithLocationWithOneFolderResource.FolderType | Should -Be $script:folderType
+
+            $clusterWithLocationWithTwoFoldersResource.Server | Should -Be $Server
+            $clusterWithLocationWithTwoFoldersResource.Name | Should -Be $script:clusterName
+            $clusterWithLocationWithTwoFoldersResource.Location | Should -Be $script:clusterWithLocationWithTwoFolders
+            $clusterWithLocationWithTwoFoldersResource.DatacenterName | Should -Be $script:datacenterName
+            $clusterWithLocationWithTwoFoldersResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $clusterWithLocationWithTwoFoldersResource.Ensure | Should -Be 'Present'
+            $clusterWithLocationWithTwoFoldersResource.DrsEnabled | Should -Be $true
+            $clusterWithLocationWithTwoFoldersResource.DrsAutomationLevel | Should -Be 'PartiallyAutomated'
+            $clusterWithLocationWithTwoFoldersResource.DrsMigrationThreshold | Should -Be 4
+            $clusterWithLocationWithTwoFoldersResource.DrsDistribution | Should -Be 2
+            $clusterWithLocationWithTwoFoldersResource.MemoryLoadBalancing | Should -Be 300
+            $clusterWithLocationWithTwoFoldersResource.CPUOverCommitment | Should -Be 100
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithOneFolderResourceName) should depend on Resource $($script:datacenterFolderWithEmptyLocationResourceName)" {
+            # Arrange && Act
+            $datacenterWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterWithLocationWithOneFolderResource.DependsOn | Should -Be $script:datacenterFolderWithEmptyLocationResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:folderWithEmptyLocationResourceName) should depend on Resource $($script:datacenterWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $folderWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
+
+            # Assert
+            $folderWithEmptyLocationResource.DependsOn | Should -Be $script:datacenterWithLocationWithOneFolderResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:folderWithLocationWithOneFolderResourceName) should depend on Resource $($script:folderWithEmptyLocationResourceName)" {
+            # Arrange && Act
+            $folderWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:folderWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $folderWithLocationWithOneFolderResource.DependsOn | Should -Be $script:folderWithEmptyLocationResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:drsClusterWithLocationWithTwoFoldersResourceName) should depend on Resource $($script:folderWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $clusterWithLocationWithTwoFoldersResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:drsClusterWithLocationWithTwoFoldersResourceId }
+
+            # Assert
+            $clusterWithLocationWithTwoFoldersResource.DependsOn | Should -Be $script:folderWithLocationWithOneFolderResourceId
+        }
+
+        AfterAll {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenRemovingClusterWithLocationWithTwoFoldersPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParameters
+        }
+    }
+
+    Context "When using configuration $($script:configWhenUpdatingCluster)" {
+        BeforeAll {
+            # Arrange
+            $startDscConfigurationParametersWhenAddingCluster = @{
+                Path = $script:mofFileWhenAddingClusterWithEmptyLocationPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            $startDscConfigurationParametersWhenUpdatingCluster = @{
+                Path = $script:mofFileWhenUpdatingClusterPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParametersWhenAddingCluster
+            Start-DscConfiguration @startDscConfigurationParametersWhenUpdatingCluster
+        }
+
+        It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenUpdatingClusterPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
+
+            # Assert
+            $configuration.Server | Should -Be $Server
+            $configuration.Name | Should -Be $script:clusterName
+            $configuration.Location | Should -Be $script:clusterWithEmptyLocation
+            $configuration.DatacenterName | Should -Be $script:datacenterName
+            $configuration.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $configuration.Ensure | Should -Be 'Present'
+            $configuration.DrsEnabled | Should -Be $true
+            $configuration.DrsAutomationLevel | Should -Be 'PartiallyAutomated'
+            $configuration.DrsMigrationThreshold | Should -Be 4
+            $configuration.DrsDistribution | Should -Be 2
+            $configuration.MemoryLoadBalancing | Should -Be 300
+            $configuration.CPUOverCommitment | Should -Be 100
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
+        }
+
+        AfterAll {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenRemovingClusterWithEmptyLocationPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParameters
+        }
+    }
+
+    Context "When using configuration $($script:configWhenRemovingClusterWithEmptyLocation)" {
+        BeforeAll {
+            # Arrange
+            $startDscConfigurationParametersWhenAddingCluster = @{
+                Path = $script:mofFileWhenAddingClusterWithEmptyLocationPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            $startDscConfigurationParametersWhenRemovingCluster = @{
+                Path = $script:mofFileWhenRemovingClusterWithEmptyLocationPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParametersWhenAddingCluster
+            Start-DscConfiguration @startDscConfigurationParametersWhenRemovingCluster
+        }
+
+        It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenRemovingClusterWithEmptyLocationPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
+
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+            $clusterWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:drsClusterWithEmptyLocationResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterFolderEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Absent'
+
+            $datacenterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterWithLocationWithOneFolderResource.Ensure | Should -Be 'Absent'
+
+            $clusterWithEmptyLocationResource.Server | Should -Be $Server
+            $clusterWithEmptyLocationResource.Name | Should -Be $script:clusterName
+            $clusterWithEmptyLocationResource.Location | Should -Be $script:clusterWithEmptyLocation
+            $clusterWithEmptyLocationResource.DatacenterName | Should -Be $script:datacenterName
+            $clusterWithEmptyLocationResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $clusterWithEmptyLocationResource.Ensure | Should -Be 'Absent'
+            $clusterWithEmptyLocationResource.DrsEnabled | Should -Be $null
+            $clusterWithEmptyLocationResource.DrsAutomationLevel | Should -Be 'Unset'
+            $clusterWithEmptyLocationResource.DrsMigrationThreshold | Should -Be $null
+            $clusterWithEmptyLocationResource.DrsDistribution | Should -Be $null
+            $clusterWithEmptyLocationResource.MemoryLoadBalancing | Should -Be $null
+            $clusterWithEmptyLocationResource.CPUOverCommitment | Should -Be $null
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithOneFolderResourceName) should depend on Resource $($script:drsClusterWithEmptyLocationResourceName)" {
+            # Arrange && Act
+            $datacenterWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterWithLocationWithOneFolderResource.DependsOn | Should -Be $script:drsClusterWithEmptyLocationResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterFolderWithEmptyLocationResourceName) should depend on Resource $($script:datacenterWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $datacenterFolderWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.DependsOn | Should -Be $script:datacenterWithLocationWithOneFolderResourceId
+        }
+    }
+
+    Context "When using configuration $($script:configWhenRemovingClusterWithLocationWithOneFolder)" {
+        BeforeAll {
+            # Arrange
+            $startDscConfigurationParametersWhenAddingCluster = @{
+                Path = $script:mofFileWhenAddingClusterWithLocationWithOneFolderPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            $startDscConfigurationParametersWhenRemovingCluster = @{
+                Path = $script:mofFileWhenRemovingClusterWithLocationWithOneFolderPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParametersWhenAddingCluster
+            Start-DscConfiguration @startDscConfigurationParametersWhenRemovingCluster
+        }
+
+        It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenRemovingClusterWithLocationWithOneFolderPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
+
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+            $folderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
+            $clusterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:drsClusterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterFolderEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Absent'
+
+            $datacenterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterWithLocationWithOneFolderResource.Ensure | Should -Be 'Absent'
+
+            $folderWithEmptyLocationResource.Server | Should -Be $Server
+            $folderWithEmptyLocationResource.Name | Should -Be $script:folderName
+            $folderWithEmptyLocationResource.Location | Should -Be $script:folderWithEmptyLocation
+            $folderWithEmptyLocationResource.DatacenterName | Should -Be $script:datacenterName
+            $folderWithEmptyLocationResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $folderWithEmptyLocationResource.Ensure | Should -Be 'Absent'
+            $folderWithEmptyLocationResource.FolderType | Should -Be $script:folderType
+
+            $clusterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $clusterWithLocationWithOneFolderResource.Name | Should -Be $script:clusterName
+            $clusterWithLocationWithOneFolderResource.Location | Should -Be $script:clusterWithLocationWithOneFolder
+            $clusterWithLocationWithOneFolderResource.DatacenterName | Should -Be $script:datacenterName
+            $clusterWithLocationWithOneFolderResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $clusterWithLocationWithOneFolderResource.Ensure | Should -Be 'Absent'
+            $clusterWithLocationWithOneFolderResource.DrsEnabled | Should -Be $null
+            $clusterWithLocationWithOneFolderResource.DrsAutomationLevel | Should -Be 'Unset'
+            $clusterWithLocationWithOneFolderResource.DrsMigrationThreshold | Should -Be $null
+            $clusterWithLocationWithOneFolderResource.DrsDistribution | Should -Be $null
+            $clusterWithLocationWithOneFolderResource.MemoryLoadBalancing | Should -Be $null
+            $clusterWithLocationWithOneFolderResource.CPUOverCommitment | Should -Be $null
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
+        }
+
+        It "Should have the following dependency: Resource $($script:folderWithEmptyLocationResourceName) should depend on Resource $($script:drsClusterWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $folderWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
+
+            # Assert
+            $folderWithEmptyLocationResource.DependsOn | Should -Be $script:drsClusterWithLocationWithOneFolderResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithOneFolderResourceName) should depend on Resource $($script:folderWithEmptyLocationResourceName)" {
+            # Arrange && Act
+            $datacenterWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterWithLocationWithOneFolderResource.DependsOn | Should -Be $script:folderWithEmptyLocationResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterFolderWithEmptyLocationResourceName) should depend on Resource $($script:datacenterWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $datacenterFolderWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.DependsOn | Should -Be $script:datacenterWithLocationWithOneFolderResourceId
+        }
+    }
+
+    Context "When using configuration $($script:configWhenRemovingClusterWithLocationWithTwoFolders)" {
+        BeforeAll {
+            # Arrange
+            $startDscConfigurationParametersWhenAddingCluster = @{
+                Path = $script:mofFileWhenAddingClusterWithLocationWithTwoFoldersPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            $startDscConfigurationParametersWhenRemovingCluster = @{
+                Path = $script:mofFileWhenRemovingClusterWithLocationWithTwoFoldersPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParametersWhenAddingCluster
+            Start-DscConfiguration @startDscConfigurationParametersWhenRemovingCluster
+        }
+
+        It 'Should compile and apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileWhenRemovingClusterWithLocationWithTwoFoldersPath
+                ComputerName = 'localhost'
+                Wait = $true
+                Force = $true
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration
+
+            $datacenterFolderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+            $datacenterWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+            $folderWithEmptyLocationResource = $configuration | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
+            $folderWithLocationWithOneFolderResource = $configuration | Where-Object { $_.ResourceId -eq $script:folderWithLocationWithOneFolderResourceId }
+            $clusterWithLocationWithTwoFoldersResource = $configuration | Where-Object { $_.ResourceId -eq $script:drsClusterWithLocationWithTwoFoldersResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.Server | Should -Be $Server
+            $datacenterFolderWithEmptyLocationResource.Name | Should -Be $script:datacenterFolderName
+            $datacenterFolderWithEmptyLocationResource.Location | Should -Be $script:datacenterFolderEmptyLocation
+            $datacenterFolderWithEmptyLocationResource.Ensure | Should -Be 'Absent'
+
+            $datacenterWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $datacenterWithLocationWithOneFolderResource.Name | Should -Be $script:datacenterName
+            $datacenterWithLocationWithOneFolderResource.Location | Should -Be $script:datacenterLocationWithOneFolder
+            $datacenterWithLocationWithOneFolderResource.Ensure | Should -Be 'Absent'
+
+            $folderWithEmptyLocationResource.Server | Should -Be $Server
+            $folderWithEmptyLocationResource.Name | Should -Be $script:folderName
+            $folderWithEmptyLocationResource.Location | Should -Be $script:folderWithEmptyLocation
+            $folderWithEmptyLocationResource.DatacenterName | Should -Be $script:datacenterName
+            $folderWithEmptyLocationResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $folderWithEmptyLocationResource.Ensure | Should -Be 'Absent'
+            $folderWithEmptyLocationResource.FolderType | Should -Be $script:folderType
+
+            $folderWithLocationWithOneFolderResource.Server | Should -Be $Server
+            $folderWithLocationWithOneFolderResource.Name | Should -Be $script:folderName
+            $folderWithLocationWithOneFolderResource.Location | Should -Be $script:folderWithLocationWithOneFolder
+            $folderWithLocationWithOneFolderResource.DatacenterName | Should -Be $script:datacenterName
+            $folderWithLocationWithOneFolderResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $folderWithLocationWithOneFolderResource.Ensure | Should -Be 'Absent'
+            $folderWithLocationWithOneFolderResource.FolderType | Should -Be $script:folderType
+
+            $clusterWithLocationWithTwoFoldersResource.Server | Should -Be $Server
+            $clusterWithLocationWithTwoFoldersResource.Name | Should -Be $script:clusterName
+            $clusterWithLocationWithTwoFoldersResource.Location | Should -Be $script:clusterWithLocationWithTwoFolders
+            $clusterWithLocationWithTwoFoldersResource.DatacenterName | Should -Be $script:datacenterName
+            $clusterWithLocationWithTwoFoldersResource.DatacenterLocation | Should -Be $script:datacenterLocationWithOneFolder
+            $clusterWithLocationWithTwoFoldersResource.Ensure | Should -Be 'Absent'
+            $clusterWithLocationWithTwoFoldersResource.DrsEnabled | Should -Be $null
+            $clusterWithLocationWithTwoFoldersResource.DrsAutomationLevel | Should -Be 'Unset'
+            $clusterWithLocationWithTwoFoldersResource.DrsMigrationThreshold | Should -Be $null
+            $clusterWithLocationWithTwoFoldersResource.DrsDistribution | Should -Be $null
+            $clusterWithLocationWithTwoFoldersResource.MemoryLoadBalancing | Should -Be $null
+            $clusterWithLocationWithTwoFoldersResource.CPUOverCommitment | Should -Be $null
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange && Act && Assert
+            Test-DscConfiguration | Should -Be $true
+        }
+
+        It "Should have the following dependency: Resource $($script:folderWithLocationWithOneFolderResourceName) should depend on Resource $($script:drsClusterWithLocationWithTwoFoldersResourceName)" {
+            # Arrange && Act
+            $folderWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:folderWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $folderWithLocationWithOneFolderResource.DependsOn | Should -Be $script:drsClusterWithLocationWithTwoFoldersResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:folderWithEmptyLocationResourceName) should depend on Resource $($script:folderWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $folderWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:folderWithEmptyLocationResourceId }
+
+            # Assert
+            $folderWithEmptyLocationResource.DependsOn | Should -Be $script:folderWithLocationWithOneFolderResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterWithLocationWithOneFolderResourceName) should depend on Resource $($script:folderWithEmptyLocationResourceName)" {
+            # Arrange && Act
+            $datacenterWithLocationWithOneFolderResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterWithLocationWithOneFolderResourceId }
+
+            # Assert
+            $datacenterWithLocationWithOneFolderResource.DependsOn | Should -Be $script:folderWithEmptyLocationResourceId
+        }
+
+        It "Should have the following dependency: Resource $($script:datacenterFolderWithEmptyLocationResourceName) should depend on Resource $($script:datacenterWithLocationWithOneFolderResourceName)" {
+            # Arrange && Act
+            $datacenterFolderWithEmptyLocationResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq $script:datacenterFolderWithEmptyLocationResourceId }
+
+            # Assert
+            $datacenterFolderWithEmptyLocationResource.DependsOn | Should -Be $script:datacenterWithLocationWithOneFolderResourceId
+        }
+    }
 }
