@@ -56,6 +56,9 @@ Tests should currently be structured like so:
 * Root folder of module
     * Tests
         * Unit
+            * TestHelpers
+                * Mocks
+                    * MyResourceMocks.ps1
             * MyResource.Unit.Tests.ps1
         * Integration
             * MyResource.Integration.Tests.ps1
@@ -85,46 +88,51 @@ Currently the coverage of the module should be at least **90 percent**, so when 
   }
  ```
 
-In your unit test file you need to replace VMware PowerCLI modules with the script module that allows PowerCLI cmdlets and types to be mocked.
+In your unit test file you need to replace VMware PowerCLI modules with the script module that allows PowerCLI cmdlets and types to be mocked. This can be achieved with the helper function **Invoke-TestSetup** located [here](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/TestUtils.ps1). The mock data needed for the Unit Tests should be defined [here](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/Mocks/MockData.ps1). Keep in mind that there could be data already defined you can reuse. A good example is the ```$script:viServer``` variable which can be used when mocking the Connect-VIServer cmdlet. The mocks for the Tests should be defined in this [folder](https://github.com/vmware/dscr-for-vmware/tree/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/Mocks). For every use case a separate function defining the mocks should be created. For examples you can check the other mock files like [InventoryBaseDSCMocks](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Tests/Unit/TestHelpers/Mocks/InventoryBaseDSCMocks.ps1). The Unit Tests file should look like this:
  ```powershell
-  function Invoke-TestSetup {
-    $script:modulePath = $env:PSModulePath
-    $script:unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
-    $script:mockModuleLocation = "$script:unitTestsFolder\TestHelpers"
+   using module VMware.vSphereDSC
 
-    $env:PSModulePath = $script:mockModuleLocation
-    $vimAutomationModule = Get-Module -Name VMware.VimAutomation.Core
-    if ($null -ne $vimAutomationModule -and $vimAutomationModule.Path -NotMatch 'TestHelpers') {
-        throw 'The Original VMware.VimAutomation.Core Module is loaded in the current session. If you want to run the unit tests please open a new PowerShell session.'
-    }
+   $script:moduleName = 'VMware.vSphereDSC'
 
-    Import-Module -Name VMware.VimAutomation.Core
-   }
+   InModuleScope -ModuleName $script:moduleName {
+       try {
+           $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
+           $modulePath = $env:PSModulePath
+           $resourceName = 'MyResource'
 
-   function Invoke-TestCleanup {
-    Remove-Module -Name VMware.VimAutomation.Core
-    $env:PSModulePath = $script:modulePath
-   }
+           . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
-   try {
-       # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
-       Invoke-TestSetup
+           # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
+           Invoke-TestSetup
 
-       Describe 'MyResource\Set' -Tag 'Set' {
-         ...
+           . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
+           . "$unitTestsFolder\TestHelpers\Mocks\MyResourceMocks.ps1"
+
+           Describe 'MyResource\Set' -Tag 'Set' {
+               # Define a Context block for each possible use case.
+               Context '<Use case description>' {
+                   ...
+               }
+           }
+
+           Describe 'MyResource\Test' -Tag 'Test' {
+               # Define a Context block for each possible case.
+               Context '<Use case description>' {
+                   ...
+               }
+           }
+
+           Describe 'MyResource\Get' -Tag 'Get' {
+               # Define a Context block for each possible case.
+               Context '<Use case description>' {
+                   ...
+               }
+           }
        }
-
-       Describe 'MyResource\Test' -Tag 'Test' {
-         ...
+       finally {
+           # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
+           Invoke-TestCleanup -ModulePath $modulePath
        }
-
-       Describe 'MyResource\Get' -Tag 'Get' {
-         ...
-       }
-   }
-   finally {
-       # Calls the function to Remove the mocked VMware.VimAutomation.Core module after all tests.
-       Invoke-TestCleanup
    }
  ```
 
@@ -133,7 +141,7 @@ In your unit test file you need to replace VMware PowerCLI modules with the scri
   try {
       Describe 'MyResource' {
           Context 'Testing one use case' {
-              BeforeEach {
+              BeforeAll {
                   ...
                   Start-DscConfiguration <DSC Config parameters>
                   ...
@@ -168,11 +176,11 @@ In your unit test file you need to replace VMware PowerCLI modules with the scri
 
  Additionally if you have [DependsOn](https://docs.microsoft.com/en-us/powershell/dsc/configurations/resource-depends-on) in your Configurations, it is recommended to add this test:
  ```powershell
-  It 'Should depend on resource <resource name>' {
-      # Make sure that the current resource is depending on the right resource.
-      $currentResource = Get-DscConfiguration | Where-Object { $_.Name -eq '<current resource name>' }
+  It 'Should have the following dependency: Resource <my resource name> should depend on Resource <resource name>' {
+      # Make sure that the my resource is depending on the right resource.
+      $myResource = Get-DscConfiguration | Where-Object { $_.ResourceId -eq '<my resource id>' }
 
-      $currentResource.DependsOn | Should -Be '<resource name>'
+      $myResource.DependsOn | Should -Be '<resource id>'
   }
  ```
 
