@@ -83,3 +83,15 @@ $script:drsClusterWithLocationWithTwoFoldersResourceName = 'DrsCluster_With_Loca
 $script:drsClusterWithEmptyLocationResourceId = "[DrsCluster]$script:drsClusterWithEmptyLocationResourceName"
 $script:drsClusterWithLocationWithOneFolderResourceId = "[DrsCluster]$script:drsClusterWithLocationWithOneFolderResourceName"
 $script:drsClusterWithLocationWithTwoFoldersResourceId = "[DrsCluster]$script:drsClusterWithLocationWithTwoFoldersResourceName"
+
+# Syslog Constants
+$script:checkSslCerts = $true
+$script:defaultRotate = 10
+$script:defaultSize = 100
+$script:defaultTimeout = 180
+$script:logdirOne = '/scratch/log'
+$script:logdirTwo = '/scratch/log2'
+$script:logdirUnique = $false
+$script:dropLogRotate = 10
+$script:dropLogSize = 100
+$script:queueDropMark = 90
