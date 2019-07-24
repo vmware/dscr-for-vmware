@@ -437,3 +437,16 @@ function Remove-ClusterComputeResource {
 
     $ClusterComputeResource.Destroy()
 }
+
+function Update-VMHostAdvancedSettings {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.OptionManager] $OptionManager,
+
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.OptionValue[]] $Options
+    )
+
+    $OptionManager.UpdateOptions($Options)
+}
