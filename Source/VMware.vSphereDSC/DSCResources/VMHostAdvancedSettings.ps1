@@ -80,11 +80,11 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
         $advancedSetting = $retrievedAdvancedSettings | Where-Object { $_.Name -eq $advancedSettingName }
         if ($null -eq $advancedSetting) {
             <#
-            Here 'Write-Error' is used instead of 'throw' to ensure that the execution will not stop
+            Here 'Write-Warning' is used instead of 'throw' to ensure that the execution will not stop
             if an invalid Advanced Setting is present in the passed hashtable and in the same time to
             provide an information to the user that invalid data is passed.
             #>
-            Write-Error "Advanced Setting $advancedSettingName does not exist for VMHost $($vmHostName) and will be ignored."
+            Write-Warning "Advanced Setting $advancedSettingName does not exist for VMHost $($vmHostName) and will be ignored."
         }
 
         return $advancedSetting
