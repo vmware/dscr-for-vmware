@@ -187,6 +187,10 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
             }
         }
 
+        if ($options.Length -eq 0) {
+            return
+        }
+
         try {
             Update-VMHostAdvancedSettings -OptionManager $optionManager -Options $options
         }
@@ -215,9 +219,6 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
                 will be returned from the conversion.
                 #>
                 $result.AdvancedSettings[$advancedSettingName] = $advancedSetting.Value.ToString()
-            }
-            else {
-                $result.AdvancedSettings[$advancedSettingName] = $this.AdvancedSettings[$advancedSettingName]
             }
         }
     }

@@ -57,6 +57,18 @@ $script:constants = @{
     FolderName = 'MyFolder'
     DatacenterFolderId = 'my-datacenter-folder-id'
     DatacenterFolderName = 'MyDatacenterFolder'
+    VMHostId = 'HostSystem-host-1'
+    VMHostName = 'MyVMHost'
+    OptionManagerType = 'OptionManager'
+    OptionManagerValue = 'EsxHostAdvSettings-1'
+    BufferCacheFlushIntervalAdvancedSettingName = 'BufferCache.FlushInterval'
+    BufferCacheFlushIntervalAdvancedSettingValue = 30000
+    BufferCacheHardMaxDirtyAdvancedSettingName = 'BufferCache.HardMaxDirty'
+    BufferCacheHardMaxDirtyAdvancedSettingValue = 95
+    CBRCEnableAdvancedSettingName = 'CBRC.Enable'
+    CBRCEnableAdvancedSettingValue = $false
+    VpxVpxaConfigWorkingDirAdvancedSettingName = 'Vpx.Vpxa.config.workingDir'
+    VpxVpxaConfigWorkingDirAdvancedSettingValue = '/var/log/vmware'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -352,3 +364,72 @@ $script:datacenterFolder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.Folder
     Name = $script:constants.DatacenterFolderName
     ParentId = $script:constants.DatacenterLocationItemTwoId
 }
+
+$script:vmHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Id = $script:constants.VMHostId
+    Name = $script:constants.VMHostName
+    ExtensionData = [VMware.Vim.HostSystem] @{
+        ConfigManager = [VMware.Vim.HostConfigManager] @{
+            AdvancedOption = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.OptionManagerType
+                Value = $script:constants.OptionManagerValue
+            }
+        }
+    }
+}
+
+$script:optionManager = [VMware.Vim.OptionManager] @{
+    MoRef = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.OptionManagerType
+        Value = $script:constants.OptionManagerValue
+    }
+}
+
+$script:vmHostAdvancedSettings = @(
+    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{
+        Name = $script:constants.BufferCacheFlushIntervalAdvancedSettingName
+        Value = $script:constants.BufferCacheFlushIntervalAdvancedSettingValue
+    },
+    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{
+        Name = $script:constants.BufferCacheHardMaxDirtyAdvancedSettingName
+        Value = $script:constants.BufferCacheHardMaxDirtyAdvancedSettingValue
+    },
+    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{
+        Name = $script:constants.CBRCEnableAdvancedSettingName
+        Value = $script:constants.CBRCEnableAdvancedSettingValue
+    },
+    [VMware.VimAutomation.ViCore.Impl.V1.AdvancedSettingImpl] @{
+        Name = $script:constants.VpxVpxaConfigWorkingDirAdvancedSettingName
+        Value = $script:constants.VpxVpxaConfigWorkingDirAdvancedSettingValue
+    }
+)
+
+$script:allAdvancedOptionsToUpdate = @(
+    [VMware.Vim.OptionValue] @{
+        Key = $script:constants.BufferCacheFlushIntervalAdvancedSettingName
+        Value = $script:constants.BufferCacheFlushIntervalAdvancedSettingValue + 1
+    },
+    [VMware.Vim.OptionValue] @{
+        Key = $script:constants.BufferCacheHardMaxDirtyAdvancedSettingName
+        Value = $script:constants.BufferCacheHardMaxDirtyAdvancedSettingValue + 1
+    },
+    [VMware.Vim.OptionValue] @{
+        Key = $script:constants.CBRCEnableAdvancedSettingName
+        Value = $true
+    },
+    [VMware.Vim.OptionValue] @{
+        Key = $script:constants.VpxVpxaConfigWorkingDirAdvancedSettingName
+        Value = $script:constants.VpxVpxaConfigWorkingDirAdvancedSettingValue + '/vpxa'
+    }
+)
+
+$script:notAllAdvancedOptionsToUpdate = @(
+    [VMware.Vim.OptionValue] @{
+        Key = $script:constants.BufferCacheFlushIntervalAdvancedSettingName
+        Value = $script:constants.BufferCacheFlushIntervalAdvancedSettingValue + 1
+    },
+    [VMware.Vim.OptionValue] @{
+        Key = $script:constants.VpxVpxaConfigWorkingDirAdvancedSettingName
+        Value = $script:constants.VpxVpxaConfigWorkingDirAdvancedSettingValue + '/vpxa'
+    }
+)
