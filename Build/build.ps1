@@ -126,11 +126,18 @@ function Update-ChangelogDocument {
 
     $changelogDocument = Get-Content -Path $ChangelogDocumentPath
 
-    # The Header in the CHANGELOG.md consists of the first two lines plus one empty line so we need the first three lines of the file.
-    $headerLength = 2
+    # To find the first section in CHANGELOG.md we need to find the first occurence of a date in the document which is part of the section.
+    $datePattern = "\d{4}-\d{2}-\d{2}"
+    $firstDateInFile = $changelogDocument | Select-String -Pattern $datePattern | Select-Object -First 1
+
+    <#
+    To find the Header length in CHANGELOG.md we need to substract two fron the found date line number because the header end is on the
+    previous line and also because LineNumber starts from 1 and the array indices start from 0.
+    #>
+    $headerLength = $firstDateInFile.LineNumber - 2
 
     $changelogHeader = $changelogDocument[0..$headerLength]
-    $changelogSections = $changelogDocument[$headerLength + 1..$changelogDocument.Length]
+    $changelogSections = $changelogDocument[($headerLength + 1)..$changelogDocument.Length]
 
     $currentDate = Get-Date -Format yyyy-MM-dd
     $newSectionHeader = "## $ModuleVersion - $currentDate"
