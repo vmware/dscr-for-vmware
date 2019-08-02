@@ -112,6 +112,8 @@ The description of your PR should include a detailed report of all the changes y
 If your PR fixes an issue please include the number in the description.
 Please tag anyone you would specifically like to see this PR with the @ symbol followed by their GitHub username (e.g. @sgerginov).
 
+The description of your PR should follow the [template](https://github.com/vmware/dscr-for-vmware/blob/master/CHANGELOG_TEMPLATE.md). The Pull Request description should have one new line at the end so that in the [CHANGELOG.md](https://github.com/vmware/dscr-for-vmware/blob/master/CHANGELOG.md) each section is separated from the others with one empty line. The description will go through review as well because its content will go to the [CHANGELOG.md](https://github.com/vmware/dscr-for-vmware/blob/master/CHANGELOG.md) after merging the Pull Request and it is important to follow the desired structure. From the [template](https://github.com/vmware/dscr-for-vmware/blob/master/CHANGELOG_TEMPLATE.md) the first line with the module version and the date will be populated by the build and does not need to be part of the Pull Request description.
+
 Once you are satisfied with the title, description and file changes included, submit the pull request.
 
 ### Get your Code Reviewed
