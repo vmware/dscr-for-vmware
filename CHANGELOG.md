@@ -1,6 +1,8 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.5 - 2019-08-02
+Fix bug with '?' character in Build.ps1
 ## 2.0.0.4 - 2019-07-19
 ### Added
 - Added VMHostSyslog example in Configurations.
