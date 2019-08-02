@@ -55,13 +55,12 @@ function Get-PullRequestDescription {
     [CmdletBinding()]
     [OutputType([string])]
 
-    $searchIssuesAPIUrl = 'https://api.github.com/search/issues'
     $repository = 'vmware/dscr-for-vmware'
     $searchType = 'pr'
     $pullRequestState = 'closed'
 
     $base64Token = [System.Convert]::ToBase64String([char[]] $env:GH_TOKEN)
-    $uri = "$searchIssuesAPIUrl?q=repo:$repository+type:$searchType+state:$pullRequestState+$env:TRAVIS_COMMIT is:merged"
+    $uri = "https://api.github.com/search/issues?q=repo:$repository+type:$searchType+state:$pullRequestState+$env:TRAVIS_COMMIT is:merged"
     $method = 'Get'
     $headers = @{
         Authorization = "Basic $base64Token"
