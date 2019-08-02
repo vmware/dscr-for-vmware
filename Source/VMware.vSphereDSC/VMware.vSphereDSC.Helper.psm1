@@ -442,11 +442,11 @@ function Update-VMHostAdvancedSettings {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)]
-        [VMware.Vim.OptionManager] $OptionManager,
+        [VMware.Vim.OptionManager] $VMHostAdvancedOptionManager,
 
         [Parameter(Mandatory = $true)]
         [VMware.Vim.OptionValue[]] $Options
     )
 
-    $OptionManager.UpdateOptions($Options)
+    $VMHostAdvancedOptionManager.UpdateOptions($Options)
 }

@@ -147,15 +147,15 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Returns the Option Manager of the specified VMHost.
+    Returns the Advanced Option Manager of the specified VMHost.
     #>
-    [PSObject] GetOptionManager($vmHost) {
+    [PSObject] GetVMHostAdvancedOptionManager($vmHost) {
         try {
-            $optionManager = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.AdvancedOption -ErrorAction Stop
-            return $optionManager
+            $vmHostAdvancedOptionManager = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.AdvancedOption -ErrorAction Stop
+            return $vmHostAdvancedOptionManager
         }
         catch {
-            throw "Option Manager could not be retrieved. For more information: $($_.Exception.Message)"
+            throw "VMHost Advanced Option Manager could not be retrieved. For more information: $($_.Exception.Message)"
         }
     }
 
@@ -167,7 +167,7 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
     #>
     [void] UpdateVMHostAdvancedSettings($vmHost) {
         $retrievedAdvancedSettings = $this.GetAdvancedSettings($vmHost)
-        $optionManager = $this.GetOptionManager($vmHost)
+        $vmHostAdvancedOptionManager = $this.GetVMHostAdvancedOptionManager($vmHost)
         $options = @()
 
         foreach ($advancedSettingName in $this.AdvancedSettings.Keys) {
@@ -192,7 +192,7 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
         }
 
         try {
-            Update-VMHostAdvancedSettings -OptionManager $optionManager -Options $options
+            Update-VMHostAdvancedSettings -VMHostAdvancedOptionManager $vmHostAdvancedOptionManager -Options $options
         }
         catch {
             throw "The Advanced Settings Update operation failed with the following error: $($_.Exception.Message)"
