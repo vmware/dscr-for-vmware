@@ -1,8 +1,29 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.7 - 2019-08-02
+### Changed
+- Fix bug with '?' character in Build.ps1.
+
+## 2.0.0.6 - 2019-08-02
+### Added
+- Added VMHostAdvancedSettings DSC Resource.
+- Added Unit Tests for VMHostAdvancedSettings DSC Resource.
+- Added Integration Tests for VMHostAdvancedSettings DSC Resource.
+- Added Documentation and example Configuration for VMHostAdvancedSettings DSC Resource.
+
 ## 2.0.0.5 - 2019-08-02
-Fix bug with '?' character in Build.ps1
+### Added
+- Added CHANGELOG.md document to the repository.
+- Added CHANGELOG_TEMPLATE.md document to the repository.
+
+### Changed
+- Updated the Pull Request description section in CONTRIBUTING.md.
+- Extended the build to update the content of the CHANGELOG.md with the Pull Request description.
+
+### Removed
+- Removed the 'dev' branch from .travis.yml.
+
 ## 2.0.0.4 - 2019-07-19
 ### Added
 - Added VMHostSyslog example in Configurations.
