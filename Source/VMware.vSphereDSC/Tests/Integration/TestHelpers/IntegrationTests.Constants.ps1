@@ -95,3 +95,38 @@ $script:logdirUnique = $false
 $script:dropLogRotate = 10
 $script:dropLogSize = 100
 $script:queueDropMark = 90
+
+# VMHost Advanced Settings Constants
+$script:advancedSettingsWithDefaultValues = @{
+    'Annotations.WelcomeMessage' = [string]::Empty
+    'BufferCache.FlushInterval' = [long] 30000
+    'BufferCache.HardMaxDirty' = [long] 95
+    'CBRC.Enable' = $false
+    'Cpu.UseMwait' = [long] 2
+    'Config.Etc.issue' = [string]::Empty
+    'Config.HostAgent.plugins.solo.enableMob' = $false
+    'DataMover.MaxHeapSize' = [long] 64
+    'HBR.HbrBitmapVMMaxStorageGB' = [long] 65536
+    'HBR.HbrMinExtentSizeKB' = [long] 8
+    'Misc.WorldletLoadType' = 'medium'
+    'VMkernel.Boot.useReliableMem' = $true
+    'Vpx.Vpxa.config.workingDir' = '/var/log/vmware'
+    'UserVars.ProductLockerLocation' = '/locker/packages/vmtoolsRepo/'
+}
+
+$script:advancedSettingsWithCustomValues = @{
+    'Annotations.WelcomeMessage' = 'Hello from DSC'
+    'BufferCache.FlushInterval' = [long] 20000
+    'BufferCache.HardMaxDirty' = [long] 50
+    'CBRC.Enable' = $true
+    'Cpu.UseMwait' = [long] 1
+    'Config.Etc.issue' = 'Contents of /etc/issue'
+    'Config.HostAgent.plugins.solo.enableMob' = $true
+    'DataMover.MaxHeapSize' = [long] 32
+    'HBR.HbrBitmapVMMaxStorageGB' = [long] 65500
+    'HBR.HbrMinExtentSizeKB' = [long] 4
+    'Misc.WorldletLoadType' = 'low'
+    'VMkernel.Boot.useReliableMem' = $false
+    'Vpx.Vpxa.config.workingDir' = '/var/log/vmware/temp'
+    'UserVars.ProductLockerLocation' = '/locker/packages/vmtoolsRepo/temp/'
+}
