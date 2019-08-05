@@ -69,6 +69,14 @@ $script:constants = @{
     CBRCEnableAdvancedSettingValue = $false
     VpxVpxaConfigWorkingDirAdvancedSettingName = 'Vpx.Vpxa.config.workingDir'
     VpxVpxaConfigWorkingDirAdvancedSettingValue = '/var/log/vmware'
+    EsxAgentHostManagerType = 'HostEsxAgentHostManager'
+    EsxAgentHostManagerValue = 'esxAgentHostManager-1'
+    DatastoreName = 'MyDatastore'
+    DatastoreType = 'Datastore'
+    DatastoreValue = 'datastore-1'
+    NetworkName = 'MyNetwork'
+    NetworkType = 'Network'
+    NetworkValue = 'network-1'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -374,7 +382,17 @@ $script:vmHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
                 Type = $script:constants.OptionManagerType
                 Value = $script:constants.OptionManagerValue
             }
+            EsxAgentHostManager = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.EsxAgentHostManagerType
+                Value = $script:constants.EsxAgentHostManagerValue
+            }
         }
+        Network = @(
+            [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.NetworkType
+                Value = $script:constants.NetworkValue
+            }
+        )
     }
 }
 
@@ -433,3 +451,42 @@ $script:notAllAdvancedOptionsToUpdate = @(
         Value = $script:constants.VpxVpxaConfigWorkingDirAdvancedSettingValue + '/vpxa'
     }
 )
+
+$script:esxAgentHostManagerConfigInfoWithNullAgentVmSettings = [VMware.Vim.HostEsxAgentHostManagerConfigInfo] @{
+    AgentVmDatastore = $null
+    AgentVmNetwork = $null
+}
+
+$script:esxAgentHostManagerWithNullAgentVmSettings = [VMware.Vim.HostEsxAgentHostManager] @{
+    ConfigInfo = $script:esxAgentHostManagerConfigInfoWithNullAgentVmSettings
+}
+
+$script:datastore = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.VmfsDatastoreImpl] @{
+    Name = $script:constants.DatastoreName
+    ExtensionData = [VMware.Vim.Datastore] @{
+        Name = $script:constants.DatastoreName
+        MoRef = [VMware.Vim.ManagedObjectReference] @{
+            Type = $script:constants.DatastoreType
+            Value = $script:constants.DatastoreValue
+        }
+    }
+}
+
+$script:network = [VMware.Vim.Network] @{
+    Name = $script:constants.NetworkName
+}
+
+$script:esxAgentHostManagerConfigWithNotNullAgentVmSettings = [VMware.Vim.HostEsxAgentHostManagerConfigInfo] @{
+    AgentVmDatastore = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.DatastoreType
+        Value = $script:constants.DatastoreValue
+    }
+    AgentVmNetwork = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.NetworkType
+        Value = $script:constants.NetworkValue
+    }
+}
+
+$script:esxAgentHostManagerWithNotNullAgentVmSettings = [VMware.Vim.HostEsxAgentHostManager] @{
+    ConfigInfo = $script:esxAgentHostManagerConfigWithNotNullAgentVmSettings
+}
