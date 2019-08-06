@@ -69,7 +69,7 @@ Configuration VMHostAgentVM_WhenAgentVmSettingsAreNotPassed_Config {
     }
 }
 
-Configuration VMHostAgentVM_WhenAgentVmSettingsArePassedAsNull_Config {
+Configuration VMHostAgentVM_WhenBothAgentVmSettingsArePassedAsNull_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -83,7 +83,35 @@ Configuration VMHostAgentVM_WhenAgentVmSettingsArePassedAsNull_Config {
     }
 }
 
-Configuration VMHostAgentVM_WhenAgentVmSettingsArePassed_Config {
+Configuration VMHostAgentVM_WhenOnlyAgentVmDatastoreIsPassed_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VMHostAgentVM vmHostAgentVM {
+            Name = $Name
+            Server = $Server
+            Credential = $script:viServerCredential
+            AgentVmDatastore = $Datastore
+            AgentVmNetwork = $null
+        }
+    }
+}
+
+Configuration VMHostAgentVM_WhenOnlyAgentVmNetworkIsPassed_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VMHostAgentVM vmHostAgentVM {
+            Name = $Name
+            Server = $Server
+            Credential = $script:viServerCredential
+            AgentVmDatastore = $null
+            AgentVmNetwork = $Network
+        }
+    }
+}
+
+Configuration VMHostAgentVM_WhenBothAgentVmSettingsArePassed_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -98,5 +126,7 @@ Configuration VMHostAgentVM_WhenAgentVmSettingsArePassed_Config {
 }
 
 VMHostAgentVM_WhenAgentVmSettingsAreNotPassed_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenAgentVmSettingsAreNotPassed_Config" -ConfigurationData $script:configurationData
-VMHostAgentVM_WhenAgentVmSettingsArePassedAsNull_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenAgentVmSettingsArePassedAsNull_Config" -ConfigurationData $script:configurationData
-VMHostAgentVM_WhenAgentVmSettingsArePassed_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenAgentVmSettingsArePassed_Config" -ConfigurationData $script:configurationData
+VMHostAgentVM_WhenBothAgentVmSettingsArePassedAsNull_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenBothAgentVmSettingsArePassedAsNull_Config" -ConfigurationData $script:configurationData
+VMHostAgentVM_WhenOnlyAgentVmDatastoreIsPassed_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenOnlyAgentVmDatastoreIsPassed_Config" -ConfigurationData $script:configurationData
+VMHostAgentVM_WhenOnlyAgentVmNetworkIsPassed_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenOnlyAgentVmNetworkIsPassed_Config" -ConfigurationData $script:configurationData
+VMHostAgentVM_WhenBothAgentVmSettingsArePassed_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenBothAgentVmSettingsArePassed_Config" -ConfigurationData $script:configurationData

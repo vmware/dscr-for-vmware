@@ -59,14 +59,18 @@ $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tes
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
 $script:configWhenAgentVmSettingsAreNotPassed = "$($script:dscResourceName)_WhenAgentVmSettingsAreNotPassed_Config"
-$script:configWhenAgentVmSettingsArePassedAsNull = "$($script:dscResourceName)_WhenAgentVmSettingsArePassedAsNull_Config"
-$script:configWhenAgentVmSettingsArePassed = "$($script:dscResourceName)_WhenAgentVmSettingsArePassed_Config"
+$script:configWhenBothAgentVmSettingsArePassedAsNull = "$($script:dscResourceName)_WhenBothAgentVmSettingsArePassedAsNull_Config"
+$script:configWhenOnlyAgentVmDatastoreIsPassed = "$($script:dscResourceName)_WhenOnlyAgentVmDatastoreIsPassed_Config"
+$script:configWhenOnlyAgentVmNetworkIsPassed = "$($script:dscResourceName)_WhenOnlyAgentVmNetworkIsPassed_Config"
+$script:configWhenBothAgentVmSettingsArePassed = "$($script:dscResourceName)_WhenBothAgentVmSettingsArePassed_Config"
 
 . $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password -Datastore $script:datastoreName -Network $script:networkName
 
 $script:mofFileWhenAgentVmSettingsAreNotPassedPath = "$script:integrationTestsFolderPath\$($script:configWhenAgentVmSettingsAreNotPassed)\"
-$script:mofFileWhenAgentVmSettingsArePassedAsNullPath = "$script:integrationTestsFolderPath\$($script:configWhenAgentVmSettingsArePassedAsNull)\"
-$script:mofFileWhenAgentVmSettingsArePassedPath = "$script:integrationTestsFolderPath\$($script:configWhenAgentVmSettingsArePassed)\"
+$script:mofFileWhenBothAgentVmSettingsArePassedAsNullPath = "$script:integrationTestsFolderPath\$($script:configWhenBothAgentVmSettingsArePassedAsNull)\"
+$script:mofFileWhenOnlyAgentVmDatastoreIsPassedPath = "$script:integrationTestsFolderPath\$($script:configWhenOnlyAgentVmDatastoreIsPassed)\"
+$script:mofFileWhenOnlyAgentVmNetworkIsPassedPath = "$script:integrationTestsFolderPath\$($script:configWhenOnlyAgentVmNetworkIsPassed)\"
+$script:mofFileWhenBothAgentVmSettingsArePassedPath = "$script:integrationTestsFolderPath\$($script:configWhenBothAgentVmSettingsArePassed)\"
 
 try {
     Describe "$($script:dscResourceName)_Integration" {
@@ -127,11 +131,11 @@ try {
             }
         }
 
-        Context "When using configuration $($script:configWhenAgentVmSettingsArePassedAsNull)" {
+        Context "When using configuration $($script:configWhenBothAgentVmSettingsArePassedAsNull)" {
             BeforeAll {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenAgentVmSettingsArePassedAsNullPath
+                    Path = $script:mofFileWhenBothAgentVmSettingsArePassedAsNullPath
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -144,7 +148,7 @@ try {
             It 'Should compile and apply the MOF without throwing' {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenAgentVmSettingsArePassedAsNullPath
+                    Path = $script:mofFileWhenBothAgentVmSettingsArePassedAsNullPath
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -184,11 +188,11 @@ try {
             }
         }
 
-        Context "When using configuration $($script:configWhenAgentVmSettingsArePassed)" {
+        Context "When using configuration $($script:configWhenOnlyAgentVmDatastoreIsPassed)" {
             BeforeAll {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenAgentVmSettingsArePassedPath
+                    Path = $script:mofFileWhenOnlyAgentVmDatastoreIsPassedPath
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -201,7 +205,147 @@ try {
             It 'Should compile and apply the MOF without throwing' {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenAgentVmSettingsArePassedPath
+                    Path = $script:mofFileWhenOnlyAgentVmDatastoreIsPassedPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act && Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Server | Should -Be $Server
+                $configuration.Name | Should -Be $Name
+
+                <#
+                In the Resource Implementation when setting the property value to $null,
+                PowerShell converts it to an empty string, so the comparison should be against
+                empty string instead of $null.
+                #>
+                $agentVmSettingEmptyValue = [string]::Empty
+
+                $configuration.AgentVmDatastore | Should -Be $script:datastoreName
+                $configuration.AgentVmNetwork | Should -Be $agentVmSettingEmptyValue
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
+
+            AfterAll {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWhenBothAgentVmSettingsArePassedAsNullPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+        }
+
+        Context "When using configuration $($script:configWhenOnlyAgentVmNetworkIsPassed)" {
+            BeforeAll {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWhenOnlyAgentVmNetworkIsPassedPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWhenOnlyAgentVmNetworkIsPassedPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act && Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Server | Should -Be $Server
+                $configuration.Name | Should -Be $Name
+
+                <#
+                In the Resource Implementation when setting the property value to $null,
+                PowerShell converts it to an empty string, so the comparison should be against
+                empty string instead of $null.
+                #>
+                $agentVmSettingEmptyValue = [string]::Empty
+
+                $configuration.AgentVmDatastore | Should -Be $agentVmSettingEmptyValue
+                $configuration.AgentVmNetwork | Should -Be $script:networkName
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
+
+            AfterAll {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWhenBothAgentVmSettingsArePassedAsNullPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+        }
+
+        Context "When using configuration $($script:configWhenBothAgentVmSettingsArePassed)" {
+            BeforeAll {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWhenBothAgentVmSettingsArePassedPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWhenBothAgentVmSettingsArePassedPath
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
@@ -235,7 +379,7 @@ try {
             AfterAll {
                 # Arrange
                 $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenAgentVmSettingsArePassedAsNullPath
+                    Path = $script:mofFileWhenBothAgentVmSettingsArePassedAsNullPath
                     ComputerName = 'localhost'
                     Wait = $true
                     Force = $true
