@@ -77,6 +77,7 @@ $script:constants = @{
     NetworkName = 'MyNetwork'
     NetworkType = 'Network'
     NetworkValue = 'network-1'
+    vCenterProductLine = 'vpx'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -92,6 +93,7 @@ $script:viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
             }
         }
     }
+    ProductLine = $script:constants.vCenterProductLine
 }
 
 $script:rootFolderViewBaseObject = [VMware.Vim.Folder] @{
