@@ -463,3 +463,16 @@ function Update-AgentVMConfiguration {
 
     $EsxAgentHostManager.EsxAgentHostManagerUpdateConfig($EsxAgentHostManagerConfigInfo)
 }
+
+function Update-PassthruConfig {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostPciPassthruSystem] $VMHostPciPassthruSystem,
+
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostPciPassthruConfig] $VMHostPciPassthruConfig
+    )
+
+    $VMHostPciPassthruSystem.UpdatePassthruConfig($VMHostPciPassthruConfig)
+}
