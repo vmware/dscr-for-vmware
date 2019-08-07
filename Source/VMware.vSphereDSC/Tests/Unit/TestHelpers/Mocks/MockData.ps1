@@ -78,6 +78,11 @@ $script:constants = @{
     NetworkType = 'Network'
     NetworkValue = 'network-1'
     vCenterProductLine = 'vpx'
+    PciDeviceId = '0000:00:00.0'
+    PciDeviceEnabled = $true
+    PciPassthruSystemType = 'HostPciPassthruSystem'
+    PciPassthruSystemValue = 'pciPassthruSystem-1'
+    PciDeviceCapable = $false
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -388,6 +393,10 @@ $script:vmHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
                 Type = $script:constants.EsxAgentHostManagerType
                 Value = $script:constants.EsxAgentHostManagerValue
             }
+            PciPassthruSystem = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.PciPassthruSystemType
+                Value = $script:constants.PciPassthruSystemValue
+            }
         }
         Network = @(
             [VMware.Vim.ManagedObjectReference] @{
@@ -491,4 +500,24 @@ $script:esxAgentHostManagerConfigWithNotNullAgentVmSettings = [VMware.Vim.HostEs
 
 $script:esxAgentHostManagerWithNotNullAgentVmSettings = [VMware.Vim.HostEsxAgentHostManager] @{
     ConfigInfo = $script:esxAgentHostManagerConfigWithNotNullAgentVmSettings
+}
+
+$script:vmHostPciPassthruSystem = [VMware.Vim.HostPciPassthruSystem] @{
+    PciPassthruInfo = @(
+        [VMware.Vim.HostPciPassthruInfo] @{
+            Id = $script:constants.PciDeviceId + '.0'
+            PassthruEnabled = $script:constants.PciDeviceEnabled
+            PassthruCapable = $script:constants.PciDeviceCapable
+        },
+        [VMware.Vim.HostPciPassthruInfo] @{
+            Id = $script:constants.PciDeviceId
+            PassthruEnabled = $script:constants.PciDeviceEnabled
+            PassthruCapable = !$script:constants.PciDeviceCapable
+        }
+    )
+}
+
+$script:vmHostPciPassthruConfig = [VMware.Vim.HostPciPassthruConfig] @{
+    Id = $script:constants.PciDeviceId
+    PassthruEnabled = $script:constants.PciDeviceEnabled
 }
