@@ -33,11 +33,7 @@ param(
 
     [Parameter(Mandatory = $true)]
     [string]
-    $Datastore,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Network
+    $PciDeviceId
 )
 
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
@@ -55,76 +51,33 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostAgentVM_WhenAgentVmSettingsAreNotPassed_Config {
+Configuration VMHostPciPassthru_WhenEnablingPassthru_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostAgentVM vmHostAgentVM {
+        VMHostPciPassthru vmHostPciPassthru {
             Name = $Name
             Server = $Server
             Credential = $script:viServerCredential
+            Id = $PciDeviceId
+            Enabled = $true
         }
     }
 }
 
-Configuration VMHostAgentVM_WhenBothAgentVmSettingsArePassedAsNull_Config {
+Configuration VMHostPciPassthru_WhenDisablingPassthru_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostAgentVM vmHostAgentVM {
+        VMHostPciPassthru vmHostPciPassthru {
             Name = $Name
             Server = $Server
             Credential = $script:viServerCredential
-            AgentVmDatastore = $null
-            AgentVmNetwork = $null
+            Id = $PciDeviceId
+            Enabled = $false
         }
     }
 }
 
-Configuration VMHostAgentVM_WhenOnlyAgentVmDatastoreIsPassed_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostAgentVM vmHostAgentVM {
-            Name = $Name
-            Server = $Server
-            Credential = $script:viServerCredential
-            AgentVmDatastore = $Datastore
-            AgentVmNetwork = $null
-        }
-    }
-}
-
-Configuration VMHostAgentVM_WhenOnlyAgentVmNetworkIsPassed_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostAgentVM vmHostAgentVM {
-            Name = $Name
-            Server = $Server
-            Credential = $script:viServerCredential
-            AgentVmDatastore = $null
-            AgentVmNetwork = $Network
-        }
-    }
-}
-
-Configuration VMHostAgentVM_WhenBothAgentVmSettingsArePassed_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostAgentVM vmHostAgentVM {
-            Name = $Name
-            Server = $Server
-            Credential = $script:viServerCredential
-            AgentVmDatastore = $Datastore
-            AgentVmNetwork = $Network
-        }
-    }
-}
-
-VMHostAgentVM_WhenAgentVmSettingsAreNotPassed_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenAgentVmSettingsAreNotPassed_Config" -ConfigurationData $script:configurationData
-VMHostAgentVM_WhenBothAgentVmSettingsArePassedAsNull_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenBothAgentVmSettingsArePassedAsNull_Config" -ConfigurationData $script:configurationData
-VMHostAgentVM_WhenOnlyAgentVmDatastoreIsPassed_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenOnlyAgentVmDatastoreIsPassed_Config" -ConfigurationData $script:configurationData
-VMHostAgentVM_WhenOnlyAgentVmNetworkIsPassed_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenOnlyAgentVmNetworkIsPassed_Config" -ConfigurationData $script:configurationData
-VMHostAgentVM_WhenBothAgentVmSettingsArePassed_Config -OutputPath "$integrationTestsFolderPath\VMHostAgentVM_WhenBothAgentVmSettingsArePassed_Config" -ConfigurationData $script:configurationData
+VMHostPciPassthru_WhenEnablingPassthru_Config -OutputPath "$integrationTestsFolderPath\VMHostPciPassthru_WhenEnablingPassthru_Config" -ConfigurationData $script:configurationData
+VMHostPciPassthru_WhenDisablingPassthru_Config -OutputPath "$integrationTestsFolderPath\VMHostPciPassthru_WhenDisablingPassthru_Config" -ConfigurationData $script:configurationData
