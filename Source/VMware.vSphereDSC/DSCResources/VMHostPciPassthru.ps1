@@ -36,11 +36,13 @@ class VMHostPciPassthru : VMHostBaseDSC {
     	$this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
         $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
-
         $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
+
         $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
+        $this.EnsureVMHostIsInMaintenanceMode($vmHost)
 
         $this.UpdatePciPassthruConfiguration($vmHostPciPassthruSystem)
+        $this.RestartVMHost($vmHost)
     }
 
     [bool] Test() {

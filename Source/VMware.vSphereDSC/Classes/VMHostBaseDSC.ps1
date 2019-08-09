@@ -23,6 +23,8 @@ class VMHostBaseDSC : BaseDSC {
     [DscProperty(Key)]
     [string] $Name
 
+    hidden [string] $MaintenanceState = 'Maintenance'
+
     <#
     .DESCRIPTION
 
@@ -37,5 +39,53 @@ class VMHostBaseDSC : BaseDSC {
         catch {
             throw "VMHost with name $($this.Name) was not found. For more information: $($_.Exception.Message)"
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the specified VMHost is in Maintenance mode and if not, throws an exception.
+    #>
+    [void] EnsureVMHostIsInMaintenanceMode($vmHost) {
+        if ($vmHost.ConnectionState.ToString() -ne $this.MaintenanceState) {
+            throw "The Resource Update operation requires the VMHost $($vmHost.Name) to be in a Maintenance mode."
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Restarts the specified VMHost so that the Update of the VMHost Configuration is successful.
+    #>
+    [void] RestartVMHost($vmHost) {
+        try {
+            Restart-VMHost -Server $this.Connection -VMHost $vmHost -Confirm:$false -ErrorAction Stop
+        }
+        catch {
+            throw "Cannot restart VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+        }
+
+        $sleepTimeInSeconds = 30
+
+        $viServer = $null
+        $restartedVMHost = $null
+
+        while ($true) {
+            Start-Sleep -Seconds $sleepTimeInSeconds
+
+            try {
+                $viServer = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction Stop
+                $restartedVMHost = Get-VMHost -Server $viServer -Name $this.Name -ErrorAction Stop
+
+                if ($restartedVMHost.ConnectionState.ToString() -eq $this.MaintenanceState) {
+                    break
+                }
+            }
+            catch {
+                Write-Verbose -Message "VMHost $($this.Name) is still not in $($this.MaintenanceState) State."
+            }
+        }
+
+        Write-Verbose "VMHost $($this.Name) is successfully restarted and in $($this.MaintenanceState) State."
     }
 }
