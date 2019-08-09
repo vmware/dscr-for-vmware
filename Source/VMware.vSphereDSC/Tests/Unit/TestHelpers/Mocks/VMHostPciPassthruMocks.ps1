@@ -79,6 +79,8 @@ function New-MocksWhenPCIDeviceIsExisting {
 
     Mock -CommandName Get-View -MockWith { return $vmHostPciPassthruSystemMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:vmHost.ExtensionData.ConfigManager.PciPassthruSystem } -Verifiable
     Mock -CommandName Update-PassthruConfig -MockWith { return $null }.GetNewClosure() -Verifiable
+    Mock -CommandName Restart-VMHost -MockWith { return $null }.GetNewClosure() -Verifiable
+    Mock -CommandName Start-Sleep -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vmHostPciPassthruProperties
 }

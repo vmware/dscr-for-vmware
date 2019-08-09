@@ -116,6 +116,22 @@ InModuleScope -ModuleName $script:moduleName {
 
                     Assert-MockCalled @assertMockCalledParams
                 }
+
+                It 'Should call the Restart-VMHost mock once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Restart-VMHost'
+                        ParameterFilter = { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost -and !$Confirm }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
             }
         }
 
