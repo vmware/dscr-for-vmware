@@ -222,6 +222,11 @@ class VMHostAgentVM : VMHostBaseDSC {
         return $foundNetwork
     }
 
+    <#
+    .DESCRIPTION
+
+    Performs an update on the AgentVM Configuration of the specified VMHost by setting the Datastore and Network.
+    #>
     [void] UpdateAgentVMConfiguration($vmHost, $esxAgentHostManager) {
         $datastore = $this.GetDatastoreForAgentVM($vmHost)
         $network = $this.GetNetworkForAgentVM($vmHost)
