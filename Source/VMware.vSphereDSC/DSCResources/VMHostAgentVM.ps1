@@ -32,7 +32,6 @@ class VMHostAgentVM : VMHostBaseDSC {
     [DscProperty()]
     [string] $AgentVmNetwork
 
-    hidden [string] $vCenterProductId = 'vpx'
     hidden [string] $AgentVmDatastoreName = 'AgentVmDatastore'
     hidden [string] $AgentVmNetworkName = 'AgentVmNetwork'
     hidden [string] $GetAgentVmDatastoreAsViewObjectMethodName = 'GetAgentVmDatastoreAsViewObject'
