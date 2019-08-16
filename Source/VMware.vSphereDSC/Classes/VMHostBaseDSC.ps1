@@ -23,6 +23,7 @@ class VMHostBaseDSC : BaseDSC {
     [DscProperty(Key)]
     [string] $Name
 
+    hidden [string] $NotRespondingState = 'NotResponding'
     hidden [string] $MaintenanceState = 'Maintenance'
 
     <#
@@ -55,6 +56,42 @@ class VMHostBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
+    Ensures that the specified VMHost is in the desired state after successful restart operation.
+    #>
+    [void] EnsureVMHostIsInDesiredState($server, $desiredState) {
+        $sleepTimeInSeconds = 10
+
+        while ($true) {
+            Start-Sleep -Seconds $sleepTimeInSeconds
+
+            try {
+                if ($null -eq $server) {
+                    $this.ConnectVIServer()
+                }
+
+                $vmHost = $this.GetVMHost()
+                if ($vmHost.ConnectionState.ToString() -eq $desiredState) {
+                    break
+                }
+
+                Write-Verbose -Message "VMHost $($this.Name) is still not in $desiredState State."
+            }
+            catch {
+                <#
+                Here the message used in the try block is written again in the case when an exception is thrown
+                when retrieving the VMHost or establishing a Connection. This way the user still gets notified
+                that the VMHost is not in the Desired State.
+                #>
+                Write-Verbose -Message "VMHost $($this.Name) is still not in $desiredState State."
+            }
+        }
+
+        Write-Verbose -Message "VMHost $($this.Name) is successfully restarted and in $desiredState State."
+    }
+
+    <#
+    .DESCRIPTION
+
     Restarts the specified VMHost so that the Update of the VMHost Configuration is successful.
     #>
     [void] RestartVMHost($vmHost) {
@@ -65,27 +102,19 @@ class VMHostBaseDSC : BaseDSC {
             throw "Cannot restart VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
         }
 
-        $sleepTimeInSeconds = 30
-
-        $viServer = $null
-        $restartedVMHost = $null
-
-        while ($true) {
-            Start-Sleep -Seconds $sleepTimeInSeconds
-
-            try {
-                $viServer = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction Stop
-                $restartedVMHost = Get-VMHost -Server $viServer -Name $this.Name -ErrorAction Stop
-
-                if ($restartedVMHost.ConnectionState.ToString() -eq $this.MaintenanceState) {
-                    break
-                }
-            }
-            catch {
-                Write-Verbose -Message "VMHost $($this.Name) is still not in $($this.MaintenanceState) State."
-            }
+        <#
+        If the Connection is directly to a vCenter we do not need to establish a new connection so we pass the
+        current one to the method 'EnsureVMHostIsInCorrectState'. When the Connection is directly to an ESXi, after a successful
+        restart the ESXi is down so new Connection needs to be established to check the ESXi state. So the current
+        Connection is set to $null and then passed to the method 'EnsureVMHostIsInCorrectState'.
+        #>
+        if ($this.Connection.ProductLine -eq $this.vCenterProductId) {
+            $this.EnsureVMHostIsInDesiredState($this.Connection, $this.NotRespondingState)
+            $this.EnsureVMHostIsInDesiredState($this.Connection, $this.MaintenanceState)
         }
-
-        Write-Verbose -Message "VMHost $($this.Name) is successfully restarted and in $($this.MaintenanceState) State."
+        else {
+            $this.Connection = $null
+            $this.EnsureVMHostIsInDesiredState($this.Connection, $this.MaintenanceState)
+        }
     }
 }
