@@ -240,7 +240,7 @@ class VMHostAgentVM : VMHostBaseDSC {
             Update-AgentVMConfiguration -EsxAgentHostManager $esxAgentHostManager -EsxAgentHostManagerConfigInfo $configInfo
         }
         catch {
-            throw "The AgentVM Configuration could not be updated: $($_.Exception.Message)"
+            throw "The AgentVM Configuration of VMHost $($vmHost.Name) could not be updated: $($_.Exception.Message)"
         }
     }
 
