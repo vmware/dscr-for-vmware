@@ -86,6 +86,6 @@ class VMHostBaseDSC : BaseDSC {
             }
         }
 
-        Write-Verbose "VMHost $($this.Name) is successfully restarted and in $($this.MaintenanceState) State."
+        Write-Verbose -Message "VMHost $($this.Name) is successfully restarted and in $($this.MaintenanceState) State."
     }
 }
