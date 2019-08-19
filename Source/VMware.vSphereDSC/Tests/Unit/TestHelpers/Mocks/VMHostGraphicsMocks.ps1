@@ -123,6 +123,7 @@ function New-MocksWhenGraphicsDeviceIsNotExisting {
     $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
     $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
     $vmHostGraphicsProperties.DeviceId = $script:constants.GraphicsDeviceId + $script:constants.GraphicsDeviceId
+    $vmHostGraphicsProperties.DeviceGraphicsType = $script:constants.DefaultGraphicsType
 
     $vmHostGraphicsProperties
 }

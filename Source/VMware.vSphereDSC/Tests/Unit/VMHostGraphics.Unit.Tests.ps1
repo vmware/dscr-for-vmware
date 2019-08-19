@@ -394,9 +394,9 @@ InModuleScope -ModuleName $script:moduleName {
                     PowerShell converts it to an empty string, so the comparison should be against
                     empty string instead of $null.
                     #>
-                    $DeviceIdEmptyValue = [string]::Empty
+                    $deviceIdEmptyValue = [string]::Empty
 
-                    $result.DeviceId | Should -Be $DeviceIdEmptyValue
+                    $result.DeviceId | Should -Be $deviceIdEmptyValue
                     $result.DeviceGraphicsType | Should -Be 'Unset'
                 }
             }

@@ -99,6 +99,20 @@ class VMHostGraphics : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
+    Retrieves the Graphics Device with the specified Id from the server.
+    #>
+    [PSObject] GetGraphicsDevice($vmHostGraphicsManager) {
+        $foundDevice = $vmHostGraphicsManager.GraphicsConfig.DeviceType | Where-Object { $_.DeviceId -eq $this.DeviceId }
+        if ($null -eq $foundDevice) {
+            throw "Device $($this.DeviceId) was not found in the available Graphics devices."
+        }
+
+        return $foundDevice
+    }
+
+    <#
+    .DESCRIPTION
+
     Checks if the Graphics Configuration needs to be updated with the desired values.
     #>
     [bool] ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager) {
@@ -110,15 +124,11 @@ class VMHostGraphics : VMHostBaseDSC {
         }
 
         if (![string]::IsNullOrEmpty($this.DeviceId)) {
-            $foundDevice = $vmHostGraphicsManager.GraphicsConfig.DeviceType | Where-Object { $_.DeviceId -eq $this.DeviceId }
-            if ($null -eq $foundDevice) {
-                throw "Device $($this.DeviceId) was not found in the available Graphics devices."
-            }
-
             if ($this.DeviceGraphicsType -eq [GraphicsType]::Unset) {
                 throw "Graphics Type for Device $($this.DeviceId) is not passed."
             }
 
+            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
             if ($this.DeviceGraphicsType -ne $foundDevice.GraphicsType) {
                 return $true
             }
@@ -154,6 +164,14 @@ class VMHostGraphics : VMHostBaseDSC {
                 throw "Graphics Type for Device $($this.DeviceId) is not passed."
             }
             else {
+                <#
+                The method is called here to ensure that the passed Graphics Device Id points
+                to an existing Graphics Device before populating the Config Object. This way an
+                exception is thrown on the client before going to the Server. The output of the method
+                is not needed here so it is piped to the 'Out-Null' cmdlet.
+                #>
+                $this.GetGraphicsDevice($vmHostGraphicsManager) | Out-Null
+
                 $vmHostGraphicsConfig.DeviceType = @()
 
                 $vmHostGraphicsConfigDeviceType = New-Object VMware.Vim.HostGraphicsConfigDeviceType
@@ -182,10 +200,7 @@ class VMHostGraphics : VMHostBaseDSC {
         $result.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
 
         if (![string]::IsNullOrEmpty($this.DeviceId)) {
-            $foundDevice = $vmHostGraphicsManager.GraphicsConfig.DeviceType | Where-Object { $_.DeviceId -eq $this.DeviceId }
-            if ($null -eq $foundDevice) {
-                throw "Device $($this.DeviceId) was not found in the available Graphics devices."
-            }
+            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
 
             $result.DeviceId = $foundDevice.DeviceId
             $result.DeviceGraphicsType = $foundDevice.GraphicsType
