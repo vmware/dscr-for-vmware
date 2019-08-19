@@ -188,7 +188,7 @@ class VMHostGraphics : VMHostBaseDSC {
             }
 
             $result.DeviceId = $foundDevice.DeviceId
-            $result.DefaultGraphicsType = $foundDevice.GraphicsType
+            $result.DeviceGraphicsType = $foundDevice.GraphicsType
         }
         else {
             $result.DeviceId = $null
