@@ -18,6 +18,8 @@ $script:constants = @{
     VIServerName = 'TestServer'
     VIServerUser = 'TestUser'
     VIServerPassword = 'TestPassword' | ConvertTo-SecureString -AsPlainText -Force
+    vCenterProductId = 'vpx'
+    ESXiProductId = 'embeddedEsx'
     InventoryItemName = 'TestInventoryItem'
     FolderType = 'Folder'
     DatacenterType = 'Datacenter'
@@ -78,7 +80,6 @@ $script:constants = @{
     NetworkName = 'MyNetwork'
     NetworkType = 'Network'
     NetworkValue = 'network-1'
-    vCenterProductLine = 'vpx'
     PciDeviceId = '0000:00:00.0'
     PciDeviceEnabled = $true
     PciPassthruSystemType = 'HostPciPassthruSystem'
@@ -99,7 +100,7 @@ $script:viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
             }
         }
     }
-    ProductLine = $script:constants.vCenterProductLine
+    ProductLine = $script:constants.vCenterProductId
 }
 
 $script:rootFolderViewBaseObject = [VMware.Vim.Folder] @{

@@ -88,6 +88,13 @@ InModuleScope -ModuleName $script:moduleName {
 
             Context 'Invoking with existing PCI Device' {
                 BeforeAll {
+                    <#
+                    The Product Line should be modified here to avoid infinite loop in the EnsureVMHostIsInDesiredState()
+                    because when the Connection is a vCenter and the ESXi is restarted the VMHost State changes from 'Maintenance' to
+                    'NotResponding' and again to 'Maintenance'. This behaviour cannot be mocked in the Tests.
+                    #>
+                    $script:viServer.ProductLine = $script:constants.ESXiProductId
+
                     # Arrange
                     $resourceProperties = New-MocksWhenPCIDeviceIsExisting
                     $resource = New-Object -TypeName $resourceName -Property $resourceProperties
@@ -131,6 +138,11 @@ InModuleScope -ModuleName $script:moduleName {
                     }
 
                     Assert-MockCalled @assertMockCalledParams
+                }
+
+                AfterAll {
+                    # The Product Line should be set to its default value after all Tests in this Context block.
+                    $script:viServer.ProductLine = $script:constants.vCenterProductId
                 }
             }
         }
