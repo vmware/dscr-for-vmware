@@ -144,6 +144,8 @@ class BaseDSC {
     #>
     hidden [PSObject] $Connection
 
+    hidden [string] $vCenterProductId = 'vpx'
+
     <#
     .DESCRIPTION
 
@@ -2094,6 +2096,261 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
                 $result.AdvancedSettings[$advancedSettingName] = $advancedSetting.Value.ToString()
             }
         }
+    }
+}
+
+[DscResource()]
+class VMHostAgentVM : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Datastore used for deploying Agent VMs on this host.
+    #>
+    [DscProperty()]
+    [string] $AgentVmDatastore
+
+    <#
+    .DESCRIPTION
+
+    Specifies the Management Network for Agent VMs on this host.
+    #>
+    [DscProperty()]
+    [string] $AgentVmNetwork
+
+    hidden [string] $AgentVmDatastoreName = 'AgentVmDatastore'
+    hidden [string] $AgentVmNetworkName = 'AgentVmNetwork'
+    hidden [string] $GetAgentVmDatastoreAsViewObjectMethodName = 'GetAgentVmDatastoreAsViewObject'
+    hidden [string] $GetAgentVmNetworkAsViewObjectMethodName = 'GetAgentVmNetworkAsViewObject'
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $this.EnsureConnectionIsvCenter()
+        $vmHost = $this.GetVMHost()
+        $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
+
+        $this.UpdateAgentVMConfiguration($vmHost, $esxAgentHostManager)
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $this.EnsureConnectionIsvCenter()
+        $vmHost = $this.GetVMHost()
+        $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
+
+        return !$this.ShouldUpdateAgentVMConfiguration($esxAgentHostManager)
+    }
+
+    [VMHostAgentVM] Get() {
+        $result = [VMHostAgentVM]::new()
+        $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $this.EnsureConnectionIsvCenter()
+        $vmHost = $this.GetVMHost()
+        $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
+
+        $result.Name = $vmHost.Name
+        $this.PopulateResult($esxAgentHostManager, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Connection is directly to a vCenter and if not, throws an exception.
+    vCenter Connection is needed to retrieve the EsxAgentHostManager.
+    #>
+    [void] EnsureConnectionIsvCenter() {
+        if ($this.Connection.ProductLine -ne $this.vCenterProductId) {
+            throw 'The Resource operations are only supported when connection is directly to a vCenter.'
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the EsxAgentHostManager of the specified VMHost from the server.
+    #>
+    [PSObject] GetEsxAgentHostManager($vmHost) {
+        try {
+            $esxAgentHostManager = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.EsxAgentHostManager -ErrorAction Stop
+            return $esxAgentHostManager
+        }
+        catch {
+            throw "Could not retrieve the EsxAgentHostManager of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the AgentVM Datastore of the EsxAgentHostManager of the specified VMHost from the server as a View Object.
+    #>
+    [PSObject] GetAgentVmDatastoreAsViewObject($esxAgentHostManager) {
+        try {
+            $datastoreAsViewObject = Get-View -Server $this.Connection -Id $esxAgentHostManager.ConfigInfo.AgentVmDatastore -ErrorAction Stop
+            return $datastoreAsViewObject
+        }
+        catch {
+            throw "Could not retrieve the AgentVM Datastore of the EsxAgentHostManager. For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the AgentVM Network of the EsxAgentHostManager of the specified VMHost from the server as a View Object.
+    #>
+    [PSObject] GetAgentVmNetworkAsViewObject($esxAgentHostManager) {
+        try {
+            $networkAsViewObject = Get-View -Server $this.Connection -Id $esxAgentHostManager.ConfigInfo.AgentVmNetwork -ErrorAction Stop
+            return $networkAsViewObject
+        }
+        catch {
+            throw "Could not retrieve the AgentVM Network of the EsxAgentHostManager. For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the AgentVM Setting needs to be updated with the desired value.
+    #>
+    [bool] ShouldUpdateAgentVMSetting($esxAgentHostManager, $agentVmSetting, $agentVmSettingName, $getAgentVmSettingAsViewObjectMethodName) {
+        if ($null -eq $agentVmSetting) {
+            if ($null -ne $esxAgentHostManager.ConfigInfo.$agentVmSettingName) {
+                return $true
+            }
+        }
+        else {
+            if ($null -eq $esxAgentHostManager.ConfigInfo.$agentVmSettingName) {
+                return $true
+            }
+            else {
+                $agentVmSettingAsViewObject = $this.$getAgentVmSettingAsViewObjectMethodName($esxAgentHostManager)
+                if ($agentVmSetting -ne $agentVmSettingAsViewObject.Name) {
+                    return $true
+                }
+            }
+        }
+
+        return $false
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the AgentVM Configuration needs to be updated with the desired values.
+    #>
+    [bool] ShouldUpdateAgentVMConfiguration($esxAgentHostManager) {
+        if ($this.ShouldUpdateAgentVMSetting($esxAgentHostManager, $this.AgentVmDatastore, $this.AgentVmDatastoreName, $this.GetAgentVmDatastoreAsViewObjectMethodName)) {
+            return $true
+        }
+        elseif ($this.ShouldUpdateAgentVMSetting($esxAgentHostManager, $this.AgentVmNetwork, $this.AgentVmNetworkName, $this.GetAgentVmNetworkAsViewObjectMethodName)) {
+            return $true
+        }
+        else {
+            return $false
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Datastore for AgentVM from the server if it exists.
+    If the Datastore name is not passed it returns $null and if the Datastore does not exist
+    it throws an exception.
+    #>
+    [PSObject] GetDatastoreForAgentVM($vmHost) {
+        if ($null -eq $this.AgentVmDatastore) {
+            return $null
+        }
+
+        try {
+            $datastore = Get-Datastore -Server $this.Connection -Name $this.AgentVmDatastore -RelatedObject $vmHost -ErrorAction Stop
+            return $datastore.ExtensionData.MoRef
+        }
+        catch {
+            throw "Could not retrieve Datastore $($this.AgentVmDatastore) for VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Network for AgentVM from the specified VMHost if it exists.
+    If the Network name is not passed it returns $null and if the Network does not exist
+    it throws an exception.
+    #>
+    [PSObject] GetNetworkForAgentVM($vmHost) {
+        if ($null -eq $this.AgentVmNetwork) {
+            return $null
+        }
+
+        $foundNetwork = $null
+        $networks = $vmHost.ExtensionData.Network
+
+        foreach ($network in $networks) {
+            $networkAsViewObject = Get-View -Server $this.Connection -Id $network
+            if ($this.AgentVmNetwork -eq $networkAsViewObject.Name) {
+                $foundNetwork = $network
+                break
+            }
+        }
+
+        if ($null -eq $foundNetwork) {
+            throw "Could not find Network $($this.AgentVmNetwork) for VMHost $($vmHost.Name)."
+        }
+
+        return $foundNetwork
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the AgentVM Configuration of the specified VMHost by setting the Datastore and Network.
+    #>
+    [void] UpdateAgentVMConfiguration($vmHost, $esxAgentHostManager) {
+        $datastore = $this.GetDatastoreForAgentVM($vmHost)
+        $network = $this.GetNetworkForAgentVM($vmHost)
+
+        $configInfo = New-Object VMware.Vim.HostEsxAgentHostManagerConfigInfo
+
+        $configInfo.AgentVmDatastore = $datastore
+        $configInfo.AgentVmNetwork = $network
+
+        try {
+            Update-AgentVMConfiguration -EsxAgentHostManager $esxAgentHostManager -EsxAgentHostManagerConfigInfo $configInfo
+        }
+        catch {
+            throw "The AgentVM Configuration of VMHost $($vmHost.Name) could not be updated: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the AgentVM Setting value from the Configuration on the server.
+    #>
+    [string] PopulateAgentVmSetting($esxAgentHostManager, $agentVmSettingName, $getAgentVmSettingAsViewObjectMethodName) {
+        if ($null -eq $esxAgentHostManager.ConfigInfo.$agentVmSettingName) {
+            return $null
+        }
+        else {
+            $agentVmSettingAsViewObject = $this.$getAgentVmSettingAsViewObjectMethodName($esxAgentHostManager)
+            return $agentVmSettingAsViewObject.Name
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the AgentVM Settings from the server.
+    #>
+    [void] PopulateResult($esxAgentHostManager, $result) {
+        $result.AgentVmDatastore = $this.PopulateAgentVmSetting($esxAgentHostManager, $this.AgentVmDatastoreName, $this.GetAgentVmDatastoreAsViewObjectMethodName)
+        $result.AgentVmNetwork = $this.PopulateAgentVmSetting($esxAgentHostManager, $this.AgentVmNetworkName, $this.GetAgentVmNetworkAsViewObjectMethodName)
     }
 }
 

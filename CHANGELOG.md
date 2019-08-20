@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.8 - 2019-08-20
+### Added
+- Added VMHostAgentVM DSC Resource.
+- Added Unit Tests for VMHostAgentVM DSC Resource.
+- Added Integration Tests for VMHostAgentVM DSC Resource.
+- Added Documentation and example Configuration for VMHostAgentVM DSC Resource.
+
+### Changed
+- Moved vCenterProductId Constant to BaseDSC class.
+
 ## 2.0.0.7 - 2019-08-02
 ### Changed
 - Fix bug with '?' character in Build.ps1.
