@@ -489,3 +489,16 @@ function Update-GraphicsConfig {
 
     $VMHostGraphicsManager.UpdateGraphicsConfig($VMHostGraphicsConfig)
 }
+
+function Update-PowerPolicy {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostPowerSystem] $VMHostPowerSystem,
+
+        [Parameter(Mandatory = $true)]
+        [int] $PowerPolicy
+    )
+
+    $VMHostPowerSystem.ConfigurePowerPolicy($PowerPolicy)
+}
