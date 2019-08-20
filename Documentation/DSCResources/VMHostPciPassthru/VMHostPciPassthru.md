@@ -10,14 +10,17 @@
 | **Id** | Mandatory | string | The Id of the PCI Device, composed of "bus:slot.function". ||
 | **Enabled** | Mandatory | bool | Value indicating whether passThru has been configured for this device. ||
 
+## Prerequisite
+The specified VMHost must be in **Maintenance** mode.
+
 ## Description
-The resource is used to update the PciPassthru configuration by changing the Passthrough enabled value of the specified PCI Device on the specified VMHost.
+The resource is used to update the PciPassthru configuration by changing the Passthrough enabled value of the specified PCI Device on the specified VMHost. The resource also restarts the VMHost after a successful Update operation.
 
 ## Examples
 
 ### Example 1
 
-Performs an Update operation by enabling Passthrough on the specified PCI Device.
+Performs an Update operation by enabling Passthrough on the specified PCI Device. After that it restarts the specified VMHost to apply the changes.
 
 ```powershell
 Configuration VMHostPciPassthru_Config {
