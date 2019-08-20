@@ -136,3 +136,9 @@ $script:sharedGraphicsType = 'Shared'
 $script:sharedDirectGraphicsType = 'SharedDirect'
 $script:performanceSharedPassthruAssignmentPolicy = 'Performance'
 $script:consolidationSharedPassthruAssignmentPolicy = 'Consolidation'
+
+# VMHost Power Policy Constants
+$script:balancedPowerPolicy = 'Balanced'
+$script:highPerformancePowerPolicy = 'HighPerformance'
+$script:lowPowerPowerPolicy = 'LowPower'
+$script:customPowerPolicy = 'Custom'
