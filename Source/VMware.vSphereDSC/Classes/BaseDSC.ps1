@@ -38,6 +38,8 @@ class BaseDSC {
     #>
     hidden [PSObject] $Connection
 
+    hidden [string] $vCenterProductId = 'vpx'
+
     <#
     .DESCRIPTION
 

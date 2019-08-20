@@ -450,3 +450,16 @@ function Update-VMHostAdvancedSettings {
 
     $VMHostAdvancedOptionManager.UpdateOptions($Options)
 }
+
+function Update-AgentVMConfiguration {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostEsxAgentHostManager] $EsxAgentHostManager,
+
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostEsxAgentHostManagerConfigInfo] $EsxAgentHostManagerConfigInfo
+    )
+
+    $EsxAgentHostManager.EsxAgentHostManagerUpdateConfig($EsxAgentHostManagerConfigInfo)
+}
