@@ -58,6 +58,7 @@ Configuration VMHostPciPassthru_Config {
             Credential = $Credential
             Id = '0000:00:00.0'
             Enabled = $true
+            RestartTimeout = 10
         }
     }
 }

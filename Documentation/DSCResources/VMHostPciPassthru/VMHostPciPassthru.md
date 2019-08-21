@@ -9,6 +9,7 @@
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Id** | Mandatory | string | The Id of the PCI Device, composed of "bus:slot.function". ||
 | **Enabled** | Mandatory | bool | Value indicating whether passThru has been configured for this device. ||
+| **RestartTimeout** | Optional | int | The time in minutes to wait for the VMHost to restart before timing out and aborting the operation. The default value is 5 minutes. ||
 
 ## Prerequisite
 The specified VMHost must be in **Maintenance** mode.
@@ -50,6 +51,7 @@ Configuration VMHostPciPassthru_Config {
             Credential = $Credential
             Id = '0000:00:00.0'
             Enabled = $true
+            RestartTimeout = 10
         }
     }
 }
