@@ -58,6 +58,7 @@ Configuration VMHostGraphics_Config {
             Credential = $Credential
             DefaultGraphicsType = 'Shared'
             SharedPassthruAssignmentPolicy = 'Performance'
+            RestartTimeout = 10
         }
     }
 }

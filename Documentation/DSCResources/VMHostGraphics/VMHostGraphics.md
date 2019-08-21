@@ -11,6 +11,7 @@
 | **SharedPassthruAssignmentPolicy** | Mandatory | SharedPassthruAssignmentPolicy | The policy for assigning shared passthrough VMs to a host graphics device. | Performance, Consolidation |
 | **DeviceId** | Optional | string | The Graphics device identifier (ex. PCI ID). ||
 | **DeviceGraphicsType** | Optional | GraphicsType | The graphics type for the specified Device in 'DeviceId' property. | Shared, SharedDirect, Unset |
+| **RestartTimeout** | Optional | int | The time in minutes to wait for the VMHost to restart before timing out and aborting the operation. The default value is 5 minutes. ||
 
 ## Prerequisite
 The specified VMHost must be in **Maintenance** mode.
@@ -52,6 +53,7 @@ Configuration VMHostGraphics_Config {
             Credential = $Credential
             DefaultGraphicsType = 'Shared'
             SharedPassthruAssignmentPolicy = 'Performance'
+            RestartTimeout = 10
         }
     }
 }
@@ -91,6 +93,7 @@ Configuration VMHostGraphics_Config {
             SharedPassthruAssignmentPolicy = 'Consolidation'
             DeviceId = '0000:00:00.0'
             DeviceGraphicsType = 'SharedDirect'
+            RestartTimeout = 10
         }
     }
 }
