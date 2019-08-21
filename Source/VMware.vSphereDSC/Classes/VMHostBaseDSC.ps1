@@ -23,6 +23,15 @@ class VMHostBaseDSC : BaseDSC {
     [DscProperty(Key)]
     [string] $Name
 
+    <#
+    .DESCRIPTION
+
+    Specifies the time in minutes to wait for the VMHost to restart before timing out
+    and aborting the operation. The default value is 5 minutes.
+    #>
+    [DscProperty()]
+    [int] $RestartTimeout = 5
+
     hidden [string] $NotRespondingState = 'NotResponding'
     hidden [string] $MaintenanceState = 'Maintenance'
 
@@ -56,13 +65,30 @@ class VMHostBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
+    Ensures that the specified VMHost is restarted successfully in the specified period of time. If the elapsed time is
+    longer than the desired time for restart, the method throws an exception.
+    #>
+    [void] EnsureRestartTimeoutIsNotReached($elapsedTimeInSeconds) {
+        $timeSpan = New-TimeSpan -Seconds $elapsedTimeInSeconds
+        if ($this.RestartTimeout -le $timeSpan.Minutes) {
+            throw "Aborting the operation. VMHost $($this.Name) could not be restarted successfully in $($this.RestartTimeout) minutes."
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
     Ensures that the specified VMHost is in the desired state after successful restart operation.
     #>
     [void] EnsureVMHostIsInDesiredState($server, $desiredState) {
         $sleepTimeInSeconds = 10
+        $elapsedTimeInSeconds = 0
 
         while ($true) {
+            $this.EnsureRestartTimeoutIsNotReached($elapsedTimeInSeconds)
+
             Start-Sleep -Seconds $sleepTimeInSeconds
+            $elapsedTimeInSeconds += $sleepTimeInSeconds
 
             try {
                 if ($null -eq $server) {
