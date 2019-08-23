@@ -36,17 +36,15 @@ class VMHostSSDCache : VMHostBaseDSC {
     [void] Set() {
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
-        $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
 
-        $this.UpdateHostCacheConfiguration($vmHostCacheConfigurationManager)
+        $this.UpdateHostCacheConfiguration($vmHost)
     }
 
     [bool] Test() {
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
-        $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
 
-        return !$this.ShouldUpdateHostCacheConfiguration($vmHostCacheConfigurationManager)
+        return !$this.ShouldUpdateHostCacheConfiguration($vmHost)
     }
 
     [VMHostSSDCache] Get() {
@@ -55,10 +53,9 @@ class VMHostSSDCache : VMHostBaseDSC {
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
-        $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
 
         $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHostCacheConfigurationManager, $result)
+        $this.PopulateResult($vmHost, $result)
 
         return $result
     }
@@ -84,9 +81,9 @@ class VMHostSSDCache : VMHostBaseDSC {
     Retrieves the Datastore for Host Cache Configuration from the server if it exists.
     If the Datastore does not exist, it throws an exception.
     #>
-    [PSObject] GetDatastore() {
+    [PSObject] GetDatastore($vmHost) {
         try {
-            $foundDatastore = Get-Datastore -Server $this.Connection -Name $this.Datastore -ErrorAction Stop
+            $foundDatastore = Get-Datastore -Server $this.Connection -Name $this.Datastore -RelatedObject $vmHost -ErrorAction Stop
             return $foundDatastore
         }
         catch {
@@ -125,8 +122,9 @@ class VMHostSSDCache : VMHostBaseDSC {
     Checks if the Host Cache Configuration should be updated for the specified VMHost by checking
     if the current Swap Size is equal to the desired one for the specified Datastore.
     #>
-    [bool] ShouldUpdateHostCacheConfiguration($vmHostCacheConfigurationManager) {
-        $foundDatastore = $this.GetDatastore()
+    [bool] ShouldUpdateHostCacheConfiguration($vmHost) {
+        $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
+        $foundDatastore = $this.GetDatastore($vmHost)
         $datastoreCacheInfo = $this.GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore)
 
         return ($this.ConvertMBValueToGBValue($this.SwapSize) -ne $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize))
@@ -138,8 +136,17 @@ class VMHostSSDCache : VMHostBaseDSC {
     Performs an update on the Host Cache Configuration of the specified VMHost by changing the Swap Size for the
     specified Datastore.
     #>
-    [void] UpdateHostCacheConfiguration($vmHostCacheConfigurationManager) {
-        $foundDatastore = $this.GetDatastore()
+    [void] UpdateHostCacheConfiguration($vmHost) {
+        $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
+        $foundDatastore = $this.GetDatastore($vmHost)
+
+        if ($this.SwapSize -lt 0) {
+            throw "The passed Swap Size $($this.SwapSize) is less than zero."
+        }
+
+        if ($this.SwapSize -gt $foundDatastore.FreeSpaceMB) {
+            throw "The passed Swap Size $($this.SwapSize) is larger than the free space of the Datastore $($foundDatastore.Name)."
+        }
 
         $hostCacheConfigurationSpec = New-Object VMware.Vim.HostCacheConfigurationSpec
         $hostCacheConfigurationSpec.Datastore = $foundDatastore.ExtensionData.MoRef
@@ -174,8 +181,9 @@ class VMHostSSDCache : VMHostBaseDSC {
 
     Populates the result returned from the Get() method with the values of the Host Cache Configuration from the server.
     #>
-    [void] PopulateResult($vmHostCacheConfigurationManager, $result) {
-        $foundDatastore = $this.GetDatastore()
+    [void] PopulateResult($vmHost, $result) {
+        $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
+        $foundDatastore = $this.GetDatastore($vmHost)
         $datastoreCacheInfo = $this.GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore)
 
         $result.Datastore = $foundDatastore.Name
