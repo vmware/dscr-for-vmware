@@ -502,3 +502,17 @@ function Update-PowerPolicy {
 
     $VMHostPowerSystem.ConfigurePowerPolicy($PowerPolicy)
 }
+
+function Update-HostCacheConfiguration {
+    [CmdletBinding()]
+    [OutputType([VMware.Vim.ManagedObjectReference])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostCacheConfigurationManager] $VMHostCacheConfigurationManager,
+
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostCacheConfigurationSpec] $Spec
+    )
+
+    return $VMHostCacheConfigurationManager.ConfigureHostCache_Task($Spec)
+}
