@@ -52,7 +52,7 @@ class VMHostSettings : VMHostBaseDSC {
     hidden [string] $MotdSettingName = "Config.Etc.motd"
 
     [void] Set() {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$this.ConnectVIServer()
     	$vmHost = $this.GetVMHost()
@@ -61,7 +61,7 @@ class VMHostSettings : VMHostBaseDSC {
     }
 
     [bool] Test() {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$this.ConnectVIServer()
     	$vmHost = $this.GetVMHost()
@@ -70,7 +70,7 @@ class VMHostSettings : VMHostBaseDSC {
     }
 
     [VMHostSettings] Get() {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostSettings]::new()
         $result.Server = $this.Server
@@ -92,7 +92,7 @@ class VMHostSettings : VMHostBaseDSC {
         Desired value equal to $null means that the setting value was not specified.
         If it is specified we check if the setting value is not equal to the current value.
         #>
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         return ($null -ne $desiredValue -and $desiredValue -ne $currentValue)
     }
@@ -103,7 +103,7 @@ class VMHostSettings : VMHostBaseDSC {
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
     [bool] ShouldUpdateVMHostSettings($vmHost) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -123,7 +123,7 @@ class VMHostSettings : VMHostBaseDSC {
     Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
     #>
   	[void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	if ($clearValue) {
       	    if ($this.ShouldUpdateSettingValue([string]::Empty, $advancedSettingCurrentValue)) {
@@ -143,7 +143,7 @@ class VMHostSettings : VMHostBaseDSC {
     Performs update on those Advanced Settings values that needs to be updated.
     #>
     [void] UpdateVMHostSettings($vmHost) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -160,7 +160,7 @@ class VMHostSettings : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the advanced settings from the server.
     #>
     [void] PopulateResult($vmHost, $result) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
