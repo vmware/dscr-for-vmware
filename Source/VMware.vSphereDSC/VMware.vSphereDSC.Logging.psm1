@@ -45,3 +45,36 @@ function Write-VerboseLog {
         Write-Verbose -Message ([string]::Format($Message, $Arguments))
     }
 }
+
+<#
+.SYNOPSIS
+Writes the specified warning message to the PowerShell host.
+
+.DESCRIPTION
+Writes the specified warning message to the PowerShell host. The response to the warning depends on the value
+of the user's $WarningPreference variable and the use of the WarningAction common parameter. If arguments
+are passed to the function, the message is formatted accordingly.
+
+.PARAMETER Message
+Specifies the warning message to write to the PowerShell host.
+
+.PARAMETER Arguments
+Specifies the arguments that are needed for formatting the message.
+#>
+function Write-WarningLog {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [string] $Message,
+
+        [Parameter()]
+        [array] $Arguments
+    )
+
+    if ($null -eq $Arguments) {
+        Write-Warning -Message $message
+    }
+    else {
+        Write-Warning -Message ([string]::Format($Message, $Arguments))
+    }
+}
