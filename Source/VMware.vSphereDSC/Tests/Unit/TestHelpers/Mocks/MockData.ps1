@@ -98,6 +98,16 @@ $script:constants = @{
         LowPower = 3
         Custom = 4
     }
+    CacheConfigurationManagerType = 'HostCacheConfigurationManager'
+    CacheConfigurationManagerValue = 'cacheConfigManager-1'
+    NegativeSwapSize = -1
+    OverflowingSwapSize = 9216
+    SwapSize = 1024
+    ConfigureHostCacheTaskName = 'ConfigureHostCache_Task'
+    TaskType = 'Task'
+    TaskValue = 'task-1'
+    TaskSuccessState = 'Success'
+    TaskErrorState = 'Error'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -428,6 +438,10 @@ $script:vmHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
                 Type = $script:constants.PowerSystemType
                 Value = $script:constants.PowerSystemValue
             }
+            CacheConfigurationManager = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.CacheConfigurationManagerType
+                Value = $script:constants.CacheConfigurationManagerValue
+            }
         }
         Network = @(
             [VMware.Vim.ManagedObjectReference] @{
@@ -512,6 +526,7 @@ $script:datastore = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.Vmf
             Value = $script:constants.DatastoreValue
         }
     }
+    FreeSpaceMB = $script:constants.SwapSize * 8
 }
 
 $script:network = [VMware.Vim.Network] @{
@@ -578,4 +593,39 @@ $script:vmHostPowerSystem = [VMware.Vim.HostPowerSystem] @{
         Type = $script:constants.PowerSystemType
         Value = $script:constants.PowerSystemValue
     }
+}
+
+$script:vmHostCacheConfigurationManager = [VMware.Vim.HostCacheConfigurationManager] @{
+    CacheConfigurationInfo = @(
+        [VMware.Vim.HostCacheConfigurationInfo] @{
+            Key = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.DatastoreType
+                Value = $script:constants.DatastoreValue
+            }
+            SwapSize = $script:constants.SwapSize
+        }
+    )
+}
+
+$script:hostCacheConfigurationSpec = [VMware.Vim.HostCacheConfigurationSpec] @{
+    Datastore = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.DatastoreType
+        Value = $script:constants.DatastoreValue
+    }
+    SwapSize = $script:constants.SwapSize
+}
+
+$script:hostCacheConfigurationResult = [VMware.Vim.ManagedObjectReference] @{
+    Type = $script:constants.TaskType
+    Value = $script:constants.TaskValue
+}
+
+$script:hostCacheConfigurationErrorTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
+    Name = $script:constants.ConfigureHostCacheTaskName
+    State = $script:constants.TaskErrorState
+}
+
+$script:hostCacheConfigurationSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
+    Name = $script:constants.ConfigureHostCacheTaskName
+    State = $script:constants.TaskSuccessState
 }
