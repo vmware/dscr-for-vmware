@@ -142,3 +142,10 @@ $script:balancedPowerPolicy = 'Balanced'
 $script:highPerformancePowerPolicy = 'HighPerformance'
 $script:lowPowerPowerPolicy = 'LowPower'
 $script:customPowerPolicy = 'Custom'
+
+# VMHost SSD Cache Constants
+$script:zeroGigabytesSwapSize = 0
+$script:halfGigabyteSwapSize = 512
+$script:oneGigabyteSwapSize = 1024
+$script:twoGigabytesWithoutOneMegabyteSwapSize = 2047
+$script:twoGigabytesSwapSize = 2048
