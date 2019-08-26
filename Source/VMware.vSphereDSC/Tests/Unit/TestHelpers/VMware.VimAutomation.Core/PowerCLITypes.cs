@@ -91101,6 +91101,57 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Tagging
     }
 }
 
+namespace VMware.VimAutomation.ViCore.Impl.V1.Task
+{
+    using System;
+    using VMware.VimAutomation.Sdk.Types.V1;
+    using VMware.VimAutomation.ViCore.Types.V1;
+
+    public class TaskImpl : VIObject, ExtensionData, IEquatable<TaskImpl>
+    {
+        public string ServerId { get; set; }
+
+        public TaskState State { get; set; }
+
+        public bool IsCancelable { get; set; }
+
+        public float PercentComplete { get; set; }
+
+        public DateTime StartTime { get; set; }
+
+        public DateTime? FinishTime { get; set; }
+
+        public string ObjectId { get; set; }
+
+        public object Result { get; set; }
+
+        public string Description { get; set; }
+
+        public object ExtensionData { get; set; }
+
+        public string Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Uid { get; set; }
+
+        public bool Equals(TaskImpl taskImpl)
+        {
+            return (taskImpl != null && this.ServerId == taskImpl.ServerId && this.State == taskImpl.State && this.IsCancelable == taskImpl.IsCancelable && this.PercentComplete == taskImpl.PercentComplete && this.StartTime == taskImpl.StartTime && this.FinishTime == taskImpl.FinishTime && this.ObjectId == taskImpl.ObjectId && ((this.Result == null && taskImpl.Result == null) || (this.Result != null && this.Result.Equals(taskImpl.Result))) && this.Description == taskImpl.Description && ((this.ExtensionData == null && taskImpl.ExtensionData == null) || (this.ExtensionData != null && this.ExtensionData.Equals(taskImpl.ExtensionData))) && this.Id == taskImpl.Id && this.Name == taskImpl.Name && this.Uid == taskImpl.Uid);
+        }
+
+        public override bool Equals(object taskImpl)
+        {
+            return Equals(taskImpl as TaskImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (ServerId + "_" + State + "_" + IsCancelable + "_" + PercentComplete + "_" + StartTime + "_" + FinishTime + "_" + ObjectId + "_" + Result + "_" + Description + "_" + ExtensionData + "_" + Id + "_" + Name + "_" + Uid).GetHashCode();
+        }
+    }
+}
+
 namespace VMware.VimAutomation.ViCore.Impl.V1.VirtualDevice
 {
     using System;
