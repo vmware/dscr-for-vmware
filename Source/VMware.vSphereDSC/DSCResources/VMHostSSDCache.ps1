@@ -28,7 +28,7 @@ class VMHostSSDCache : VMHostBaseDSC {
     .DESCRIPTION
 
     Specifies the space to allocate on the specified Datastore to implement swap performance enhancements, in MB.
-    This value should be less than or equal to the free space capacity on the Datastore freeSpace.
+    This value should be less than or equal to the free space capacity of the Datastore.
     #>
     [DscProperty(Mandatory)]
     [long] $SwapSize
