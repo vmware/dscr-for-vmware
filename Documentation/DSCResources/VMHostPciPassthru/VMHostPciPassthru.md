@@ -7,7 +7,7 @@
 | **Server** | Key | string | Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
-| **Id** | Mandatory | string | The Id of the PCI Device, composed of "bus:slot.function". ||
+| **Id** | Key | string | The Id of the PCI Device, composed of "bus:slot.function". ||
 | **Enabled** | Mandatory | bool | Value indicating whether passThru has been configured for this device. ||
 | **RestartTimeout** | Optional | int | The time in minutes to wait for the VMHost to restart before timing out and aborting the operation. The default value is 5 minutes. ||
 

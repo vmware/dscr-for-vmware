@@ -21,7 +21,7 @@ class VMHostPciPassthru : VMHostBaseDSC {
 
     Specifies the Id of the PCI Device, composed of "bus:slot.function".
     #>
-    [DscProperty(Mandatory)]
+    [DscProperty(Key)]
     [string] $Id
 
     <#
