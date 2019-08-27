@@ -29,7 +29,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
     Name of the SATP Claim Rule.
     #>
-    [DscProperty(Mandatory)]
+    [DscProperty(Key)]
     [string] $RuleName
 
     <#
