@@ -21,7 +21,7 @@ class VMHostSSDCache : VMHostBaseDSC {
 
     Specifies the Datastore used for swap performance enhancement.
     #>
-    [DscProperty(Mandatory)]
+    [DscProperty(Key)]
     [string] $Datastore
 
     <#
