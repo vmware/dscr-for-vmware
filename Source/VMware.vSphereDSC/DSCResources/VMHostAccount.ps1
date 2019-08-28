@@ -21,7 +21,7 @@ class VMHostAccount : BaseDSC {
 
     Specifies the ID for the host account.
     #>
-    [DscProperty(Mandatory)]
+    [DscProperty(Key)]
     [string] $Id
 
     <#
