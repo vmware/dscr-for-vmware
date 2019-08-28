@@ -8,7 +8,7 @@
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the SATP Claim Rule should be Present or Absent. |Present, Absent|
-| **RuleName** | Mandatory | string | Name of the SATP Claim Rule. ||
+| **RuleName** | Key | string | Name of the SATP Claim Rule. ||
 | **PSPOptions** | Optional | string | PSP options for the SATP Claim Rule. ||
 | **Transport** | Optional | string | Transport Property of the Satp Claim Rule. ||
 | **Description** | Optional | string | Description string to set when adding the SATP Claim Rule. ||
