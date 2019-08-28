@@ -3021,7 +3021,7 @@ class VMHostService : VMHostBaseDSC {
 
     The key value of the service.
     #>
-    [DscProperty(Mandatory)]
+    [DscProperty(Key)]
     [string] $Key
 
     <#
