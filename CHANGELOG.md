@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.12 - 2019-08-28
+### Changed
+- The Id property was changed from 'Mandatory' to 'Key' for VMHostAccount Resource.
+
 ## 2.0.0.11 - 2019-08-28
 ### Changed
 - The RuleName property was changed from 'Mandatory' to 'Key' for VMHostSatpClaimRule Resource.
