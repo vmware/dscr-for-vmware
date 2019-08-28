@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.9 - 2019-08-28
+### Changed
+- The VssName property was changed from 'Mandatory' to 'Key' in the Standard Switch Resources Documentation.
+
 ## 2.0.0.8 - 2019-08-20
 ### Added
 - Added VMHostAgentVM DSC Resource.
