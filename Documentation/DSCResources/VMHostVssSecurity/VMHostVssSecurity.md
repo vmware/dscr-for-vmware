@@ -8,7 +8,7 @@
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the VSS should be Present or Absent. | Present, Absent |
-| **VssName** | Mandatory | string | The name of the VSS. ||
+| **VssName** | Key | string | The name of the VSS. ||
 | **AllowPromiscuous** | Optional | boolean | The flag to indicate whether or not all traffic is seen on the port. ||
 | **ForgedTransmits** | Optional | boolean | The flag to indicate whether or not the virtual network adapter should be allowed to send network traffic with a different MAC address. ||
 | **MacChanges** | Optional | boolean | The flag to indicate whether or not the Media Access Control (MAC) address can be changed. ||

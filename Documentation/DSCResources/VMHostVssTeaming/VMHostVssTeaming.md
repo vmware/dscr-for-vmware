@@ -8,7 +8,7 @@
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the VSS should be Present or Absent. | Present, Absent |
-| **VssName** | Mandatory | string | The name of the VSS. ||
+| **VssName** | Key | string | The name of the VSS. ||
 | **CheckBeacon** | Optional | Boolean | The flag to indicate whether or not to enable beacon probing as a method to validate the link status of a physical network adapter. ||
 | **ActiveNic** | Optional | string[] | List of active network adapters used for load balancing. ||
 | **StandbyNic** | Optional | string[] | Standby network adapters used for failover. ||

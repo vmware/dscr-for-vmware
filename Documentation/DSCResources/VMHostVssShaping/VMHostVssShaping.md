@@ -8,7 +8,7 @@
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the VSS should be Present or Absent. | Present, Absent |
-| **VssName** | Mandatory | string | The name of the VSS. ||
+| **VssName** | Key | string | The name of the VSS. ||
 | **AverageBandwidth** | Optional | long | The average bandwidth in bits per second if shaping is enabled on the port. ||
 | **BurstSize** | Optional | long | The maximum burst size allowed in bytes if shaping is enabled on the port. ||
 | **Enabled** | Optional | boolean | The flag to indicate whether or not traffic shaper is enabled on the port. ||

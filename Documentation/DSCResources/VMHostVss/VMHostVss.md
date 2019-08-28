@@ -8,7 +8,7 @@
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the VSS should be Present or Absent. | Present, Absent |
-| **VssName** | Mandatory | string | The name of the VSS. ||
+| **VssName** | Key | string | The name of the VSS. ||
 | **Mtu** | Optional | int | The maximum transmission unit (MTU) associated with this virtual switch in bytes. ||
 
 ## Description

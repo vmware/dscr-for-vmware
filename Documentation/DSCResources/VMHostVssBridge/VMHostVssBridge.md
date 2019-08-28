@@ -8,7 +8,7 @@
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the VSS should be Present or Absent. | Present, Absent |
-| **VssName** | Mandatory | string | The name of the VSS. ||
+| **VssName** | Key | string | The name of the VSS. ||
 | **NicDevice** | Optional | string[] | The list of keys of the physical network adapters to be bridged. ||
 | **BeaconInterval** | Optional | int | Determines how often, in seconds, a beacon should be sent. ||
 | **LinkDiscoveryProtocolType** | Optional | string | The discovery protocol type. VSS only supports CDP. | CDP |
