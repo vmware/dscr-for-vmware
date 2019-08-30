@@ -17,5 +17,4 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 enum GraphicsType {
     Shared
     SharedDirect
-    Unset
 }
