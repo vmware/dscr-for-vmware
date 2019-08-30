@@ -90,6 +90,14 @@ $script:constants = @{
     DefaultGraphicsType = 'Shared'
     SharedPassthruAssignmentPolicy = 'Performance'
     GraphicsDeviceId = '0000:00:00.0'
+    PowerSystemType = 'HostPowerSystem'
+    PowerSystemValue = 'powerSystem-1'
+    PowerPolicy = @{
+        HighPerformance = 1
+        Balanced = 2
+        LowPower = 3
+        Custom = 4
+    }
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -392,6 +400,13 @@ $script:vmHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
     Name = $script:constants.VMHostName
     ConnectionState = $script:constants.VMHostConnectionState
     ExtensionData = [VMware.Vim.HostSystem] @{
+        Config = [VMware.Vim.HostConfigInfo] @{
+            PowerSystemInfo = [VMware.Vim.PowerSystemInfo] @{
+                CurrentPolicy = [VMware.Vim.HostPowerPolicy] @{
+                    Key = $script:constants.PowerPolicy.Balanced
+                }
+            }
+        }
         ConfigManager = [VMware.Vim.HostConfigManager] @{
             AdvancedOption = [VMware.Vim.ManagedObjectReference] @{
                 Type = $script:constants.OptionManagerType
@@ -408,6 +423,10 @@ $script:vmHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
             GraphicsManager = [VMware.Vim.ManagedObjectReference] @{
                 Type = $script:constants.GraphicsManagerType
                 Value = $script:constants.GraphicsManagerValue
+            }
+            PowerSystem = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.PowerSystemType
+                Value = $script:constants.PowerSystemValue
             }
         }
         Network = @(
@@ -552,4 +571,11 @@ $script:vmHostGraphicsConfigWithGraphicsDevice = [VMware.Vim.HostGraphicsConfig]
 
 $script:vmHostGraphicsManager = [VMware.Vim.HostGraphicsManager] @{
     GraphicsConfig = $script:vmHostGraphicsConfigWithGraphicsDevice
+}
+
+$script:vmHostPowerSystem = [VMware.Vim.HostPowerSystem] @{
+    MoRef = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.PowerSystemType
+        Value = $script:constants.PowerSystemValue
+    }
 }
