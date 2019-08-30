@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.14 - 2019-08-30
+### Added
+- Added VMHostGraphics DSC Resource.
+- Added Unit Tests for VMHostGraphics DSC Resource.
+- Added Integration Tests for VMHostGraphics DSC Resource.
+- Added Documentation and example Configuration for VMHostGraphics DSC Resource.
+- Added VMHostGraphicsDevice DSC Resource.
+- Added Unit Tests for VMHostGraphicsDevice DSC Resource.
+- Added Integration Tests for VMHostGraphicsDevice DSC Resource.
+- Added Documentation and example Configuration for VMHostGraphicsDevice DSC Resource.
+
 ## 2.0.0.13 - 2019-08-30
 ### Added
 - Added VMHostPciPassthrough DSC Resource.

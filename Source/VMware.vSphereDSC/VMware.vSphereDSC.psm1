@@ -28,6 +28,11 @@ enum FolderType {
     Host
 }
 
+enum GraphicsType {
+    Shared
+    SharedDirect
+}
+
 enum LinkDiscoveryProtocolOperation {
     Unset
     Advertise
@@ -64,6 +69,11 @@ enum ServicePolicy {
     On
     Off
     Automatic
+}
+
+enum SharedPassthruAssignmentPolicy {
+    Performance
+    Consolidation
 }
 
 enum NicTeamingPolicy {
@@ -651,6 +661,33 @@ class VMHostBaseDSC : BaseDSC {
         else {
             $this.EnsureVMHostIsInDesiredState($true, $this.MaintenanceState)
         }
+    }
+}
+
+class VMHostGraphicsBaseDSC : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Retrieves the Graphics Manager of the specified VMHost from the server.
+    #>
+    [PSObject] GetVMHostGraphicsManager($vmHost) {
+        try {
+            $vmHostGraphicsManager = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.GraphicsManager -ErrorAction Stop
+            return $vmHostGraphicsManager
+        }
+        catch {
+            throw "Could not retrieve the Graphics Manager of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    The enum value passed in the Configuration should be converted to string value by the following criteria:
+    Shared => shared; SharedDevice => sharedDevice
+    #>
+    [string] ConvertEnumValueToServerValue($enumValue) {
+        return $enumValue.ToString().Substring(0, 1).ToLower() + $enumValue.ToString().Substring(1)
     }
 }
 
@@ -4746,6 +4783,189 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             $vmHostVSSTeaming.NotifySwitches = $this.NotifySwitches
             $vmHostVSSTeaming.Policy = $this.Policy
             $vmHostVSSTeaming.RollingOrder = $this.RollingOrder
+        }
+    }
+}
+
+[DscResource()]
+class VMHostGraphics : VMHostGraphicsBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the default graphics type for the specified VMHost.
+    #>
+    [DscProperty(Mandatory)]
+    [GraphicsType] $GraphicsType
+
+    <#
+    .DESCRIPTION
+
+    Specifies the policy for assigning shared passthrough VMs to a host graphics device.
+    #>
+    [DscProperty(Mandatory)]
+    [SharedPassthruAssignmentPolicy] $SharedPassthruAssignmentPolicy
+
+    [void] Set() {
+    	$this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+
+        $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+        $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
+        $this.RestartVMHost($vmHost)
+    }
+
+    [bool] Test() {
+    	$this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+
+        return !$this.ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager)
+    }
+
+    [VMHostGraphics] Get() {
+        $result = [VMHostGraphics]::new()
+        $result.Server = $this.Server
+
+    	$this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+
+        $result.Name = $vmHost.Name
+        $result.GraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
+        $result.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Graphics Configuration needs to be updated with the desired values.
+    #>
+    [bool] ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager) {
+        if ($this.GraphicsType -ne $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType) {
+            return $true
+        }
+        elseif ($this.SharedPassthruAssignmentPolicy -ne $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy) {
+            return $true
+        }
+        else {
+            return $false
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Graphics Configuration of the specified VMHost.
+    #>
+    [void] UpdateGraphicsConfiguration($vmHostGraphicsManager) {
+        $vmHostGraphicsConfig = New-Object VMware.Vim.HostGraphicsConfig
+
+        $vmHostGraphicsConfig.HostDefaultGraphicsType = $this.ConvertEnumValueToServerValue($this.GraphicsType)
+        $vmHostGraphicsConfig.SharedPassthruAssignmentPolicy = $this.ConvertEnumValueToServerValue($this.SharedPassthruAssignmentPolicy)
+
+        try {
+            Update-GraphicsConfig -VMHostGraphicsManager $vmHostGraphicsManager -VMHostGraphicsConfig $vmHostGraphicsConfig
+        }
+        catch {
+            throw "The Graphics Configuration of VMHost $($this.Name) could not be updated: $($_.Exception.Message)"
+        }
+    }
+}
+
+[DscResource()]
+class VMHostGraphicsDevice : VMHostGraphicsBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Graphics device identifier (ex. PCI ID).
+    #>
+    [DscProperty(Key)]
+    [string] $Id
+
+    <#
+    .DESCRIPTION
+
+    Specifies the graphics type for the specified Device in 'Id' property.
+    #>
+    [DscProperty(Mandatory)]
+    [GraphicsType] $GraphicsType
+
+    [void] Set() {
+    	$this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+
+        $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+        $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
+        $this.RestartVMHost($vmHost)
+    }
+
+    [bool] Test() {
+    	$this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+        $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
+
+        return ($this.GraphicsType -eq $foundDevice.GraphicsType)
+    }
+
+    [VMHostGraphicsDevice] Get() {
+        $result = [VMHostGraphicsDevice]::new()
+        $result.Server = $this.Server
+
+    	$this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+        $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
+
+        $result.Name = $vmHost.Name
+        $result.Id = $foundDevice.DeviceId
+        $result.GraphicsType = $foundDevice.GraphicsType
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Graphics Device with the specified Id from the server.
+    #>
+    [PSObject] GetGraphicsDevice($vmHostGraphicsManager) {
+        $foundDevice = $vmHostGraphicsManager.GraphicsConfig.DeviceType | Where-Object { $_.DeviceId -eq $this.Id }
+        if ($null -eq $foundDevice) {
+            throw "Device $($this.Id) was not found in the available Graphics devices."
+        }
+
+        return $foundDevice
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Graphics Configuration of the specified VMHost by changing the Graphics Type for the
+    specified Device.
+    #>
+    [void] UpdateGraphicsConfiguration($vmHostGraphicsManager) {
+        $vmHostGraphicsConfig = New-Object VMware.Vim.HostGraphicsConfig
+
+        $vmHostGraphicsConfig.HostDefaultGraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
+        $vmHostGraphicsConfig.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
+        $vmHostGraphicsConfig.DeviceType = @()
+
+        $vmHostGraphicsConfigDeviceType = New-Object VMware.Vim.HostGraphicsConfigDeviceType
+        $vmHostGraphicsConfigDeviceType.DeviceId = $this.Id
+        $vmHostGraphicsConfigDeviceType.GraphicsType = $this.ConvertEnumValueToServerValue($this.GraphicsType)
+
+        $vmHostGraphicsConfig.DeviceType += $vmHostGraphicsConfigDeviceType
+
+        try {
+            Update-GraphicsConfig -VMHostGraphicsManager $vmHostGraphicsManager -VMHostGraphicsConfig $vmHostGraphicsConfig
+        }
+        catch {
+            throw "The Graphics Configuration of VMHost $($this.Name) could not be updated: $($_.Exception.Message)"
         }
     }
 }
