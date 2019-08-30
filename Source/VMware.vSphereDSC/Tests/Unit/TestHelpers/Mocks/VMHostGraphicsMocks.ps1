@@ -39,42 +39,13 @@ function New-MocksForVMHostGraphics {
     Mock -CommandName Get-View -MockWith { return $vmHostGraphicsManagerMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:vmHost.ExtensionData.ConfigManager.GraphicsManager } -Verifiable
 }
 
-function New-MocksInSetWhenGraphicsDeviceIsNotPassed {
+function New-MocksInSet {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
+    $vmHostGraphicsProperties.GraphicsType = $script:constants.DefaultGraphicsType
     $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
-
-    Mock -CommandName Update-GraphicsConfig -MockWith { return $null }.GetNewClosure() -Verifiable
-    Mock -CommandName Restart-VMHost -MockWith { return $null }.GetNewClosure() -Verifiable
-    Mock -CommandName Start-Sleep -MockWith { return $null }.GetNewClosure() -Verifiable
-
-    $vmHostGraphicsProperties
-}
-
-function New-MocksWhenGraphicsDeviceIsPassedAndGraphicsDeviceTypeIsNotPassed {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
-    $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
-    $vmHostGraphicsProperties.DeviceId = $script:constants.GraphicsDeviceId
-
-    $vmHostGraphicsProperties
-}
-
-function New-MocksWhenGraphicsDeviceAndGraphicsDeviceTypeArePassed {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
-    $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
-    $vmHostGraphicsProperties.DeviceId = $script:constants.GraphicsDeviceId
-    $vmHostGraphicsProperties.DeviceGraphicsType = $script:constants.DefaultGraphicsType
 
     Mock -CommandName Update-GraphicsConfig -MockWith { return $null }.GetNewClosure() -Verifiable
     Mock -CommandName Restart-VMHost -MockWith { return $null }.GetNewClosure() -Verifiable
@@ -88,7 +59,7 @@ function New-MocksWhenDefaultGraphicsTypeValueIsNotEqualToGraphicsConfigurationD
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = 'SharedDirect'
+    $vmHostGraphicsProperties.GraphicsType = 'SharedDirect'
 
     $vmHostGraphicsProperties
 }
@@ -98,82 +69,19 @@ function New-MocksWhenSharedPassthruAssignmentPolicyValueIsNotEqualToGraphicsCon
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
+    $vmHostGraphicsProperties.GraphicsType = $script:constants.DefaultGraphicsType
     $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = 'Consolidation'
 
     $vmHostGraphicsProperties
 }
 
-function New-MocksWhenGraphicsDeviceIsNotPassed {
+function New-MocksInGet {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
+    $vmHostGraphicsProperties.GraphicsType = $script:constants.DefaultGraphicsType
     $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
-
-    $vmHostGraphicsProperties
-}
-
-function New-MocksWhenGraphicsDeviceIsNotExisting {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
-    $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
-    $vmHostGraphicsProperties.DeviceId = $script:constants.GraphicsDeviceId + $script:constants.GraphicsDeviceId
-    $vmHostGraphicsProperties.DeviceGraphicsType = $script:constants.DefaultGraphicsType
-
-    $vmHostGraphicsProperties
-}
-
-function New-MocksWhenGraphicsDeviceIsExistingAndGraphicsDeviceTypeIsNotPassed {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
-    $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
-    $vmHostGraphicsProperties.DeviceId = $script:constants.GraphicsDeviceId
-
-    $vmHostGraphicsProperties
-}
-
-function New-MocksWhenGraphicsDeviceTypeValueIsNotEqualToGraphicsConfigurationGraphicsDeviceTypeValue {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
-    $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
-    $vmHostGraphicsProperties.DeviceId = $script:constants.GraphicsDeviceId
-    $vmHostGraphicsProperties.DeviceGraphicsType = 'SharedDirect'
-
-    $vmHostGraphicsProperties
-}
-
-function New-MocksWhenPassedValuesAreEqualToGraphicsConfigurationValues {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
-    $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
-    $vmHostGraphicsProperties.DeviceId = $script:constants.GraphicsDeviceId
-    $vmHostGraphicsProperties.DeviceGraphicsType = $script:constants.DefaultGraphicsType
-
-    $vmHostGraphicsProperties
-}
-
-function New-MocksWhenGraphicsDeviceIsExisting {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostGraphicsProperties = New-VMHostGraphicsProperties
-    $vmHostGraphicsProperties.DefaultGraphicsType = $script:constants.DefaultGraphicsType
-    $vmHostGraphicsProperties.SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy
-    $vmHostGraphicsProperties.DeviceId = $script:constants.GraphicsDeviceId
 
     $vmHostGraphicsProperties
 }

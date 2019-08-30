@@ -14,53 +14,29 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-param(
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Name,
+class VMHostGraphicsBaseDSC : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Server,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $User,
-
-    [Parameter(Mandatory = $true)]
-    [string]
-    $Password
-)
-
-$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
-$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
-
-. (Join-Path -Path (Join-Path -Path $integrationTestsFolderPath -ChildPath 'TestHelpers') -ChildPath 'IntegrationTests.Constants.ps1')
-
-$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-$script:viServerCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-$script:configurationData = @{
-    AllNodes = @(
-        @{
-            NodeName = 'localhost'
-            PSDscAllowPlainTextPassword = $true
+    Retrieves the Graphics Manager of the specified VMHost from the server.
+    #>
+    [PSObject] GetVMHostGraphicsManager($vmHost) {
+        try {
+            $vmHostGraphicsManager = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.GraphicsManager -ErrorAction Stop
+            return $vmHostGraphicsManager
         }
-    )
-}
-
-Configuration VMHostGraphics_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostGraphics vmHostGraphics {
-            Name = $Name
-            Server = $Server
-            Credential = $script:viServerCredential
-            GraphicsType = $script:sharedGraphicsType
-            SharedPassthruAssignmentPolicy = $script:performanceSharedPassthruAssignmentPolicy
+        catch {
+            throw "Could not retrieve the Graphics Manager of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
         }
     }
-}
 
-VMHostGraphics_Config -OutputPath "$integrationTestsFolderPath\VMHostGraphics_Config" -ConfigurationData $script:configurationData
+    <#
+    .DESCRIPTION
+
+    The enum value passed in the Configuration should be converted to string value by the following criteria:
+    Shared => shared; SharedDevice => sharedDevice
+    #>
+    [string] ConvertEnumValueToServerValue($enumValue) {
+        return $enumValue.ToString().Substring(0, 1).ToLower() + $enumValue.ToString().Substring(1)
+    }
+}

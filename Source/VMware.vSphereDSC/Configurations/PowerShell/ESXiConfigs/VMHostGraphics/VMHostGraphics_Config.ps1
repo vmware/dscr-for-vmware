@@ -56,9 +56,9 @@ Configuration VMHostGraphics_Config {
             Name = $Name
             Server = $Server
             Credential = $Credential
-            DefaultGraphicsType = 'Shared'
+            GraphicsType = 'Shared'
             SharedPassthruAssignmentPolicy = 'Performance'
-            RestartTimeout = 10
+            RestartTimeoutMinutes = 10
         }
     }
 }
