@@ -64,6 +64,13 @@ enum Period {
     Year = 31556926
 }
 
+enum PowerPolicy {
+    HighPerformance = 1
+    Balanced = 2
+    LowPower = 3
+    Custom = 4
+}
+
 enum ServicePolicy {
     Unset
     On
@@ -2931,6 +2938,76 @@ class VMHostPciPassthrough : VMHostBaseDSC {
         }
         catch {
             throw "The Update operation of PCI Device $($this.Id) failed with the following error: $($_.Exception.Message)"
+        }
+    }
+}
+
+[DscResource()]
+class VMHostPowerPolicy : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Power Management Policy for the specified VMHost.
+    #>
+    [DscProperty(Mandatory)]
+    [PowerPolicy] $PowerPolicy
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $vmHostPowerSystem = $this.GetVMHostPowerSystem($vmHost)
+
+        $this.UpdatePowerPolicy($vmHostPowerSystem)
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
+
+        return ($this.PowerPolicy -eq $currentPowerPolicy.Key)
+    }
+
+    [VMHostPowerPolicy] Get() {
+        $result = [VMHostPowerPolicy]::new()
+        $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+        $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
+
+        $result.Name = $vmHost.Name
+        $result.PowerPolicy = $currentPowerPolicy.Key
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Power System of the specified VMHost from the server.
+    #>
+    [PSObject] GetVMHostPowerSystem($vmHost) {
+        try {
+            $vmHostPowerSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.PowerSystem -ErrorAction Stop
+            return $vmHostPowerSystem
+        }
+        catch {
+            throw "Could not retrieve the Power System of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Power Management Policy of the specified VMHost.
+    #>
+    [void] UpdatePowerPolicy($vmHostPowerSystem) {
+        try {
+            Update-PowerPolicy -VMHostPowerSystem $vmHostPowerSystem -PowerPolicy $this.PowerPolicy
+        }
+        catch {
+            throw "The Power Policy of VMHost $($this.Name) could not be updated: $($_.Exception.Message)"
         }
     }
 }
