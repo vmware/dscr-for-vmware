@@ -14,20 +14,20 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-VMHostPciPassthruProperties {
+function New-VMHostPciPassthroughProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPciPassthruProperties = @{
+    $vmHostPciPassthroughProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
         Name = $script:constants.VMHostName
     }
 
-    $vmHostPciPassthruProperties
+    $vmHostPciPassthroughProperties
 }
 
-function New-MocksForVMHostPciPassthru {
+function New-MocksForVMHostPciPassthrough {
     [CmdletBinding()]
 
     $viServerMock = $script:viServer
@@ -41,39 +41,39 @@ function New-MocksWhenPCIDeviceIsNotExisting {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPciPassthruProperties = New-VMHostPciPassthruProperties
-    $vmHostPciPassthruProperties.Id = $script:constants.PciDeviceId + $script:constants.PciDeviceId
-    $vmHostPciPassthruProperties.Enabled = $script:constants.PciDeviceEnabled
+    $vmHostPciPassthroughProperties = New-VMHostPciPassthroughProperties
+    $vmHostPciPassthroughProperties.Id = $script:constants.PciDeviceId + $script:constants.PciDeviceId
+    $vmHostPciPassthroughProperties.Enabled = $script:constants.PciDeviceEnabled
 
     $vmHostPciPassthruSystemMock = $script:vmHostPciPassthruSystem
 
     Mock -CommandName Get-View -MockWith { return $vmHostPciPassthruSystemMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:vmHost.ExtensionData.ConfigManager.PciPassthruSystem } -Verifiable
 
-    $vmHostPciPassthruProperties
+    $vmHostPciPassthroughProperties
 }
 
 function New-MocksWhenPCIDeviceIsExistingButIsNotPassthroughCapable {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPciPassthruProperties = New-VMHostPciPassthruProperties
-    $vmHostPciPassthruProperties.Id = $script:constants.PciDeviceId + '.0'
-    $vmHostPciPassthruProperties.Enabled = $script:constants.PciDeviceEnabled
+    $vmHostPciPassthroughProperties = New-VMHostPciPassthroughProperties
+    $vmHostPciPassthroughProperties.Id = $script:constants.PciDeviceId + '.0'
+    $vmHostPciPassthroughProperties.Enabled = $script:constants.PciDeviceEnabled
 
     $vmHostPciPassthruSystemMock = $script:vmHostPciPassthruSystem
 
     Mock -CommandName Get-View -MockWith { return $vmHostPciPassthruSystemMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:vmHost.ExtensionData.ConfigManager.PciPassthruSystem } -Verifiable
 
-    $vmHostPciPassthruProperties
+    $vmHostPciPassthroughProperties
 }
 
 function New-MocksWhenPCIDeviceIsExisting {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPciPassthruProperties = New-VMHostPciPassthruProperties
-    $vmHostPciPassthruProperties.Id = $script:constants.PciDeviceId
-    $vmHostPciPassthruProperties.Enabled = $script:constants.PciDeviceEnabled
+    $vmHostPciPassthroughProperties = New-VMHostPciPassthroughProperties
+    $vmHostPciPassthroughProperties.Id = $script:constants.PciDeviceId
+    $vmHostPciPassthroughProperties.Enabled = $script:constants.PciDeviceEnabled
 
     $vmHostPciPassthruSystemMock = $script:vmHostPciPassthruSystem
 
@@ -82,50 +82,50 @@ function New-MocksWhenPCIDeviceIsExisting {
     Mock -CommandName Restart-VMHost -MockWith { return $null }.GetNewClosure() -Verifiable
     Mock -CommandName Start-Sleep -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostPciPassthruProperties
+    $vmHostPciPassthroughProperties
 }
 
 function New-MocksWhenEnabledValueIsNotEqualToPCIDevicePassthroughEnabledValue {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPciPassthruProperties = New-VMHostPciPassthruProperties
-    $vmHostPciPassthruProperties.Id = $script:constants.PciDeviceId
-    $vmHostPciPassthruProperties.Enabled = !$script:constants.PciDeviceEnabled
+    $vmHostPciPassthroughProperties = New-VMHostPciPassthroughProperties
+    $vmHostPciPassthroughProperties.Id = $script:constants.PciDeviceId
+    $vmHostPciPassthroughProperties.Enabled = !$script:constants.PciDeviceEnabled
 
     $vmHostPciPassthruSystemMock = $script:vmHostPciPassthruSystem
 
     Mock -CommandName Get-View -MockWith { return $vmHostPciPassthruSystemMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:vmHost.ExtensionData.ConfigManager.PciPassthruSystem } -Verifiable
 
-    $vmHostPciPassthruProperties
+    $vmHostPciPassthroughProperties
 }
 
 function New-MocksWhenEnabledValueIsEqualToPCIDevicePassthroughEnabledValue {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPciPassthruProperties = New-VMHostPciPassthruProperties
-    $vmHostPciPassthruProperties.Id = $script:constants.PciDeviceId
-    $vmHostPciPassthruProperties.Enabled = $script:constants.PciDeviceEnabled
+    $vmHostPciPassthroughProperties = New-VMHostPciPassthroughProperties
+    $vmHostPciPassthroughProperties.Id = $script:constants.PciDeviceId
+    $vmHostPciPassthroughProperties.Enabled = $script:constants.PciDeviceEnabled
 
     $vmHostPciPassthruSystemMock = $script:vmHostPciPassthruSystem
 
     Mock -CommandName Get-View -MockWith { return $vmHostPciPassthruSystemMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:vmHost.ExtensionData.ConfigManager.PciPassthruSystem } -Verifiable
 
-    $vmHostPciPassthruProperties
+    $vmHostPciPassthroughProperties
 }
 
 function New-MocksInGet {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPciPassthruProperties = New-VMHostPciPassthruProperties
-    $vmHostPciPassthruProperties.Id = $script:constants.PciDeviceId
-    $vmHostPciPassthruProperties.Enabled = $script:constants.PciDeviceEnabled
+    $vmHostPciPassthroughProperties = New-VMHostPciPassthroughProperties
+    $vmHostPciPassthroughProperties.Id = $script:constants.PciDeviceId
+    $vmHostPciPassthroughProperties.Enabled = $script:constants.PciDeviceEnabled
 
     $vmHostPciPassthruSystemMock = $script:vmHostPciPassthruSystem
 
     Mock -CommandName Get-View -MockWith { return $vmHostPciPassthruSystemMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:vmHost.ExtensionData.ConfigManager.PciPassthruSystem } -Verifiable
 
-    $vmHostPciPassthruProperties
+    $vmHostPciPassthroughProperties
 }

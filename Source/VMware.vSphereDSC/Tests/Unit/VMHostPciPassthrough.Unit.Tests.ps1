@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostPciPassthru'
+        $resourceName = 'VMHostPciPassthrough'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostPciPassthruMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostPciPassthroughMocks.ps1"
 
-        Describe 'VMHostPciPassthru\Set' -Tag 'Set' {
+        Describe 'VMHostPciPassthrough\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostPciPassthru
+                New-MocksForVMHostPciPassthrough
             }
 
             Context 'Invoking with PCI Device that is not existing' {
@@ -147,10 +147,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostPciPassthru\Test' -Tag 'Test' {
+        Describe 'VMHostPciPassthrough\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostPciPassthru
+                New-MocksForVMHostPciPassthrough
             }
 
             Context 'Invoking with Enabled value not equal to PCI Device Passthrough Enabled value' {
@@ -202,10 +202,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostPciPassthru\Get' -Tag 'Get' {
+        Describe 'VMHostPciPassthrough\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostPciPassthru
+                New-MocksForVMHostPciPassthrough
 
                 $resourceProperties = New-MocksInGet
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties

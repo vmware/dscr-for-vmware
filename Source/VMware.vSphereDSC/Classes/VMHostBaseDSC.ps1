@@ -30,7 +30,7 @@ class VMHostBaseDSC : BaseDSC {
     and aborting the operation. The default value is 5 minutes.
     #>
     [DscProperty()]
-    [int] $RestartTimeout = 5
+    [int] $RestartTimeoutMinutes = 5
 
     hidden [string] $NotRespondingState = 'NotResponding'
     hidden [string] $MaintenanceState = 'Maintenance'
@@ -70,8 +70,8 @@ class VMHostBaseDSC : BaseDSC {
     #>
     [void] EnsureRestartTimeoutIsNotReached($elapsedTimeInSeconds) {
         $timeSpan = New-TimeSpan -Seconds $elapsedTimeInSeconds
-        if ($this.RestartTimeout -le $timeSpan.Minutes) {
-            throw "Aborting the operation. VMHost $($this.Name) could not be restarted successfully in $($this.RestartTimeout) minutes."
+        if ($this.RestartTimeoutMinutes -le $timeSpan.Minutes) {
+            throw "Aborting the operation. VMHost $($this.Name) could not be restarted successfully in $($this.RestartTimeoutMinutes) minutes."
         }
     }
 
@@ -80,7 +80,7 @@ class VMHostBaseDSC : BaseDSC {
 
     Ensures that the specified VMHost is in the desired state after successful restart operation.
     #>
-    [void] EnsureVMHostIsInDesiredState($server, $desiredState) {
+    [void] EnsureVMHostIsInDesiredState($requiresVIServerConnection, $desiredState) {
         $sleepTimeInSeconds = 10
         $elapsedTimeInSeconds = 0
 
@@ -91,7 +91,7 @@ class VMHostBaseDSC : BaseDSC {
             $elapsedTimeInSeconds += $sleepTimeInSeconds
 
             try {
-                if ($null -eq $server) {
+                if ($requiresVIServerConnection) {
                     $this.ConnectVIServer()
                 }
 
@@ -129,18 +129,17 @@ class VMHostBaseDSC : BaseDSC {
         }
 
         <#
-        If the Connection is directly to a vCenter we do not need to establish a new connection so we pass the
-        current one to the method 'EnsureVMHostIsInCorrectState'. When the Connection is directly to an ESXi, after a successful
-        restart the ESXi is down so new Connection needs to be established to check the ESXi state. So the current
-        Connection is set to $null and then passed to the method 'EnsureVMHostIsInCorrectState'.
+        If the Connection is directly to a vCenter we do not need to establish a new connection so we pass $false
+        to the method 'EnsureVMHostIsInCorrectState'. When the Connection is directly to an ESXi, after a successful
+        restart the ESXi is down so new Connection needs to be established to check the ESXi state. So we pass $true
+        to the method 'EnsureVMHostIsInCorrectState'.
         #>
         if ($this.Connection.ProductLine -eq $this.vCenterProductId) {
-            $this.EnsureVMHostIsInDesiredState($this.Connection, $this.NotRespondingState)
-            $this.EnsureVMHostIsInDesiredState($this.Connection, $this.MaintenanceState)
+            $this.EnsureVMHostIsInDesiredState($false, $this.NotRespondingState)
+            $this.EnsureVMHostIsInDesiredState($false, $this.MaintenanceState)
         }
         else {
-            $this.Connection = $null
-            $this.EnsureVMHostIsInDesiredState($this.Connection, $this.MaintenanceState)
+            $this.EnsureVMHostIsInDesiredState($true, $this.MaintenanceState)
         }
     }
 }

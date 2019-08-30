@@ -14,27 +14,33 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Param(
+param(
     [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
     [string]
     $Name,
 
     [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
     [string]
     $Server,
 
     [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
     [string]
     $User,
 
     [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
     [string]
-    $Password
+    $Password,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $PciDeviceId
 )
+
+$moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
+$integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
+
+$Password = $Password | ConvertTo-SecureString -AsPlainText -Force
+$script:viServerCredential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
 $script:configurationData = @{
     AllNodes = @(
@@ -45,22 +51,33 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostPciPassthru_Config {
+Configuration VMHostPciPassthrough_WhenEnablingPassthru_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-        VMHostPciPassthru vmHostPciPassthru {
+        VMHostPciPassthrough vmHostPciPassthrough {
             Name = $Name
             Server = $Server
-            Credential = $Credential
-            Id = '0000:00:00.0'
+            Credential = $script:viServerCredential
+            Id = $PciDeviceId
             Enabled = $true
-            RestartTimeout = 10
         }
     }
 }
 
-VMHostPciPassthru_Config -ConfigurationData $script:configurationData
+Configuration VMHostPciPassthrough_WhenDisablingPassthru_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VMHostPciPassthrough vmHostPciPassthrough {
+            Name = $Name
+            Server = $Server
+            Credential = $script:viServerCredential
+            Id = $PciDeviceId
+            Enabled = $false
+        }
+    }
+}
+
+VMHostPciPassthrough_WhenEnablingPassthru_Config -OutputPath "$integrationTestsFolderPath\VMHostPciPassthrough_WhenEnablingPassthru_Config" -ConfigurationData $script:configurationData
+VMHostPciPassthrough_WhenDisablingPassthru_Config -OutputPath "$integrationTestsFolderPath\VMHostPciPassthrough_WhenDisablingPassthru_Config" -ConfigurationData $script:configurationData

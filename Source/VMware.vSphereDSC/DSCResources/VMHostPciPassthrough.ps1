@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostPciPassthru : VMHostBaseDSC {
+class VMHostPciPassthrough : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
@@ -56,8 +56,8 @@ class VMHostPciPassthru : VMHostBaseDSC {
         return ($this.Enabled -eq $pciDevice.PassthruEnabled)
     }
 
-    [VMHostPciPassthru] Get() {
-        $result = [VMHostPciPassthru]::new()
+    [VMHostPciPassthrough] Get() {
+        $result = [VMHostPciPassthrough]::new()
         $result.Server = $this.Server
 
     	$this.ConnectVIServer()

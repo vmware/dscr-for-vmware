@@ -48,7 +48,7 @@ function Invoke-TestSetup {
 
 Invoke-TestSetup
 
-$script:dscResourceName = 'VMHostPciPassthru'
+$script:dscResourceName = 'VMHostPciPassthrough'
 $script:moduleFolderPath = (Get-Module 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"

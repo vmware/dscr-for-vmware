@@ -1,4 +1,4 @@
-# VMHostPciPassthru
+# VMHostPciPassthrough
 
 ## Parameters
 
@@ -9,7 +9,7 @@
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Id** | Key | string | The Id of the PCI Device, composed of "bus:slot.function". ||
 | **Enabled** | Mandatory | bool | Value indicating whether passThru has been configured for this device. ||
-| **RestartTimeout** | Optional | int | The time in minutes to wait for the VMHost to restart before timing out and aborting the operation. The default value is 5 minutes. ||
+| **RestartTimeoutMinutes** | Optional | int | The time in minutes to wait for the VMHost to restart before timing out and aborting the operation. The default value is 5 minutes. ||
 
 ## Prerequisite
 The specified VMHost must be in **Maintenance** mode.
@@ -24,7 +24,7 @@ The resource is used to update the PciPassthru configuration by changing the Pas
 Performs an Update operation by enabling Passthrough on the specified PCI Device. After that it restarts the specified VMHost to apply the changes.
 
 ```powershell
-Configuration VMHostPciPassthru_Config {
+Configuration VMHostPciPassthrough_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -45,13 +45,13 @@ Configuration VMHostPciPassthru_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostPciPassthru VMHostPciPassthru {
+        VMHostPciPassthrough VMHostPciPassthrough {
             Name = $Name
             Server = $Server
             Credential = $Credential
             Id = '0000:00:00.0'
             Enabled = $true
-            RestartTimeout = 10
+            RestartTimeoutMinutes = 10
         }
     }
 }
