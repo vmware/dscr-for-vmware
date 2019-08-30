@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.13 - 2019-08-30
+### Added
+- Added VMHostPciPassthrough DSC Resource.
+- Added Unit Tests for VMHostPciPassthrough DSC Resource.
+- Added Integration Tests for VMHostPciPassthrough DSC Resource.
+- Added Documentation and example Configuration for VMHostPciPassthrough DSC Resource.
+
+### Changed
+- Extended VMHostBaseDSC with method for restarting the specified VMHost.
+- Introduced RestartTimeoutMinutes optional parameter for VMHostBaseDSC.
+
 ## 2.0.0.12 - 2019-08-28
 ### Changed
 - The Id property was changed from 'Mandatory' to 'Key' for VMHostAccount Resource.
