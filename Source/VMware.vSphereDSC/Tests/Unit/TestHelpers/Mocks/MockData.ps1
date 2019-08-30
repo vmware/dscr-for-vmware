@@ -85,6 +85,11 @@ $script:constants = @{
     PciPassthruSystemType = 'HostPciPassthruSystem'
     PciPassthruSystemValue = 'pciPassthruSystem-1'
     PciDeviceCapable = $false
+    GraphicsManagerType = 'HostGraphicsManager'
+    GraphicsManagerValue = 'graphicsManager-1'
+    DefaultGraphicsType = 'Shared'
+    SharedPassthruAssignmentPolicy = 'Performance'
+    GraphicsDeviceId = '0000:00:00.0'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -400,6 +405,10 @@ $script:vmHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
                 Type = $script:constants.PciPassthruSystemType
                 Value = $script:constants.PciPassthruSystemValue
             }
+            GraphicsManager = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.GraphicsManagerType
+                Value = $script:constants.GraphicsManagerValue
+            }
         }
         Network = @(
             [VMware.Vim.ManagedObjectReference] @{
@@ -523,4 +532,24 @@ $script:vmHostPciPassthruSystem = [VMware.Vim.HostPciPassthruSystem] @{
 $script:vmHostPciPassthruConfig = [VMware.Vim.HostPciPassthruConfig] @{
     Id = $script:constants.PciDeviceId
     PassthruEnabled = $script:constants.PciDeviceEnabled
+}
+
+$script:vmHostGraphicsConfigWithoutGraphicsDevice = [VMware.Vim.HostGraphicsConfig] @{
+    HostDefaultGraphicsType = $script:constants.DefaultGraphicsType.ToLower()
+    SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy.ToLower()
+}
+
+$script:vmHostGraphicsConfigWithGraphicsDevice = [VMware.Vim.HostGraphicsConfig] @{
+    HostDefaultGraphicsType = $script:constants.DefaultGraphicsType.ToLower()
+    SharedPassthruAssignmentPolicy = $script:constants.SharedPassthruAssignmentPolicy.ToLower()
+    DeviceType = @(
+        [VMware.Vim.HostGraphicsConfigDeviceType] @{
+            DeviceId = $script:constants.GraphicsDeviceId
+            GraphicsType = $script:constants.DefaultGraphicsType.ToLower()
+        }
+    )
+}
+
+$script:vmHostGraphicsManager = [VMware.Vim.HostGraphicsManager] @{
+    GraphicsConfig = $script:vmHostGraphicsConfigWithGraphicsDevice
 }

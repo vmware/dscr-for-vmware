@@ -476,3 +476,16 @@ function Update-PassthruConfig {
 
     $VMHostPciPassthruSystem.UpdatePassthruConfig($VMHostPciPassthruConfig)
 }
+
+function Update-GraphicsConfig {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostGraphicsManager] $VMHostGraphicsManager,
+
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostGraphicsConfig] $VMHostGraphicsConfig
+    )
+
+    $VMHostGraphicsManager.UpdateGraphicsConfig($VMHostGraphicsConfig)
+}

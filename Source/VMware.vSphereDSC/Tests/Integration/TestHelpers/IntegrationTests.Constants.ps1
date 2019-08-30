@@ -130,3 +130,9 @@ $script:advancedSettingsWithCustomValues = @{
     'Vpx.Vpxa.config.workingDir' = '/var/log/vmware/temp'
     'UserVars.ProductLockerLocation' = '/locker/packages/vmtoolsRepo/temp/'
 }
+
+# VMHost Graphics Configuration Constants
+$script:sharedGraphicsType = 'Shared'
+$script:sharedDirectGraphicsType = 'SharedDirect'
+$script:performanceSharedPassthruAssignmentPolicy = 'Performance'
+$script:consolidationSharedPassthruAssignmentPolicy = 'Consolidation'
