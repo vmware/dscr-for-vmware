@@ -7,7 +7,7 @@
 | **Server** | Key | string | Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
-| **PowerPolicy** | Mandatory | PowerPolicy | The key for the VMHost Power Management Policy. | HighPerformance, Balanced, LowPower, Custom |
+| **PowerPolicy** | Mandatory | PowerPolicy | The Power Management Policy for the specified VMHost. | HighPerformance, Balanced, LowPower, Custom |
 
 ## Description
 The resource is used to update the Power Management Policy of the specified VMHost.

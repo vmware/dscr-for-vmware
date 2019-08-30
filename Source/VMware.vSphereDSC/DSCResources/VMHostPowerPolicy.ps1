@@ -19,7 +19,7 @@ class VMHostPowerPolicy : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the key for the VMHost Power Management Policy.
+    Specifies the Power Management Policy for the specified VMHost.
     #>
     [DscProperty(Mandatory)]
     [PowerPolicy] $PowerPolicy
