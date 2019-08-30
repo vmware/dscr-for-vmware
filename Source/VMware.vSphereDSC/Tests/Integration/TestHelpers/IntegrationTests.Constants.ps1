@@ -145,3 +145,15 @@ $script:customPowerPolicy = 'Custom'
 $script:zeroGigabytesSwapSize = 0
 $script:oneGigabyteSwapSize = 1
 $script:twoGigabytesSwapSize = 2
+
+# VMHost Virtual Port Group Constants
+$script:virtualSwitchName = 'MyVirtualSwitch'
+$script:virtualSwitchMtu = 1500
+$script:virtualPortGroupName = 'MyVirtualPortGroup'
+$script:vlanId = 1
+
+$script:virtualSwitchForVirtualPortGroupResourceName = 'VirtualSwitch_For_VirtualPortGroup'
+$script:virtualPortGroupResourceName = 'VirtualPortGroup'
+
+$script:virtualSwitchForVirtualPortGroupResourceId = "[VMHostVss]$script:virtualSwitchForVirtualPortGroupResourceName"
+$script:virtualPortGroupResourceId = "[VMHostVirtualPortGroup]$script:virtualPortGroupResourceName"
