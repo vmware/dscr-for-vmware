@@ -141,7 +141,7 @@ $script:highPerformancePowerPolicy = 'HighPerformance'
 $script:lowPowerPowerPolicy = 'LowPower'
 $script:customPowerPolicy = 'Custom'
 
-# VMHost SSD Cache Constants
+# VMHost Cache Constants
 $script:zeroGigabytesSwapSize = 0
 $script:oneGigabyteSwapSize = 1
 $script:twoGigabytesSwapSize = 2

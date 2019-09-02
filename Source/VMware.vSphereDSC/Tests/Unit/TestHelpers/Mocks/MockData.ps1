@@ -109,7 +109,6 @@ $script:constants = @{
     TaskValue = 'task-1'
     TaskSuccessState = 'Success'
     TaskErrorState = 'Error'
-    vCenterProductLine = 'vpx'
     VirtualSwitchName = 'vSwitch0'
     VirtualPortGroupName = 'MyVirtualPortGroup'
     VLanId = 4095
@@ -633,6 +632,8 @@ $script:hostCacheConfigurationErrorTask = [VMware.VimAutomation.ViCore.Impl.V1.T
 $script:hostCacheConfigurationSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
     Name = $script:constants.ConfigureHostCacheTaskName
     State = $script:constants.TaskSuccessState
+}
+
 $script:virtualSwitch = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VirtualSwitchImpl] @{
     Name = $script:constants.VirtualSwitchName
     VMHost = $script:vmHost
