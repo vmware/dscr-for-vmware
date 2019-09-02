@@ -1,4 +1,4 @@
-# VMHostSSDCache
+# VMHostCache
 
 ## Parameters
 
@@ -8,7 +8,7 @@
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **Datastore** | Key | string | The Datastore used for swap performance enhancement. ||
-| **SwapSize** | Mandatory | long | The space to allocate on the specified Datastore to implement swap performance enhancements, in MB. This value should be less than or equal to the free space capacity of the Datastore. ||
+| **SwapSizeGB** | Mandatory | double | The space to allocate on the specified Datastore to implement swap performance enhancements, in GB. This value should be less than or equal to the free space capacity of the Datastore. ||
 
 ## Description
 The resource is used to Configure the host cache/swap performance enhancement by setting the Space to allocate on the specified SSD based Datastore.
@@ -20,7 +20,7 @@ The resource is used to Configure the host cache/swap performance enhancement by
 Performs an Update operation by setting the Space to allocate on the specified SSD based Datastore to **1 GB**.
 
 ```powershell
-Configuration VMHostSSDCache_Config {
+Configuration VMHostCache_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -41,12 +41,12 @@ Configuration VMHostSSDCache_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostSSDCache VMHostSSDCache {
+        VMHostCache VMHostCache {
             Name = $Name
             Server = $Server
             Credential = $Credential
             Datastore = 'MyDatastore'
-            SwapSize = 1024
+            SwapSizeGB = 1
         }
     }
 }

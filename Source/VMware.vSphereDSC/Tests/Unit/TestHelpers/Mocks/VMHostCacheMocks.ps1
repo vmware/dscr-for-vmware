@@ -14,20 +14,20 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-VMHostSSDCacheProperties {
+function New-VMHostCacheProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostSSDCacheProperties = @{
+    $vmHostCacheProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
         Name = $script:constants.VMHostName
     }
 
-    $vmHostSSDCacheProperties
+    $vmHostCacheProperties
 }
 
-function New-MocksForVMHostSSDCache {
+function New-MocksForVMHostCache {
     [CmdletBinding()]
 
     $viServerMock = $script:viServer
@@ -43,39 +43,39 @@ function New-MocksWhenPassedSwapSizeIsNegative {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostSSDCacheProperties = New-VMHostSSDCacheProperties
-    $vmHostSSDCacheProperties.Datastore = $script:constants.DatastoreName
-    $vmHostSSDCacheProperties.SwapSize = $script:constants.NegativeSwapSize
+    $vmHostCacheProperties = New-VMHostCacheProperties
+    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.SwapSizeGB = $script:constants.NegativeSwapSize
 
     $datastoreMock = $script:datastore
 
     Mock -CommandName Get-Datastore -MockWith { return $datastoreMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatastoreName -and $RelatedObject -eq $script:vmHost } -Verifiable
 
-    $vmHostSSDCacheProperties
+    $vmHostCacheProperties
 }
 
 function New-MocksWhenPassedSwapSizeIsBiggerThanDatastoreFreeSpace {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostSSDCacheProperties = New-VMHostSSDCacheProperties
-    $vmHostSSDCacheProperties.Datastore = $script:constants.DatastoreName
-    $vmHostSSDCacheProperties.SwapSize = $script:constants.OverflowingSwapSize
+    $vmHostCacheProperties = New-VMHostCacheProperties
+    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.SwapSizeGB = $script:constants.OverflowingSwapSize
 
     $datastoreMock = $script:datastore
 
     Mock -CommandName Get-Datastore -MockWith { return $datastoreMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatastoreName -and $RelatedObject -eq $script:vmHost } -Verifiable
 
-    $vmHostSSDCacheProperties
+    $vmHostCacheProperties
 }
 
 function New-MocksWhenUpdateCacheConfigurationResultsInError {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostSSDCacheProperties = New-VMHostSSDCacheProperties
-    $vmHostSSDCacheProperties.Datastore = $script:constants.DatastoreName
-    $vmHostSSDCacheProperties.SwapSize = $script:constants.SwapSize
+    $vmHostCacheProperties = New-VMHostCacheProperties
+    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB
 
     $datastoreMock = $script:datastore
     $hostCacheConfigurationResultMock = $script:hostCacheConfigurationResult
@@ -83,19 +83,19 @@ function New-MocksWhenUpdateCacheConfigurationResultsInError {
 
     Mock -CommandName Get-Datastore -MockWith { return $datastoreMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatastoreName -and $RelatedObject -eq $script:vmHost } -Verifiable
     Mock -CommandName Update-HostCacheConfiguration -MockWith { return $hostCacheConfigurationResultMock }.GetNewClosure() -ParameterFilter { $VMHostCacheConfigurationManager -eq $script:vmHostCacheConfigurationManager -and $Spec -eq $script:hostCacheConfigurationSpec } -Verifiable
-    Mock -CommandName Start-Sleep -MockWith { return $null }.GetNewClosure() -Verifiable
     Mock -CommandName Get-Task -MockWith { return $hostCacheConfigurationTaskMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Id -eq $script:hostCacheConfigurationResult } -Verifiable
+    Mock -CommandName Wait-Task -MockWith { throw }.GetNewClosure() -ParameterFilter { $Task -eq $script:hostCacheConfigurationErrorTask } -Verifiable
 
-    $vmHostSSDCacheProperties
+    $vmHostCacheProperties
 }
 
 function New-MocksWhenUpdateCacheConfigurationResultsInSuccess {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostSSDCacheProperties = New-VMHostSSDCacheProperties
-    $vmHostSSDCacheProperties.Datastore = $script:constants.DatastoreName
-    $vmHostSSDCacheProperties.SwapSize = $script:constants.SwapSize
+    $vmHostCacheProperties = New-VMHostCacheProperties
+    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB
 
     $datastoreMock = $script:datastore
     $hostCacheConfigurationResultMock = $script:hostCacheConfigurationResult
@@ -103,53 +103,53 @@ function New-MocksWhenUpdateCacheConfigurationResultsInSuccess {
 
     Mock -CommandName Get-Datastore -MockWith { return $datastoreMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatastoreName -and $RelatedObject -eq $script:vmHost } -Verifiable
     Mock -CommandName Update-HostCacheConfiguration -MockWith { return $hostCacheConfigurationResultMock }.GetNewClosure() -Verifiable
-    Mock -CommandName Start-Sleep -MockWith { return $null }.GetNewClosure() -Verifiable
     Mock -CommandName Get-Task -MockWith { return $hostCacheConfigurationTaskMock }.GetNewClosure() -Verifiable
+    Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostSSDCacheProperties
+    $vmHostCacheProperties
 }
 
 function New-MocksWhenSwapSizeIsNotEqualToCurrentSwapSize {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostSSDCacheProperties = New-VMHostSSDCacheProperties
-    $vmHostSSDCacheProperties.Datastore = $script:constants.DatastoreName
-    $vmHostSSDCacheProperties.SwapSize = $script:constants.SwapSize * 2
+    $vmHostCacheProperties = New-VMHostCacheProperties
+    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB * 2
 
     $datastoreMock = $script:datastore
 
     Mock -CommandName Get-Datastore -MockWith { return $datastoreMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatastoreName -and $RelatedObject -eq $script:vmHost } -Verifiable
 
-    $vmHostSSDCacheProperties
+    $vmHostCacheProperties
 }
 
 function New-MocksWhenSwapSizeIsEqualToCurrentSwapSize {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostSSDCacheProperties = New-VMHostSSDCacheProperties
-    $vmHostSSDCacheProperties.Datastore = $script:constants.DatastoreName
-    $vmHostSSDCacheProperties.SwapSize = $script:constants.SwapSize
+    $vmHostCacheProperties = New-VMHostCacheProperties
+    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB
 
     $datastoreMock = $script:datastore
 
     Mock -CommandName Get-Datastore -MockWith { return $datastoreMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatastoreName -and $RelatedObject -eq $script:vmHost } -Verifiable
 
-    $vmHostSSDCacheProperties
+    $vmHostCacheProperties
 }
 
 function New-MocksInGet {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostSSDCacheProperties = New-VMHostSSDCacheProperties
-    $vmHostSSDCacheProperties.Datastore = $script:constants.DatastoreName
-    $vmHostSSDCacheProperties.SwapSize = $script:constants.SwapSize
+    $vmHostCacheProperties = New-VMHostCacheProperties
+    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB
 
     $datastoreMock = $script:datastore
 
     Mock -CommandName Get-Datastore -MockWith { return $datastoreMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DatastoreName -and $RelatedObject -eq $script:vmHost } -Verifiable
 
-    $vmHostSSDCacheProperties
+    $vmHostCacheProperties
 }

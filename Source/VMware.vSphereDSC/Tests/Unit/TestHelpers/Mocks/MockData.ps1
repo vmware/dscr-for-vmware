@@ -101,8 +101,9 @@ $script:constants = @{
     CacheConfigurationManagerType = 'HostCacheConfigurationManager'
     CacheConfigurationManagerValue = 'cacheConfigManager-1'
     NegativeSwapSize = -1
-    OverflowingSwapSize = 9216
-    SwapSize = 1024
+    OverflowingSwapSize = 9
+    SwapSizeMB = 1024
+    SwapSizeGB = 1
     ConfigureHostCacheTaskName = 'ConfigureHostCache_Task'
     TaskType = 'Task'
     TaskValue = 'task-1'
@@ -526,7 +527,7 @@ $script:datastore = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.Vmf
             Value = $script:constants.DatastoreValue
         }
     }
-    FreeSpaceMB = $script:constants.SwapSize * 8
+    FreeSpaceGB = $script:constants.SwapSizeGB * 8
 }
 
 $script:network = [VMware.Vim.Network] @{
@@ -602,7 +603,7 @@ $script:vmHostCacheConfigurationManager = [VMware.Vim.HostCacheConfigurationMana
                 Type = $script:constants.DatastoreType
                 Value = $script:constants.DatastoreValue
             }
-            SwapSize = $script:constants.SwapSize
+            SwapSize = $script:constants.SwapSizeMB
         }
     )
 }
@@ -612,7 +613,7 @@ $script:hostCacheConfigurationSpec = [VMware.Vim.HostCacheConfigurationSpec] @{
         Type = $script:constants.DatastoreType
         Value = $script:constants.DatastoreValue
     }
-    SwapSize = $script:constants.SwapSize
+    SwapSize = $script:constants.SwapSizeMB
 }
 
 $script:hostCacheConfigurationResult = [VMware.Vim.ManagedObjectReference] @{

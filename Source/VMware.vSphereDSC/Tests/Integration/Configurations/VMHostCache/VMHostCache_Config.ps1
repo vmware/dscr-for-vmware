@@ -53,78 +53,48 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostSSDCache_WhenSwapSizeIsZeroGigabytes_Config {
+Configuration VMHostCache_WhenSwapSizeIsZeroGigabytes_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostSSDCache vmHostSSDCache {
+        VMHostCache vmHostCache {
             Name = $Name
             Server = $Server
             Credential = $script:viServerCredential
             Datastore = $DatastoreName
-            SwapSize = $script:zeroGigabytesSwapSize
+            SwapSizeGB = $script:zeroGigabytesSwapSize
         }
     }
 }
 
-Configuration VMHostSSDCache_WhenSwapSizeIsHalfGigabyte_Config {
+Configuration VMHostCache_WhenSwapSizeIsOneGigabyte_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostSSDCache vmHostSSDCache {
+        VMHostCache vmHostCache {
             Name = $Name
             Server = $Server
             Credential = $script:viServerCredential
             Datastore = $DatastoreName
-            SwapSize = $script:halfGigabyteSwapSize
+            SwapSizeGB = $script:oneGigabyteSwapSize
         }
     }
 }
 
-Configuration VMHostSSDCache_WhenSwapSizeIsOneGigabyte_Config {
+Configuration VMHostCache_WhenSwapSizeIsTwoGigabytes_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostSSDCache vmHostSSDCache {
+        VMHostCache vmHostCache {
             Name = $Name
             Server = $Server
             Credential = $script:viServerCredential
             Datastore = $DatastoreName
-            SwapSize = $script:oneGigabyteSwapSize
+            SwapSizeGB = $script:twoGigabytesSwapSize
         }
     }
 }
 
-Configuration VMHostSSDCache_WhenSwapSizeIsTwoGigabytesWithoutOneMegabyte_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostSSDCache vmHostSSDCache {
-            Name = $Name
-            Server = $Server
-            Credential = $script:viServerCredential
-            Datastore = $DatastoreName
-            SwapSize = $script:twoGigabytesWithoutOneMegabyteSwapSize
-        }
-    }
-}
-
-Configuration VMHostSSDCache_WhenSwapSizeIsTwoGigabytes_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostSSDCache vmHostSSDCache {
-            Name = $Name
-            Server = $Server
-            Credential = $script:viServerCredential
-            Datastore = $DatastoreName
-            SwapSize = $script:twoGigabytesSwapSize
-        }
-    }
-}
-
-VMHostSSDCache_WhenSwapSizeIsZeroGigabytes_Config -OutputPath "$integrationTestsFolderPath\VMHostSSDCache_WhenSwapSizeIsZeroGigabytes_Config" -ConfigurationData $script:configurationData
-VMHostSSDCache_WhenSwapSizeIsHalfGigabyte_Config -OutputPath "$integrationTestsFolderPath\VMHostSSDCache_WhenSwapSizeIsHalfGigabyte_Config" -ConfigurationData $script:configurationData
-VMHostSSDCache_WhenSwapSizeIsOneGigabyte_Config -OutputPath "$integrationTestsFolderPath\VMHostSSDCache_WhenSwapSizeIsOneGigabyte_Config" -ConfigurationData $script:configurationData
-VMHostSSDCache_WhenSwapSizeIsTwoGigabytesWithoutOneMegabyte_Config -OutputPath "$integrationTestsFolderPath\VMHostSSDCache_WhenSwapSizeIsTwoGigabytesWithoutOneMegabyte_Config" -ConfigurationData $script:configurationData
-VMHostSSDCache_WhenSwapSizeIsTwoGigabytes_Config -OutputPath "$integrationTestsFolderPath\VMHostSSDCache_WhenSwapSizeIsTwoGigabytes_Config" -ConfigurationData $script:configurationData
+VMHostCache_WhenSwapSizeIsZeroGigabytes_Config -OutputPath "$integrationTestsFolderPath\VMHostCache_WhenSwapSizeIsZeroGigabytes_Config" -ConfigurationData $script:configurationData
+VMHostCache_WhenSwapSizeIsOneGigabyte_Config -OutputPath "$integrationTestsFolderPath\VMHostCache_WhenSwapSizeIsOneGigabyte_Config" -ConfigurationData $script:configurationData
+VMHostCache_WhenSwapSizeIsTwoGigabytes_Config -OutputPath "$integrationTestsFolderPath\VMHostCache_WhenSwapSizeIsTwoGigabytes_Config" -ConfigurationData $script:configurationData

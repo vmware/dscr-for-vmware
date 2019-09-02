@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostSSDCache'
+        $resourceName = 'VMHostCache'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostSSDCacheMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostCacheMocks.ps1"
 
-        Describe 'VMHostSSDCache\Set' -Tag 'Set' {
+        Describe 'VMHostCache\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostSSDCache
+                New-MocksForVMHostCache
             }
 
             Context 'Invoking with negative Swap Size' {
@@ -106,7 +106,8 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should throw the correct error when the Update of the Cache Configuration results in an error' {
                     # Act && Assert
-                    { $resource.Set() } | Should -Throw "An error occured while updating Cache Configuration for VMHost $($script:vmHost.Name)."
+                    # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
+                    { $resource.Set() } | Should -Throw "An error occured while updating Cache Configuration for VMHost $($script:vmHost.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -156,13 +157,29 @@ InModuleScope -ModuleName $script:moduleName {
 
                     Assert-MockCalled @assertMockCalledParams
                 }
+
+                It 'Should call the Wait-Task mock once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Wait-Task'
+                        ParameterFilter = { $Task -eq $script:hostCacheConfigurationSuccessTask }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
             }
         }
 
-        Describe 'VMHostSSDCache\Test' -Tag 'Test' {
+        Describe 'VMHostCache\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostSSDCache
+                New-MocksForVMHostCache
             }
 
             Context 'Invoking with Swap Size not equal to current Swap Size' {
@@ -214,10 +231,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostSSDCache\Get' -Tag 'Get' {
+        Describe 'VMHostCache\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostSSDCache
+                New-MocksForVMHostCache
 
                 $resourceProperties = New-MocksInGet
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
@@ -239,7 +256,7 @@ InModuleScope -ModuleName $script:moduleName {
                 $result.Server | Should -Be $resourceProperties.Server
                 $result.Name | Should -Be $script:constants.VMHostName
                 $result.Datastore | Should -Be $script:datastore.Name
-                $result.SwapSize | Should -Be $script:constants.SwapSize
+                $result.SwapSizeGB | Should -Be $script:constants.SwapSizeGB
             }
         }
     }

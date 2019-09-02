@@ -91107,7 +91107,7 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Task
     using VMware.VimAutomation.Sdk.Types.V1;
     using VMware.VimAutomation.ViCore.Types.V1;
 
-    public class TaskImpl : VIObject, ExtensionData, IEquatable<TaskImpl>
+    public class TaskImpl : VMware.VimAutomation.ViCore.Types.V1.Task, VIObject, ExtensionData, IEquatable<TaskImpl>
     {
         public string ServerId { get; set; }
 

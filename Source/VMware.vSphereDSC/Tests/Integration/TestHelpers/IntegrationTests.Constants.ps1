@@ -133,9 +133,7 @@ $script:advancedSettingsWithCustomValues = @{
 
 # VMHost Graphics Configuration Constants
 $script:sharedGraphicsType = 'Shared'
-$script:sharedDirectGraphicsType = 'SharedDirect'
 $script:performanceSharedPassthruAssignmentPolicy = 'Performance'
-$script:consolidationSharedPassthruAssignmentPolicy = 'Consolidation'
 
 # VMHost Power Policy Constants
 $script:balancedPowerPolicy = 'Balanced'
@@ -145,7 +143,5 @@ $script:customPowerPolicy = 'Custom'
 
 # VMHost SSD Cache Constants
 $script:zeroGigabytesSwapSize = 0
-$script:halfGigabyteSwapSize = 512
-$script:oneGigabyteSwapSize = 1024
-$script:twoGigabytesWithoutOneMegabyteSwapSize = 2047
-$script:twoGigabytesSwapSize = 2048
+$script:oneGigabyteSwapSize = 1
+$script:twoGigabytesSwapSize = 2

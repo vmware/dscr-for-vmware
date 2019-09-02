@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostSSDCache : VMHostBaseDSC {
+class VMHostCache : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
@@ -27,11 +27,11 @@ class VMHostSSDCache : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the space to allocate on the specified Datastore to implement swap performance enhancements, in MB.
+    Specifies the space to allocate on the specified Datastore to implement swap performance enhancements, in GB.
     This value should be less than or equal to the free space capacity of the Datastore.
     #>
     [DscProperty(Mandatory)]
-    [long] $SwapSize
+    [double] $SwapSizeGB
 
     [void] Set() {
         $this.ConnectVIServer()
@@ -47,8 +47,8 @@ class VMHostSSDCache : VMHostBaseDSC {
         return !$this.ShouldUpdateHostCacheConfiguration($vmHost)
     }
 
-    [VMHostSSDCache] Get() {
-        $result = [VMHostSSDCache]::new()
+    [VMHostCache] Get() {
+        $result = [VMHostCache]::new()
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
@@ -59,6 +59,9 @@ class VMHostSSDCache : VMHostBaseDSC {
 
         return $result
     }
+
+    hidden [int] $MegabytesInGB = 1024
+    hidden [int] $NumberOfFractionalDigits = 3
 
     <#
     .DESCRIPTION
@@ -109,11 +112,19 @@ class VMHostSSDCache : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Converts the passed MB value to GB value by rounding it down.
+    Converts the passed MB value to GB value by rounding it down with 3 fractional digits in the return value.
     #>
-    [int] ConvertMBValueToGBValue($mbValue) {
-        $megabytesInGB = 1024
-        return [int] [Math]::Floor($mbValue * $megabytesInGB * $megabytesInGB / 1GB)
+    [double] ConvertMBValueToGBValue($mbValue) {
+        return [Math]::Round($mbValue * $this.MegabytesInGB * $this.MegabytesInGB / 1GB, $this.NumberOfFractionalDigits)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Converts the passed GB value to MB value by rounding it down.
+    #>
+    [long] ConvertGBValueToMBValue($gbValue) {
+        return [long] [Math]::Floor($gbValue * $this.MegabytesInGB * $this.MegabytesInGB * $this.MegabytesInGB / 1MB)
     }
 
     <#
@@ -127,7 +138,7 @@ class VMHostSSDCache : VMHostBaseDSC {
         $foundDatastore = $this.GetDatastore($vmHost)
         $datastoreCacheInfo = $this.GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore)
 
-        return ($this.ConvertMBValueToGBValue($this.SwapSize) -ne $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize))
+        return ($this.SwapSizeGB -ne $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize))
     }
 
     <#
@@ -140,40 +151,29 @@ class VMHostSSDCache : VMHostBaseDSC {
         $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
         $foundDatastore = $this.GetDatastore($vmHost)
 
-        if ($this.SwapSize -lt 0) {
-            throw "The passed Swap Size $($this.SwapSize) is less than zero."
+        if ($this.SwapSizeGB -lt 0) {
+            throw "The passed Swap Size $($this.SwapSizeGB) is less than zero."
         }
 
-        if ($this.SwapSize -gt $foundDatastore.FreeSpaceMB) {
-            throw "The passed Swap Size $($this.SwapSize) is larger than the free space of the Datastore $($foundDatastore.Name)."
+        if ($this.SwapSizeGB -gt $foundDatastore.FreeSpaceGB) {
+            throw "The passed Swap Size $($this.SwapSizeGB) is larger than the free space of the Datastore $($foundDatastore.Name)."
         }
 
         $hostCacheConfigurationSpec = New-Object VMware.Vim.HostCacheConfigurationSpec
         $hostCacheConfigurationSpec.Datastore = $foundDatastore.ExtensionData.MoRef
-        $hostCacheConfigurationSpec.SwapSize = $this.SwapSize
+        $hostCacheConfigurationSpec.SwapSize = $this.ConvertGBValueToMBValue($this.SwapSizeGB)
 
         $hostCacheConfigurationResult = Update-HostCacheConfiguration -VMHostCacheConfigurationManager $vmHostCacheConfigurationManager -Spec $hostCacheConfigurationSpec
-        $hostCacheConfigurationTaskState = $null
-        $sleepTimeInSeconds = 5
+        $hostCacheConfigurationTask = Get-Task -Server $this.Connection -Id $hostCacheConfigurationResult
 
-        while ($true) {
-            Start-Sleep -Seconds $sleepTimeInSeconds
-
-            $hostCacheConfigurationTask = Get-Task -Server $this.Connection -Id $hostCacheConfigurationResult
-            $hostCacheConfigurationTaskState = $hostCacheConfigurationTask.State.ToString()
-            if ($hostCacheConfigurationTaskState -ne [TaskInfoState]::Running.ToString() -and $hostCacheConfigurationTaskState -ne [TaskInfoState]::Queued.ToString()) {
-                break
-            }
-
-            Write-Verbose "Cache Configuration update is $($hostCacheConfigurationTask.PercentComplete) Percent Complete."
+        try {
+            Wait-Task -Task $hostCacheConfigurationTask
+        }
+        catch {
+            throw "An error occured while updating Cache Configuration for VMHost $($this.Name). For more information: $($_.Exception.Message)"
         }
 
-        if ($hostCacheConfigurationTaskState -eq [TaskInfoState]::Error.ToString()) {
-            throw "An error occured while updating Cache Configuration for VMHost $($this.Name)."
-        }
-        else {
-            Write-Verbose "Cache Configuration was successfully updated for VMHost $($this.Name)."
-        }
+        Write-Verbose "Cache Configuration was successfully updated for VMHost $($this.Name)."
     }
 
     <#
@@ -187,6 +187,6 @@ class VMHostSSDCache : VMHostBaseDSC {
         $datastoreCacheInfo = $this.GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore)
 
         $result.Datastore = $foundDatastore.Name
-        $result.SwapSize = $datastoreCacheInfo.SwapSize
+        $result.SwapSizeGB = $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize)
     }
 }

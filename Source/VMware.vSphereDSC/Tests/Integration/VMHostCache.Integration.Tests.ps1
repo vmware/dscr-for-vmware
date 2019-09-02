@@ -47,23 +47,19 @@ function Invoke-TestSetup {
 
 Invoke-TestSetup
 
-$script:dscResourceName = 'VMHostSSDCache'
+$script:dscResourceName = 'VMHostCache'
 $script:moduleFolderPath = (Get-Module 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
 
 $script:configWhenSwapSizeIsZeroGigabytes = "$($script:dscResourceName)_WhenSwapSizeIsZeroGigabytes_Config"
-$script:configWhenSwapSizeIsHalfGigabyte = "$($script:dscResourceName)_WhenSwapSizeIsHalfGigabyte_Config"
 $script:configWhenSwapSizeIsOneGigabyte = "$($script:dscResourceName)_WhenSwapSizeIsOneGigabyte_Config"
-$script:configWhenSwapSizeIsTwoGigabytesWithoutOneMegabyte = "$($script:dscResourceName)_WhenSwapSizeIsTwoGigabytesWithoutOneMegabyte_Config"
 $script:configWhenSwapSizeIsTwoGigabytes = "$($script:dscResourceName)_WhenSwapSizeIsTwoGigabytes_Config"
 
 . $script:configurationFile -Name $Name -Server $Server -User $User -Password $Password -DatastoreName $script:datastoreName
 
 $script:mofFileWhenSwapSizeIsZeroGigabytesPath = "$script:integrationTestsFolderPath\$($script:configWhenSwapSizeIsZeroGigabytes)\"
-$script:mofFileWhenSwapSizeIsHalfGigabytePath = "$script:integrationTestsFolderPath\$($script:configWhenSwapSizeIsHalfGigabyte)\"
 $script:mofFileWhenSwapSizeIsOneGigabytePath = "$script:integrationTestsFolderPath\$($script:configWhenSwapSizeIsOneGigabyte)\"
-$script:mofFileWhenSwapSizeIsTwoGigabytesWithoutOneMegabytePath = "$script:integrationTestsFolderPath\$($script:configWhenSwapSizeIsTwoGigabytesWithoutOneMegabyte)\"
 $script:mofFileWhenSwapSizeIsTwoGigabytesPath = "$script:integrationTestsFolderPath\$($script:configWhenSwapSizeIsTwoGigabytes)\"
 
 try {
@@ -112,80 +108,12 @@ try {
                 $configuration.Server | Should -Be $Server
                 $configuration.Name | Should -Be $Name
                 $configuration.Datastore | Should -Be $script:datastoreName
-                $configuration.SwapSize | Should -Be $script:zeroGigabytesSwapSize
+                $configuration.SwapSizeGB | Should -Be $script:zeroGigabytesSwapSize
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
                 # Arrange && Act && Assert
                 Test-DscConfiguration -Verbose | Should -Be $true
-            }
-        }
-
-        Context "When using configuration $($script:configWhenSwapSizeIsHalfGigabyte)" {
-            BeforeAll {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenSwapSizeIsHalfGigabytePath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                    Verbose = $true
-                    ErrorAction = 'Stop'
-                }
-
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenSwapSizeIsHalfGigabytePath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                    Verbose = $true
-                    ErrorAction = 'Stop'
-                }
-
-                # Act && Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Arrange && Act && Assert
-                { Get-DscConfiguration -Verbose -ErrorAction Stop } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-                # Arrange && Act
-                $configuration = Get-DscConfiguration -Verbose
-
-                # Assert
-                $configuration.Server | Should -Be $Server
-                $configuration.Name | Should -Be $Name
-                $configuration.Datastore | Should -Be $script:datastoreName
-                $configuration.SwapSize | Should -Be $script:zeroGigabytesSwapSize
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration -Verbose | Should -Be $true
-            }
-
-            AfterAll {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenSwapSizeIsZeroGigabytesPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                    Verbose = $true
-                    ErrorAction = 'Stop'
-                }
-
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
             }
         }
 
@@ -233,75 +161,7 @@ try {
                 $configuration.Server | Should -Be $Server
                 $configuration.Name | Should -Be $Name
                 $configuration.Datastore | Should -Be $script:datastoreName
-                $configuration.SwapSize | Should -Be $script:oneGigabyteSwapSize
-            }
-
-            It 'Should return $true when Test-DscConfiguration is run' {
-                # Arrange && Act && Assert
-                Test-DscConfiguration -Verbose | Should -Be $true
-            }
-
-            AfterAll {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenSwapSizeIsZeroGigabytesPath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                    Verbose = $true
-                    ErrorAction = 'Stop'
-                }
-
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-        }
-
-        Context "When using configuration $($script:configWhenSwapSizeIsTwoGigabytesWithoutOneMegabyte)" {
-            BeforeAll {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenSwapSizeIsTwoGigabytesWithoutOneMegabytePath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                    Verbose = $true
-                    ErrorAction = 'Stop'
-                }
-
-                # Act
-                Start-DscConfiguration @startDscConfigurationParameters
-            }
-
-            It 'Should compile and apply the MOF without throwing' {
-                # Arrange
-                $startDscConfigurationParameters = @{
-                    Path = $script:mofFileWhenSwapSizeIsTwoGigabytesWithoutOneMegabytePath
-                    ComputerName = 'localhost'
-                    Wait = $true
-                    Force = $true
-                    Verbose = $true
-                    ErrorAction = 'Stop'
-                }
-
-                # Act && Assert
-                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration without throwing' {
-                # Arrange && Act && Assert
-                { Get-DscConfiguration -Verbose -ErrorAction Stop } | Should -Not -Throw
-            }
-
-            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-                # Arrange && Act
-                $configuration = Get-DscConfiguration -Verbose
-
-                # Assert
-                $configuration.Server | Should -Be $Server
-                $configuration.Name | Should -Be $Name
-                $configuration.Datastore | Should -Be $script:datastoreName
-                $configuration.SwapSize | Should -Be $script:oneGigabyteSwapSize
+                $configuration.SwapSizeGB | Should -Be $script:oneGigabyteSwapSize
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
@@ -369,7 +229,7 @@ try {
                 $configuration.Server | Should -Be $Server
                 $configuration.Name | Should -Be $Name
                 $configuration.Datastore | Should -Be $script:datastoreName
-                $configuration.SwapSize | Should -Be $script:twoGigabytesSwapSize
+                $configuration.SwapSizeGB | Should -Be $script:twoGigabytesSwapSize
             }
 
             It 'Should return $true when Test-DscConfiguration is run' {
