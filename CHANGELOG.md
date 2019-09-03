@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.17 - 2019-09-03
+### Added
+- VMware.vSphereDSC.Logging module is introduced.
+- Added Write-VerboseLog and Write-WarningLog functions to Logging module.
+
+### Changed
+- Changed logging mechanism from Write-Verbose to Write-VerboseLog and Write-Warning to Write-WarningLog.
+ 
 ## 2.0.0.16 - 2019-09-03
 ### Added
 - Added VMHostCache DSC Resource.

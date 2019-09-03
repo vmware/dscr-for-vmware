@@ -15,6 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 Using module '.\VMware.vSphereDSC.Helper.psm1'
+Using module '.\VMware.vSphereDSC.Logging.psm1'
 
 enum Ensure {
     Absent
@@ -627,7 +628,7 @@ class VMHostBaseDSC : BaseDSC {
                     break
                 }
 
-                Write-Verbose -Message "VMHost $($this.Name) is still not in $desiredState State."
+                Write-VerboseLog -Message "VMHost {0} is still not in {1} State." -Arguments @($this.Name, $desiredState)
             }
             catch {
                 <#
@@ -635,11 +636,11 @@ class VMHostBaseDSC : BaseDSC {
                 when retrieving the VMHost or establishing a Connection. This way the user still gets notified
                 that the VMHost is not in the Desired State.
                 #>
-                Write-Verbose -Message "VMHost $($this.Name) is still not in $desiredState State."
+                Write-VerboseLog -Message "VMHost {0} is still not in {1} State." -Arguments @($this.Name, $desiredState)
             }
         }
 
-        Write-Verbose -Message "VMHost $($this.Name) is successfully restarted and in $desiredState State."
+        Write-VerboseLog -Message "VMHost {0} is successfully restarted and in {1} State." -Arguments @($this.Name, $desiredState)
     }
 
     <#
@@ -741,7 +742,7 @@ class VMHostVssBaseDSC : VMHostNetworkBaseDSC {
     Returns the desired virtual switch if it is present on the server otherwise returns $null.
     #>
     [PSObject] GetVss() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.vmHostNetworkSystem.UpdateViewData('NetworkInfo.Vswitch')
         return ($this.vmHostNetworkSystem.NetworkInfo.Vswitch | Where-Object { $_.Name -eq $this.VssName })
@@ -1523,7 +1524,7 @@ class vCenterSettings : BaseDSC {
     #>
 
     [void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	if ($clearValue) {
       	    if ($this.ShouldUpdateSettingValue([string]::Empty, $advancedSettingCurrentValue)) {
@@ -2109,7 +2110,7 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
             if an invalid Advanced Setting is present in the passed hashtable and in the same time to
             provide an information to the user that invalid data is passed.
             #>
-            Write-Warning -Message "Advanced Setting $advancedSettingName does not exist for VMHost $($vmHostName) and will be ignored."
+            Write-WarningLog -Message "Advanced Setting {0} does not exist for VMHost {1} and will be ignored." -Arguments @($advancedSettingName, $vmHostName)
         }
 
         return $advancedSetting
@@ -2662,7 +2663,7 @@ class VMHostCache : VMHostBaseDSC {
             throw "An error occured while updating Cache Configuration for VMHost $($this.Name). For more information: $($_.Exception.Message)"
         }
 
-        Write-Verbose "Cache Configuration was successfully updated for VMHost $($this.Name)."
+        Write-VerboseLog -Message "Cache Configuration was successfully updated for VMHost {0}." -Arguments @($this.Name)
     }
 
     <#
@@ -3581,7 +3582,7 @@ class VMHostService : VMHostBaseDSC {
     [string[]] $Ruleset
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -3590,7 +3591,7 @@ class VMHostService : VMHostBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -3599,7 +3600,7 @@ class VMHostService : VMHostBaseDSC {
     }
 
     [VMHostService] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostService]::new()
         $result.Server = $this.Server
@@ -3617,7 +3618,7 @@ class VMHostService : VMHostBaseDSC {
     Returns a boolean value indicating if the VMHostService should to be updated.
     #>
     [bool] ShouldUpdateVMHostService($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
@@ -3634,7 +3635,7 @@ class VMHostService : VMHostBaseDSC {
     Updates the configuration of the VMHostService.
     #>
     [void] UpdateVMHostService($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
@@ -3658,7 +3659,7 @@ class VMHostService : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the VMHostService from the server.
     #>
     [void] PopulateResult($vmHost, $vmHostService) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
         $vmHostService.Name = $vmHost.Name
@@ -3710,7 +3711,7 @@ class VMHostSettings : VMHostBaseDSC {
     hidden [string] $MotdSettingName = "Config.Etc.motd"
 
     [void] Set() {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$this.ConnectVIServer()
     	$vmHost = $this.GetVMHost()
@@ -3719,7 +3720,7 @@ class VMHostSettings : VMHostBaseDSC {
     }
 
     [bool] Test() {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$this.ConnectVIServer()
     	$vmHost = $this.GetVMHost()
@@ -3728,7 +3729,7 @@ class VMHostSettings : VMHostBaseDSC {
     }
 
     [VMHostSettings] Get() {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostSettings]::new()
         $result.Server = $this.Server
@@ -3750,7 +3751,7 @@ class VMHostSettings : VMHostBaseDSC {
         Desired value equal to $null means that the setting value was not specified.
         If it is specified we check if the setting value is not equal to the current value.
         #>
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         return ($null -ne $desiredValue -and $desiredValue -ne $currentValue)
     }
@@ -3761,7 +3762,7 @@ class VMHostSettings : VMHostBaseDSC {
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
     [bool] ShouldUpdateVMHostSettings($vmHost) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -3781,7 +3782,7 @@ class VMHostSettings : VMHostBaseDSC {
     Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
     #>
   	[void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	if ($clearValue) {
       	    if ($this.ShouldUpdateSettingValue([string]::Empty, $advancedSettingCurrentValue)) {
@@ -3801,7 +3802,7 @@ class VMHostSettings : VMHostBaseDSC {
     Performs update on those Advanced Settings values that needs to be updated.
     #>
     [void] UpdateVMHostSettings($vmHost) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -3818,7 +3819,7 @@ class VMHostSettings : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the advanced settings from the server.
     #>
     [void] PopulateResult($vmHost, $result) {
-    	Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -3914,7 +3915,7 @@ class VMHostSyslog : VMHostBaseDSC {
     [nullable[long]] $DropLogSize
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -3923,7 +3924,7 @@ class VMHostSyslog : VMHostBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -3932,7 +3933,7 @@ class VMHostSyslog : VMHostBaseDSC {
     }
 
     [VMHostSyslog] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostSyslog]::new()
 
@@ -3949,7 +3950,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Returns a boolean value indicating if VMHostSyslog needs to be updated.
     #>
     [bool] ShouldUpdateVMHostSyslog($VMHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
         $current = Get-VMHostSyslogConfig -EsxCLi $esxcli
@@ -3976,7 +3977,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Updates the configuration of the VMHostSyslog.
     #>
     [void] UpdateVMHostSyslog($VMHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
 
@@ -4005,7 +4006,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the VMHostService from the server.
     #>
     [void] PopulateResult($VMHost, $syslog) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
         $currentVMHostSyslog = Get-VMHostSyslogConfig -EsxCLi $esxcli
@@ -4185,7 +4186,7 @@ class VMHostVss : VMHostVssBaseDSC {
     [string[]] $PortGroup
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4195,7 +4196,7 @@ class VMHostVss : VMHostVssBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4211,7 +4212,7 @@ class VMHostVss : VMHostVssBaseDSC {
     }
 
     [VMHostVss] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostVss]::new()
         $result.Server = $this.Server
@@ -4234,7 +4235,7 @@ class VMHostVss : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVss should be updated.
     #>
     [bool] Equals($vss) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssTest = @()
         $vssTest += ($vss.Name -eq $this.VssName)
@@ -4249,7 +4250,7 @@ class VMHostVss : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVss($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssConfigArgs = @{
             Name = $this.VssName
@@ -4279,7 +4280,7 @@ class VMHostVss : VMHostVssBaseDSC {
             Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssConfig $vssConfigArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The Virtual Switch Config could not be updated: $($_.Exception.Message)"
+            throw "The Virtual Switch Config could not be updated: $($_.Exception.Message)"
         }
     }
 
@@ -4289,7 +4290,7 @@ class VMHostVss : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the virtual switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSS) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $currentVss = $this.GetVss()
 
@@ -4353,7 +4354,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     hidden [string] $bridgeType = 'HostVirtualSwitchBondBridge'
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4363,7 +4364,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4383,7 +4384,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     }
 
     [VMHostVssBridge] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostVssBridge]::new()
         $result.Server = $this.Server
@@ -4406,7 +4407,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssBridge should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssBridgeTest = @()
         if ($null -eq $vss.Spec.Bridge) {
@@ -4437,7 +4438,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Updates the Bridge configuration of the virtual switch.
     #>
     [void] UpdateVssBridge($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssBridgeArgs = @{
             Name = $this.VssName
@@ -4465,7 +4466,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
             Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssBridgeConfig $vssBridgeArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The Virtual Switch Bridge Config could not be updated: $($_.Exception.Message)"
+            throw "The Virtual Switch Bridge Config could not be updated: $($_.Exception.Message)"
         }
     }
 
@@ -4475,7 +4476,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Bridge settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSBridge) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $currentVss = $this.GetVss()
 
@@ -4529,7 +4530,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     [nullable[bool]] $MacChanges
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4539,7 +4540,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4559,7 +4560,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     }
 
     [VMHostVssSecurity] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostVssSecurity]::new()
         $result.Server = $this.Server
@@ -4582,7 +4583,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssSecurity should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssSecurityTest = @()
         $vssSecurityTest += ($vss.Spec.Policy.Security.AllowPromiscuous -eq $this.AllowPromiscuous)
@@ -4598,7 +4599,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssSecurity($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssSecurityArgs = @{
             Name = $this.VssName
@@ -4625,7 +4626,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
             Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssSecurityConfig $vssSecurityArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The Virtual Switch Security Config could not be updated: $($_.Exception.Message)"
+            throw "The Virtual Switch Security Config could not be updated: $($_.Exception.Message)"
         }
     }
 
@@ -4635,7 +4636,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSSecurity) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $currentVss = $this.GetVss()
 
@@ -4689,7 +4690,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     [nullable[long]] $PeakBandwidth
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4699,7 +4700,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4720,7 +4721,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     }
 
     [VMHostVssShaping] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostVssShaping]::new()
         $result.Server = $this.Server
@@ -4743,7 +4744,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssShaping should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssShapingTest = @()
         $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.AverageBandwidth -eq $this.AverageBandwidth)
@@ -4760,7 +4761,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssShaping($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssShapingArgs = @{
             Name = $this.VssName
@@ -4789,7 +4790,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
             Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssShapingConfig $vssShapingArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The Virtual Switch Shaping Policy Config could not be updated: $($_.Exception.Message)"
+            throw "The Virtual Switch Shaping Policy Config could not be updated: $($_.Exception.Message)"
         }
     }
 
@@ -4799,7 +4800,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSShaping) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $currentVss = $this.GetVss()
 
@@ -4872,7 +4873,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     [nullable[bool]] $RollingOrder
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4882,7 +4883,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -4905,7 +4906,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     }
 
     [VMHostVssTeaming] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostVssTeaming]::new()
         $result.Server = $this.Server
@@ -4928,7 +4929,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssTeaming should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssTeamingTest = @()
         $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
@@ -4974,7 +4975,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssTeaming($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssTeamingArgs = @{
             Name = $this.VssName
@@ -5007,7 +5008,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssTeamingConfig $vssTeamingArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The Virtual Switch Teaming Policy Config could not be updated: $($_.Exception.Message)"
+            throw "The Virtual Switch Teaming Policy Config could not be updated: $($_.Exception.Message)"
         }
     }
 
@@ -5017,7 +5018,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSTeaming) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $currentVss = $this.GetVss()
 
