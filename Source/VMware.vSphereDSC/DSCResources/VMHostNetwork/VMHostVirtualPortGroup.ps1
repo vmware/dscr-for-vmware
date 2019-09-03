@@ -28,6 +28,7 @@ class VMHostVirtualPortGroup : VMHostNetworkBaseDSC {
     .DESCRIPTION
 
     Specifies the Virtual Switch associated with the Port Group.
+    The Virtual Switch must be a Standard Virtual Switch.
     #>
     [DscProperty(Mandatory)]
     [string] $VirtualSwitch

@@ -35,7 +35,7 @@ class VMHostNetworkBaseDSC : VMHostBaseDSC {
     .DESCRIPTION
 
     Retrieves the Virtual Switch with the specified name from the server if it exists.
-    If the Virtual Switch does not exist, it throws an exception.
+    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist, it throws an exception.
     #>
     [PSObject] GetVirtualSwitch($vmHost, $virtualSwitchName) {
         try {

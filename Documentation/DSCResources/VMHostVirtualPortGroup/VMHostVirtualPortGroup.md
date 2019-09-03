@@ -8,7 +8,7 @@
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
 | **PortGroupName** | Key | string | The name for the Port Group. ||
-| **VirtualSwitch** | Mandatory | string | The Virtual Switch associated with the Port Group. ||
+| **VirtualSwitch** | Mandatory | string | The Virtual Switch associated with the Port Group. The Virtual Switch must be a Standard Virtual Switch. ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the Port Group should be Present or Absent. | Present, Absent |
 | **VLanId** | Optional | int | The VLAN ID for ports using this Port Group. | 0 - 4095 |
 
