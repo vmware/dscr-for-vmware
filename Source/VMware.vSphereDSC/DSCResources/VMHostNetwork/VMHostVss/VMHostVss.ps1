@@ -65,7 +65,7 @@ class VMHostVss : VMHostVssBaseDSC {
     [string[]] $PortGroup
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -75,7 +75,7 @@ class VMHostVss : VMHostVssBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -91,7 +91,7 @@ class VMHostVss : VMHostVssBaseDSC {
     }
 
     [VMHostVss] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostVss]::new()
         $result.Server = $this.Server
@@ -114,7 +114,7 @@ class VMHostVss : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVss should be updated.
     #>
     [bool] Equals($vss) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssTest = @()
         $vssTest += ($vss.Name -eq $this.VssName)
@@ -129,7 +129,7 @@ class VMHostVss : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVss($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssConfigArgs = @{
             Name = $this.VssName
@@ -159,7 +159,7 @@ class VMHostVss : VMHostVssBaseDSC {
             Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssConfig $vssConfigArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The Virtual Switch Config could not be updated: $($_.Exception.Message)"
+            throw "The Virtual Switch Config could not be updated: $($_.Exception.Message)"
         }
     }
 
@@ -169,7 +169,7 @@ class VMHostVss : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the virtual switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSS) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $currentVss = $this.GetVss()
 

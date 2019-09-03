@@ -84,7 +84,7 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
             if an invalid Advanced Setting is present in the passed hashtable and in the same time to
             provide an information to the user that invalid data is passed.
             #>
-            Write-Warning -Message "Advanced Setting $advancedSettingName does not exist for VMHost $($vmHostName) and will be ignored."
+            Write-WarningLog -Message "Advanced Setting {0} does not exist for VMHost {1} and will be ignored." -Arguments @($advancedSettingName, $vmHostName)
         }
 
         return $advancedSetting

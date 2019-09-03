@@ -58,7 +58,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     hidden [string] $bridgeType = 'HostVirtualSwitchBondBridge'
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -68,7 +68,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -88,7 +88,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     }
 
     [VMHostVssBridge] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostVssBridge]::new()
         $result.Server = $this.Server
@@ -111,7 +111,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssBridge should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssBridgeTest = @()
         if ($null -eq $vss.Spec.Bridge) {
@@ -142,7 +142,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Updates the Bridge configuration of the virtual switch.
     #>
     [void] UpdateVssBridge($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssBridgeArgs = @{
             Name = $this.VssName
@@ -170,7 +170,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
             Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssBridgeConfig $vssBridgeArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The Virtual Switch Bridge Config could not be updated: $($_.Exception.Message)"
+            throw "The Virtual Switch Bridge Config could not be updated: $($_.Exception.Message)"
         }
     }
 
@@ -180,7 +180,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Bridge settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSBridge) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $currentVss = $this.GetVss()
 

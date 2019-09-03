@@ -100,7 +100,7 @@ class VMHostBaseDSC : BaseDSC {
                     break
                 }
 
-                Write-Verbose -Message "VMHost $($this.Name) is still not in $desiredState State."
+                Write-VerboseLog -Message "VMHost {0} is still not in {1} State." -Arguments @($this.Name, $desiredState)
             }
             catch {
                 <#
@@ -108,11 +108,11 @@ class VMHostBaseDSC : BaseDSC {
                 when retrieving the VMHost or establishing a Connection. This way the user still gets notified
                 that the VMHost is not in the Desired State.
                 #>
-                Write-Verbose -Message "VMHost $($this.Name) is still not in $desiredState State."
+                Write-VerboseLog -Message "VMHost {0} is still not in {1} State." -Arguments @($this.Name, $desiredState)
             }
         }
 
-        Write-Verbose -Message "VMHost $($this.Name) is successfully restarted and in $desiredState State."
+        Write-VerboseLog -Message "VMHost {0} is successfully restarted and in {1} State." -Arguments @($this.Name, $desiredState)
     }
 
     <#

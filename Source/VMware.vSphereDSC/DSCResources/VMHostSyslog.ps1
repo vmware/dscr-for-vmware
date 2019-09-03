@@ -97,7 +97,7 @@ class VMHostSyslog : VMHostBaseDSC {
     [nullable[long]] $DropLogSize
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -106,7 +106,7 @@ class VMHostSyslog : VMHostBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -115,7 +115,7 @@ class VMHostSyslog : VMHostBaseDSC {
     }
 
     [VMHostSyslog] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostSyslog]::new()
 
@@ -132,7 +132,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Returns a boolean value indicating if VMHostSyslog needs to be updated.
     #>
     [bool] ShouldUpdateVMHostSyslog($VMHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
         $current = Get-VMHostSyslogConfig -EsxCLi $esxcli
@@ -159,7 +159,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Updates the configuration of the VMHostSyslog.
     #>
     [void] UpdateVMHostSyslog($VMHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
 
@@ -188,7 +188,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the VMHostService from the server.
     #>
     [void] PopulateResult($VMHost, $syslog) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
         $currentVMHostSyslog = Get-VMHostSyslogConfig -EsxCLi $esxcli

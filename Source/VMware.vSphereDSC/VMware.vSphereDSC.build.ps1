@@ -228,6 +228,9 @@ $script:LicenseFileContent | ForEach-Object { $_ | Out-File -FilePath $script:Ps
 # Add helper module to psm1 file.
 "Using module '.\VMware.vSphereDSC.Helper.psm1'" | Out-File -FilePath $script:PsmPath -Encoding Default -Append
 
+# Add logging module to psm1 file.
+"Using module '.\VMware.vSphereDSC.Logging.psm1'" | Out-File -FilePath $script:PsmPath -Encoding Default -Append
+
 # Updating VMware.vSphereDSC.psm1 content with enums.
 Update-ContentOfModuleFile -Folder $script:EnumsFolder
 

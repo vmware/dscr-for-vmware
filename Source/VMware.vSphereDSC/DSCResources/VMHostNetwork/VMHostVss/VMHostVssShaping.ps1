@@ -49,7 +49,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     [nullable[long]] $PeakBandwidth
 
     [void] Set() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -59,7 +59,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     }
 
     [bool] Test() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $this.ConnectVIServer()
         $vmHost = $this.GetVMHost()
@@ -80,7 +80,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     }
 
     [VMHostVssShaping] Get() {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $result = [VMHostVssShaping]::new()
         $result.Server = $this.Server
@@ -103,7 +103,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssShaping should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssShapingTest = @()
         $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.AverageBandwidth -eq $this.AverageBandwidth)
@@ -120,7 +120,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssShaping($vmHost) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssShapingArgs = @{
             Name = $this.VssName
@@ -149,7 +149,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
             Update-Network -NetworkSystem $this.vmHostNetworkSystem -VssShapingConfig $vssShapingArgs -ErrorAction Stop
         }
         catch {
-            Write-Error "The Virtual Switch Shaping Policy Config could not be updated: $($_.Exception.Message)"
+            throw "The Virtual Switch Shaping Policy Config could not be updated: $($_.Exception.Message)"
         }
     }
 
@@ -159,7 +159,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSShaping) {
-        Write-Verbose -Message "$(Get-Date) $($s = Get-PSCallStack; "Entering {0}" -f $s[0].FunctionName)"
+        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $currentVss = $this.GetVss()
 
