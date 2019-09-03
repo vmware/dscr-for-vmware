@@ -60,7 +60,6 @@ class VMHostCache : VMHostBaseDSC {
         return $result
     }
 
-    hidden [int] $MegabytesInGB = 1024
     hidden [int] $NumberOfFractionalDigits = 3
 
     <#
@@ -115,7 +114,7 @@ class VMHostCache : VMHostBaseDSC {
     Converts the passed MB value to GB value by rounding it down with 3 fractional digits in the return value.
     #>
     [double] ConvertMBValueToGBValue($mbValue) {
-        return [Math]::Round($mbValue * $this.MegabytesInGB * $this.MegabytesInGB / 1GB, $this.NumberOfFractionalDigits)
+        return [Math]::Round($mbValue * 1MB / 1GB, $this.NumberOfFractionalDigits)
     }
 
     <#
@@ -124,7 +123,7 @@ class VMHostCache : VMHostBaseDSC {
     Converts the passed GB value to MB value by rounding it down.
     #>
     [long] ConvertGBValueToMBValue($gbValue) {
-        return [long] [Math]::Floor($gbValue * $this.MegabytesInGB * $this.MegabytesInGB * $this.MegabytesInGB / 1MB)
+        return [long] [Math]::Round($gbValue * 1GB / 1MB)
     }
 
     <#
