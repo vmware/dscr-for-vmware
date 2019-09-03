@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.16 - 2019-09-03
+### Added
+- Added VMHostCache DSC Resource.
+- Added Unit Tests for VMHostCache DSC Resource.
+- Added Integration Tests for VMHostCache DSC Resource.
+- Added Documentation and example Configuration for VMHostCache DSC Resource.
+- Added missing TaskImpl type to PowerCLITypes.
+
 ## 2.0.0.15 - 2019-08-30
 ### Added
 - Added VMHostPowerPolicy DSC Resource.

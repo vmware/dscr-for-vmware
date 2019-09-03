@@ -659,13 +659,15 @@ class VMHostBaseDSC : BaseDSC {
         If the Connection is directly to a vCenter we do not need to establish a new connection so we pass $false
         to the method 'EnsureVMHostIsInCorrectState'. When the Connection is directly to an ESXi, after a successful
         restart the ESXi is down so new Connection needs to be established to check the ESXi state. So we pass $true
-        to the method 'EnsureVMHostIsInCorrectState'.
+        to the method 'EnsureVMHostIsInCorrectState'. We also need to set the variable holding the current Connection
+        to $null, so a new Connection can be established via the ConnectVIServer().
         #>
         if ($this.Connection.ProductLine -eq $this.vCenterProductId) {
             $this.EnsureVMHostIsInDesiredState($false, $this.NotRespondingState)
             $this.EnsureVMHostIsInDesiredState($false, $this.MaintenanceState)
         }
         else {
+            $this.Connection = $null
             $this.EnsureVMHostIsInDesiredState($true, $this.MaintenanceState)
         }
     }
@@ -2499,6 +2501,182 @@ class VMHostAgentVM : VMHostBaseDSC {
     [void] PopulateResult($esxAgentHostManager, $result) {
         $result.AgentVmDatastore = $this.PopulateAgentVmSetting($esxAgentHostManager, $this.AgentVmDatastoreName, $this.GetAgentVmDatastoreAsViewObjectMethodName)
         $result.AgentVmNetwork = $this.PopulateAgentVmSetting($esxAgentHostManager, $this.AgentVmNetworkName, $this.GetAgentVmNetworkAsViewObjectMethodName)
+    }
+}
+
+[DscResource()]
+class VMHostCache : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Datastore used for swap performance enhancement.
+    #>
+    [DscProperty(Key)]
+    [string] $Datastore
+
+    <#
+    .DESCRIPTION
+
+    Specifies the space to allocate on the specified Datastore to implement swap performance enhancements, in GB.
+    This value should be less than or equal to the free space capacity of the Datastore.
+    #>
+    [DscProperty(Mandatory)]
+    [double] $SwapSizeGB
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $this.UpdateHostCacheConfiguration($vmHost)
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        return !$this.ShouldUpdateHostCacheConfiguration($vmHost)
+    }
+
+    [VMHostCache] Get() {
+        $result = [VMHostCache]::new()
+        $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $vmHost = $this.GetVMHost()
+
+        $result.Name = $vmHost.Name
+        $this.PopulateResult($vmHost, $result)
+
+        return $result
+    }
+
+    hidden [int] $NumberOfFractionalDigits = 3
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Cache Configuration Manager of the specified VMHost from the server.
+    #>
+    [PSObject] GetVMHostCacheConfigurationManager($vmHost) {
+        try {
+            $vmHostCacheConfigurationManager = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.CacheConfigurationManager -ErrorAction Stop
+            return $vmHostCacheConfigurationManager
+        }
+        catch {
+            throw "Could not retrieve the Cache Configuration Manager of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Datastore for Host Cache Configuration from the server if it exists.
+    If the Datastore does not exist, it throws an exception.
+    #>
+    [PSObject] GetDatastore($vmHost) {
+        try {
+            $foundDatastore = Get-Datastore -Server $this.Connection -Name $this.Datastore -RelatedObject $vmHost -ErrorAction Stop
+            return $foundDatastore
+        }
+        catch {
+            throw "Could not retrieve Datastore $($this.Datastore) for VMHost $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Cache Info for the specified Datastore from the Host Cache Configuration.
+    If the Datastore is not enabled for swap performance, it throws an exception.
+    #>
+    [PSObject] GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore) {
+        $datastoreCacheInfo = $vmHostCacheConfigurationManager.CacheConfigurationInfo | Where-Object { $_.Key -eq $foundDatastore.ExtensionData.MoRef }
+        if ($null -eq $datastoreCacheInfo) {
+            throw "Datastore $($foundDatastore.Name) could not be found in enabled for swap performance Datastores."
+        }
+
+        return $datastoreCacheInfo
+    }
+
+    <#
+    .DESCRIPTION
+
+    Converts the passed MB value to GB value by rounding it down with 3 fractional digits in the return value.
+    #>
+    [double] ConvertMBValueToGBValue($mbValue) {
+        return [Math]::Round($mbValue * 1MB / 1GB, $this.NumberOfFractionalDigits)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Converts the passed GB value to MB value by rounding it down.
+    #>
+    [long] ConvertGBValueToMBValue($gbValue) {
+        return [long] [Math]::Round($gbValue * 1GB / 1MB)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Host Cache Configuration should be updated for the specified VMHost by checking
+    if the current Swap Size is equal to the desired one for the specified Datastore.
+    #>
+    [bool] ShouldUpdateHostCacheConfiguration($vmHost) {
+        $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
+        $foundDatastore = $this.GetDatastore($vmHost)
+        $datastoreCacheInfo = $this.GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore)
+
+        return ($this.SwapSizeGB -ne $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize))
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Host Cache Configuration of the specified VMHost by changing the Swap Size for the
+    specified Datastore.
+    #>
+    [void] UpdateHostCacheConfiguration($vmHost) {
+        $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
+        $foundDatastore = $this.GetDatastore($vmHost)
+
+        if ($this.SwapSizeGB -lt 0) {
+            throw "The passed Swap Size $($this.SwapSizeGB) is less than zero."
+        }
+
+        if ($this.SwapSizeGB -gt $foundDatastore.FreeSpaceGB) {
+            throw "The passed Swap Size $($this.SwapSizeGB) is larger than the free space of the Datastore $($foundDatastore.Name)."
+        }
+
+        $hostCacheConfigurationSpec = New-Object VMware.Vim.HostCacheConfigurationSpec
+        $hostCacheConfigurationSpec.Datastore = $foundDatastore.ExtensionData.MoRef
+        $hostCacheConfigurationSpec.SwapSize = $this.ConvertGBValueToMBValue($this.SwapSizeGB)
+
+        $hostCacheConfigurationResult = Update-HostCacheConfiguration -VMHostCacheConfigurationManager $vmHostCacheConfigurationManager -Spec $hostCacheConfigurationSpec
+        $hostCacheConfigurationTask = Get-Task -Server $this.Connection -Id $hostCacheConfigurationResult
+
+        try {
+            Wait-Task -Task $hostCacheConfigurationTask
+        }
+        catch {
+            throw "An error occured while updating Cache Configuration for VMHost $($this.Name). For more information: $($_.Exception.Message)"
+        }
+
+        Write-Verbose "Cache Configuration was successfully updated for VMHost $($this.Name)."
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Host Cache Configuration from the server.
+    #>
+    [void] PopulateResult($vmHost, $result) {
+        $vmHostCacheConfigurationManager = $this.GetVMHostCacheConfigurationManager($vmHost)
+        $foundDatastore = $this.GetDatastore($vmHost)
+        $datastoreCacheInfo = $this.GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore)
+
+        $result.Datastore = $foundDatastore.Name
+        $result.SwapSizeGB = $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize)
     }
 }
 
