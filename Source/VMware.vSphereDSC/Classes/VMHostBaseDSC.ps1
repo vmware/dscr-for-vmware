@@ -132,13 +132,15 @@ class VMHostBaseDSC : BaseDSC {
         If the Connection is directly to a vCenter we do not need to establish a new connection so we pass $false
         to the method 'EnsureVMHostIsInCorrectState'. When the Connection is directly to an ESXi, after a successful
         restart the ESXi is down so new Connection needs to be established to check the ESXi state. So we pass $true
-        to the method 'EnsureVMHostIsInCorrectState'.
+        to the method 'EnsureVMHostIsInCorrectState'. We also need to set the variable holding the current Connection
+        to $null, so a new Connection can be established via the ConnectVIServer().
         #>
         if ($this.Connection.ProductLine -eq $this.vCenterProductId) {
             $this.EnsureVMHostIsInDesiredState($false, $this.NotRespondingState)
             $this.EnsureVMHostIsInDesiredState($false, $this.MaintenanceState)
         }
         else {
+            $this.Connection = $null
             $this.EnsureVMHostIsInDesiredState($true, $this.MaintenanceState)
         }
     }
