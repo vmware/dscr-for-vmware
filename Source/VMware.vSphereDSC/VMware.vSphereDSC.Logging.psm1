@@ -20,13 +20,14 @@ Writes the specified message to the verbose message stream.
 
 .DESCRIPTION
 Writes the specified message to the verbose message stream. If arguments
-are passed to the function, the message is formatted accordingly.
+are passed to the function, the message is formatted accordingly using [string]::Format method.
 
 .PARAMETER Message
 Specifies the message to write to the verbose message stream.
 
 .PARAMETER Arguments
-Specifies the arguments that are needed for formatting the message.
+Specifies the arguments that are needed for formatting the message using [string]::Format method.
+The message is expected to be a format string that expects the given arguments.
 #>
 function Write-VerboseLog {
     [CmdletBinding()]
@@ -53,13 +54,14 @@ Writes the specified warning message to the PowerShell host.
 .DESCRIPTION
 Writes the specified warning message to the PowerShell host. The response to the warning depends on the value
 of the user's $WarningPreference variable and the use of the WarningAction common parameter. If arguments
-are passed to the function, the message is formatted accordingly.
+are passed to the function, the message is formatted accordingly using [string]::Format method.
 
 .PARAMETER Message
 Specifies the warning message to write to the PowerShell host.
 
 .PARAMETER Arguments
-Specifies the arguments that are needed for formatting the message.
+Specifies the arguments that are needed for formatting the message using [string]::Format method.
+The message is expected to be a format string that expects the given arguments.
 #>
 function Write-WarningLog {
     [CmdletBinding()]
