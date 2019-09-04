@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 enum LinkDiscoveryProtocolProtocol {
-    Unset
     CDP
     LLDP
+    Unset
 }

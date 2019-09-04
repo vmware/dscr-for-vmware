@@ -105,4 +105,15 @@ class BaseDSC {
             return $false
         }
     }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Connection is directly to a vCenter and if not, throws an exception.
+    #>
+    [void] EnsureConnectionIsvCenter() {
+        if ($this.Connection.ProductLine -ne $this.vCenterProductId) {
+            throw 'The Resource operations are only supported when connection is directly to a vCenter.'
+        }
+    }
 }
