@@ -343,7 +343,7 @@ class DistributedSwitch : DatacenterInventoryBaseDSC {
             $result.MaxPorts = $distributedSwitch.MaxPorts
             $result.Mtu = $distributedSwitch.Mtu
             $result.Notes = $distributedSwitch.Notes
-            $result.NumUplinkPorts = $distributedSwitch.NumPorts
+            $result.NumUplinkPorts = $distributedSwitch.NumUplinkPorts
             $result.Version = $distributedSwitch.Version
         }
         else {

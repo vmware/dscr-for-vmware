@@ -36,6 +36,8 @@ $script:constants = @{
     DatacenterName = 'MyDatacenter'
     DatacenterHostFolderId = 'group-h4'
     DatacenterHostFolderName = 'HostFolder'
+    DatacenterNetworkFolderId = 'group-h3'
+    DatacenterNetworkFolderName = 'NetworkFolder'
     InventoryItemLocationItemOneId = 'my-inventory-item-location-item-one'
     InventoryItemLocationItemOne = 'MyInventoryItemOne'
     InventoryItemLocationItemTwoId = 'my-inventory-item-location-item-two'
@@ -158,6 +160,21 @@ $script:constants = @{
     VMKernelNetworkAdapterVMotionEnabled = $true
     VMKernelNetworkAdapterVsanTrafficEnabled = $true
     VMKernelNetworkAdapterPortId = '100'
+    DistributedSwitchName = 'MyDistributedSwitch'
+    DistributedSwitchContactDetails = 'Distributed Switch Contact Details'
+    DistributedSwitchContactName = 'Distributed Switch Contact Name'
+    DistributedSwitchLinkDiscoveryProtocol = 'CDP'
+    DistributedSwitchLinkDiscoveryProtocolOperation = 'Advertise'
+    DistributedSwitchMaxPorts = 100
+    DistributedSwitchMtu = 2000
+    DistributedSwitchNotes = 'Distributed Switch Description'
+    DistributedSwitchNumUplinkPorts = 10
+    DistributedSwitchVersion = '6.6.0'
+    ReferenceDistributedSwitch = 'MyReferenceDistributedSwitch'
+    WithoutPortGroups = $true
+    NewDistributedSwitchTaskName = 'NewDistributedSwitch_Task'
+    UpdateDistributedSwitchTaskName = 'UpdateDistributedSwitch_Task'
+    RemoveDistributedSwitchTaskName = 'RemoveDistributedSwitch_Task'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -266,6 +283,10 @@ $script:datacenterWithDatacenterLocationItemOneAsParent = [VMware.VimAutomation.
             Type = $script:constants.FolderType
             Value = $script:constants.DatacenterHostFolderId
         }
+        NetworkFolder = [VMware.Vim.ManagedObjectReference] @{
+            Type = $script:constants.FolderType
+            Value = $script:constants.DatacenterNetworkFolderId
+        }
     }
 }
 
@@ -286,6 +307,22 @@ $script:datacenterHostFolderViewBaseObject = [VMware.Vim.Folder] @{
 $script:datacenterHostFolder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
     Id = $script:constants.DatacenterHostFolderId
     Name = $script:constants.DatacenterHostFolderName
+    Parent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
+        Name = $script:constants.DatacenterName
+    }
+}
+
+$script:datacenterNetworkFolderViewBaseObject = [VMware.Vim.Folder] @{
+    Name = $script:constants.DatacenterNetworkFolderName
+    MoRef = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.FolderType
+        Value = $script:constants.DatacenterNetworkFolderId
+    }
+}
+
+$script:datacenterNetworkFolder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+    Id = $script:constants.DatacenterNetworkFolderId
+    Name = $script:constants.DatacenterNetworkFolderName
     Parent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
         Name = $script:constants.DatacenterName
     }
@@ -786,4 +823,32 @@ $script:vmHostNetworkAdapter = [VMware.VimAutomation.ViCore.Impl.V1.Host.Network
     FaultToleranceLoggingEnabled = $script:constants.VMKernelNetworkAdapterFaultToleranceLoggingEnabled
     VMotionEnabled = $script:constants.VMKernelNetworkAdapterVMotionEnabled
     VsanTrafficEnabled = $script:constants.VMKernelNetworkAdapterVsanTrafficEnabled
+}
+
+$script:distributedSwitch = [VMware.VimAutomation.Vds.Impl.V1.VmwareVDSwitchImpl] @{
+    Name = $script:constants.DistributedSwitchName
+    ContactDetails = $script:constants.DistributedSwitchContactDetails
+    ContactName = $script:constants.DistributedSwitchContactName
+    LinkDiscoveryProtocol = $script:constants.DistributedSwitchLinkDiscoveryProtocol
+    LinkDiscoveryProtocolOperation = $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation
+    MaxPorts = $script:constants.DistributedSwitchMaxPorts
+    Mtu = $script:constants.DistributedSwitchMtu
+    Notes = $script:constants.DistributedSwitchNotes
+    NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
+    Version = $script:constants.DistributedSwitchVersion
+}
+
+$script:newDistributedSwitchSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
+    Name = $script:constants.NewDistributedSwitchTaskName
+    State = $script:constants.TaskSuccessState
+}
+
+$script:updateDistributedSwitchSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
+    Name = $script:constants.UpdateDistributedSwitchTaskName
+    State = $script:constants.TaskSuccessState
+}
+
+$script:removeDistributedSwitchSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
+    Name = $script:constants.RemoveDistributedSwitchTaskName
+    State = $script:constants.TaskSuccessState
 }
