@@ -35,14 +35,14 @@ Configuration DistributedSwitch_WhenAddingDistributedSwitch_Config {
             DatacenterLocation = $AllNodes.DatacenterLocation
             Ensure = 'Present'
             ContactDetails = $AllNodes.ContactDetails
-			ContactName = $AllNodes.ContactName
-			LinkDiscoveryProtocol = $AllNodes.LinkDiscoveryProtocol
-			LinkDiscoveryProtocolOperation = $AllNodes.LinkDiscoveryProtocolOperationAdvertise
-			MaxPorts = $AllNodes.MaxPorts
-			Mtu = $AllNodes.Mtu
-			Notes = $AllNodes.Notes
-			NumUplinkPorts = $AllNodes.NumUplinkPorts
-			Version = $AllNodes.Version
+            ContactName = $AllNodes.ContactName
+            LinkDiscoveryProtocol = $AllNodes.LinkDiscoveryProtocol
+            LinkDiscoveryProtocolOperation = $AllNodes.LinkDiscoveryProtocolOperationAdvertise
+            MaxPorts = $AllNodes.MaxPorts
+            Mtu = $AllNodes.Mtu
+            Notes = $AllNodes.Notes
+            NumUplinkPorts = $AllNodes.NumUplinkPorts
+            Version = $AllNodes.Version
             DependsOn = $AllNodes.DatacenterResourceId
         }
     }
@@ -78,9 +78,9 @@ Configuration DistributedSwitch_WhenUpdatingDistributedSwitch_Config {
             DatacenterName = $AllNodes.DatacenterName
             DatacenterLocation = $AllNodes.DatacenterLocation
             Ensure = 'Present'
-			ContactName = $AllNodes.UpdatedContactName
-			LinkDiscoveryProtocolOperation = $AllNodes.LinkDiscoveryProtocolOperationListen
-			Mtu = $AllNodes.UpdatedMtu
+            ContactName = $AllNodes.UpdatedContactName
+            LinkDiscoveryProtocolOperation = $AllNodes.LinkDiscoveryProtocolOperationListen
+            Mtu = $AllNodes.UpdatedMtu
         }
     }
 }

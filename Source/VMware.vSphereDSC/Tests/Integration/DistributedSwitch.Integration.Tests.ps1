@@ -149,13 +149,13 @@ Describe "$($script:dscResourceName)_Integration" {
             $distributedSwitchResource.DatacenterLocation | Should -Be $script:configurationData.AllNodes.DatacenterLocation
             $distributedSwitchResource.Ensure | Should -Be 'Present'
             $distributedSwitchResource.ContactDetails | Should -Be $script:configurationData.AllNodes.ContactDetails
-			$distributedSwitchResource.ContactName | Should -Be $script:configurationData.AllNodes.ContactName
-			$distributedSwitchResource.LinkDiscoveryProtocol | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocol
-			$distributedSwitchResource.LinkDiscoveryProtocolOperation | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocolOperationAdvertise
-			$distributedSwitchResource.MaxPorts | Should -Be $script:configurationData.AllNodes.MaxPorts
-			$distributedSwitchResource.Mtu | Should -Be $script:configurationData.AllNodes.Mtu
-			$distributedSwitchResource.Notes | Should -Be $script:configurationData.AllNodes.Notes
-			$distributedSwitchResource.NumUplinkPorts | Should -Be $script:configurationData.AllNodes.NumUplinkPorts
+            $distributedSwitchResource.ContactName | Should -Be $script:configurationData.AllNodes.ContactName
+            $distributedSwitchResource.LinkDiscoveryProtocol | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocol
+            $distributedSwitchResource.LinkDiscoveryProtocolOperation | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocolOperationAdvertise
+            $distributedSwitchResource.MaxPorts | Should -Be $script:configurationData.AllNodes.MaxPorts
+            $distributedSwitchResource.Mtu | Should -Be $script:configurationData.AllNodes.Mtu
+            $distributedSwitchResource.Notes | Should -Be $script:configurationData.AllNodes.Notes
+            $distributedSwitchResource.NumUplinkPorts | Should -Be $script:configurationData.AllNodes.NumUplinkPorts
             $distributedSwitchResource.Version | Should -Be $script:configurationData.AllNodes.Version
             $distributedSwitchResource.ReferenceVDSwitch | Should -BeNullOrEmpty
             $distributedSwitchResource.WithoutPortGroups | Should -BeNullOrEmpty
@@ -277,13 +277,13 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.DatacenterLocation | Should -Be $script:configurationData.AllNodes.DatacenterLocation
             $configuration.Ensure | Should -Be 'Present'
             $configuration.ContactDetails | Should -Be $script:configurationData.AllNodes.ContactDetails
-			$configuration.ContactName | Should -Be $script:configurationData.AllNodes.ContactName
-			$configuration.LinkDiscoveryProtocol | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocol
-			$configuration.LinkDiscoveryProtocolOperation | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocolOperationAdvertise
-			$configuration.MaxPorts | Should -Be $script:configurationData.AllNodes.MaxPorts
-			$configuration.Mtu | Should -Be $script:configurationData.AllNodes.Mtu
-			$configuration.Notes | Should -Be $script:configurationData.AllNodes.Notes
-			$configuration.NumUplinkPorts | Should -Be $script:configurationData.AllNodes.NumUplinkPorts
+            $configuration.ContactName | Should -Be $script:configurationData.AllNodes.ContactName
+            $configuration.LinkDiscoveryProtocol | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocol
+            $configuration.LinkDiscoveryProtocolOperation | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocolOperationAdvertise
+            $configuration.MaxPorts | Should -Be $script:configurationData.AllNodes.MaxPorts
+            $configuration.Mtu | Should -Be $script:configurationData.AllNodes.Mtu
+            $configuration.Notes | Should -Be $script:configurationData.AllNodes.Notes
+            $configuration.NumUplinkPorts | Should -Be $script:configurationData.AllNodes.NumUplinkPorts
             $configuration.Version | Should -Be $script:configurationData.AllNodes.Version
             $configuration.ReferenceVDSwitch | Should -Be $script:configurationData.AllNodes.DistributedSwitchName
             $configuration.WithoutPortGroups | Should -Be $script:configurationData.AllNodes.WithoutPortGroups
@@ -395,13 +395,13 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.DatacenterLocation | Should -Be $script:configurationData.AllNodes.DatacenterLocation
             $configuration.Ensure | Should -Be 'Present'
             $configuration.ContactDetails | Should -Be $script:configurationData.AllNodes.ContactDetails
-			$configuration.ContactName | Should -Be $script:configurationData.AllNodes.UpdatedContactName
-			$configuration.LinkDiscoveryProtocol | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocol
-			$configuration.LinkDiscoveryProtocolOperation | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocolOperationListen
-			$configuration.MaxPorts | Should -Be $script:configurationData.AllNodes.MaxPorts
-			$configuration.Mtu | Should -Be $script:configurationData.AllNodes.UpdatedMtu
-			$configuration.Notes | Should -Be $script:configurationData.AllNodes.Notes
-			$configuration.NumUplinkPorts | Should -Be $script:configurationData.AllNodes.NumUplinkPorts
+            $configuration.ContactName | Should -Be $script:configurationData.AllNodes.UpdatedContactName
+            $configuration.LinkDiscoveryProtocol | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocol
+            $configuration.LinkDiscoveryProtocolOperation | Should -Be $script:configurationData.AllNodes.LinkDiscoveryProtocolOperationListen
+            $configuration.MaxPorts | Should -Be $script:configurationData.AllNodes.MaxPorts
+            $configuration.Mtu | Should -Be $script:configurationData.AllNodes.UpdatedMtu
+            $configuration.Notes | Should -Be $script:configurationData.AllNodes.Notes
+            $configuration.NumUplinkPorts | Should -Be $script:configurationData.AllNodes.NumUplinkPorts
             $configuration.Version | Should -Be $script:configurationData.AllNodes.Version
             $configuration.ReferenceVDSwitch | Should -BeNullOrEmpty
             $configuration.WithoutPortGroups | Should -BeNullOrEmpty
@@ -513,13 +513,13 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.DatacenterLocation | Should -Be $script:configurationData.AllNodes.DatacenterLocation
             $configuration.Ensure | Should -Be 'Absent'
             $configuration.ContactDetails | Should -BeNullOrEmpty
-			$configuration.ContactName | Should -BeNullOrEmpty
-			$configuration.LinkDiscoveryProtocol | Should -Be 'Unset'
-			$configuration.LinkDiscoveryProtocolOperation | Should -Be 'Unset'
-			$configuration.MaxPorts | Should -BeNullOrEmpty
-			$configuration.Mtu | Should -BeNullOrEmpty
-			$configuration.Notes | Should -BeNullOrEmpty
-			$configuration.NumUplinkPorts | Should -BeNullOrEmpty
+            $configuration.ContactName | Should -BeNullOrEmpty
+            $configuration.LinkDiscoveryProtocol | Should -Be 'Unset'
+            $configuration.LinkDiscoveryProtocolOperation | Should -Be 'Unset'
+            $configuration.MaxPorts | Should -BeNullOrEmpty
+            $configuration.Mtu | Should -BeNullOrEmpty
+            $configuration.Notes | Should -BeNullOrEmpty
+            $configuration.NumUplinkPorts | Should -BeNullOrEmpty
             $configuration.Version | Should -BeNullOrEmpty
             $configuration.ReferenceVDSwitch | Should -BeNullOrEmpty
             $configuration.WithoutPortGroups | Should -BeNullOrEmpty

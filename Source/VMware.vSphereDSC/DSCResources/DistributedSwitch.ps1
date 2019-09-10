@@ -106,7 +106,7 @@ class DistributedSwitch : DatacenterInventoryBaseDSC {
     <#
     .DESCRIPTION
 
-    Indicates whether the new vSphere Distributed Switch will be created without importing the port groups from the specified backup file or reference vSphere Distributed Switch.
+    Indicates whether the new vSphere Distributed Switch will be created without importing the port groups from the specified reference vSphere Distributed Switch.
     #>
     [DscProperty()]
     [nullable[bool]] $WithoutPortGroups
