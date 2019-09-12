@@ -264,7 +264,8 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
     Removes the VMKernel Network Adapter connected to the specified Virtual Switch and Port Group for the specified VMHost.
     #>
     [void] RemoveVMHostNetworkAdapter($vmHost, $vmHostNetworkAdapter) {
-        $nic = $vmHost.NetworkInfo.VirtualNic | Where-Object { $_.Name -eq $vmHostNetworkAdapter.Name }
+        $vmHostNetwork = Get-VMHostNetwork -Server $this.Connection -VMHost $vmHost
+        $nic = $vmHostNetwork.VirtualNic | Where-Object { $_.Name -eq $vmHostNetworkAdapter.Name }
 
         try {
             Remove-VMHostNetworkAdapter -Nic $nic -Confirm:$false -ErrorAction Stop

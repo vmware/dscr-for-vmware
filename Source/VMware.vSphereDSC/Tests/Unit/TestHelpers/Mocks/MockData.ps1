@@ -144,6 +144,20 @@ $script:constants = @{
     HalfDuplex = 'Half'
     BitRatePerSecMb = 1000
     AutoNegotiate = $true
+    VMKernelNetworkAdapterName = 'MyVMKernelNetworkAdapter'
+    VMKernelNetworkAdapterIP = '192.168.0.1'
+    VMKernelNetworkAdapterSubnetMask = '255.255.255.0'
+    VMKernelNetworkAdapterMac = '00:50:56:63:5b:0e'
+    VMKernelNetworkAdapterDhcp = $true
+    VMKernelNetworkAdapterAutomaticIPv6 = $true
+    VMKernelNetworkAdapterIPv6ThroughDhcp = $true
+    VMKernelNetworkAdapterMtu = 4000
+    VMKernelNetworkAdapterIPv6Enabled = $true
+    VMKernelNetworkAdapterManagementTrafficEnabled = $true
+    VMKernelNetworkAdapterFaultToleranceLoggingEnabled = $true
+    VMKernelNetworkAdapterVMotionEnabled = $true
+    VMKernelNetworkAdapterVsanTrafficEnabled = $true
+    VMKernelNetworkAdapterPortId = '100'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -753,4 +767,30 @@ $script:physicalNetworkAdapter = [VMware.VimAutomation.ViCore.Impl.V1.Host.Netwo
             }
         }
     }
+}
+
+$script:vmHostNetworkAdapter = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.HostVMKernelVirtualNicImpl] @{
+    Name = $script:constants.VMKernelNetworkAdapterName
+    VMHost = $script:vmHost
+    PortGroupName = $script:constants.VirtualPortGroupName
+    IP = $script:constants.VMKernelNetworkAdapterIP
+    SubnetMask = $script:constants.VMKernelNetworkAdapterSubnetMask
+    Mac = $script:constants.VMKernelNetworkAdapterMac
+    DhcpEnabled = $script:constants.VMKernelNetworkAdapterDhcp
+    AutomaticIPv6 = $script:constants.VMKernelNetworkAdapterAutomaticIPv6
+    IPv6 = @()
+    IPv6ThroughDhcp = $script:constants.VMKernelNetworkAdapterIPv6ThroughDhcp
+    Mtu = $script:constants.VMKernelNetworkAdapterMtu
+    IPv6Enabled = $script:constants.VMKernelNetworkAdapterIPv6Enabled
+    ManagementTrafficEnabled = $script:constants.VMKernelNetworkAdapterManagementTrafficEnabled
+    FaultToleranceLoggingEnabled = $script:constants.VMKernelNetworkAdapterFaultToleranceLoggingEnabled
+    VMotionEnabled = $script:constants.VMKernelNetworkAdapterVMotionEnabled
+    VsanTrafficEnabled = $script:constants.VMKernelNetworkAdapterVsanTrafficEnabled
+}
+
+$script:vmHostNetwork = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VMHostNetworkInfoImpl] @{
+    VMHost = $script:vmHost
+    VirtualNic = @(
+        $script:vmHostNetworkAdapter
+    )
 }
