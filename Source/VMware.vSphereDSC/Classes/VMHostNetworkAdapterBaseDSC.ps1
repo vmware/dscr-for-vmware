@@ -169,7 +169,7 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
 
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Dhcp -and $this.Dhcp -ne $vmHostNetworkAdapter.DhcpEnabled)
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.AutomaticIPv6 -and $this.AutomaticIPv6 -ne $vmHostNetworkAdapter.AutomaticIPv6)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6 -and $this.IPv6 -ne $vmHostNetworkAdapter.IPv6)
+        $shouldUpdateVMHostNetworkAdapter += $this.ShouldUpdateArraySetting($vmHostNetworkAdapter.IPv6, $this.IPv6)
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6ThroughDhcp -and $this.IPv6ThroughDhcp -ne $vmHostNetworkAdapter.IPv6ThroughDhcp)
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Mtu -and $this.Mtu -ne $vmHostNetworkAdapter.Mtu)
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6Enabled -and $this.IPv6Enabled -ne $vmHostNetworkAdapter.IPv6Enabled)
