@@ -787,10 +787,3 @@ $script:vmHostNetworkAdapter = [VMware.VimAutomation.ViCore.Impl.V1.Host.Network
     VMotionEnabled = $script:constants.VMKernelNetworkAdapterVMotionEnabled
     VsanTrafficEnabled = $script:constants.VMKernelNetworkAdapterVsanTrafficEnabled
 }
-
-$script:vmHostNetwork = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VMHostNetworkInfoImpl] @{
-    VMHost = $script:vmHost
-    VirtualNic = @(
-        $script:vmHostNetworkAdapter
-    )
-}

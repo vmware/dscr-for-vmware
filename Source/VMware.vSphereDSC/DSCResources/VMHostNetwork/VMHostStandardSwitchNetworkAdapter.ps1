@@ -25,7 +25,7 @@ class VMHostStandardSwitchNetworkAdapter : VMHostNetworkAdapterBaseDSC {
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $vmHostNetworkAdapter) {
-                $this.AddVMHostNetworkAdapter($foundVirtualSwitch, $null)
+                $this.AddVMHostNetworkAdapter($vmHost, $foundVirtualSwitch, $null)
             }
             else {
                 $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
@@ -33,7 +33,15 @@ class VMHostStandardSwitchNetworkAdapter : VMHostNetworkAdapterBaseDSC {
         }
         else {
             if ($null -ne $vmHostNetworkAdapter) {
-                $this.RemoveVMHostNetworkAdapter($vmHost, $vmHostNetworkAdapter)
+                <#
+                Here the retrieval of the VMKernel is done for the second time because retrieving it
+                by Virtual Switch and Port Group produces the following error when trying to delete it:
+                "The object 'vmodl.ManagedObject:' has already been deleted or has not been completely created".
+                The error does not occur when the retrieval is done by Name.
+                #>
+                $vmHostNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $vmHostNetworkAdapter.Name
+
+                $this.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
             }
         }
     }

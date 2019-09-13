@@ -52,7 +52,7 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'New-VMHostNetworkAdapter'
-                        ParameterFilter = { $VirtualSwitch -eq $script:virtualSwitch }
+                        ParameterFilter = { $VMHost -eq $script:vmHost -and $VirtualSwitch -eq $script:virtualSwitch }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'

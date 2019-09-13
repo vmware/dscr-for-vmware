@@ -186,10 +186,8 @@ function New-MocksWhenRemovingVMKernelNetworkAdapterResultsInAnError {
     $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
-    $vmHostNetworkMock = $script:vmHostNetwork
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel } -Verifiable
-    Mock -CommandName Get-VMHostNetwork -MockWith { return $vmHostNetworkMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost } -Verifiable
     Mock -CommandName Remove-VMHostNetworkAdapter -MockWith { throw }.GetNewClosure() -Verifiable
 
     $vmHostNetworkAdapterBaseDSCProperties
@@ -202,10 +200,8 @@ function New-MocksWhenRemovingVMKernelNetworkAdapter {
     $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
-    $vmHostNetworkMock = $script:vmHostNetwork
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel } -Verifiable
-    Mock -CommandName Get-VMHostNetwork -MockWith { return $vmHostNetworkMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost } -Verifiable
     Mock -CommandName Remove-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vmHostNetworkAdapterBaseDSCProperties

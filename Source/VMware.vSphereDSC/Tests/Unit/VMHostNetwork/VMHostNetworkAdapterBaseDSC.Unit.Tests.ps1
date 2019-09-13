@@ -181,7 +181,7 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should call all defined mocks' {
                     try {
                         # Act
-                        $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($virtualSwitch, $null)
+                        $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $null)
                     }
                     catch {
                         # Assert
@@ -192,7 +192,7 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should throw the correct error when Adding new VMKernel Network Adapter results in an error' {
                     # Act && Assert
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($virtualSwitch, $null) } | Should -Throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($virtualSwitch.Name) and Port Group $($vmHostNetworkAdapterBaseDSCProperties.PortGroup). For more information: ScriptHalted"
+                    { $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $null) } | Should -Throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($virtualSwitch.Name) and Port Group $($vmHostNetworkAdapterBaseDSCProperties.PortGroup). For more information: ScriptHalted"
                 }
             }
 
@@ -210,7 +210,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($virtualSwitch, $null)
+                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $null)
 
                     # Assert
                     Assert-VerifiableMock
@@ -218,12 +218,12 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call the New-VMHostNetworkAdapter mock once' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($virtualSwitch, $null)
+                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $null)
 
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'New-VMHostNetworkAdapter'
-                        ParameterFilter = { $Server -eq $script:viServer -and $VirtualSwitch -eq $virtualSwitch -and $PortGroup -eq $script:constants.VirtualPortGroupName -and `
+                        ParameterFilter = { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost -and $VirtualSwitch -eq $virtualSwitch -and $PortGroup -eq $script:constants.VirtualPortGroupName -and `
                                             $IP -eq $script:constants.VMKernelNetworkAdapterIP -and $SubnetMask -eq $script:constants.VMKernelNetworkAdapterSubnetMask -and `
                                             $Mac -eq $script:constants.VMKernelNetworkAdapterMac -and $AutomaticIPv6 -eq $script:constants.VMKernelNetworkAdapterAutomaticIPv6 -and `
                                             [System.Linq.Enumerable]::SequenceEqual($IPv6, @()) -and $IPv6ThroughDhcp -eq $script:constants.VMKernelNetworkAdapterIPv6ThroughDhcp -and `
@@ -254,7 +254,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($virtualSwitch, $script:constants.VMKernelNetworkAdapterPortId)
+                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $script:constants.VMKernelNetworkAdapterPortId)
 
                     # Assert
                     Assert-VerifiableMock
@@ -262,12 +262,12 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call the New-VMHostNetworkAdapter mock once' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($virtualSwitch, $script:constants.VMKernelNetworkAdapterPortId)
+                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $script:constants.VMKernelNetworkAdapterPortId)
 
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'New-VMHostNetworkAdapter'
-                        ParameterFilter = { $Server -eq $script:viServer -and $VirtualSwitch -eq $virtualSwitch -and $PortId -eq $script:constants.VMKernelNetworkAdapterPortId -and `
+                        ParameterFilter = { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost -and $VirtualSwitch -eq $virtualSwitch -and $PortId -eq $script:constants.VMKernelNetworkAdapterPortId -and `
                                             $IP -eq $script:constants.VMKernelNetworkAdapterIP -and $SubnetMask -eq $script:constants.VMKernelNetworkAdapterSubnetMask -and `
                                             $Mac -eq $script:constants.VMKernelNetworkAdapterMac -and $AutomaticIPv6 -eq $script:constants.VMKernelNetworkAdapterAutomaticIPv6 -and `
                                             [System.Linq.Enumerable]::SequenceEqual($IPv6, @()) -and $IPv6ThroughDhcp -eq $script:constants.VMKernelNetworkAdapterIPv6ThroughDhcp -and `
@@ -419,7 +419,7 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should call all defined mocks' {
                     try {
                         # Act
-                        $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHost, $vmHostNetworkAdapter)
+                        $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
                     }
                     catch {
                         # Assert
@@ -430,7 +430,7 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should throw the correct error when Removing the VMKernel Network Adapter results in an error' {
                     # Act && Assert
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHost, $vmHostNetworkAdapter) } | Should -Throw "Cannot remove VMKernel Network Adapter $($script:constants.VMKernelNetworkAdapterName). For more information: ScriptHalted"
+                    { $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter) } | Should -Throw "Cannot remove VMKernel Network Adapter $($script:constants.VMKernelNetworkAdapterName). For more information: ScriptHalted"
                 }
             }
 
@@ -448,7 +448,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHost, $vmHostNetworkAdapter)
+                    $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     Assert-VerifiableMock
@@ -456,7 +456,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call the Remove-VMHostNetworkAdapter mock once' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHost, $vmHostNetworkAdapter)
+                    $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     $assertMockCalledParams = @{

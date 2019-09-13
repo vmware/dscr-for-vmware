@@ -214,10 +214,11 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
     Creates a new VMKernel Network Adapter connected to the specified Virtual Switch and Port Group for the specified VMHost.
     If the Port Id is specified, the Port Group is ignored and only the Port Id is passed to the cmdlet.
     #>
-    [void] AddVMHostNetworkAdapter($foundVirtualSwitch, $portId) {
+    [void] AddVMHostNetworkAdapter($vmHost, $foundVirtualSwitch, $portId) {
         $vmHostNetworkAdapterParams = $this.GetVMHostNetworkAdapterParams()
 
         $vmHostNetworkAdapterParams.Server = $this.Connection
+        $vmHostNetworkAdapterParams.VMHost = $vmHost
         $vmHostNetworkAdapterParams.VirtualSwitch = $foundVirtualSwitch
 
         if ($null -ne $portId) {
@@ -263,12 +264,9 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
 
     Removes the VMKernel Network Adapter connected to the specified Virtual Switch and Port Group for the specified VMHost.
     #>
-    [void] RemoveVMHostNetworkAdapter($vmHost, $vmHostNetworkAdapter) {
-        $vmHostNetwork = Get-VMHostNetwork -Server $this.Connection -VMHost $vmHost
-        $nic = $vmHostNetwork.VirtualNic | Where-Object { $_.Name -eq $vmHostNetworkAdapter.Name }
-
+    [void] RemoveVMHostNetworkAdapter($vmHostNetworkAdapter) {
         try {
-            Remove-VMHostNetworkAdapter -Nic $nic -Confirm:$false -ErrorAction Stop
+            Remove-VMHostNetworkAdapter -Nic $vmHostNetworkAdapter -Confirm:$false -ErrorAction Stop
         }
         catch {
             throw "Cannot remove VMKernel Network Adapter $($vmHostNetworkAdapter.Name). For more information: $($_.Exception.Message)"
