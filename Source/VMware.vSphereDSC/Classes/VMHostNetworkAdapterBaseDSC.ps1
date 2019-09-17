@@ -158,6 +158,32 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
     <#
     .DESCRIPTION
 
+    Checks if the passed VMKernel Network Adapter IPv6 array needs to be updated.
+    #>
+    [bool] ShouldUpdateIPv6($ipv6) {
+        $currentIPv6 = @()
+        foreach ($ip in $ipv6) {
+            <#
+            The IPs on the server are of type 'IPv6Address' so they need to be converted to
+            string before being passed to ShouldUpdateArraySetting method.
+            #>
+            $currentIPv6 += $ip.ToString()
+        }
+
+        <#
+        The default IPv6 array contains one element, so when empty array is passed no update
+        should be performed.
+        #>
+        if ($null -ne $this.IPv6 -and ($this.IPv6.Length -eq 0 -and $currentIPv6.Length -eq 1)) {
+            return $false
+        }
+
+        return $this.ShouldUpdateArraySetting($currentIPv6, $this.IPv6)
+    }
+
+    <#
+    .DESCRIPTION
+
     Checks if the passed VMKernel Network Adapter needs be updated based on the specified properties.
     #>
     [bool] ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter) {
@@ -169,7 +195,7 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
 
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Dhcp -and $this.Dhcp -ne $vmHostNetworkAdapter.DhcpEnabled)
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.AutomaticIPv6 -and $this.AutomaticIPv6 -ne $vmHostNetworkAdapter.AutomaticIPv6)
-        $shouldUpdateVMHostNetworkAdapter += $this.ShouldUpdateArraySetting($vmHostNetworkAdapter.IPv6, $this.IPv6)
+        $shouldUpdateVMHostNetworkAdapter += $this.ShouldUpdateIPv6($vmHostNetworkAdapter.IPv6)
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6ThroughDhcp -and $this.IPv6ThroughDhcp -ne $vmHostNetworkAdapter.IPv6ThroughDhcp)
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Mtu -and $this.Mtu -ne $vmHostNetworkAdapter.Mtu)
         $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6Enabled -and $this.IPv6Enabled -ne $vmHostNetworkAdapter.IPv6Enabled)
@@ -245,11 +271,40 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
         $vmHostNetworkAdapterParams = $this.GetVMHostNetworkAdapterParams()
 
         <#
+        IPv6 should only be passed to the cmdlet if an update needs to be performed.
+        Otherwise the following error occurs when passing the same array: 'Address already exists in the config.'
+        #>
+        if (!$this.ShouldUpdateIPv6($vmHostNetworkAdapter.IPv6)) {
+            $vmHostNetworkAdapterParams.Remove('IPv6')
+        }
+
+        <#
         Both Dhcp and IPv6Enabled are applicable only for the Update operation, so they are not
         populated in the GetVMHostNetworkAdapterParams() which is used for Create and Update operations.
         #>
-        if ($null -ne $this.Dhcp) { $vmHostNetworkAdapterParams.Dhcp = $this.Dhcp }
-        if ($null -ne $this.IPv6Enabled) { $vmHostNetworkAdapterParams.IPv6Enabled = $this.IPv6Enabled }
+        if ($null -ne $this.Dhcp) {
+            $vmHostNetworkAdapterParams.Dhcp = $this.Dhcp
+
+            <#
+            IP and SubnetMask parameters are mutually exclusive with Dhcp so they should be removed
+            from the parameters hashtable before calling Set-VMHostNetworkAdapter cmdlet.
+            #>
+            $vmHostNetworkAdapterParams.Remove('IP')
+            $vmHostNetworkAdapterParams.Remove('SubnetMask')
+        }
+
+        if ($null -ne $this.IPv6Enabled) {
+            $vmHostNetworkAdapterParams.IPv6Enabled = $this.IPv6Enabled
+
+            if (!$this.IPv6Enabled) {
+                <#
+                If the value of IPv6Enabled is $false, other IPv6 settings cannot be specified.
+                #>
+                $vmHostNetworkAdapterParams.Remove('AutomaticIPv6')
+                $vmHostNetworkAdapterParams.Remove('IPv6ThroughDhcp')
+                $vmHostNetworkAdapterParams.Remove('IPv6')
+            }
+        }
 
         try {
             $vmHostNetworkAdapter | Set-VMHostNetworkAdapter @vmHostNetworkAdapterParams

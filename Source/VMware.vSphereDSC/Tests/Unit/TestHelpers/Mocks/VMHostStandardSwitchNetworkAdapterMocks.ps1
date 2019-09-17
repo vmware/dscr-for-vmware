@@ -74,6 +74,7 @@ function New-MocksWhenEnsurePresentAndVMKernelNetworkAdapterExists {
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel }
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:vmHostNetworkAdapter.Name -and $VMHost -eq $script:vmHost -and $VMKernel }
     Mock -CommandName Set-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure()
 
     $vmHostStandardSwitchNetworkAdapterProperties
@@ -104,7 +105,7 @@ function New-MocksWhenEnsureAbsentAndVMKernelNetworkAdapterExists {
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel }
-    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:vmHostNetworkAdapter.Name }
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:vmHostNetworkAdapter.Name -and $VMHost -eq $script:vmHost -and $VMKernel }
     Mock -CommandName Remove-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure()
 
     $vmHostStandardSwitchNetworkAdapterProperties
