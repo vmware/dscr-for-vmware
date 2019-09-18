@@ -112,6 +112,12 @@ $script:constants = @{
     VirtualSwitchName = 'vSwitch0'
     VirtualPortGroupName = 'MyVirtualPortGroup'
     VLanId = 4095
+    AllowPromiscuous = $true
+    AllowPromiscuousInherited = $false
+    ForgedTransmits = $true
+    ForgedTransmitsInherited = $false
+    MacChanges = $true
+    MacChangesInherited = $false
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -644,4 +650,14 @@ $script:virtualPortGroup = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.
     VirtualSwitch = $script:virtualSwitch
     VirtualSwitchName = $script:constants.VirtualSwitchName
     VLanId = $script:constants.VLanId
+}
+
+$script:virtualPortGroupSecurityPolicy = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VirtualPortgroupSecurityPolicyImpl] @{
+    VirtualPortGroup = $script:virtualPortGroup
+    AllowPromiscuous = $script:constants.AllowPromiscuous
+    AllowPromiscuousInherited = $script:constants.AllowPromiscuousInherited
+    ForgedTransmits = $script:constants.ForgedTransmits
+    ForgedTransmitsInherited = $script:constants.ForgedTransmitsInherited
+    MacChanges = $script:constants.MacChanges
+    MacChangesInherited = $script:constants.MacChangesInherited
 }
