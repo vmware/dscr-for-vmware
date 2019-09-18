@@ -89025,6 +89025,42 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Host.Networking
         }
     }
 
+    public class VirtualPortGroupSecurityPolicyImpl : VirtualPortgroupSecurityPolicy, IEquatable<VirtualPortGroupSecurityPolicyImpl>
+    {
+        public bool AllowPromiscuous { get; set; }
+
+        public bool ForgedTransmits { get; set; }
+
+        public bool MacChanges { get; set; }
+
+        public VirtualPortGroup VirtualPortGroup { get; set; }
+
+        public bool AllowPromiscuousInherited { get; set; }
+
+        public bool ForgedTransmitsInherited { get; set; }
+
+        public bool MacChangesInherited { get; set; }
+
+        public string Uid { get; set; }
+
+        public object ExtensionData { get; set; }
+
+        public bool Equals(VirtualPortGroupSecurityPolicyImpl virtualPortGroupSecurityPolicyImpl)
+        {
+            return (virtualPortGroupSecurityPolicyImpl != null && this.AllowPromiscuous == virtualPortGroupSecurityPolicyImpl.AllowPromiscuous && this.ForgedTransmits == virtualPortGroupSecurityPolicyImpl.ForgedTransmits && this.MacChanges == virtualPortGroupSecurityPolicyImpl.MacChanges && ((this.VirtualPortGroup == null && virtualPortGroupSecurityPolicyImpl.VirtualPortGroup == null) || (this.VirtualPortGroup != null && this.VirtualPortGroup.Equals(virtualPortGroupSecurityPolicyImpl.VirtualPortGroup))) && this.AllowPromiscuousInherited == virtualPortGroupSecurityPolicyImpl.AllowPromiscuousInherited && this.ForgedTransmitsInherited == virtualPortGroupSecurityPolicyImpl.ForgedTransmitsInherited && this.MacChangesInherited == virtualPortGroupSecurityPolicyImpl.MacChangesInherited && this.Uid == virtualPortGroupSecurityPolicyImpl.Uid && ((this.ExtensionData == null && virtualPortGroupSecurityPolicyImpl.ExtensionData == null) || (this.ExtensionData != null && this.ExtensionData.Equals(virtualPortGroupSecurityPolicyImpl.ExtensionData))));
+        }
+
+        public override bool Equals(object virtualPortGroupSecurityPolicyImpl)
+        {
+            return Equals(virtualPortGroupSecurityPolicyImpl as VirtualPortGroupSecurityPolicyImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (AllowPromiscuous + "_" + ForgedTransmits + "_" + MacChanges + "_" + VirtualPortGroup + "_" + AllowPromiscuousInherited + "_" + ForgedTransmitsInherited + "_" + MacChangesInherited + "_" + Uid + "_" + ExtensionData).GetHashCode();
+        }
+    }
+
     public class VirtualSwitchImpl : VirtualSwitch, IEquatable<VirtualSwitchImpl>
     {
         public string Id { get; set; }
