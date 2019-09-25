@@ -516,3 +516,19 @@ function Update-HostCacheConfiguration {
 
     return $VMHostCacheConfigurationManager.ConfigureHostCache_Task($Spec)
 }
+
+function Update-VirtualPortGroup {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostNetworkSystem] $VMHostNetworkSystem,
+
+        [Parameter(Mandatory = $true)]
+        [string] $VirtualPortGroupName,
+
+        [Parameter(Mandatory = $true)]
+        [VMware.Vim.HostPortGroupSpec] $Spec
+    )
+
+    $VMHostNetworkSystem.UpdatePortGroup($VirtualPortGroupName, $Spec)
+}
