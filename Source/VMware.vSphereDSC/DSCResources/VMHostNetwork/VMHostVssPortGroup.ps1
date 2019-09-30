@@ -15,23 +15,23 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostVirtualPortGroup : VMHostNetworkBaseDSC {
+class VMHostVssPortGroup : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the name for the Port Group.
+    Name of the the Port Group.
     #>
     [DscProperty(Key)]
-    [string] $PortGroupName
+    [string] $Name
 
     <#
     .DESCRIPTION
 
-    Specifies the Virtual Switch associated with the Port Group.
+    Specifies the Name of the Virtual Switch associated with the Port Group.
     The Virtual Switch must be a Standard Virtual Switch.
     #>
     [DscProperty(Mandatory)]
-    [string] $VirtualSwitch
+    [string] $VssName
 
     <#
     .DESCRIPTION
@@ -56,14 +56,14 @@ class VMHostVirtualPortGroup : VMHostNetworkBaseDSC {
 
     [void] Set() {
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        $this.RetrieveVMHost()
 
-        $foundVirtualSwitch = $this.GetVirtualSwitch($vmHost, $this.VirtualSwitch)
-        $portGroup = $this.GetVirtualPortGroup($vmHost, $foundVirtualSwitch)
+        $virtualSwitch = $this.GetVirtualSwitch()
+        $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $portGroup) {
-                $this.AddVirtualPortGroup($foundVirtualSwitch)
+                $this.AddVirtualPortGroup($virtualSwitch)
             }
             else {
                 $this.UpdateVirtualPortGroup($portGroup)
@@ -78,10 +78,10 @@ class VMHostVirtualPortGroup : VMHostNetworkBaseDSC {
 
     [bool] Test() {
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        $this.RetrieveVMHost()
 
-        $foundVirtualSwitch = $this.GetVirtualSwitch($vmHost, $this.VirtualSwitch)
-        $portGroup = $this.GetVirtualPortGroup($vmHost, $foundVirtualSwitch)
+        $virtualSwitch = $this.GetVirtualSwitch()
+        $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $portGroup) {
@@ -95,17 +95,17 @@ class VMHostVirtualPortGroup : VMHostNetworkBaseDSC {
         }
     }
 
-    [VMHostVirtualPortGroup] Get() {
-        $result = [VMHostVirtualPortGroup]::new()
+    [VMHostVssPortGroup] Get() {
+        $result = [VMHostVssPortGroup]::new()
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        $this.RetrieveVMHost()
 
-        $foundVirtualSwitch = $this.GetVirtualSwitch($vmHost, $this.VirtualSwitch)
-        $portGroup = $this.GetVirtualPortGroup($vmHost, $foundVirtualSwitch)
+        $virtualSwitch = $this.GetVirtualSwitch()
+        $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
-        $result.Name = $vmHost.Name
+        $result.VMHostName = $this.VMHost.Name
         $this.PopulateResult($portGroup, $result)
 
         return $result
@@ -114,11 +114,33 @@ class VMHostVirtualPortGroup : VMHostNetworkBaseDSC {
     <#
     .DESCRIPTION
 
+    Retrieves the Virtual Switch with the specified name from the server if it exists.
+    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist and Ensure is set to 'Absent', $null is returned.
+    Otherwise it throws an exception.
+    #>
+    [PSObject] GetVirtualSwitch() {
+        if ($this.Ensure -eq [Ensure]::Absent) {
+            return Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction SilentlyContinue
+        }
+        else {
+            try {
+                $virtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction Stop
+                return $virtualSwitch
+            }
+            catch {
+                throw "Could not retrieve Virtual Switch $($this.VssName) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+            }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
     Retrieves the Virtual Port Group with the specified Name, available on the specified Virtual Switch and VMHost from the server if it exists,
     otherwise returns $null.
     #>
-    [PSObject] GetVirtualPortGroup($vmHost, $foundVirtualSwitch) {
-        return Get-VirtualPortGroup -Server $this.Connection -Name $this.PortGroupName -VirtualSwitch $foundVirtualSwitch -VMHost $vmHost -ErrorAction SilentlyContinue
+    [PSObject] GetVirtualPortGroup($virtualSwitch) {
+        return Get-VirtualPortGroup -Server $this.Connection -Name $this.Name -VirtualSwitch $virtualSwitch -VMHost $this.VMHost -ErrorAction SilentlyContinue
     }
 
     <#
@@ -169,18 +191,18 @@ class VMHostVirtualPortGroup : VMHostNetworkBaseDSC {
 
     Creates a new Port Group available on the specified Virtual Switch.
     #>
-    [void] AddVirtualPortGroup($foundVirtualSwitch) {
+    [void] AddVirtualPortGroup($virtualSwitch) {
         $portGroupParams = $this.GetPortGroupParams()
 
         $portGroupParams.Server = $this.Connection
-        $portGroupParams.Name = $this.PortGroupName
-        $portGroupParams.VirtualSwitch = $foundVirtualSwitch
+        $portGroupParams.Name = $this.Name
+        $portGroupParams.VirtualSwitch = $virtualSwitch
 
         try {
             New-VirtualPortGroup @portGroupParams
         }
         catch {
-            throw "Cannot create Virtual Port Group $($this.PortGroupName). For more information: $($_.Exception.Message)"
+            throw "Cannot create Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
         }
     }
 
@@ -196,21 +218,22 @@ class VMHostVirtualPortGroup : VMHostNetworkBaseDSC {
             $portGroup | Set-VirtualPortGroup @portGroupParams
         }
         catch {
-            throw "Cannot update Virtual Port Group $($this.PortGroupName). For more information: $($_.Exception.Message)"
+            throw "Cannot update Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
         }
     }
 
     <#
     .DESCRIPTION
 
-    Removes the specified Port Group available on the Virtual Switch.
+    Removes the specified Port Group available on the Virtual Switch. All VMs connected to the Port Group must be PoweredOff to successfully remove the Port Group.
+    If one or more of the VMs are PoweredOn, the removal would not be successful because the Port Group is used by the VMs.
     #>
     [void] RemoveVirtualPortGroup($portGroup) {
         try {
             $portGroup | Remove-VirtualPortGroup -Confirm:$false -ErrorAction Stop
         }
         catch {
-            throw "Cannot remove Virtual Port Group $($this.PortGroupName). For more information: $($_.Exception.Message)"
+            throw "Cannot remove Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
         }
     }
 
@@ -221,14 +244,14 @@ class VMHostVirtualPortGroup : VMHostNetworkBaseDSC {
     #>
     [void] PopulateResult($portGroup, $result) {
         if ($null -ne $portGroup) {
-            $result.PortGroupName = $portGroup.Name
-            $result.VirtualSwitch = $portGroup.VirtualSwitchName
+            $result.Name = $portGroup.Name
+            $result.VssName = $portGroup.VirtualSwitchName
             $result.Ensure = [Ensure]::Present
             $result.VLanId = $portGroup.VLanId
         }
         else {
-            $result.PortGroupName = $this.PortGroupName
-            $result.VirtualSwitch = $this.VirtualSwitch
+            $result.Name = $this.Name
+            $result.VssName = $this.VssName
             $result.Ensure = [Ensure]::Absent
             $result.VLanId = $this.VLanId
         }

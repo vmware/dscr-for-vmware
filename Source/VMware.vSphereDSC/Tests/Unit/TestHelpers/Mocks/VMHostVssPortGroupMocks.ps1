@@ -14,21 +14,21 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-VMHostVirtualPortGroupProperties {
+function New-VMHostVssPortGroupProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = @{
+    $vmHostVssPortGroupProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
-        Name = $script:constants.VMHostName
-        VirtualSwitch = $script:constants.VirtualSwitchName
+        VMHostName = $script:constants.VMHostName
+        VssName = $script:constants.VirtualSwitchName
     }
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
-function New-MocksForVMHostVirtualPortGroup {
+function New-MocksForVMHostVssPortGroup {
     [CmdletBinding()]
 
     $viServerMock = $script:viServer
@@ -44,194 +44,194 @@ function New-MocksInSetWhenEnsurePresentAndNonExistingPortGroup {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Present'
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Present'
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
     Mock -CommandName New-VirtualPortGroup -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsurePresentExistingPortGroupAndNegativeVLanId {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Present'
-    $vmHostVirtualPortGroupProperties.VLanId = -1
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Present'
+    $vmHostVssPortGroupProperties.VLanId = -1
 
     $virtualPortGroupMock = $script:virtualPortGroup
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $virtualPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsurePresentExistingPortGroupAndVLanIdBiggerThanTheMaxValidValue {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Present'
-    $vmHostVirtualPortGroupProperties.VLanId = $script:constants.VLanId + 1
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Present'
+    $vmHostVssPortGroupProperties.VLanId = $script:constants.VLanId + 1
 
     $virtualPortGroupMock = $script:virtualPortGroup
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $virtualPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsurePresentExistingPortGroupAndValidVLanId {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Present'
-    $vmHostVirtualPortGroupProperties.VLanId = $script:constants.VLanId
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Present'
+    $vmHostVssPortGroupProperties.VLanId = $script:constants.VLanId
 
     $virtualPortGroupMock = $script:virtualPortGroup
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $virtualPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
     Mock -CommandName Set-VirtualPortGroup -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksInSetWhenEnsureAbsentAndNonExistingPortGroup {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Absent'
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Absent'
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
     Mock -CommandName Remove-VirtualPortGroup -MockWith { return $null }.GetNewClosure()
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksInSetWhenEnsureAbsentAndExistingPortGroup {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Absent'
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Absent'
 
     $virtualPortGroupMock = $script:virtualPortGroup
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $virtualPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
     Mock -CommandName Remove-VirtualPortGroup -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsurePresentAndNonExistingPortGroup {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Present'
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Present'
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsurePresentExistingPortGroupAndNoVLanIdSpecified {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Present'
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Present'
 
     $virtualPortGroupMock = $script:virtualPortGroup
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $virtualPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsurePresentExistingPortGroupAndVLanIdNotEqualToPortGroupVLanId {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Present'
-    $vmHostVirtualPortGroupProperties.VLanId = $script:constants.VLanId - 1
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Present'
+    $vmHostVssPortGroupProperties.VLanId = $script:constants.VLanId - 1
 
     $virtualPortGroupMock = $script:virtualPortGroup
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $virtualPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsurePresentExistingPortGroupAndVLanIdEqualToPortGroupVLanId {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Present'
-    $vmHostVirtualPortGroupProperties.VLanId = $script:constants.VLanId
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Present'
+    $vmHostVssPortGroupProperties.VLanId = $script:constants.VLanId
 
     $virtualPortGroupMock = $script:virtualPortGroup
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $virtualPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsureAbsentAndNonExistingPortGroup {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Absent'
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Absent'
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsureAbsentAndExistingPortGroup {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Absent'
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Absent'
 
     $virtualPortGroupMock = $script:virtualPortGroup
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $virtualPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }
 
 function New-MocksWhenEnsurePresentAndExistingPortGroup {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupProperties = New-VMHostVirtualPortGroupProperties
-    $vmHostVirtualPortGroupProperties.PortGroupName = $script:constants.VirtualPortGroupName
-    $vmHostVirtualPortGroupProperties.Ensure = 'Present'
+    $vmHostVssPortGroupProperties = New-VMHostVssPortGroupProperties
+    $vmHostVssPortGroupProperties.Name = $script:constants.VirtualPortGroupName
+    $vmHostVssPortGroupProperties.Ensure = 'Present'
 
     $virtualPortGroupMock = $script:virtualPortGroup
 
     Mock -CommandName Get-VirtualPortGroup -MockWith { return $virtualPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost } -Verifiable
 
-    $vmHostVirtualPortGroupProperties
+    $vmHostVssPortGroupProperties
 }

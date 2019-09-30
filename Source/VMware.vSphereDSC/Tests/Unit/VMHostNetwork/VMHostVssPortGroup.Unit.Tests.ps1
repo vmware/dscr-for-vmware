@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostVirtualPortGroup'
+        $resourceName = 'VMHostVssPortGroup'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVirtualPortGroupMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVssPortGroupMocks.ps1"
 
-        Describe 'VMHostVirtualPortGroup\Set' -Tag 'Set' {
+        Describe 'VMHostVssPortGroup\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroup
+                New-MocksForVMHostVssPortGroup
             }
 
             Context 'Invoking with Ensure Present and non existing Port Group' {
@@ -215,10 +215,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVirtualPortGroup\Test' -Tag 'Test' {
+        Describe 'VMHostVssPortGroup\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroup
+                New-MocksForVMHostVssPortGroup
             }
 
             Context 'Invoking with Ensure Present and non existing Port Group' {
@@ -366,10 +366,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVirtualPortGroup\Get' -Tag 'Get' {
+        Describe 'VMHostVssGroup\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroup
+                New-MocksForVMHostVssPortGroup
             }
 
             Context 'Invoking with Ensure Present and non existing Port Group' {
@@ -392,9 +392,9 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $resourceProperties.Server
+                    $result.VMHostName | Should -Be $resourceProperties.VMHostName
                     $result.Name | Should -Be $resourceProperties.Name
-                    $result.PortGroupName | Should -Be $resourceProperties.PortGroupName
-                    $result.VirtualSwitch | Should -Be $resourceProperties.VirtualSwitch
+                    $result.VssName | Should -Be $resourceProperties.VssName
                     $result.Ensure | Should -Be 'Absent'
                     $result.VLanId | Should -Be $resourceProperties.VLanId
                 }
@@ -420,9 +420,9 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $resourceProperties.Server
-                    $result.Name | Should -Be $script:vmHost.Name
-                    $result.PortGroupName | Should -Be $script:virtualPortGroup.Name
-                    $result.VirtualSwitch | Should -Be $script:virtualPortGroup.VirtualSwitch.Name
+                    $result.VMHostName | Should -Be $script:vmHost.Name
+                    $result.Name | Should -Be $script:virtualPortGroup.Name
+                    $result.VssName | Should -Be $script:virtualPortGroup.VirtualSwitch.Name
                     $result.Ensure | Should -Be 'Present'
                     $result.VLanId | Should -Be $script:virtualPortGroup.VLanId
                 }
@@ -448,9 +448,9 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $resourceProperties.Server
+                    $result.VMHostName | Should -Be $resourceProperties.VMHostName
                     $result.Name | Should -Be $resourceProperties.Name
-                    $result.PortGroupName | Should -Be $resourceProperties.PortGroupName
-                    $result.VirtualSwitch | Should -Be $resourceProperties.VirtualSwitch
+                    $result.VssName | Should -Be $resourceProperties.VssName
                     $result.Ensure | Should -Be 'Absent'
                     $result.VLanId | Should -Be $resourceProperties.VLanId
                 }
@@ -476,9 +476,9 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $resourceProperties.Server
-                    $result.Name | Should -Be $script:vmHost.Name
-                    $result.PortGroupName | Should -Be $script:virtualPortGroup.Name
-                    $result.VirtualSwitch | Should -Be $script:virtualPortGroup.VirtualSwitch.Name
+                    $result.VMHostName | Should -Be $script:vmHost.Name
+                    $result.Name | Should -Be $script:virtualPortGroup.Name
+                    $result.VssName | Should -Be $script:virtualPortGroup.VirtualSwitch.Name
                     $result.Ensure | Should -Be 'Present'
                     $result.VLanId | Should -Be $script:virtualPortGroup.VLanId
                 }
