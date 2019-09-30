@@ -14,21 +14,22 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-VMHostVirtualPortGroupSecurityPolicyProperties {
+function New-VMHostVssPortGroupSecurityProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties = @{
+    $vmHostVssPortGroupSecurityProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
-        Name = $script:constants.VMHostName
-        PortGroup = $script:constants.VirtualPortGroupName
+        VMHostName = $script:constants.VMHostName
+        Name = $script:constants.VirtualPortGroupName
+        Ensure = 'Present'
     }
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties
 }
 
-function New-MocksForVMHostVirtualPortGroupSecurityPolicy {
+function New-MocksForVMHostVssPortGroupSecurity {
     [CmdletBinding()]
 
     $viServerMock = $script:viServer
@@ -44,107 +45,107 @@ function New-MocksWhenSecurityPolicySettingsArePassedAndSecurityPolicySettingsIn
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties = New-VMHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties = New-VMHostVssPortGroupSecurityProperties
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties.AllowPromiscuous = $script:constants.AllowPromiscuous
-    $vmHostVirtualPortGroupSecurityPolicyProperties.ForgedTransmits = $script:constants.ForgedTransmits
-    $vmHostVirtualPortGroupSecurityPolicyProperties.MacChanges = $script:constants.MacChanges
+    $vmHostVssPortGroupSecurityProperties.AllowPromiscuous = $script:constants.AllowPromiscuous
+    $vmHostVssPortGroupSecurityProperties.ForgedTransmits = $script:constants.ForgedTransmits
+    $vmHostVssPortGroupSecurityProperties.MacChanges = $script:constants.MacChanges
 
     $virtualPortGroupSecurityPolicyMock = $script:virtualPortGroupSecurityPolicy
 
     Mock -CommandName Get-SecurityPolicy -MockWith { return $virtualPortGroupSecurityPolicyMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VirtualPortGroup -eq $script:virtualPortGroup } -Verifiable
     Mock -CommandName Set-SecurityPolicy -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties
 }
 
 function New-MocksWhenSecurityPolicySettingsArePassedAndSecurityPolicySettingsInheritedAreSetToFalse {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties = New-VMHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties = New-VMHostVssPortGroupSecurityProperties
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties.AllowPromiscuous = $script:constants.AllowPromiscuous
-    $vmHostVirtualPortGroupSecurityPolicyProperties.AllowPromiscuousInherited = $script:constants.AllowPromiscuousInherited
-    $vmHostVirtualPortGroupSecurityPolicyProperties.ForgedTransmits = $script:constants.ForgedTransmits
-    $vmHostVirtualPortGroupSecurityPolicyProperties.ForgedTransmitsInherited = $script:constants.ForgedTransmitsInherited
-    $vmHostVirtualPortGroupSecurityPolicyProperties.MacChanges = $script:constants.MacChanges
-    $vmHostVirtualPortGroupSecurityPolicyProperties.MacChangesInherited = $script:constants.MacChangesInherited
+    $vmHostVssPortGroupSecurityProperties.AllowPromiscuous = $script:constants.AllowPromiscuous
+    $vmHostVssPortGroupSecurityProperties.AllowPromiscuousInherited = $script:constants.AllowPromiscuousInherited
+    $vmHostVssPortGroupSecurityProperties.ForgedTransmits = $script:constants.ForgedTransmits
+    $vmHostVssPortGroupSecurityProperties.ForgedTransmitsInherited = $script:constants.ForgedTransmitsInherited
+    $vmHostVssPortGroupSecurityProperties.MacChanges = $script:constants.MacChanges
+    $vmHostVssPortGroupSecurityProperties.MacChangesInherited = $script:constants.MacChangesInherited
 
     $virtualPortGroupSecurityPolicyMock = $script:virtualPortGroupSecurityPolicy
 
     Mock -CommandName Get-SecurityPolicy -MockWith { return $virtualPortGroupSecurityPolicyMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VirtualPortGroup -eq $script:virtualPortGroup } -Verifiable
     Mock -CommandName Set-SecurityPolicy -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties
 }
 
 function New-MocksWhenSecurityPolicySettingsArePassedAndSecurityPolicySettingsInheritedAreSetToTrue {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties = New-VMHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties = New-VMHostVssPortGroupSecurityProperties
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties.AllowPromiscuous = $script:constants.AllowPromiscuous
-    $vmHostVirtualPortGroupSecurityPolicyProperties.AllowPromiscuousInherited = !$script:constants.AllowPromiscuousInherited
-    $vmHostVirtualPortGroupSecurityPolicyProperties.ForgedTransmits = $script:constants.ForgedTransmits
-    $vmHostVirtualPortGroupSecurityPolicyProperties.ForgedTransmitsInherited = !$script:constants.ForgedTransmitsInherited
-    $vmHostVirtualPortGroupSecurityPolicyProperties.MacChanges = $script:constants.MacChanges
-    $vmHostVirtualPortGroupSecurityPolicyProperties.MacChangesInherited = !$script:constants.MacChangesInherited
+    $vmHostVssPortGroupSecurityProperties.AllowPromiscuous = $script:constants.AllowPromiscuous
+    $vmHostVssPortGroupSecurityProperties.AllowPromiscuousInherited = !$script:constants.AllowPromiscuousInherited
+    $vmHostVssPortGroupSecurityProperties.ForgedTransmits = $script:constants.ForgedTransmits
+    $vmHostVssPortGroupSecurityProperties.ForgedTransmitsInherited = !$script:constants.ForgedTransmitsInherited
+    $vmHostVssPortGroupSecurityProperties.MacChanges = $script:constants.MacChanges
+    $vmHostVssPortGroupSecurityProperties.MacChangesInherited = !$script:constants.MacChangesInherited
 
     $virtualPortGroupSecurityPolicyMock = $script:virtualPortGroupSecurityPolicy
 
     Mock -CommandName Get-SecurityPolicy -MockWith { return $virtualPortGroupSecurityPolicyMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VirtualPortGroup -eq $script:virtualPortGroup } -Verifiable
     Mock -CommandName Set-SecurityPolicy -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties
 }
 
 function New-MocksWhenTheSecurityPolicySettingsAreNonMatching {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties = New-VMHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties = New-VMHostVssPortGroupSecurityProperties
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties.AllowPromiscuous = !$script:constants.AllowPromiscuous
-    $vmHostVirtualPortGroupSecurityPolicyProperties.ForgedTransmitsInherited = !$script:constants.ForgedTransmitsInherited
+    $vmHostVssPortGroupSecurityProperties.AllowPromiscuous = !$script:constants.AllowPromiscuous
+    $vmHostVssPortGroupSecurityProperties.ForgedTransmitsInherited = !$script:constants.ForgedTransmitsInherited
 
     $virtualPortGroupSecurityPolicyMock = $script:virtualPortGroupSecurityPolicy
 
     Mock -CommandName Get-SecurityPolicy -MockWith { return $virtualPortGroupSecurityPolicyMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VirtualPortGroup -eq $script:virtualPortGroup } -Verifiable
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties
 }
 
 function New-MocksWhenTheSecurityPolicySettingsAreMatching {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties = New-VMHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties = New-VMHostVssPortGroupSecurityProperties
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties.AllowPromiscuous = $script:constants.AllowPromiscuous
-    $vmHostVirtualPortGroupSecurityPolicyProperties.AllowPromiscuousInherited = $script:constants.AllowPromiscuousInherited
-    $vmHostVirtualPortGroupSecurityPolicyProperties.ForgedTransmits = $script:constants.ForgedTransmits
-    $vmHostVirtualPortGroupSecurityPolicyProperties.ForgedTransmitsInherited = $script:constants.ForgedTransmitsInherited
-    $vmHostVirtualPortGroupSecurityPolicyProperties.MacChanges = $script:constants.MacChanges
-    $vmHostVirtualPortGroupSecurityPolicyProperties.MacChangesInherited = $script:constants.MacChangesInherited
+    $vmHostVssPortGroupSecurityProperties.AllowPromiscuous = $script:constants.AllowPromiscuous
+    $vmHostVssPortGroupSecurityProperties.AllowPromiscuousInherited = $script:constants.AllowPromiscuousInherited
+    $vmHostVssPortGroupSecurityProperties.ForgedTransmits = $script:constants.ForgedTransmits
+    $vmHostVssPortGroupSecurityProperties.ForgedTransmitsInherited = $script:constants.ForgedTransmitsInherited
+    $vmHostVssPortGroupSecurityProperties.MacChanges = $script:constants.MacChanges
+    $vmHostVssPortGroupSecurityProperties.MacChangesInherited = $script:constants.MacChangesInherited
 
     $virtualPortGroupSecurityPolicyMock = $script:virtualPortGroupSecurityPolicy
 
     Mock -CommandName Get-SecurityPolicy -MockWith { return $virtualPortGroupSecurityPolicyMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VirtualPortGroup -eq $script:virtualPortGroup } -Verifiable
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties
 }
 
 function New-MocksInGet {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties = New-VMHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties = New-VMHostVssPortGroupSecurityProperties
 
     $virtualPortGroupSecurityPolicyMock = $script:virtualPortGroupSecurityPolicy
 
     Mock -CommandName Get-SecurityPolicy -MockWith { return $virtualPortGroupSecurityPolicyMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VirtualPortGroup -eq $script:virtualPortGroup } -Verifiable
 
-    $vmHostVirtualPortGroupSecurityPolicyProperties
+    $vmHostVssPortGroupSecurityProperties
 }

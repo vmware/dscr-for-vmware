@@ -1,13 +1,14 @@
-# VMHostVirtualPortGroupSecurityPolicy
+# VMHostVssPortGroupSecurity
 
 ## Parameters
 
 | Parameter | Attribute | DataType | Description | Allowed Values |
 | --- | --- | --- | --- | --- |
-| **Server** | Key | string | Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
+| **Server** | Key | string | The Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
-| **Name** | Key | string | Name of the VMHost to configure. ||
-| **PortGroup** | Key | string | The Port Group which is going to be configured. ||
+| **VMHostName** | Key | string | The Name of the VMHost which is going to be used. ||
+| **Name** | Key | string | The Name for the Port Group. ||
+| **Ensure** | Mandatory | Ensure | Value indicating if the Port Group should be Present or Absent. | Present, Absent |
 | **AllowPromiscuous** | Optional | bool | Specifies whether promiscuous mode is enabled for the corresponding Virtual Port Group. ||
 | **AllowPromiscuousInherited** | Optional | bool | Specifies whether the AllowPromiscuous setting is inherited from the parent Standard Virtual Switch. ||
 | **ForgedTransmits** | Optional | bool | Specifies whether forged transmits are enabled for the corresponding Virtual Port Group. ||
@@ -25,7 +26,7 @@ The resource is used to update the Security Policy of the specified Virtual Port
 The first Resource in the Configuration creates a new Standard Virtual Switch **MyVirtualSwitch** with MTU **1500**. The second Resource in the Configuration creates a new Virtual Port Group **MyVirtualPortGroup** which is associated with the Virtual Switch **MyVirtualSwitch** with VLanId set to **1**. The third Resource in the Configuration updates the Security Policy of Virtual Port Group **MyVirtualPortGroup** by enabling Promiscuous mode, Forged Transmits and Mac Changes. The Security Policy settings are not inherited from the parent Standard Virtual Switch.
 
 ```powershell
-Configuration VMHostVirtualPortGroupSecurityPolicy_Config {
+Configuration VMHostVssPortGroupSecurity_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -40,7 +41,7 @@ Configuration VMHostVirtualPortGroupSecurityPolicy_Config {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $Name
+        $VMHostName
     )
 
     Import-DscResource -ModuleName VMware.vSphereDSC
@@ -49,35 +50,36 @@ Configuration VMHostVirtualPortGroupSecurityPolicy_Config {
         VMHostVss VMHostStandardSwitch {
             Server = $Server
             Credential = $Credential
-            Name = $Name
+            Name = $VMHostName
             VssName = 'MyVirtualSwitch'
             Ensure = 'Present'
             Mtu = 1500
         }
 
-        VMHostVirtualPortGroup VMHostVirtualPortGroup {
+        VMHostVssPortGroup VMHostVssPortGroup {
             Server = $Server
             Credential = $Credential
-            Name = $Name
-            PortGroupName = 'MyVirtualPortGroup'
-            VirtualSwitch = 'MyVirtualSwitch'
+            VMHostName = $VMHostName
+            Name = 'MyVirtualPortGroup'
+            VssName = 'MyVirtualSwitch'
             Ensure = 'Present'
             VLanId = 1
             DependsOn = "[VMHostVss]VMHostStandardSwitch"
         }
 
-        VMHostVirtualPortGroupSecurityPolicy VMHostVirtualPortGroupSecurityPolicy {
+        VMHostVssPortGroupSecurity VMHostVssPortGroupSecurity {
             Server = $Server
             Credential = $Credential
-            Name = $Name
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $VMHostName
+            Name = 'MyVirtualPortGroup'
+            Ensure = 'Present'
             AllowPromiscuous = $true
             AllowPromiscuousInherited = $false
             ForgedTransmits = $true
             ForgedTransmitsInherited = $false
             MacChanges = $true
             MacChangesInherited = $false
-            DependsOn = "[VMHostVirtualPortGroup]VMHostVirtualPortGroup"
+            DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
         }
     }
 }

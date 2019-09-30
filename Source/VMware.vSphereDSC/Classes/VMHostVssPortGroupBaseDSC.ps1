@@ -14,54 +14,42 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Param(
-    [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    $Name,
+class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
+    <#
+    .DESCRIPTION
 
-    [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    $Server,
+    Name of the the Port Group.
+    #>
+    [DscProperty(Key)]
+    [string] $Name
 
-    [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    $User,
+    <#
+    .DESCRIPTION
 
-    [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
-    [string]
-    $Password
-)
+    Value indicating if the Port Group should be Present or Absent.
+    #>
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
 
-$script:configurationData = @{
-    AllNodes = @(
-        @{
-            NodeName = 'localhost'
-            PSDscAllowPlainTextPassword = $true
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Port Group with the specified name from the server if it exists.
+    The Virtual Port Group must be a Standard Virtual Port Group. If the Virtual Port Group does not exist and Ensure is set to 'Absent', $null is returned.
+    Otherwise it throws an exception.
+    #>
+    [PSObject] GetVirtualPortGroup() {
+        if ($this.Ensure -eq [Ensure]::Absent) {
+            return $null
         }
-    )
-}
-
-Configuration VMHostVirtualPortGroup_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-
-        VMHostVirtualPortGroup vmHostVirtualPortGroup {
-            Name = $Name
-            Server = $Server
-            Credential = $Credential
-            PortGroupName = 'MyVirtualPortGroup'
-            VirtualSwitch = 'vSwitch0'
-            Ensure = 'Present'
-            VLanId = 0
+        else {
+            try {
+                $virtualPortGroup = Get-VirtualPortGroup -Server $this.Connection -Name $this.Name -VMHost $this.VMHost -Standard -ErrorAction Stop
+                return $virtualPortGroup
+            }
+            catch {
+                throw "Could not retrieve Virtual Port Group $($this.Name) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+            }
         }
     }
 }
-
-VMHostVirtualPortGroup_Config -ConfigurationData $script:configurationData

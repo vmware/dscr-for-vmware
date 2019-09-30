@@ -50,7 +50,7 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostVirtualPortGroupSecurityPolicy_Config {
+Configuration VMHostVssPortGroupSecurity_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -63,31 +63,32 @@ Configuration VMHostVirtualPortGroupSecurityPolicy_Config {
             Mtu = 1500
         }
 
-        VMHostVirtualPortGroup VMHostVirtualPortGroup {
+        VMHostVssPortGroup VMHostVssPortGroup {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroupName = 'MyVirtualPortGroup'
-            VirtualSwitch = 'MyVirtualSwitch'
+            VMHostName = $AllNodes.Name
+            Name = 'MyVirtualPortGroup'
+            VssName = 'MyVirtualSwitch'
             Ensure = 'Present'
             VLanId = 0
             DependsOn = "[VMHostVss]VMHostStandardSwitch"
         }
 
-        VMHostVirtualPortGroupSecurityPolicy VMHostVirtualPortGroupSecurityPolicy {
+        VMHostVssPortGroupSecurity VMHostVssPortGroupSecurity {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $AllNodes.Name
+            Name = 'MyVirtualPortGroup'
+            Ensure = 'Present'
             AllowPromiscuous = $true
             AllowPromiscuousInherited = $false
             ForgedTransmits = $true
             ForgedTransmitsInherited = $false
             MacChanges = $true
             MacChangesInherited = $false
-            DependsOn = "[VMHostVirtualPortGroup]VMHostVirtualPortGroup"
+            DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
         }
     }
 }
 
-VMHostVirtualPortGroupSecurityPolicy_Config -ConfigurationData $script:configurationData
+VMHostVssPortGroupSecurity_Config -ConfigurationData $script:configurationData

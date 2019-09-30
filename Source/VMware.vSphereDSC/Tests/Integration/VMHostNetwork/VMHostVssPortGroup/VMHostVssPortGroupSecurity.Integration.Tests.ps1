@@ -38,7 +38,7 @@ Param(
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
-$script:dscResourceName = 'VMHostVirtualPortGroupSecurityPolicy'
+$script:dscResourceName = 'VMHostVssPortGroupSecurity'
 $script:moduleFolderPath = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path -Path (Join-Path -Path $moduleFolderPath -ChildPath 'Tests') -ChildPath 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$script:dscResourceName\$($script:dscResourceName)_Config.ps1"
@@ -56,9 +56,9 @@ $script:configurationData = @{
             StandardSwitchSecurityPolicyResourceName = 'StandardSwitchSecurityPolicy'
             StandardSwitchSecurityPolicyResourceId = '[VMHostVssSecurity]StandardSwitchSecurityPolicy'
             VirtualPortGroupResourceName = 'VirtualPortGroup'
-            VirtualPortGroupResourceId = '[VMHostVirtualPortGroup]VirtualPortGroup'
+            VirtualPortGroupResourceId = '[VMHostVssPortGroup]VirtualPortGroup'
             VirtualPortGroupSecurityPolicyResourceName = 'VirtualPortGroupSecurityPolicy'
-            VirtualPortGroupSecurityPolicyResourceId = '[VMHostVirtualPortGroupSecurityPolicy]VirtualPortGroupSecurityPolicy'
+            VirtualPortGroupSecurityPolicyResourceId = '[VMHostVssPortGroupSecurity]VirtualPortGroupSecurityPolicy'
             StandardSwitchName = 'MyStandardSwitch'
             StandardSwitchMtu = 1500
             VirtualPortGroupName = 'MyVirtualPortGroup'
@@ -150,8 +150,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-            $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $configuration.Name | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $configuration.Ensure | Should -Be 'Present'
             $configuration.AllowPromiscuous | Should -Be $script:configurationData.AllNodes.AllowPromiscuous
             $configuration.AllowPromiscuousInherited | Should -Be $script:configurationData.AllNodes.AllowPromiscuousInherited
             $configuration.ForgedTransmits | Should -Be $script:configurationData.AllNodes.ForgedTransmits
@@ -260,8 +261,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-            $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $configuration.Name | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $configuration.Ensure | Should -Be 'Present'
             $configuration.AllowPromiscuous | Should -Be $script:configurationData.AllNodes.AllowPromiscuous
             $configuration.AllowPromiscuousInherited | Should -Be $script:configurationData.AllNodes.AllowPromiscuousInherited
             $configuration.ForgedTransmits | Should -Be $script:configurationData.AllNodes.ForgedTransmits
@@ -381,8 +383,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $virtualPortGroupSecurityPolicyResource.Server | Should -Be $script:configurationData.AllNodes.Server
-            $virtualPortGroupSecurityPolicyResource.Name | Should -Be $script:configurationData.AllNodes.Name
-            $virtualPortGroupSecurityPolicyResource.PortGroup | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $virtualPortGroupSecurityPolicyResource.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $virtualPortGroupSecurityPolicyResource.Name | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $virtualPortGroupSecurityPolicyResource.Ensure | Should -Be 'Present'
             $virtualPortGroupSecurityPolicyResource.AllowPromiscuous | Should -Be $script:configurationData.AllNodes.AllowPromiscuous
             $virtualPortGroupSecurityPolicyResource.AllowPromiscuousInherited | Should -Be $true
             $virtualPortGroupSecurityPolicyResource.ForgedTransmits | Should -Be $false

@@ -30,20 +30,4 @@ class VMHostNetworkBaseDSC : VMHostBaseDSC {
             throw "Could not retrieve NetworkSystem on VMHost with name $($this.Name). For more information: $($_.Exception.Message)"
         }
     }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Virtual Switch with the specified name from the server if it exists.
-    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist, it throws an exception.
-    #>
-    [PSObject] GetVirtualSwitch($vmHost, $virtualSwitchName) {
-        try {
-            $foundVirtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $virtualSwitchName -VMHost $vmHost -Standard -ErrorAction Stop
-            return $foundVirtualSwitch
-        }
-        catch {
-            throw "Could not retrieve Virtual Switch $virtualSwitchName of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
-        }
-    }
 }

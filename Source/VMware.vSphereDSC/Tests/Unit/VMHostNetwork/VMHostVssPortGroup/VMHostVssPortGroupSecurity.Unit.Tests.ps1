@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostVirtualPortGroupSecurityPolicy'
+        $resourceName = 'VMHostVssPortGroupSecurity'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVirtualPortGroupSecurityPolicyMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVssPortGroupSecurityMocks.ps1"
 
-        Describe 'VMHostVirtualPortGroupSecurityPolicy\Set' -Tag 'Set' {
+        Describe 'VMHostVssPortGroupSecurity\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroupSecurityPolicy
+                New-MocksForVMHostVssPortGroupSecurity
             }
 
             Context 'Invoking with Security Policy Settings and Security Policy Settings Inherited are not passed' {
@@ -141,10 +141,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVirtualPortGroupSecurityPolicy\Test' -Tag 'Test' {
+        Describe 'VMHostVssPortGroupSecurity\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroupSecurityPolicy
+                New-MocksForVMHostVssPortGroupSecurity
             }
 
             Context 'Invoking with non matching Security Policy Settings' {
@@ -196,10 +196,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVirtualPortGroupSecurityPolicy\Get' -Tag 'Get' {
+        Describe 'VMHostVssPortGroupSecurity\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroupSecurityPolicy
+                New-MocksForVMHostVssPortGroupSecurity
 
                 $resourceProperties = New-MocksInGet
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
@@ -211,8 +211,9 @@ InModuleScope -ModuleName $script:moduleName {
 
                 # Assert
                 $result.Server | Should -Be $resourceProperties.Server
-                $result.Name | Should -Be $script:constants.VMHostName
-                $result.PortGroup | Should -Be $script:constants.VirtualPortGroupName
+                $result.VMHostName | Should -Be $script:constants.VMHostName
+                $result.Name | Should -Be $script:constants.VirtualPortGroupName
+                $result.Ensure | Should -Be $resourceProperties.Ensure
                 $result.AllowPromiscuous | Should -Be $script:constants.AllowPromiscuous
                 $result.AllowPromiscuousInherited | Should -Be $script:constants.AllowPromiscuousInherited
                 $result.ForgedTransmits | Should -Be $script:constants.ForgedTransmits
