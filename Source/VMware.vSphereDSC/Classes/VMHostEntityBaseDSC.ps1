@@ -14,36 +14,34 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-class VMHostNetworkBaseDSC : VMHostBaseDSC {
-    hidden [PSObject] $VMHostNetworkSystem
+class VMHostEntityBaseDSC : BaseDSC {
+    <#
+    .DESCRIPTION
+
+    Name of the VMHost which is going to be used.
+    #>
+    [DscProperty(Key)]
+    [string] $VMHostName
 
     <#
     .DESCRIPTION
 
-    Retrieves the Network System from the specified VMHost.
+    The VMHost which is going to be used.
     #>
-    [void] GetNetworkSystem($vmHost) {
-        try {
-            $this.VMHostNetworkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
-        }
-        catch {
-            throw "Could not retrieve NetworkSystem on VMHost with name $($this.Name). For more information: $($_.Exception.Message)"
-        }
-    }
+    hidden [PSObject] $VMHost
 
     <#
     .DESCRIPTION
 
-    Retrieves the Virtual Switch with the specified name from the server if it exists.
-    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist, it throws an exception.
+    Retrieves the VMHost with the specified name from the server.
+    If the VMHost is not found, it throws an exception.
     #>
-    [PSObject] GetVirtualSwitch($vmHost, $virtualSwitchName) {
+    [void] RetrieveVMHost() {
         try {
-            $foundVirtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $virtualSwitchName -VMHost $vmHost -Standard -ErrorAction Stop
-            return $foundVirtualSwitch
+            $this.VMHost = Get-VMHost -Server $this.Connection -Name $this.VMHostName -ErrorAction Stop
         }
         catch {
-            throw "Could not retrieve Virtual Switch $virtualSwitchName of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+            throw "VMHost with name $($this.VMHostName) was not found. For more information: $($_.Exception.Message)"
         }
     }
 }

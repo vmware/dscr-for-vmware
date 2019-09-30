@@ -109,6 +109,9 @@ $script:constants = @{
     TaskValue = 'task-1'
     TaskSuccessState = 'Success'
     TaskErrorState = 'Error'
+    VirtualSwitchName = 'vSwitch0'
+    VirtualPortGroupName = 'MyVirtualPortGroup'
+    VLanId = 4095
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -629,4 +632,16 @@ $script:hostCacheConfigurationErrorTask = [VMware.VimAutomation.ViCore.Impl.V1.T
 $script:hostCacheConfigurationSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
     Name = $script:constants.ConfigureHostCacheTaskName
     State = $script:constants.TaskSuccessState
+}
+
+$script:virtualSwitch = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VirtualSwitchImpl] @{
+    Name = $script:constants.VirtualSwitchName
+    VMHost = $script:vmHost
+}
+
+$script:virtualPortGroup = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VirtualPortGroupImpl] @{
+    Name = $script:constants.VirtualPortGroupName
+    VirtualSwitch = $script:virtualSwitch
+    VirtualSwitchName = $script:constants.VirtualSwitchName
+    VLanId = $script:constants.VLanId
 }
