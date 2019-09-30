@@ -20,7 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 RootModule = 'VMware.vSphereDSC.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.0.0.17'
+ModuleVersion = '2.0.0.18'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -56,6 +56,6 @@ VariablesToExport = '*'
 AliasesToExport = @()
 
 # DSC resources to export from this module
-DscResourcesToExport = @('Datacenter', 'DatacenterFolder', 'Folder', 'PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'VMHostAccount', 'VMHostAdvancedSettings', 'VMHostAgentVM', 'VMHostCache', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostPciPassthrough', 'VMHostPowerPolicy', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'VMHostVss', 'VMHostVssBridge', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'VMHostGraphics', 'VMHostGraphicsDevice', 'DrsCluster', 'HACluster')
+DscResourcesToExport = @('Datacenter', 'DatacenterFolder', 'Folder', 'PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'VMHostAccount', 'VMHostAdvancedSettings', 'VMHostAgentVM', 'VMHostCache', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostPciPassthrough', 'VMHostPowerPolicy', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'VMHostVssPortGroup', 'VMHostVss', 'VMHostVssBridge', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'VMHostGraphics', 'VMHostGraphicsDevice', 'DrsCluster', 'HACluster')
 
 }

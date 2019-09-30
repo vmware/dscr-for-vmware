@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.18 - 2019-09-30
+### Added
+- Added VMHostEntityBaseDSC class.
+- Added VMHostVssPortGroup DSC Resource.
+- Added Unit Tests for VMHostVssPortGroup DSC Resource.
+- Added Integration Tests for VMHostVssPortGroup DSC Resource.
+- Added Documentation and example Configuration for VMHostVssPortGroup DSC Resource.
+
 ## 2.0.0.17 - 2019-09-03
 ### Added
 - VMware.vSphereDSC.Logging module is introduced.
