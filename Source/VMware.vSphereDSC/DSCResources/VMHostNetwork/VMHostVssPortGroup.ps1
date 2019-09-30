@@ -140,6 +140,14 @@ class VMHostVssPortGroup : VMHostEntityBaseDSC {
     otherwise returns $null.
     #>
     [PSObject] GetVirtualPortGroup($virtualSwitch) {
+        if ($null -eq $virtualSwitch) {
+            <#
+            If the Virtual Switch is $null, it means that Ensure was set to 'Absent' and
+            the Port Group does not exist for the specified Virtual Switch.
+            #>
+            return $null
+        }
+
         return Get-VirtualPortGroup -Server $this.Connection -Name $this.Name -VirtualSwitch $virtualSwitch -VMHost $this.VMHost -ErrorAction SilentlyContinue
     }
 

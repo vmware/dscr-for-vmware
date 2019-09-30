@@ -18,11 +18,6 @@ Param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]
-    $Name,
-
-    [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
-    [string]
     $Server,
 
     [Parameter(Mandatory = $true)]
@@ -33,35 +28,52 @@ Param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]
-    $Password
+    $Password,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $Name
 )
+
+$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
 $script:configurationData = @{
     AllNodes = @(
         @{
             NodeName = 'localhost'
             PSDscAllowPlainTextPassword = $true
+            Server = $Server
+            Credential = $Credential
+            Name = $Name
         }
     )
 }
 
-Configuration VMHostVirtualPortGroup_Config {
+Configuration VMHostVssPortGroup_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
-        $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
+        VMHostVss VMHostVss {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            Name = $AllNodes.Name
+            VssName = 'MyVirtualSwitch'
+            Ensure = 'Present'
+            Mtu = 1500
+        }
 
-        VMHostVirtualPortGroup vmHostVirtualPortGroup {
-            Name = $Name
-            Server = $Server
-            Credential = $Credential
-            PortGroupName = 'MyVirtualPortGroup'
-            VirtualSwitch = 'vSwitch0'
+        VMHostVssPortGroup VMHostVssPortGroup {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            VMHostName = $AllNodes.Name
+            Name = 'MyVirtualPortGroup'
+            VssName = 'MyVirtualSwitch'
             Ensure = 'Present'
             VLanId = 0
+            DependsOn = "[VMHostVss]VMHostVss"
         }
     }
 }
 
-VMHostVirtualPortGroup_Config -ConfigurationData $script:configurationData
+VMHostVssPortGroup_Config -ConfigurationData $script:configurationData
