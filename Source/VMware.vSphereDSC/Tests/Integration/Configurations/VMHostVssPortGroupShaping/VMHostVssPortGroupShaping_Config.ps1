@@ -14,7 +14,7 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Configuration VMHostVirtualPortGroupShapingPolicy_WhenAddingVirtualPortGroupAndStandardSwitch_Config {
+Configuration VMHostVssPortGroupShaping_WhenAddingVirtualPortGroupAndStandardSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -27,12 +27,12 @@ Configuration VMHostVirtualPortGroupShapingPolicy_WhenAddingVirtualPortGroupAndS
             Mtu = $AllNodes.Mtu
         }
 
-        VMHostVirtualPortGroup $AllNodes.VirtualPortGroupResourceName {
+        VMHostVssPortGroup $AllNodes.VirtualPortGroupResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroupName = $AllNodes.VirtualPortGroupName
-            VirtualSwitch = $AllNodes.StandardSwitchName
+            VMHostName = $AllNodes.Name
+            Name = $AllNodes.VirtualPortGroupName
+            VssName = $AllNodes.StandardSwitchName
             Ensure = 'Present'
             VLanId = $AllNodes.VLanId
             DependsOn = $AllNodes.StandardSwitchResourceId
@@ -40,15 +40,16 @@ Configuration VMHostVirtualPortGroupShapingPolicy_WhenAddingVirtualPortGroupAndS
     }
 }
 
-Configuration VMHostVirtualPortGroupShapingPolicy_WhenUpdatingShapingPolicyWithEnabledSetToTrue_Config {
+Configuration VMHostVssPortGroupShaping_WhenUpdatingShapingPolicyWithEnabledSetToTrue_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostVirtualPortGroupShapingPolicy $AllNodes.VirtualPortGroupShapingPolicyResourceName {
+        VMHostVssPortGroupShaping $AllNodes.VirtualPortGroupShapingPolicyResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroup = $AllNodes.VirtualPortGroupName
+            VMHostName = $AllNodes.Name
+            Name = $AllNodes.VirtualPortGroupName
+            Ensure = 'Present'
             Enabled = $AllNodes.ShapingEnabled
             AverageBandwidth = $AllNodes.AverageBandwidth
             PeakBandwidth = $AllNodes.PeakBandwidth
@@ -57,31 +58,32 @@ Configuration VMHostVirtualPortGroupShapingPolicy_WhenUpdatingShapingPolicyWithE
     }
 }
 
-Configuration VMHostVirtualPortGroupShapingPolicy_WhenUpdatingShapingPolicyWithEnabledSetToFalse_Config {
+Configuration VMHostVssPortGroupShaping_WhenUpdatingShapingPolicyWithEnabledSetToFalse_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostVirtualPortGroupShapingPolicy $AllNodes.VirtualPortGroupShapingPolicyResourceName {
+        VMHostVssPortGroupShaping $AllNodes.VirtualPortGroupShapingPolicyResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroup = $AllNodes.VirtualPortGroupName
+            VMHostName = $AllNodes.Name
+            Name = $AllNodes.VirtualPortGroupName
+            Ensure = 'Present'
             Enabled = !$AllNodes.ShapingEnabled
             BurstSize = $AllNodes.BurstSize
         }
     }
 }
 
-Configuration VMHostVirtualPortGroupShapingPolicy_WhenRemovingVirtualPortGroupAndStandardSwitch_Config {
+Configuration VMHostVssPortGroupShaping_WhenRemovingVirtualPortGroupAndStandardSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostVirtualPortGroup $AllNodes.VirtualPortGroupResourceName {
+        VMHostVssPortGroup $AllNodes.VirtualPortGroupResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroupName = $AllNodes.VirtualPortGroupName
-            VirtualSwitch = $AllNodes.StandardSwitchName
+            VMHostName = $AllNodes.Name
+            Name = $AllNodes.VirtualPortGroupName
+            VssName = $AllNodes.StandardSwitchName
             Ensure = 'Absent'
         }
 

@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostVirtualPortGroupShapingPolicy'
+        $resourceName = 'VMHostVssPortGroupShaping'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVirtualPortGroupShapingPolicyMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVssPortGroupShapingMocks.ps1"
 
-        Describe 'VMHostVirtualPortGroupShapingPolicy\Set' -Tag 'Set' {
+        Describe 'VMHostVssPortGroupShaping\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroupShapingPolicy
+                New-MocksForVMHostVssPortGroupShaping
 
                 $resourceProperties = New-MocksInSet
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
@@ -68,10 +68,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVirtualPortGroupShapingPolicy\Test' -Tag 'Test' {
+        Describe 'VMHostVssPortGroupShaping\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroupShapingPolicy
+                New-MocksForVMHostVssPortGroupShaping
             }
 
             Context 'Invoking with non matching Shaping Policy Settings' {
@@ -123,12 +123,12 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVirtualPortGroupShapingPolicy\Get' -Tag 'Get' {
+        Describe 'VMHostVssPortGroupShaping\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroupShapingPolicy
+                New-MocksForVMHostVssPortGroupShaping
 
-                $resourceProperties = New-VMHostVirtualPortGroupShapingPolicyProperties
+                $resourceProperties = New-VMHostVssPortGroupShapingProperties
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
             }
 
@@ -138,8 +138,9 @@ InModuleScope -ModuleName $script:moduleName {
 
                 # Assert
                 $result.Server | Should -Be $resourceProperties.Server
-                $result.Name | Should -Be $script:constants.VMHostName
-                $result.PortGroup | Should -Be $script:constants.VirtualPortGroupName
+                $result.VMHostName | Should -Be $script:constants.VMHostName
+                $result.Name | Should -Be $script:constants.VirtualPortGroupName
+                $result.Ensure | Should -Be $resourceProperties.Ensure
                 $result.Enabled | Should -Be $script:constants.ShapingEnabled
                 $result.AverageBandwidth | Should -Be $script:constants.AverageBandwidth
                 $result.PeakBandwidth | Should -Be $script:constants.PeakBandwidth

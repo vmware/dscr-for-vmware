@@ -38,7 +38,7 @@ Param(
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
-$script:dscResourceName = 'VMHostVirtualPortGroupShapingPolicy'
+$script:dscResourceName = 'VMHostVssPortGroupShaping'
 $script:moduleFolderPath = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path -Path (Join-Path -Path $moduleFolderPath -ChildPath 'Tests') -ChildPath 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$script:dscResourceName\$($script:dscResourceName)_Config.ps1"
@@ -54,9 +54,9 @@ $script:configurationData = @{
             StandardSwitchResourceName = 'StandardSwitch'
             StandardSwitchResourceId = '[VMHostVss]StandardSwitch'
             VirtualPortGroupResourceName = 'VirtualPortGroup'
-            VirtualPortGroupResourceId = '[VMHostVirtualPortGroup]VirtualPortGroup'
+            VirtualPortGroupResourceId = '[VMHostVssPortGroup]VirtualPortGroup'
             VirtualPortGroupShapingPolicyResourceName = 'VirtualPortGroupShapingPolicy'
-            VirtualPortGroupShapingPolicyResourceId = '[VMHostVirtualPortGroupShapingPolicy]VirtualPortGroupShapingPolicy'
+            VirtualPortGroupShapingPolicyResourceId = '[VMHostVssPortGroupShaping]VirtualPortGroupShapingPolicy'
             StandardSwitchName = 'MyStandardSwitch'
             Mtu = 1500
             VirtualPortGroupName = 'MyVirtualPortGroup'
@@ -144,8 +144,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-            $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $configuration.Name | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $configuration.Ensure | Should -Be 'Present'
             $configuration.Enabled | Should -Be $script:configurationData.AllNodes.ShapingEnabled
             $configuration.AverageBandwidth | Should -Be $script:configurationData.AllNodes.AverageBandwidth
             $configuration.PeakBandwidth | Should -Be $script:configurationData.AllNodes.PeakBandwidth
@@ -252,8 +253,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-            $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $configuration.Name | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+            $configuration.Ensure | Should -Be 'Present'
             $configuration.Enabled | Should -Be $false
             $configuration.AverageBandwidth | Should -BeNullOrEmpty
             $configuration.PeakBandwidth | Should -BeNullOrEmpty

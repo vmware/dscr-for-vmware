@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostVirtualPortGroupShapingPolicy : VMHostVirtualPortGroupBaseDSC {
+class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
     <#
     .DESCRIPTION
 
@@ -50,33 +50,45 @@ class VMHostVirtualPortGroupShapingPolicy : VMHostVirtualPortGroupBaseDSC {
 
     [void] Set() {
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        $this.RetrieveVMHost()
 
-        $this.GetNetworkSystem($vmHost)
-        $virtualPortGroup = $this.GetVirtualPortGroup($vmHost)
+        $this.GetVMHostNetworkSystem()
+        $virtualPortGroup = $this.GetVirtualPortGroup()
 
         $this.UpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
     }
 
     [bool] Test() {
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $virtualPortGroup = $this.GetVirtualPortGroup($vmHost)
+        $this.RetrieveVMHost()
+
+        $virtualPortGroup = $this.GetVirtualPortGroup()
+        if ($null -eq $virtualPortGroup) {
+            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+            return $true
+        }
 
         return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
     }
 
-    [VMHostVirtualPortGroupShapingPolicy] Get() {
-        $result = [VMHostVirtualPortGroupShapingPolicy]::new()
+    [VMHostVssPortGroupShaping] Get() {
+        $result = [VMHostVssPortGroupShaping]::new()
         $result.Server = $this.Server
+        $result.Ensure = $this.Ensure
 
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $virtualPortGroup = $this.GetVirtualPortGroup($vmHost)
+        $this.RetrieveVMHost()
 
-        $result.Name = $vmHost.Name
-        $result.PortGroup = $virtualPortGroup.Name
+        $result.VMHostName = $this.VMHost.Name
 
+        $virtualPortGroup = $this.GetVirtualPortGroup()
+        if ($null -eq $virtualPortGroup) {
+            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+            $result.Name = $this.Name
+            return $result
+        }
+
+        $result.Name = $virtualPortGroup.Name
         $this.PopulateResult($virtualPortGroup, $result)
 
         return $result
@@ -122,7 +134,7 @@ class VMHostVirtualPortGroupShapingPolicy : VMHostVirtualPortGroupBaseDSC {
             Update-VirtualPortGroup -VMHostNetworkSystem $this.VMHostNetworkSystem -VirtualPortGroupName $virtualPortGroup.Name -Spec $virtualPortGroupSpec
         }
         catch {
-            throw "Cannot update Shaping Policy of Virtual Port Group $($this.PortGroup). For more information: $($_.Exception.Message)"
+            throw "Cannot update Shaping Policy of Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
         }
     }
 

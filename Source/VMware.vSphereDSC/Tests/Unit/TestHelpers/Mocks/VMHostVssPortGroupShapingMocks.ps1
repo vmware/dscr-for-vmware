@@ -14,21 +14,22 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-VMHostVirtualPortGroupShapingPolicyProperties {
+function New-VMHostVssPortGroupShapingProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupShapingPolicyProperties = @{
+    $vmHostVssPortGroupShapingProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
-        Name = $script:constants.VMHostName
-        PortGroup = $script:constants.VirtualPortGroupName
+        VMHostName = $script:constants.VMHostName
+        Name = $script:constants.VirtualPortGroupName
+        Ensure = 'Present'
     }
 
-    $vmHostVirtualPortGroupShapingPolicyProperties
+    $vmHostVssPortGroupShapingProperties
 }
 
-function New-MocksForVMHostVirtualPortGroupShapingPolicy {
+function New-MocksForVMHostVssPortGroupShaping {
     [CmdletBinding()]
 
     $viServerMock = $script:viServer
@@ -44,43 +45,43 @@ function New-MocksInSet {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupShapingPolicyProperties = New-VMHostVirtualPortGroupShapingPolicyProperties
+    $vmHostVssPortGroupShapingProperties = New-VMHostVssPortGroupShapingProperties
 
-    $vmHostVirtualPortGroupShapingPolicyProperties.Enabled = $script:constants.ShapingEnabled
-    $vmHostVirtualPortGroupShapingPolicyProperties.AverageBandwidth = $script:constants.AverageBandwidth
-    $vmHostVirtualPortGroupShapingPolicyProperties.PeakBandwidth = $script:constants.PeakBandwidth
-    $vmHostVirtualPortGroupShapingPolicyProperties.BurstSize = $script:constants.BurstSize
+    $vmHostVssPortGroupShapingProperties.Enabled = $script:constants.ShapingEnabled
+    $vmHostVssPortGroupShapingProperties.AverageBandwidth = $script:constants.AverageBandwidth
+    $vmHostVssPortGroupShapingProperties.PeakBandwidth = $script:constants.PeakBandwidth
+    $vmHostVssPortGroupShapingProperties.BurstSize = $script:constants.BurstSize
 
     $networkSystemMock = $script:vmHostNetworkSystem
 
     Mock -CommandName Get-View -MockWith { return $networkSystemMock }.GetNewClosure() -Verifiable
     Mock -CommandName Update-VirtualPortGroup -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostVirtualPortGroupShapingPolicyProperties
+    $vmHostVssPortGroupShapingProperties
 }
 
 function New-MocksWhenTheShapingPolicySettingsAreNonMatching {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupShapingPolicyProperties = New-VMHostVirtualPortGroupShapingPolicyProperties
+    $vmHostVssPortGroupShapingProperties = New-VMHostVssPortGroupShapingProperties
 
-    $vmHostVirtualPortGroupShapingPolicyProperties.Enabled = !$script:constants.ShapingEnabled
-    $vmHostVirtualPortGroupShapingPolicyProperties.BurstSize = $script:constants.BurstSize + $script:constants.BurstSize
+    $vmHostVssPortGroupShapingProperties.Enabled = !$script:constants.ShapingEnabled
+    $vmHostVssPortGroupShapingProperties.BurstSize = $script:constants.BurstSize + $script:constants.BurstSize
 
-    $vmHostVirtualPortGroupShapingPolicyProperties
+    $vmHostVssPortGroupShapingProperties
 }
 
 function New-MocksWhenTheShapingPolicySettingsAreMatching {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVirtualPortGroupShapingPolicyProperties = New-VMHostVirtualPortGroupShapingPolicyProperties
+    $vmHostVssPortGroupShapingProperties = New-VMHostVssPortGroupShapingProperties
 
-    $vmHostVirtualPortGroupShapingPolicyProperties.Enabled = $script:constants.ShapingEnabled
-    $vmHostVirtualPortGroupShapingPolicyProperties.AverageBandwidth = $script:constants.AverageBandwidth
-    $vmHostVirtualPortGroupShapingPolicyProperties.PeakBandwidth = $script:constants.PeakBandwidth
-    $vmHostVirtualPortGroupShapingPolicyProperties.BurstSize = $script:constants.BurstSize
+    $vmHostVssPortGroupShapingProperties.Enabled = $script:constants.ShapingEnabled
+    $vmHostVssPortGroupShapingProperties.AverageBandwidth = $script:constants.AverageBandwidth
+    $vmHostVssPortGroupShapingProperties.PeakBandwidth = $script:constants.PeakBandwidth
+    $vmHostVssPortGroupShapingProperties.BurstSize = $script:constants.BurstSize
 
-    $vmHostVirtualPortGroupShapingPolicyProperties
+    $vmHostVssPortGroupShapingProperties
 }

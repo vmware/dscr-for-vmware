@@ -50,7 +50,7 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostVirtualPortGroupShapingPolicy_Config {
+Configuration VMHostVssPortGroupShaping_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -63,29 +63,30 @@ Configuration VMHostVirtualPortGroupShapingPolicy_Config {
             Mtu = 1500
         }
 
-        VMHostVirtualPortGroup VMHostVirtualPortGroup {
+        VMHostVssPortGroup VMHostVssPortGroup {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroupName = 'MyVirtualPortGroup'
-            VirtualSwitch = 'MyVirtualSwitch'
+            VMHostName = $AllNodes.Name
+            Name = 'MyVirtualPortGroup'
+            VssName = 'MyVirtualSwitch'
             Ensure = 'Present'
             VLanId = 0
             DependsOn = "[VMHostVss]VMHostStandardSwitch"
         }
 
-        VMHostVirtualPortGroupShapingPolicy VMHostVirtualPortGroupShapingPolicy {
+        VMHostVssPortGroupShaping VMHostVssPortGroupShaping {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $AllNodes.Name
+            Name = 'MyVirtualPortGroup'
+            Ensure = 'Present'
             Enabled = $true
             AverageBandwidth = 104857600000
             PeakBandwidth = 104857600000
             BurstSize = 107374182400
-            DependsOn = "[VMHostVirtualPortGroup]VMHostVirtualPortGroup"
+            DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
         }
     }
 }
 
-VMHostVirtualPortGroupShapingPolicy_Config -ConfigurationData $script:configurationData
+VMHostVssPortGroupShaping_Config -ConfigurationData $script:configurationData
