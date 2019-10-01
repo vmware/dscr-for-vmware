@@ -17,6 +17,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 Using module '.\VMware.vSphereDSC.Helper.psm1'
 Using module '.\VMware.vSphereDSC.Logging.psm1'
 
+enum Duplex {
+    Full
+    Half
+    Unset
+}
+
 enum Ensure {
     Absent
     Present
@@ -4255,6 +4261,177 @@ class VMHostTpsSettings : VMHostBaseDSC {
             }
 
             Set-AdvancedSetting -AdvancedSetting $tpsSetting -Value $this.$tpsSettingName -Confirm:$false
+        }
+    }
+}
+
+[DscResource()]
+class VMHostPhysicalNic : VMHostEntityBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Name of the Physical Network Adapter which is going to be configured.
+    #>
+    [DscProperty(Key)]
+    [string] $Name
+
+    <#
+    .DESCRIPTION
+
+    Indicates whether the link is capable of full-duplex. The valid values are Full, Half and Unset.
+    #>
+    [DscProperty()]
+    [Duplex] $Duplex = [Duplex]::Unset
+
+    <#
+    .DESCRIPTION
+
+    Specifies the bit rate of the link.
+    #>
+    [DscProperty()]
+    [nullable[int]] $BitRatePerSecMb
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the host network adapter speed/duplex settings are configured automatically.
+    If the property is passed, the Duplex and BitRatePerSecMb properties will be ignored.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $AutoNegotiate
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
+
+        $this.UpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
+
+        return !$this.ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+    }
+
+    [VMHostPhysicalNic] Get() {
+        $result = [VMHostPhysicalNic]::new()
+        $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
+
+        $result.VMHostName = $this.VMHost.Name
+        $result.Name = $physicalNetworkAdapter.Name
+
+        $this.PopulateResult($physicalNetworkAdapter, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Physical Network Adapter with the specified name from the server if it exists.
+    The Network Adapter must be a Physical Network Adapter. If the Physical Network Adapter does not exist, it throws an exception.
+    #>
+    [PSObject] GetPhysicalNetworkAdapter() {
+        try {
+            $physicalNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $this.Name -VMHost $this.VMHost -Physical -ErrorAction Stop
+            return $physicalNetworkAdapter
+        }
+        catch {
+            throw "Could not retrieve Physical Network Adapter $($this.Name) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Physical Network Adapter should be updated.
+    #>
+    [bool] ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter) {
+        $shouldUpdatePhysicalNetworkAdapter = @()
+        $shouldUpdatePhysicalNetworkAdapter += ($null -ne $this.BitRatePerSecMb -and $this.BitRatePerSecMb -ne $physicalNetworkAdapter.BitRatePerSec)
+
+        <#
+        The Duplex value on the server is stored as boolean indicating if the link is capable of full-duplex.
+        So mapping between the enum and boolean values needs to be performed for comparison purposes.
+        #>
+        if ($this.Duplex -ne [Duplex]::Unset) {
+            if ($physicalNetworkAdapter.FullDuplex) {
+                $shouldUpdatePhysicalNetworkAdapter += ($this.Duplex -ne [Duplex]::Full)
+            }
+            else {
+                $shouldUpdatePhysicalNetworkAdapter += ($this.Duplex -ne [Duplex]::Half)
+            }
+        }
+
+        <#
+        If the network adapter speed/duplex settings are configured automatically, the Link Speed
+        property is $null on the server.
+        #>
+        if ($null -ne $this.AutoNegotiate) {
+            if ($this.AutoNegotiate) {
+                $shouldUpdatePhysicalNetworkAdapter += ($null -ne $physicalNetworkAdapter.ExtensionData.Spec.LinkSpeed)
+            }
+            else {
+                $shouldUpdatePhysicalNetworkAdapter += ($null -eq $physicalNetworkAdapter.ExtensionData.Spec.LinkSpeed)
+            }
+        }
+
+        return ($shouldUpdatePhysicalNetworkAdapter -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update operation on the specified Physical Network Adapter.
+    #>
+    [void] UpdatePhysicalNetworkAdapter($physicalNetworkAdapter) {
+        $physicalNetworkAdapterParams = @{}
+
+        $physicalNetworkAdapterParams.PhysicalNic = $physicalNetworkAdapter
+        $physicalNetworkAdapterParams.Confirm = $false
+        $physicalNetworkAdapterParams.ErrorAction = 'Stop'
+
+        if ($null -ne $this.AutoNegotiate -and $this.AutoNegotiate) {
+            $physicalNetworkAdapterParams.AutoNegotiate = $this.AutoNegotiate
+        }
+        else {
+            if ($this.Duplex -ne [Duplex]::Unset) { $physicalNetworkAdapterParams.Duplex = $this.Duplex.ToString() }
+            if ($null -ne $this.BitRatePerSecMb) { $physicalNetworkAdapterParams.BitRatePerSecMb = $this.BitRatePerSecMb }
+        }
+
+        try {
+            Set-VMHostNetworkAdapter @physicalNetworkAdapterParams
+        }
+        catch {
+            throw "Cannot update Physical Network Adapter $($physicalNetworkAdapter.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Physical Network Adapter from the server.
+    #>
+    [void] PopulateResult($physicalNetworkAdapter, $result) {
+        <#
+        AutoNegotiate property is not present on the server, so it should be populated
+        with the value provided by user.
+        #>
+        $result.AutoNegotiate = $this.AutoNegotiate
+        $result.BitRatePerSecMb = $physicalNetworkAdapter.BitRatePerSec
+
+        if ($physicalNetworkAdapter.FullDuplex) {
+            $result.Duplex = [Duplex]::Full
+        }
+        else {
+            $result.Duplex = [Duplex]::Half
         }
     }
 }

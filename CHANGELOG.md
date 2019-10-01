@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.22 - 2019-10-01
+### Added
+- Added VMHostPhysicalNic DSC Resource.
+- Added Unit Tests for VMHostPhysicalNic DSC Resource.
+- Added Integration Tests for VMHostPhysicalNic DSC Resource.
+- Added Documentation and example Configuration for VMHostPhysicalNic DSC Resource.
+
 ## 2.0.0.21 - 2019-10-01
 ### Added
 - Added VMHostVssPortGroupShaping DSC Resource.
