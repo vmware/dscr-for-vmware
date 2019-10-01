@@ -15,15 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostVssPortGroup : VMHostEntityBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Name of the the Port Group.
-    #>
-    [DscProperty(Key)]
-    [string] $Name
-
+class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
     <#
     .DESCRIPTION
 
@@ -32,14 +24,6 @@ class VMHostVssPortGroup : VMHostEntityBaseDSC {
     #>
     [DscProperty(Mandatory)]
     [string] $VssName
-
-    <#
-    .DESCRIPTION
-
-    Value indicating if the Port Group should be Present or Absent.
-    #>
-    [DscProperty(Mandatory)]
-    [Ensure] $Ensure
 
     <#
     .DESCRIPTION

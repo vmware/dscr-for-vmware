@@ -14,20 +14,42 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-class VMHostNetworkBaseDSC : VMHostBaseDSC {
-    hidden [PSObject] $VMHostNetworkSystem
+class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Name of the the Port Group.
+    #>
+    [DscProperty(Key)]
+    [string] $Name
 
     <#
     .DESCRIPTION
 
-    Retrieves the Network System from the specified VMHost.
+    Value indicating if the Port Group should be Present or Absent.
     #>
-    [void] GetNetworkSystem($vmHost) {
-        try {
-            $this.VMHostNetworkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Port Group with the specified name from the server if it exists.
+    The Virtual Port Group must be a Standard Virtual Port Group. If the Virtual Port Group does not exist and Ensure is set to 'Absent', $null is returned.
+    Otherwise it throws an exception.
+    #>
+    [PSObject] GetVirtualPortGroup() {
+        if ($this.Ensure -eq [Ensure]::Absent) {
+            return $null
         }
-        catch {
-            throw "Could not retrieve NetworkSystem on VMHost with name $($this.Name). For more information: $($_.Exception.Message)"
+        else {
+            try {
+                $virtualPortGroup = Get-VirtualPortGroup -Server $this.Connection -Name $this.Name -VMHost $this.VMHost -Standard -ErrorAction Stop
+                return $virtualPortGroup
+            }
+            catch {
+                throw "Could not retrieve Virtual Port Group $($this.Name) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+            }
         }
     }
 }
