@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'DistributedSwitch'
+        $resourceName = 'VDSwitch'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\DistributedSwitchMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VDSwitchMocks.ps1"
 
-        Describe 'DistributedSwitch\Set' -Tag 'Set' {
+        Describe 'VDSwitch\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForDistributedSwitch
+                New-MocksForVDSwitch
             }
 
             Context 'Invoking with Ensure Present, non existing Distributed Switch and no Distributed Switch settings specified' {
@@ -323,10 +323,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'DistributedSwitch\Test' -Tag 'Test' {
+        Describe 'VDSwitch\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForDistributedSwitch
+                New-MocksForVDSwitch
             }
 
             Context 'Invoking with Ensure Present and non existing Distributed Switch' {
@@ -450,10 +450,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'DistributedSwitch\Get' -Tag 'Get' {
+        Describe 'VDSwitch\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForDistributedSwitch
+                New-MocksForVDSwitch
             }
 
             Context 'Invoking with Ensure Present and non existing Distributed Switch' {

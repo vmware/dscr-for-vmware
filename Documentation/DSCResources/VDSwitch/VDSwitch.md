@@ -1,4 +1,4 @@
-# DistributedSwitch
+# VDSwitch
 
 ## Parameters
 
@@ -13,14 +13,14 @@
 | **Ensure** | Mandatory | Ensure | Value indicating if the Distributed Switch should be Present or Absent. | Present, Absent |
 | **ContactDetails** | Optional | string | The contact details of the vSphere Distributed Switch administrator. ||
 | **ContactName** | Optional | string | The name of the vSphere Distributed Switch administrator. ||
-| **LinkDiscoveryProtocol** | Optional | LinkDiscoveryProtocolProtocol | The discovery protocol type of the vSphere Distributed Switch that you want to create. If you do not set a value for this parameter, the default server setting is used. | CDP, LLDP, Unset |
-| **LinkDiscoveryProtocolOperation** | Optional | LinkDiscoveryProtocolOperation | The link discovery protocol operation for the vSphere Distributed Switch that you want to create. If you do not set a value for this parameter, the default server setting is used. | Advertise, Both, Listen, None, Unset |
-| **MaxPorts** | Optional | int | The maximum number of ports allowed on the vSphere Distributed Switch that you want to create. ||
-| **Mtu** | Optional | int | The maximum MTU size for the vSphere Distributed Switch that you want to create. Valid values are positive integers only. ||
-| **Notes** | Optional | string | The description for the vSphere Distributed Switch that you want to create. ||
-| **NumUplinkPorts** | Optional | int | The number of uplink ports on the vSphere Distributed Switch that you want to create. ||
+| **LinkDiscoveryProtocol** | Optional | LinkDiscoveryProtocolProtocol | The discovery protocol type of the vSphere Distributed Switch that you want to configure. If you do not set a value for this parameter, the default server setting is used. | CDP, LLDP, Unset |
+| **LinkDiscoveryProtocolOperation** | Optional | LinkDiscoveryProtocolOperation | The link discovery protocol operation for the vSphere Distributed Switch that you want to configure. If you do not set a value for this parameter, the default server setting is used. | Advertise, Both, Listen, None, Unset |
+| **MaxPorts** | Optional | int | The maximum number of ports allowed on the vSphere Distributed Switch that you want to configure. ||
+| **Mtu** | Optional | int | The maximum MTU size for the vSphere Distributed Switch that you want to configure. Valid values are positive integers only. ||
+| **Notes** | Optional | string | The description for the vSphere Distributed Switch that you want to configure. ||
+| **NumUplinkPorts** | Optional | int | The number of uplink ports on the vSphere Distributed Switch that you want to configure. ||
 | **ReferenceVDSwitch** | Optional | string | The reference vSphere Distributed Switch. The properties of the new vSphere Distributed Switch will be cloned from the reference vSphere Distributed Switch. ||
-| **Version** | Optional | string | The version of the vSphere Distributed Switch that you want to create. You cannot specify a version that is incompatible with the version of the vCenter Server system you are connected to. ||
+| **Version** | Optional | string | The version of the vSphere Distributed Switch that you want to configure. You cannot specify a version that is incompatible with the version of the vCenter Server system you are connected to. ||
 | **WithoutPortGroups** | Optional | bool | Indicates whether the new vSphere Distributed Switch will be created without importing the port groups from the specified reference vSphere Distributed Switch. ||
 
 ## Description
@@ -33,7 +33,7 @@ The resource is used to create, update and remove vSphere Distributed Switches.
 Creates a new Distributed Switch **MyDistributedSwitch** with the specified settings in the **Network** folder of Datacenter **Datacenter**.
 
 ```powershell
-Configuration DistributedSwitch_Config {
+Configuration VDSwitch_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -49,7 +49,7 @@ Configuration DistributedSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        DistributedSwitch DistributedSwitch {
+        VDSwitch VDSwitch {
             Server = $Server
             Credential = $Credential
             Name = 'MyDistributedSwitch'
@@ -76,7 +76,7 @@ Configuration DistributedSwitch_Config {
 Creates a new Distributed Switch **MyDistributedSwitch** with the specified settings in the **Network** folder of Datacenter **Datacenter**. It also creates a new Distributed Switch **MyDistributedSwitchViaReferenceVDSwitch** with the settings from the Distributed Switch **MyDistributedSwitch** in the **Network** folder of Datacenter **Datacenter**. The new vSphere Distributed Switch will be created without importing the port groups from the specified reference vSphere Distributed Switch.
 
 ```powershell
-Configuration DistributedSwitch_Config {
+Configuration VDSwitch_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -92,7 +92,7 @@ Configuration DistributedSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        DistributedSwitch DistributedSwitch {
+        VDSwitch VDSwitch {
             Server = $Server
             Credential = $Credential
             Name = 'MyDistributedSwitch'
@@ -111,7 +111,7 @@ Configuration DistributedSwitch_Config {
             Version = '6.6.0'
         }
 
-        DistributedSwitch DistributedSwitchViaReferenceVDSwitch {
+        VDSwitch VDSwitchViaReferenceVDSwitch {
             Server = $Server
             Credential = $Credential
             Name = 'MyDistributedSwitchViaReferenceVDSwitch'
@@ -121,7 +121,7 @@ Configuration DistributedSwitch_Config {
             Ensure = 'Present'
             ReferenceVDSwitch = 'MyDistributedSwitch'
             WithoutPortGroups = $true
-            DependsOn = "[DistributedSwitch]DistributedSwitch"
+            DependsOn = "[VDSwitch]VDSwitch"
         }
     }
 }
@@ -132,7 +132,7 @@ Configuration DistributedSwitch_Config {
 Removes the Distributed Switch **MyDistributedSwitch** from the **Network** folder of Datacenter **Datacenter**.
 
 ```powershell
-Configuration DistributedSwitch_Config {
+Configuration VDSwitch_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -148,7 +148,7 @@ Configuration DistributedSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        DistributedSwitch DistributedSwitch {
+        VDSwitch VDSwitch {
             Server = $Server
             Credential = $Credential
             Name = 'MyDistributedSwitch'

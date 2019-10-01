@@ -14,7 +14,7 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Configuration DistributedSwitch_WhenAddingDistributedSwitch_Config {
+Configuration VDSwitch_WhenAddingDistributedSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -26,7 +26,7 @@ Configuration DistributedSwitch_WhenAddingDistributedSwitch_Config {
             Ensure = 'Present'
         }
 
-        DistributedSwitch $AllNodes.DistributedSwitchResourceName {
+        VDSwitch $AllNodes.DistributedSwitchResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.DistributedSwitchName
@@ -48,11 +48,11 @@ Configuration DistributedSwitch_WhenAddingDistributedSwitch_Config {
     }
 }
 
-Configuration DistributedSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config {
+Configuration VDSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        DistributedSwitch $AllNodes.ReferenceVDSwitchResourceName {
+        VDSwitch $AllNodes.ReferenceVDSwitchResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.ReferenceVDSwitchName
@@ -66,11 +66,11 @@ Configuration DistributedSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_
     }
 }
 
-Configuration DistributedSwitch_WhenUpdatingDistributedSwitch_Config {
+Configuration VDSwitch_WhenUpdatingDistributedSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        DistributedSwitch $AllNodes.DistributedSwitchResourceName {
+        VDSwitch $AllNodes.DistributedSwitchResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.DistributedSwitchName
@@ -85,11 +85,11 @@ Configuration DistributedSwitch_WhenUpdatingDistributedSwitch_Config {
     }
 }
 
-Configuration DistributedSwitch_WhenRemovingDistributedSwitch_Config {
+Configuration VDSwitch_WhenRemovingDistributedSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        DistributedSwitch $AllNodes.DistributedSwitchResourceName {
+        VDSwitch $AllNodes.DistributedSwitchResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.DistributedSwitchName
@@ -101,11 +101,11 @@ Configuration DistributedSwitch_WhenRemovingDistributedSwitch_Config {
     }
 }
 
-Configuration DistributedSwitch_WhenRemovingDistributedSwitchesAndDatacenter_Config {
+Configuration VDSwitch_WhenRemovingDistributedSwitchesAndDatacenter_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        DistributedSwitch $AllNodes.ReferenceVDSwitchResourceName {
+        VDSwitch $AllNodes.ReferenceVDSwitchResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.ReferenceVDSwitchName
@@ -115,7 +115,7 @@ Configuration DistributedSwitch_WhenRemovingDistributedSwitchesAndDatacenter_Con
             Ensure = 'Absent'
         }
 
-        DistributedSwitch $AllNodes.DistributedSwitchResourceName {
+        VDSwitch $AllNodes.DistributedSwitchResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.DistributedSwitchName

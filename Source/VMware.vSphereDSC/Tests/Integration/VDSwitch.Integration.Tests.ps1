@@ -33,7 +33,7 @@ Param(
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
-$script:dscResourceName = 'DistributedSwitch'
+$script:dscResourceName = 'VDSwitch'
 $script:moduleFolderPath = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path -Path (Join-Path -Path $moduleFolderPath -ChildPath 'Tests') -ChildPath 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$script:dscResourceName\$($script:dscResourceName)_Config.ps1"
@@ -48,9 +48,9 @@ $script:configurationData = @{
             DatacenterResourceName = 'Datacenter'
             DatacenterResourceId = '[Datacenter]Datacenter'
             DistributedSwitchResourceName = 'DistributedSwitch'
-            DistributedSwitchResourceId = '[DistributedSwitch]DistributedSwitch'
+            DistributedSwitchResourceId = '[VDSwitch]DistributedSwitch'
             ReferenceVDSwitchResourceName = 'DistributedSwitch_Via_ReferenceVDSwitch'
-            ReferenceVDSwitchResourceId = '[DistributedSwitch]DistributedSwitch_Via_ReferenceVDSwitch'
+            ReferenceVDSwitchResourceId = '[VDSwitch]DistributedSwitch_Via_ReferenceVDSwitch'
             DatacenterName = 'MyTestDatacenter'
             DatacenterLocation = [string]::Empty
             DistributedSwitchName = 'MyTestDistributedSwitch'

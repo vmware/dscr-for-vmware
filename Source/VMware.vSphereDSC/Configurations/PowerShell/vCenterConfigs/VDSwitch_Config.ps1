@@ -44,11 +44,11 @@ $script:configurationData = @{
     )
 }
 
-Configuration DistributedSwitch_WhenAddingDistributedSwitch_Config {
+Configuration VDSwitch_WhenAddingDistributedSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        DistributedSwitch DistributedSwitch {
+        VDSwitch VDSwitch {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = 'MyDistributedSwitch'
@@ -69,11 +69,11 @@ Configuration DistributedSwitch_WhenAddingDistributedSwitch_Config {
     }
 }
 
-Configuration DistributedSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config {
+Configuration VDSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        DistributedSwitch DistributedSwitch {
+        VDSwitch VDSwitch {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = 'MyDistributedSwitch'
@@ -92,7 +92,7 @@ Configuration DistributedSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_
             Version = '6.6.0'
         }
 
-        DistributedSwitch DistributedSwitchViaReferenceVDSwitch {
+        VDSwitch VDSwitchViaReferenceVDSwitch {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = 'MyDistributedSwitchViaReferenceVDSwitch'
@@ -102,16 +102,16 @@ Configuration DistributedSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_
             Ensure = 'Present'
             ReferenceVDSwitch = 'MyDistributedSwitch'
             WithoutPortGroups = $true
-            DependsOn = "[DistributedSwitch]DistributedSwitch"
+            DependsOn = "[VDSwitch]VDSwitch"
         }
     }
 }
 
-Configuration DistributedSwitch_WhenRemovingDistributedSwitch_Config {
+Configuration VDSwitch_WhenRemovingDistributedSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        DistributedSwitch DistributedSwitch {
+        VDSwitch VDSwitch {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = 'MyDistributedSwitch'
@@ -123,6 +123,6 @@ Configuration DistributedSwitch_WhenRemovingDistributedSwitch_Config {
     }
 }
 
-DistributedSwitch_WhenAddingDistributedSwitch_Config -ConfigurationData $script:configurationData
-DistributedSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config -ConfigurationData $script:configurationData
-DistributedSwitch_WhenRemovingDistributedSwitch_Config -ConfigurationData $script:configurationData
+VDSwitch_WhenAddingDistributedSwitch_Config -ConfigurationData $script:configurationData
+VDSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config -ConfigurationData $script:configurationData
+VDSwitch_WhenRemovingDistributedSwitch_Config -ConfigurationData $script:configurationData

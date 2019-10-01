@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class DistributedSwitch : DatacenterInventoryBaseDSC {
+class VDSwitch : DatacenterInventoryBaseDSC {
     DistributedSwitch() {
         $this.InventoryItemFolderType = [FolderType]::Network
     }
@@ -156,8 +156,8 @@ class DistributedSwitch : DatacenterInventoryBaseDSC {
         }
     }
 
-    [DistributedSwitch] Get() {
-        $result = [DistributedSwitch]::new()
+    [VDSwitch] Get() {
+        $result = [VDSwitch]::new()
         $result.Server = $this.Server
         $result.Location = $this.Location
         $result.DatacenterName = $this.DatacenterName

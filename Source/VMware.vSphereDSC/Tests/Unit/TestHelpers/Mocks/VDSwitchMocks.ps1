@@ -14,11 +14,11 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-DistributedSwitchProperties {
+function New-VDSwitchProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = @{
+    $vdSwitchProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
         Name = $script:constants.DistributedSwitchName
@@ -28,10 +28,10 @@ function New-DistributedSwitchProperties {
         DatacenterLocation = $script:constants.DatacenterLocationItemOne
     }
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
-function New-MocksForDistributedSwitch {
+function New-MocksForVDSwitch {
     [CmdletBinding()]
 
     $viServerMock = $script:viServer
@@ -55,7 +55,7 @@ function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndNoDistributedS
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
     $newDistributedSwitchSuccessTaskMock = $script:newDistributedSwitchSuccessTask
 
@@ -63,24 +63,24 @@ function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndNoDistributedS
     Mock -CommandName New-VDSwitch -MockWith { return $newDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
     Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndDistributedSwitchSettingsSpecified {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails
-    $distributedSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName
-    $distributedSwitchProperties.LinkDiscoveryProtocol = $script:constants.DistributedSwitchLinkDiscoveryProtocol
-    $distributedSwitchProperties.LinkDiscoveryProtocolOperation = $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation
-    $distributedSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts
-    $distributedSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu
-    $distributedSwitchProperties.Notes = $script:constants.DistributedSwitchNotes
-    $distributedSwitchProperties.NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
-    $distributedSwitchProperties.Version = $script:constants.DistributedSwitchVersion
+    $vdSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails
+    $vdSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName
+    $vdSwitchProperties.LinkDiscoveryProtocol = $script:constants.DistributedSwitchLinkDiscoveryProtocol
+    $vdSwitchProperties.LinkDiscoveryProtocolOperation = $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation
+    $vdSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts
+    $vdSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu
+    $vdSwitchProperties.Notes = $script:constants.DistributedSwitchNotes
+    $vdSwitchProperties.NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
+    $vdSwitchProperties.Version = $script:constants.DistributedSwitchVersion
 
     $newDistributedSwitchSuccessTaskMock = $script:newDistributedSwitchSuccessTask
 
@@ -88,17 +88,17 @@ function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndDistributedSwi
     Mock -CommandName New-VDSwitch -MockWith { return $newDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
     Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndReferenceDistributedSwitchSpecified {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.ReferenceVDSwitch = $script:constants.ReferenceDistributedSwitch
-    $distributedSwitchProperties.WithoutPortGroups = $script:constants.WithoutPortGroups
+    $vdSwitchProperties.ReferenceVDSwitch = $script:constants.ReferenceDistributedSwitch
+    $vdSwitchProperties.WithoutPortGroups = $script:constants.WithoutPortGroups
 
     $newDistributedSwitchSuccessTaskMock = $script:newDistributedSwitchSuccessTask
 
@@ -106,19 +106,19 @@ function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndReferenceDistr
     Mock -CommandName New-VDSwitch -MockWith { return $newDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
     Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksInSetWhenEnsurePresentAndExistingDistributedSwitch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails + $script:constants.DistributedSwitchContactDetails
-    $distributedSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName + $script:constants.DistributedSwitchContactName
-    $distributedSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts + 1
-    $distributedSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu + 1
+    $vdSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails + $script:constants.DistributedSwitchContactDetails
+    $vdSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName + $script:constants.DistributedSwitchContactName
+    $vdSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts + 1
+    $vdSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu + 1
 
     $distributedSwitchMock = $script:distributedSwitch
     $updateDistributedSwitchSuccessTaskMock = $script:updateDistributedSwitchSuccessTask
@@ -127,16 +127,16 @@ function New-MocksInSetWhenEnsurePresentAndExistingDistributedSwitch {
     Mock -CommandName Set-VDSwitch -MockWith { return $updateDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
     Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksInSetWhenEnsureAbsentAndExistingDistributedSwitch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.Ensure = 'Absent'
+    $vdSwitchProperties.Ensure = 'Absent'
 
     $distributedSwitchMock = $script:distributedSwitch
     $removeDistributedSwitchSuccessTaskMock = $script:removeDistributedSwitchSuccessTask
@@ -145,140 +145,140 @@ function New-MocksInSetWhenEnsureAbsentAndExistingDistributedSwitch {
     Mock -CommandName Remove-VDSwitch -MockWith { return $removeDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
     Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksInSetWhenEnsureAbsentAndNonExistingDistributedSwitch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.Ensure = 'Absent'
+    $vdSwitchProperties.Ensure = 'Absent'
 
     Mock -CommandName Get-VDSwitch -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
     Mock -CommandName Remove-VDSwitch -MockWith { return $null }.GetNewClosure()
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksWhenEnsurePresentAndNonExistingDistributedSwitch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
     Mock -CommandName Get-VDSwitch -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksWhenEnsurePresentExistingDistributedSwitchAndMatchingSettings {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails
-    $distributedSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName
-    $distributedSwitchProperties.LinkDiscoveryProtocol = $script:constants.DistributedSwitchLinkDiscoveryProtocol
-    $distributedSwitchProperties.LinkDiscoveryProtocolOperation = $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation
-    $distributedSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts
-    $distributedSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu
-    $distributedSwitchProperties.Notes = $script:constants.DistributedSwitchNotes
-    $distributedSwitchProperties.NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
-    $distributedSwitchProperties.Version = $script:constants.DistributedSwitchVersion
+    $vdSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails
+    $vdSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName
+    $vdSwitchProperties.LinkDiscoveryProtocol = $script:constants.DistributedSwitchLinkDiscoveryProtocol
+    $vdSwitchProperties.LinkDiscoveryProtocolOperation = $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation
+    $vdSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts
+    $vdSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu
+    $vdSwitchProperties.Notes = $script:constants.DistributedSwitchNotes
+    $vdSwitchProperties.NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
+    $vdSwitchProperties.Version = $script:constants.DistributedSwitchVersion
 
     $distributedSwitchMock = $script:distributedSwitch
 
     Mock -CommandName Get-VDSwitch -MockWith { return $distributedSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksWhenEnsurePresentExistingDistributedSwitchAndNonMatchingSettings {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName + $script:constants.DistributedSwitchContactName
-    $distributedSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu + 1
+    $vdSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName + $script:constants.DistributedSwitchContactName
+    $vdSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu + 1
 
     $distributedSwitchMock = $script:distributedSwitch
 
     Mock -CommandName Get-VDSwitch -MockWith { return $distributedSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksWhenEnsurePresentAndNonExistingDistributedSwitch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails
-    $distributedSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName
-    $distributedSwitchProperties.LinkDiscoveryProtocol = $script:constants.DistributedSwitchLinkDiscoveryProtocol
-    $distributedSwitchProperties.LinkDiscoveryProtocolOperation = $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation
-    $distributedSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts
-    $distributedSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu
-    $distributedSwitchProperties.Notes = $script:constants.DistributedSwitchNotes
-    $distributedSwitchProperties.NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
-    $distributedSwitchProperties.Version = $script:constants.DistributedSwitchVersion
+    $vdSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails
+    $vdSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName
+    $vdSwitchProperties.LinkDiscoveryProtocol = $script:constants.DistributedSwitchLinkDiscoveryProtocol
+    $vdSwitchProperties.LinkDiscoveryProtocolOperation = $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation
+    $vdSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts
+    $vdSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu
+    $vdSwitchProperties.Notes = $script:constants.DistributedSwitchNotes
+    $vdSwitchProperties.NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
+    $vdSwitchProperties.Version = $script:constants.DistributedSwitchVersion
 
     Mock -CommandName Get-VDSwitch -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksWhenEnsurePresentAndExistingDistributedSwitch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
     $distributedSwitchMock = $script:distributedSwitch
 
     Mock -CommandName Get-VDSwitch -MockWith { return $distributedSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksWhenEnsureAbsentAndNonExistingDistributedSwitch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.Ensure = 'Absent'
-    $distributedSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails
-    $distributedSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName
-    $distributedSwitchProperties.LinkDiscoveryProtocol = $script:constants.DistributedSwitchLinkDiscoveryProtocol
-    $distributedSwitchProperties.LinkDiscoveryProtocolOperation = $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation
-    $distributedSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts
-    $distributedSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu
-    $distributedSwitchProperties.Notes = $script:constants.DistributedSwitchNotes
-    $distributedSwitchProperties.NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
-    $distributedSwitchProperties.Version = $script:constants.DistributedSwitchVersion
+    $vdSwitchProperties.Ensure = 'Absent'
+    $vdSwitchProperties.ContactDetails = $script:constants.DistributedSwitchContactDetails
+    $vdSwitchProperties.ContactName = $script:constants.DistributedSwitchContactName
+    $vdSwitchProperties.LinkDiscoveryProtocol = $script:constants.DistributedSwitchLinkDiscoveryProtocol
+    $vdSwitchProperties.LinkDiscoveryProtocolOperation = $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation
+    $vdSwitchProperties.MaxPorts = $script:constants.DistributedSwitchMaxPorts
+    $vdSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu
+    $vdSwitchProperties.Notes = $script:constants.DistributedSwitchNotes
+    $vdSwitchProperties.NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
+    $vdSwitchProperties.Version = $script:constants.DistributedSwitchVersion
 
     Mock -CommandName Get-VDSwitch -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
 
 function New-MocksWhenEnsureAbsentAndExistingDistributedSwitch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $distributedSwitchProperties = New-DistributedSwitchProperties
+    $vdSwitchProperties = New-VDSwitchProperties
 
-    $distributedSwitchProperties.Ensure = 'Absent'
+    $vdSwitchProperties.Ensure = 'Absent'
 
     $distributedSwitchMock = $script:distributedSwitch
 
     Mock -CommandName Get-VDSwitch -MockWith { return $distributedSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
 
-    $distributedSwitchProperties
+    $vdSwitchProperties
 }
