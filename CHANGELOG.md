@@ -1,6 +1,19 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.23 - 2019-10-01
+### Added
+- Added Unit Tests for BaseDSC class.
+- Added VMHostNicBaseDSC class.
+- Added Unit Tests for VMHostNicBaseDSC class.
+- Added VMHostVssNic DSC Resource.
+- Added Unit Tests for VMHostVssNic DSC Resource.
+- Added Integration Tests for VMHostVssNic DSC Resource.
+- Added Documentation and example Configuration for VMHostVssNic DSC Resource.
+
+### Changed
+- Extended BaseDSC class with ShouldUpdateArrayProperty method.
+
 ## 2.0.0.22 - 2019-10-01
 ### Added
 - Added VMHostPhysicalNic DSC Resource.

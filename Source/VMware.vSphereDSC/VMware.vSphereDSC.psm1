@@ -217,6 +217,38 @@ class BaseDSC {
             }
         }
     }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the passed array is in the desired state and if an update should be performed.
+    #>
+    [bool] ShouldUpdateArraySetting($currentArray, $desiredArray) {
+        if ($null -eq $desiredArray) {
+            # The property is not specified.
+            return $false
+        }
+        elseif ($desiredArray.Length -eq 0 -and $currentArray.Length -ne 0) {
+            # Empty array specified as desired, but current is not an empty array, so update should be performed.
+            return $true
+        }
+        else {
+            $elementsToAdd = $desiredArray | Where-Object { $currentArray -NotContains $_ }
+            $elementsToRemove = $currentArray | Where-Object { $desiredArray -NotContains $_ }
+
+            if ($null -ne $elementsToAdd -or $null -ne $elementsToRemove) {
+                <#
+                The current array does not contain at least one element from desired array or
+                the desired array is a subset of the current array. In both cases
+                we should perform an update operation.
+                #>
+                return $true
+            }
+
+            # No need to perform an update operation.
+            return $false
+        }
+    }
 }
 
 class DatacenterInventoryBaseDSC : BaseDSC {
@@ -767,6 +799,355 @@ class VMHostNetworkBaseDSC : VMHostBaseDSC {
         }
         catch {
             throw "Could not retrieve NetworkSystem on VMHost with name $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+}
+
+class VMHostNicBaseDSC : VMHostEntityBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Name of the Port Group to which you want to add the new Adapter. If a Distributed Switch is passed, an existing Port Group name should be specified.
+    For Standard Virtual Switches, if the Port Group is non-existent, a new Port Group with the specified name will be created and the new Adapter will be added to the Port Group.
+    #>
+    [DscProperty(Key)]
+    [string] $PortGroupName
+
+    <#
+    .DESCRIPTION
+
+    Value indicating if the Network Adapter should be Present or Absent.
+    #>
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Indicates whether the host Network Adapter uses a Dhcp server.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Dhcp
+
+    <#
+    .DESCRIPTION
+
+    Specifies an IP address for the new Network Adapter. All IP addresses are specified using IPv4 dot notation. If IP is not specified, DHCP mode is enabled.
+    #>
+    [DscProperty()]
+    [string] $IP
+
+    <#
+    .DESCRIPTION
+
+    Specifies a Subnet Mask for the new Network Adapter.
+    #>
+    [DscProperty()]
+    [string] $SubnetMask
+
+    <#
+    .DESCRIPTION
+
+    Specifies a media access control (MAC) address for the new Virtual Network Adapter.
+    #>
+    [DscProperty()]
+    [string] $Mac
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the IPv6 address is obtained through a router advertisement.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $AutomaticIPv6
+
+    <#
+    .DESCRIPTION
+
+    Specifies multiple static addresses using the following format: <IPv6>/<subnet_prefix_length> or <IPv6>. If you skip <subnet_prefix_length>, the default value of 64 is used.
+    #>
+    [DscProperty()]
+    [string[]] $IPv6
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the IPv6 address is obtained through DHCP.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $IPv6ThroughDhcp
+
+    <#
+    .DESCRIPTION
+
+    Specifies the MTU size.
+    #>
+    [DscProperty()]
+    [nullable[int]] $Mtu
+
+    <#
+    .DESCRIPTION
+
+    Indicates that IPv6 configuration is enabled. Setting this parameter to $false disables all IPv6-related parameters.
+    If the value is $true, you need to provide values for at least one of the IPv6 parameters.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $IPv6Enabled
+
+    <#
+    .DESCRIPTION
+
+    Indicates that you want to enable the Network Adapter for management traffic.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $ManagementTrafficEnabled
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the Network Adapter is enabled for Fault Tolerance (FT) logging.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $FaultToleranceLoggingEnabled
+
+    <#
+    .DESCRIPTION
+
+    Indicates that you want to use the new Virtual host/VMKernel Network Adapter for VMotion.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $VMotionEnabled
+
+    <#
+    .DESCRIPTION
+
+    Indicates that Virtual SAN traffic is enabled on this network adapter.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $VsanTrafficEnabled
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the VMKernel Network Adapter connected to the specified Port Group and Virtual Switch and available on the specified VMHost from the server
+    if it exists, otherwise returns $null.
+    #>
+    [PSObject] GetVMHostNetworkAdapter($virtualSwitch) {
+        return Get-VMHostNetworkAdapter -Server $this.Connection -PortGroup $this.PortGroupName -VirtualSwitch $virtualSwitch -VMHost $this.VMHost -VMKernel -ErrorAction SilentlyContinue
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the passed VMKernel Network Adapter IPv6 array needs to be updated.
+    #>
+    [bool] ShouldUpdateIPv6($ipv6) {
+        $currentIPv6 = @()
+        foreach ($ip in $ipv6) {
+            <#
+            The IPs on the server are of type 'IPv6Address' so they need to be converted to
+            string before being passed to ShouldUpdateArraySetting method.
+            #>
+            $currentIPv6 += $ip.ToString()
+        }
+
+        <#
+        The default IPv6 array contains one element, so when empty array is passed no update
+        should be performed.
+        #>
+        if ($null -ne $this.IPv6 -and ($this.IPv6.Length -eq 0 -and $currentIPv6.Length -eq 1)) {
+            return $false
+        }
+
+        return $this.ShouldUpdateArraySetting($currentIPv6, $this.IPv6)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the passed VMKernel Network Adapter needs be updated based on the specified properties.
+    #>
+    [bool] ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter) {
+        $shouldUpdateVMHostNetworkAdapter = @()
+
+        $shouldUpdateVMHostNetworkAdapter += (![string]::IsNullOrEmpty($this.IP) -and $this.IP -ne $vmHostNetworkAdapter.IP)
+        $shouldUpdateVMHostNetworkAdapter += (![string]::IsNullOrEmpty($this.SubnetMask) -and $this.SubnetMask -ne $vmHostNetworkAdapter.SubnetMask)
+        $shouldUpdateVMHostNetworkAdapter += (![string]::IsNullOrEmpty($this.Mac) -and $this.Mac -ne $vmHostNetworkAdapter.Mac)
+
+        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Dhcp -and $this.Dhcp -ne $vmHostNetworkAdapter.DhcpEnabled)
+        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.AutomaticIPv6 -and $this.AutomaticIPv6 -ne $vmHostNetworkAdapter.AutomaticIPv6)
+        $shouldUpdateVMHostNetworkAdapter += $this.ShouldUpdateIPv6($vmHostNetworkAdapter.IPv6)
+        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6ThroughDhcp -and $this.IPv6ThroughDhcp -ne $vmHostNetworkAdapter.IPv6ThroughDhcp)
+        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Mtu -and $this.Mtu -ne $vmHostNetworkAdapter.Mtu)
+        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6Enabled -and $this.IPv6Enabled -ne $vmHostNetworkAdapter.IPv6Enabled)
+        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.ManagementTrafficEnabled -and $this.ManagementTrafficEnabled -ne $vmHostNetworkAdapter.ManagementTrafficEnabled)
+        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.FaultToleranceLoggingEnabled -and $this.FaultToleranceLoggingEnabled -ne $vmHostNetworkAdapter.FaultToleranceLoggingEnabled)
+        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.VMotionEnabled -and $this.VMotionEnabled -ne $vmHostNetworkAdapter.VMotionEnabled)
+        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.VsanTrafficEnabled -and $this.VsanTrafficEnabled -ne $vmHostNetworkAdapter.VsanTrafficEnabled)
+
+        return ($shouldUpdateVMHostNetworkAdapter -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the populated VMKernel Network Adapter parameters.
+    #>
+    [hashtable] GetVMHostNetworkAdapterParams() {
+        $vmHostNetworkAdapterParams = @{}
+
+        $vmHostNetworkAdapterParams.Confirm = $false
+        $vmHostNetworkAdapterParams.ErrorAction = 'Stop'
+
+        if (![string]::IsNullOrEmpty($this.IP)) { $vmHostNetworkAdapterParams.IP = $this.IP }
+        if (![string]::IsNullOrEmpty($this.SubnetMask)) { $vmHostNetworkAdapterParams.SubnetMask = $this.SubnetMask }
+        if (![string]::IsNullOrEmpty($this.Mac)) { $vmHostNetworkAdapterParams.Mac = $this.Mac }
+
+        if ($null -ne $this.AutomaticIPv6) { $vmHostNetworkAdapterParams.AutomaticIPv6 = $this.AutomaticIPv6 }
+        if ($null -ne $this.IPv6) { $vmHostNetworkAdapterParams.IPv6 = $this.IPv6 }
+        if ($null -ne $this.IPv6ThroughDhcp) { $vmHostNetworkAdapterParams.IPv6ThroughDhcp = $this.IPv6ThroughDhcp }
+        if ($null -ne $this.Mtu) { $vmHostNetworkAdapterParams.Mtu = $this.Mtu }
+        if ($null -ne $this.ManagementTrafficEnabled) { $vmHostNetworkAdapterParams.ManagementTrafficEnabled = $this.ManagementTrafficEnabled }
+        if ($null -ne $this.FaultToleranceLoggingEnabled) { $vmHostNetworkAdapterParams.FaultToleranceLoggingEnabled = $this.FaultToleranceLoggingEnabled }
+        if ($null -ne $this.VMotionEnabled) { $vmHostNetworkAdapterParams.VMotionEnabled = $this.VMotionEnabled }
+        if ($null -ne $this.VsanTrafficEnabled) { $vmHostNetworkAdapterParams.VsanTrafficEnabled = $this.VsanTrafficEnabled }
+
+        return $vmHostNetworkAdapterParams
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new VMKernel Network Adapter connected to the specified Virtual Switch and Port Group for the specified VMHost.
+    If the Port Id is specified, the Port Group is ignored and only the Port Id is passed to the cmdlet.
+    #>
+    [void] AddVMHostNetworkAdapter($virtualSwitch, $portId) {
+        $vmHostNetworkAdapterParams = $this.GetVMHostNetworkAdapterParams()
+
+        $vmHostNetworkAdapterParams.Server = $this.Connection
+        $vmHostNetworkAdapterParams.VMHost = $this.VMHost
+        $vmHostNetworkAdapterParams.VirtualSwitch = $virtualSwitch
+
+        if ($null -ne $portId) {
+            $vmHostNetworkAdapterParams.PortId = $portId
+        }
+        else {
+            $vmHostNetworkAdapterParams.PortGroup = $this.PortGroupName
+        }
+
+        try {
+            New-VMHostNetworkAdapter @vmHostNetworkAdapterParams
+        }
+        catch {
+            throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($virtualSwitch.Name) and Port Group $($this.PortGroupName). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the VMKernel Network Adapter with the specified properties.
+    #>
+    [void] UpdateVMHostNetworkAdapter($vmHostNetworkAdapter) {
+        $vmHostNetworkAdapterParams = $this.GetVMHostNetworkAdapterParams()
+
+        <#
+        IPv6 should only be passed to the cmdlet if an update needs to be performed.
+        Otherwise the following error occurs when passing the same array: 'Address already exists in the config.'
+        #>
+        if (!$this.ShouldUpdateIPv6($vmHostNetworkAdapter.IPv6)) {
+            $vmHostNetworkAdapterParams.Remove('IPv6')
+        }
+
+        <#
+        Both Dhcp and IPv6Enabled are applicable only for the Update operation, so they are not
+        populated in the GetVMHostNetworkAdapterParams() which is used for Create and Update operations.
+        #>
+        if ($null -ne $this.Dhcp) {
+            $vmHostNetworkAdapterParams.Dhcp = $this.Dhcp
+
+            <#
+            IP and SubnetMask parameters are mutually exclusive with Dhcp so they should be removed
+            from the parameters hashtable before calling Set-VMHostNetworkAdapter cmdlet.
+            #>
+            $vmHostNetworkAdapterParams.Remove('IP')
+            $vmHostNetworkAdapterParams.Remove('SubnetMask')
+        }
+
+        if ($null -ne $this.IPv6Enabled) {
+            $vmHostNetworkAdapterParams.IPv6Enabled = $this.IPv6Enabled
+
+            if (!$this.IPv6Enabled) {
+                <#
+                If the value of IPv6Enabled is $false, other IPv6 settings cannot be specified.
+                #>
+                $vmHostNetworkAdapterParams.Remove('AutomaticIPv6')
+                $vmHostNetworkAdapterParams.Remove('IPv6ThroughDhcp')
+                $vmHostNetworkAdapterParams.Remove('IPv6')
+            }
+        }
+
+        try {
+            $vmHostNetworkAdapter | Set-VMHostNetworkAdapter @vmHostNetworkAdapterParams
+        }
+        catch {
+            throw "Cannot update VMKernel Network Adapter $($vmHostNetworkAdapter.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the VMKernel Network Adapter connected to the specified Virtual Switch and Port Group for the specified VMHost.
+    #>
+    [void] RemoveVMHostNetworkAdapter($vmHostNetworkAdapter) {
+        try {
+            Remove-VMHostNetworkAdapter -Nic $vmHostNetworkAdapter -Confirm:$false -ErrorAction Stop
+        }
+        catch {
+            throw "Cannot remove VMKernel Network Adapter $($vmHostNetworkAdapter.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the VMKernel Network Adapter from the server.
+    #>
+    [void] PopulateResult($vmHostNetworkAdapter, $result) {
+        if ($null -ne $vmHostNetworkAdapter) {
+            $result.PortGroupName = $vmHostNetworkAdapter.PortGroupName
+            $result.Ensure = [Ensure]::Present
+            $result.IP = $vmHostNetworkAdapter.IP
+            $result.SubnetMask = $vmHostNetworkAdapter.SubnetMask
+            $result.Mac = $vmHostNetworkAdapter.Mac
+            $result.AutomaticIPv6 = $vmHostNetworkAdapter.AutomaticIPv6
+            $result.IPv6 = $vmHostNetworkAdapter.IPv6
+            $result.IPv6ThroughDhcp = $vmHostNetworkAdapter.IPv6ThroughDhcp
+            $result.Mtu = $vmHostNetworkAdapter.Mtu
+            $result.Dhcp = $vmHostNetworkAdapter.DhcpEnabled
+            $result.IPv6Enabled = $vmHostNetworkAdapter.IPv6Enabled
+            $result.ManagementTrafficEnabled = $vmHostNetworkAdapter.ManagementTrafficEnabled
+            $result.FaultToleranceLoggingEnabled = $vmHostNetworkAdapter.FaultToleranceLoggingEnabled
+            $result.VMotionEnabled = $vmHostNetworkAdapter.VMotionEnabled
+            $result.VsanTrafficEnabled = $vmHostNetworkAdapter.VsanTrafficEnabled
+        }
+        else {
+            $result.PortGroupName = $this.PortGroupName
+            $result.Ensure = [Ensure]::Absent
+            $result.IP = $this.IP
+            $result.SubnetMask = $this.SubnetMask
+            $result.Mac = $this.Mac
+            $result.AutomaticIPv6 = $this.AutomaticIPv6
+            $result.IPv6 = $this.IPv6
+            $result.IPv6ThroughDhcp = $this.IPv6ThroughDhcp
+            $result.Mtu = $this.Mtu
+            $result.Dhcp = $this.Dhcp
+            $result.IPv6Enabled = $this.IPv6Enabled
+            $result.ManagementTrafficEnabled = $this.ManagementTrafficEnabled
+            $result.FaultToleranceLoggingEnabled = $this.FaultToleranceLoggingEnabled
+            $result.VMotionEnabled = $this.VMotionEnabled
+            $result.VsanTrafficEnabled = $this.VsanTrafficEnabled
         }
     }
 }
@@ -4261,6 +4642,101 @@ class VMHostTpsSettings : VMHostBaseDSC {
             }
 
             Set-AdvancedSetting -AdvancedSetting $tpsSetting -Value $this.$tpsSettingName -Confirm:$false
+        }
+    }
+}
+
+[DscResource()]
+class VMHostVssNic : VMHostNicBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Name of the Virtual Switch to which you want to add the new Network Adapter.
+    #>
+    [DscProperty(Key)]
+    [string] $VssName
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+
+        $virtualSwitch = $this.GetVirtualSwitch()
+        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
+
+        if ($null -ne $vmHostNetworkAdapter) {
+            <#
+            Here the retrieval of the VMKernel is done for the second time because retrieving it
+            by Virtual Switch and Port Group produces errors when trying to update or delete it.
+            The errors do not occur when the retrieval is done by Name.
+            #>
+            $vmHostNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $vmHostNetworkAdapter.Name -VMHost $this.VMHost -VMKernel
+        }
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            if ($null -eq $vmHostNetworkAdapter) {
+                $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
+            }
+            else {
+                $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+            }
+        }
+        else {
+            if ($null -ne $vmHostNetworkAdapter) {
+                $this.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
+            }
+        }
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+
+        $virtualSwitch = $this.GetVirtualSwitch()
+        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
+
+        if ($this.Ensure -eq [Ensure]::Present) {
+            if ($null -eq $vmHostNetworkAdapter) {
+                return $false
+            }
+
+            return !$this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+        }
+        else {
+            return ($null -eq $vmHostNetworkAdapter)
+        }
+    }
+
+    [VMHostVssNic] Get() {
+        $result = [VMHostVssNic]::new()
+        $result.Server = $this.Server
+
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+
+        $virtualSwitch = $this.GetVirtualSwitch()
+        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
+
+        $result.VMHostName = $this.VMHost.Name
+        $result.VssName = $virtualSwitch.Name
+
+        $this.PopulateResult($vmHostNetworkAdapter, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Switch with the specified name from the server if it exists.
+    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist, it throws an exception.
+    #>
+    [PSObject] GetVirtualSwitch() {
+        try {
+            $virtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction Stop
+            return $virtualSwitch
+        }
+        catch {
+            throw "Could not retrieve Virtual Switch $($this.VssName) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
         }
     }
 }
