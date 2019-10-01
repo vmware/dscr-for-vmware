@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.19 - 2019-10-01
+### Added
+- Added VMHostVssPortGroupBaseDSC class.
+- Added VMHostVssPortGroupSecurity DSC Resource.
+- Added Unit Tests for VMHostVssPortGroupSecurity DSC Resource.
+- Added Integration Tests for VMHostVssPortGroupSecurity DSC Resource.
+- Added Documentation and example Configuration for VMHostVssPortGroupSecurity DSC Resource.
+
 ## 2.0.0.18 - 2019-09-30
 ### Added
 - Added VMHostEntityBaseDSC class.

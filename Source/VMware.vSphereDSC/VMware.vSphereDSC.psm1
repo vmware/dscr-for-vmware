@@ -749,22 +749,6 @@ class VMHostNetworkBaseDSC : VMHostBaseDSC {
             throw "Could not retrieve NetworkSystem on VMHost with name $($this.Name). For more information: $($_.Exception.Message)"
         }
     }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Virtual Switch with the specified name from the server if it exists.
-    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist, it throws an exception.
-    #>
-    [PSObject] GetVirtualSwitch($vmHost, $virtualSwitchName) {
-        try {
-            $foundVirtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $virtualSwitchName -VMHost $vmHost -Standard -ErrorAction Stop
-            return $foundVirtualSwitch
-        }
-        catch {
-            throw "Could not retrieve Virtual Switch $virtualSwitchName of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
-        }
-    }
 }
 
 class VMHostVssBaseDSC : VMHostNetworkBaseDSC {
@@ -794,6 +778,46 @@ class VMHostVssBaseDSC : VMHostNetworkBaseDSC {
 
         $this.vmHostNetworkSystem.UpdateViewData('NetworkInfo.Vswitch')
         return ($this.vmHostNetworkSystem.NetworkInfo.Vswitch | Where-Object { $_.Name -eq $this.VssName })
+    }
+}
+
+class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Name of the the Port Group.
+    #>
+    [DscProperty(Key)]
+    [string] $Name
+
+    <#
+    .DESCRIPTION
+
+    Value indicating if the Port Group should be Present or Absent.
+    #>
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Port Group with the specified name from the server if it exists.
+    The Virtual Port Group must be a Standard Virtual Port Group. If the Virtual Port Group does not exist and Ensure is set to 'Absent', $null is returned.
+    Otherwise it throws an exception.
+    #>
+    [PSObject] GetVirtualPortGroup() {
+        if ($this.Ensure -eq [Ensure]::Absent) {
+            return $null
+        }
+        else {
+            try {
+                $virtualPortGroup = Get-VirtualPortGroup -Server $this.Connection -Name $this.Name -VMHost $this.VMHost -Standard -ErrorAction Stop
+                return $virtualPortGroup
+            }
+            catch {
+                throw "Could not retrieve Virtual Port Group $($this.Name) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+            }
+        }
     }
 }
 
@@ -4184,15 +4208,7 @@ class VMHostTpsSettings : VMHostBaseDSC {
 }
 
 [DscResource()]
-class VMHostVssPortGroup : VMHostEntityBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Name of the the Port Group.
-    #>
-    [DscProperty(Key)]
-    [string] $Name
-
+class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
     <#
     .DESCRIPTION
 
@@ -4201,14 +4217,6 @@ class VMHostVssPortGroup : VMHostEntityBaseDSC {
     #>
     [DscProperty(Mandatory)]
     [string] $VssName
-
-    <#
-    .DESCRIPTION
-
-    Value indicating if the Port Group should be Present or Absent.
-    #>
-    [DscProperty(Mandatory)]
-    [Ensure] $Ensure
 
     <#
     .DESCRIPTION
@@ -4432,6 +4440,199 @@ class VMHostVssPortGroup : VMHostEntityBaseDSC {
             $result.Ensure = [Ensure]::Absent
             $result.VLanId = $this.VLanId
         }
+    }
+}
+
+[DscResource()]
+class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies whether promiscuous mode is enabled for the corresponding Virtual Port Group.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $AllowPromiscuous
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the AllowPromiscuous setting is inherited from the parent Standard Virtual Switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $AllowPromiscuousInherited
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether forged transmits are enabled for the corresponding Virtual Port Group.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $ForgedTransmits
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the ForgedTransmits setting is inherited from the parent Standard Virtual Switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $ForgedTransmitsInherited
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether MAC address changes are enabled for the corresponding Virtual Port Group.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $MacChanges
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the MacChanges setting is inherited from the parent Standard Virtual Switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $MacChangesInherited
+
+    hidden [string] $AllowPromiscuousSettingName = 'AllowPromiscuous'
+    hidden [string] $AllowPromiscuousInheritedSettingName = 'AllowPromiscuousInherited'
+    hidden [string] $ForgedTransmitsSettingName = 'ForgedTransmits'
+    hidden [string] $ForgedTransmitsInheritedSettingName = 'ForgedTransmitsInherited'
+    hidden [string] $MacChangesSettingName = 'MacChanges'
+    hidden [string] $MacChangesInheritedSettingName = 'MacChangesInherited'
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+
+        $virtualPortGroup = $this.GetVirtualPortGroup()
+        $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+
+        $this.UpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+
+        $virtualPortGroup = $this.GetVirtualPortGroup()
+        if ($null -eq $virtualPortGroup) {
+            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+            return $true
+        }
+
+        $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+
+        return !$this.ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
+    }
+
+    [VMHostVssPortGroupSecurity] Get() {
+        $result = [VMHostVssPortGroupSecurity]::new()
+        $result.Server = $this.Server
+        $result.Ensure = $this.Ensure
+
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+
+        $result.VMHostName = $this.VMHost.Name
+
+        $virtualPortGroup = $this.GetVirtualPortGroup()
+        if ($null -eq $virtualPortGroup) {
+            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+            $result.Name = $this.Name
+            return $result
+        }
+
+        $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+        $result.Name = $virtualPortGroup.Name
+
+        $this.PopulateResult($virtualPortGroupSecurityPolicy, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Port Group Security Policy from the server.
+    #>
+    [PSObject] GetVirtualPortGroupSecurityPolicy($virtualPortGroup) {
+        try {
+            $virtualPortGroupSecurityPolicy = Get-SecurityPolicy -Server $this.Connection -VirtualPortGroup $virtualPortGroup -ErrorAction Stop
+            return $virtualPortGroupSecurityPolicy
+        }
+        catch {
+            throw "Could not retrieve Virtual Port Group $($this.PortGroup) Security Policy. For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Security Policy of the specified Virtual Port Group should be updated.
+    #>
+    [bool] ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy) {
+        $shouldUpdateVirtualPortGroupSecurityPolicy = @()
+
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuous -and $this.AllowPromiscuous -ne $virtualPortGroupSecurityPolicy.AllowPromiscuous)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuousInherited -and $this.AllowPromiscuousInherited -ne $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmits -and $this.ForgedTransmits -ne $virtualPortGroupSecurityPolicy.ForgedTransmits)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmitsInherited -and $this.ForgedTransmitsInherited -ne $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChanges -and $this.MacChanges -ne $virtualPortGroupSecurityPolicy.MacChanges)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChangesInherited -and $this.MacChangesInherited -ne $virtualPortGroupSecurityPolicy.MacChangesInherited)
+
+        return ($shouldUpdateVirtualPortGroupSecurityPolicy -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the specified Security Policy Setting. If the Inherited Setting is passed and set to $true,
+    the Security Policy Setting should not be populated because "Parameters of the form "XXX" and "InheritXXX" are mutually exclusive."
+    If the Inherited Setting is set to $false, both parameters can be populated.
+    #>
+    [void] PopulateSecurityPolicySetting($securityPolicyParams, $securityPolicySettingName, $securityPolicySetting, $securityPolicySettingInheritedName, $securityPolicySettingInherited) {
+        if ($null -ne $securityPolicySetting) {
+            if ($null -eq $securityPolicySettingInherited -or !$securityPolicySettingInherited) {
+                $securityPolicyParams.$securityPolicySettingName = $securityPolicySetting
+            }
+        }
+
+        if ($null -ne $securityPolicySettingInherited) { $securityPolicyParams.$securityPolicySettingInheritedName = $securityPolicySettingInherited }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Security Policy of the specified Virtual Port Group.
+    #>
+    [void] UpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy) {
+        $securityPolicyParams = @{}
+        $securityPolicyParams.VirtualPortGroupPolicy = $virtualPortGroupSecurityPolicy
+
+        $this.PopulateSecurityPolicySetting($securityPolicyParams, $this.AllowPromiscuousSettingName, $this.AllowPromiscuous, $this.AllowPromiscuousInheritedSettingName, $this.AllowPromiscuousInherited)
+        $this.PopulateSecurityPolicySetting($securityPolicyParams, $this.ForgedTransmitsSettingName, $this.ForgedTransmits, $this.ForgedTransmitsInheritedSettingName, $this.ForgedTransmitsInherited)
+        $this.PopulateSecurityPolicySetting($securityPolicyParams, $this.MacChangesSettingName, $this.MacChanges, $this.MacChangesInheritedSettingName, $this.MacChangesInherited)
+
+        try {
+            Set-SecurityPolicy @securityPolicyParams
+        }
+        catch {
+            throw "Cannot update Security Policy of Virtual Port Group $($this.PortGroup). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Security Policy of the specified Virtual Port Group from the server.
+    #>
+    [void] PopulateResult($virtualPortGroupSecurityPolicy, $result) {
+        $result.AllowPromiscuous = $virtualPortGroupSecurityPolicy.AllowPromiscuous
+        $result.AllowPromiscuousInherited = $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited
+        $result.ForgedTransmits = $virtualPortGroupSecurityPolicy.ForgedTransmits
+        $result.ForgedTransmitsInherited = $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited
+        $result.MacChanges = $virtualPortGroupSecurityPolicy.MacChanges
+        $result.MacChangesInherited = $virtualPortGroupSecurityPolicy.MacChangesInherited
     }
 }
 
