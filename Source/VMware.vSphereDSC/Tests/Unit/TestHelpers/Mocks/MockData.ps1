@@ -139,6 +139,11 @@ $script:constants = @{
     AverageBandwidth = 104857600000
     PeakBandwidth = 104857600000
     BurstSize = 107374182400
+    PhysicalNetworkAdapterName = 'vmnic1'
+    FullDuplex = 'Full'
+    HalfDuplex = 'Half'
+    BitRatePerSecMb = 1000
+    AutoNegotiate = $true
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -732,6 +737,20 @@ $script:virtualPortGroupSpec = [VMware.Vim.HostPortGroupSpec] @{
             AverageBandwidth = $script:constants.AverageBandwidth
             PeakBandwidth = $script:constants.PeakBandwidth
             BurstSize = $script:constants.BurstSize
+        }
+    }
+}
+
+$script:physicalNetworkAdapter = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.PhysicalNicImpl] @{
+    Name = $script:constants.PhysicalNetworkAdapterName
+    FullDuplex = $true
+    BitRatePerSec = $script:constants.BitRatePerSecMb
+    ExtensionData = [VMware.Vim.PhysicalNic] @{
+        Spec = [VMware.Vim.PhysicalNicSpec] @{
+            LinkSpeed = [VMware.Vim.PhysicalNicLinkInfo] @{
+                SpeedMb = $script:constants.BitRatePerSecMb
+                Duplex = $true
+            }
         }
     }
 }
