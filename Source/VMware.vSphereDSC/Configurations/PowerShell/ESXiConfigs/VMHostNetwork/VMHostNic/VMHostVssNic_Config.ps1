@@ -50,7 +50,7 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapter_Config {
+Configuration VMHostVssNic_WhenAddingVMKernelNetworkAdapter_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -63,12 +63,12 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapte
             Mtu = 1500
         }
 
-        VMHostStandardSwitchNetworkAdapter VMHostStandardSwitchNetworkAdapter {
+        VMHostVssNic VMHostVssNic {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VirtualSwitch = 'MyVirtualSwitch'
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $AllNodes.Name
+            VssName = 'MyVirtualSwitch'
+            PortGroupName = 'MyVirtualPortGroup'
             Ensure = 'Present'
             IP = '192.168.0.1'
             SubnetMask = '255.255.255.0'
@@ -86,20 +86,20 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapte
     }
 }
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenRemovingVMKernelNetworkAdapter_Config {
+Configuration VMHostVssNic_WhenRemovingVMKernelNetworkAdapter_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostStandardSwitchNetworkAdapter VMHostStandardSwitchNetworkAdapter {
+        VMHostVssNic VMHostVssNic {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VirtualSwitch = 'MyVirtualSwitch'
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $AllNodes.Name
+            VssName = 'MyVirtualSwitch'
+            PortGroupName = 'MyVirtualPortGroup'
             Ensure = 'Absent'
         }
     }
 }
 
-VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapter_Config -ConfigurationData $script:configurationData
-VMHostStandardSwitchNetworkAdapter_WhenRemovingVMKernelNetworkAdapter_Config -ConfigurationData $script:configurationData
+VMHostVssNic_WhenAddingVMKernelNetworkAdapter_Config -ConfigurationData $script:configurationData
+VMHostVssNic_WhenRemovingVMKernelNetworkAdapter_Config -ConfigurationData $script:configurationData

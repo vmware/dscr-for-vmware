@@ -14,7 +14,7 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapter_Config {
+Configuration VMHostVssNic_WhenAddingVMKernelNetworkAdapter_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -27,12 +27,12 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapte
             Mtu = $AllNodes.StandardSwitchMtu
         }
 
-        VMHostStandardSwitchNetworkAdapter $AllNodes.StandardSwitchNetworkAdapterResourceName {
+        VMHostVssNic $AllNodes.StandardSwitchNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VirtualSwitch = $AllNodes.StandardSwitchName
-            PortGroup = $AllNodes.PortGroup
+            VMHostName = $AllNodes.Name
+            VssName = $AllNodes.StandardSwitchName
+            PortGroupName = $AllNodes.PortGroup
             Ensure = 'Present'
             IP = $AllNodes.IP1
             SubnetMask = $AllNodes.SubnetMask1
@@ -50,16 +50,16 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapte
     }
 }
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdapterMtuAndAvailableServices_Config {
+Configuration VMHostVssNic_WhenUpdatingVMKernelNetworkAdapterMtuAndAvailableServices_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostStandardSwitchNetworkAdapter $AllNodes.StandardSwitchNetworkAdapterResourceName {
+        VMHostVssNic $AllNodes.StandardSwitchNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VirtualSwitch = $AllNodes.StandardSwitchName
-            PortGroup = $AllNodes.PortGroup
+            VMHostName = $AllNodes.Name
+            VssName = $AllNodes.StandardSwitchName
+            PortGroupName = $AllNodes.PortGroup
             Ensure = 'Present'
             IP = $AllNodes.IP1
             SubnetMask = $AllNodes.SubnetMask1
@@ -74,16 +74,16 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdap
     }
 }
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdapterIPAndSubnetMask_Config {
+Configuration VMHostVssNic_WhenUpdatingVMKernelNetworkAdapterIPAndSubnetMask_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostStandardSwitchNetworkAdapter $AllNodes.StandardSwitchNetworkAdapterResourceName {
+        VMHostVssNic $AllNodes.StandardSwitchNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VirtualSwitch = $AllNodes.StandardSwitchName
-            PortGroup = $AllNodes.PortGroup
+            VMHostName = $AllNodes.Name
+            VssName = $AllNodes.StandardSwitchName
+            PortGroupName = $AllNodes.PortGroup
             Ensure = 'Present'
             IP = $AllNodes.IP2
             SubnetMask = $AllNodes.SubnetMask2
@@ -98,16 +98,16 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdap
     }
 }
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdapterIPv6Settings_Config {
+Configuration VMHostVssNic_WhenUpdatingVMKernelNetworkAdapterIPv6Settings_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostStandardSwitchNetworkAdapter $AllNodes.StandardSwitchNetworkAdapterResourceName {
+        VMHostVssNic $AllNodes.StandardSwitchNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VirtualSwitch = $AllNodes.StandardSwitchName
-            PortGroup = $AllNodes.PortGroup
+            VMHostName = $AllNodes.Name
+            VssName = $AllNodes.StandardSwitchName
+            PortGroupName = $AllNodes.PortGroup
             Ensure = 'Present'
             IP = $AllNodes.IP1
             SubnetMask = $AllNodes.SubnetMask1
@@ -124,16 +124,16 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdap
     }
 }
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdapterDhcpAndIPv6_Config {
+Configuration VMHostVssNic_WhenUpdatingVMKernelNetworkAdapterDhcpAndIPv6_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostStandardSwitchNetworkAdapter $AllNodes.StandardSwitchNetworkAdapterResourceName {
+        VMHostVssNic $AllNodes.StandardSwitchNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VirtualSwitch = $AllNodes.StandardSwitchName
-            PortGroup = $AllNodes.PortGroup
+            VMHostName = $AllNodes.Name
+            VssName = $AllNodes.StandardSwitchName
+            PortGroupName = $AllNodes.PortGroup
             Ensure = 'Present'
             IP = $AllNodes.DefaultIP
             SubnetMask = $AllNodes.DefaultSubnetMask
@@ -152,40 +152,40 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdap
     }
 }
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenRemovingVMKernelNetworkAdapter_Config {
+Configuration VMHostVssNic_WhenRemovingVMKernelNetworkAdapter_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostStandardSwitchNetworkAdapter $AllNodes.StandardSwitchNetworkAdapterResourceName {
+        VMHostVssNic $AllNodes.StandardSwitchNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VirtualSwitch = $AllNodes.StandardSwitchName
-            PortGroup = $AllNodes.PortGroup
+            VMHostName = $AllNodes.Name
+            VssName = $AllNodes.StandardSwitchName
+            PortGroupName = $AllNodes.PortGroup
             Ensure = 'Absent'
         }
     }
 }
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenRemovingVMKernelNetworkAdapterAndStandardSwitch_Config {
+Configuration VMHostVssNic_WhenRemovingVMKernelNetworkAdapterAndStandardSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostStandardSwitchNetworkAdapter $AllNodes.StandardSwitchNetworkAdapterResourceName {
+        VMHostVssNic $AllNodes.StandardSwitchNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VirtualSwitch = $AllNodes.StandardSwitchName
-            PortGroup = $AllNodes.PortGroup
+            VMHostName = $AllNodes.Name
+            VssName = $AllNodes.StandardSwitchName
+            PortGroupName = $AllNodes.PortGroup
             Ensure = 'Absent'
         }
 
-        VMHostVirtualPortGroup $AllNodes.VirtualPortGroupResourceName {
+        VMHostVssPortGroup $AllNodes.VirtualPortGroupResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroupName = $AllNodes.PortGroup
-            VirtualSwitch = $AllNodes.StandardSwitchName
+            VMHostName = $AllNodes.Name
+            Name = $AllNodes.PortGroup
+            VssName = $AllNodes.StandardSwitchName
             Ensure = 'Absent'
             DependsOn = $AllNodes.StandardSwitchNetworkAdapterResourceId
         }

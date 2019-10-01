@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostStandardSwitchNetworkAdapter'
+        $resourceName = 'VMHostVssNic'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostStandardSwitchNetworkAdapterMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVssNicMocks.ps1"
 
-        Describe 'VMHostStandardSwitchNetworkAdapter\Set' -Tag 'Set' {
+        Describe 'VMHostVssNic\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostStandardSwitchNetworkAdapter
+                New-MocksForVMHostVssNic
             }
 
             Context 'Invoking with Ensure Present and non existing VMKernel Network Adapter' {
@@ -135,10 +135,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostStandardSwitchNetworkAdapter\Test' -Tag 'Test' {
+        Describe 'VMHostVssNic\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostStandardSwitchNetworkAdapter
+                New-MocksForVMHostVssNic
             }
 
             Context 'Invoking with Ensure Present and non existing VMKernel Network Adapter' {
@@ -222,10 +222,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostStandardSwitchNetworkAdapter\Get' -Tag 'Get' {
+        Describe 'VMHostVssNic\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostStandardSwitchNetworkAdapter
+                New-MocksForVMHostVssNic
 
                 $resourceProperties = New-MocksInGet
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
@@ -237,8 +237,8 @@ InModuleScope -ModuleName $script:moduleName {
 
                 # Assert
                 $result.Server | Should -Be $resourceProperties.Server
-                $result.Name | Should -Be $script:constants.VMHostName
-                $result.VirtualSwitch | Should -Be $script:constants.VirtualSwitchName
+                $result.VMHostName | Should -Be $script:constants.VMHostName
+                $result.VssName | Should -Be $script:constants.VirtualSwitchName
             }
         }
     }

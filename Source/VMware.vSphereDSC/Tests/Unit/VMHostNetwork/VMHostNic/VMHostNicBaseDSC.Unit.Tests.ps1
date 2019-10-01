@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $vmHostNetworkAdapterBaseDSCClassName = 'VMHostNetworkAdapterBaseDSC'
+        $vmHostNicBaseDSCClassName = 'VMHostNicBaseDSC'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,28 +30,27 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostNetworkAdapterBaseDSCMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostNicBaseDSCMocks.ps1"
 
-        Describe 'VMHostNetworkAdapterBaseDSC\GetVMHostNetworkAdapter' -Tag 'GetVMHostNetworkAdapter' {
+        Describe 'VMHostNicBaseDSC\GetVMHostNetworkAdapter' -Tag 'GetVMHostNetworkAdapter' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostNetworkAdapterBaseDSC
+                New-MocksForVMHostNicBaseDSC
             }
 
             Context 'Invoking with existing VMKernel Network Adapter' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterExists
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterExists
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
 
                     # Assert
                     Assert-VerifiableMock
@@ -59,7 +58,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should return the VMKernel Network Adapter from the server' {
                     # Act
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
 
                     # Assert
                     $vmHostNetworkAdapter | Should -Be $script:vmHostNetworkAdapter
@@ -69,17 +68,16 @@ InModuleScope -ModuleName $script:moduleName {
             Context 'Invoking with non existing VMKernel Network Adapter' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterDoesNotExist
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterDoesNotExist
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
 
                     # Assert
                     Assert-VerifiableMock
@@ -87,7 +85,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should return $null' {
                     # Act
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
 
                     # Assert
                     $vmHostNetworkAdapter | Should -BeNullOrEmpty
@@ -95,27 +93,26 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostNetworkAdapterBaseDSC\ShouldUpdateVMHostNetworkAdapter' -Tag 'ShouldUpdateVMHostNetworkAdapter' {
+        Describe 'VMHostNicBaseDSC\ShouldUpdateVMHostNetworkAdapter' -Tag 'ShouldUpdateVMHostNetworkAdapter' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostNetworkAdapterBaseDSC
+                New-MocksForVMHostNicBaseDSC
             }
 
             Context 'Invoking with matching VMKernel Network Adapter settings' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterSettingsMatch
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterSettingsMatch
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $vmHostNicBaseDSC.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     Assert-VerifiableMock
@@ -123,7 +120,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should return $false when VMKernel Network Adapter settings match' {
                     # Act
-                    $result = $vmHostNetworkAdapterBaseDSC.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $result = $vmHostNicBaseDSC.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     $result | Should -Be $false
@@ -133,18 +130,17 @@ InModuleScope -ModuleName $script:moduleName {
             Context 'Invoking with non matching VMKernel Network Adapter settings' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterSettingsDoesNotMatch
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterSettingsDoesNotMatch
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $vmHostNicBaseDSC.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     Assert-VerifiableMock
@@ -152,7 +148,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should return $true when VMKernel Network Adapter settings does not match' {
                     # Act
-                    $result = $vmHostNetworkAdapterBaseDSC.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $result = $vmHostNicBaseDSC.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     $result | Should -Be $true
@@ -160,28 +156,27 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostNetworkAdapterBaseDSC\AddVMHostNetworkAdapter' -Tag 'AddVMHostNetworkAdapter' {
+        Describe 'VMHostNicBaseDSC\AddVMHostNetworkAdapter' -Tag 'AddVMHostNetworkAdapter' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostNetworkAdapterBaseDSC
+                New-MocksForVMHostNicBaseDSC
             }
 
             Context 'Invoking with VMKernel Network Adapter settings that results in an Error' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterSettingsResultsInAnError
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterSettingsResultsInAnError
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     try {
                         # Act
-                        $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $null)
+                        $vmHostNicBaseDSC.AddVMHostNetworkAdapter($script:virtualSwitch, $null)
                     }
                     catch {
                         # Assert
@@ -192,25 +187,24 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should throw the correct error when Adding new VMKernel Network Adapter results in an error' {
                     # Act && Assert
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $null) } | Should -Throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($virtualSwitch.Name) and Port Group $($vmHostNetworkAdapterBaseDSCProperties.PortGroup). For more information: ScriptHalted"
+                    { $vmHostNicBaseDSC.AddVMHostNetworkAdapter($script:virtualSwitch, $null) } | Should -Throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($script:virtualSwitch.Name) and Port Group $($vmHostNicBaseDSCProperties.PortGroupName). For more information: ScriptHalted"
                 }
             }
 
             Context 'Invoking without Port Id' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenAddingVMKernelNetworkAdapter
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenAddingVMKernelNetworkAdapter
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $null)
+                    $vmHostNicBaseDSC.AddVMHostNetworkAdapter($script:virtualSwitch, $null)
 
                     # Assert
                     Assert-VerifiableMock
@@ -218,12 +212,12 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call the New-VMHostNetworkAdapter mock once' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $null)
+                    $vmHostNicBaseDSC.AddVMHostNetworkAdapter($script:virtualSwitch, $null)
 
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'New-VMHostNetworkAdapter'
-                        ParameterFilter = { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost -and $VirtualSwitch -eq $virtualSwitch -and $PortGroup -eq $script:constants.VirtualPortGroupName -and `
+                        ParameterFilter = { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost -and $VirtualSwitch -eq $script:virtualSwitch -and $PortGroup -eq $script:constants.VirtualPortGroupName -and `
                                             $IP -eq $script:constants.VMKernelNetworkAdapterIP -and $SubnetMask -eq $script:constants.VMKernelNetworkAdapterSubnetMask -and `
                                             $Mac -eq $script:constants.VMKernelNetworkAdapterMac -and $AutomaticIPv6 -eq $script:constants.VMKernelNetworkAdapterAutomaticIPv6 -and `
                                             [System.Linq.Enumerable]::SequenceEqual($IPv6, @()) -and $IPv6ThroughDhcp -eq $script:constants.VMKernelNetworkAdapterIPv6ThroughDhcp -and `
@@ -243,18 +237,17 @@ InModuleScope -ModuleName $script:moduleName {
             Context 'Invoking with Port Id' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenAddingVMKernelNetworkAdapter
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenAddingVMKernelNetworkAdapter
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $script:constants.VMKernelNetworkAdapterPortId)
+                    $vmHostNicBaseDSC.AddVMHostNetworkAdapter($script:virtualSwitch, $script:constants.VMKernelNetworkAdapterPortId)
 
                     # Assert
                     Assert-VerifiableMock
@@ -262,12 +255,12 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call the New-VMHostNetworkAdapter mock once' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.AddVMHostNetworkAdapter($vmHost, $virtualSwitch, $script:constants.VMKernelNetworkAdapterPortId)
+                    $vmHostNicBaseDSC.AddVMHostNetworkAdapter($script:virtualSwitch, $script:constants.VMKernelNetworkAdapterPortId)
 
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'New-VMHostNetworkAdapter'
-                        ParameterFilter = { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost -and $VirtualSwitch -eq $virtualSwitch -and $PortId -eq $script:constants.VMKernelNetworkAdapterPortId -and `
+                        ParameterFilter = { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost -and $VirtualSwitch -eq $script:virtualSwitch -and $PortId -eq $script:constants.VMKernelNetworkAdapterPortId -and `
                                             $IP -eq $script:constants.VMKernelNetworkAdapterIP -and $SubnetMask -eq $script:constants.VMKernelNetworkAdapterSubnetMask -and `
                                             $Mac -eq $script:constants.VMKernelNetworkAdapterMac -and $AutomaticIPv6 -eq $script:constants.VMKernelNetworkAdapterAutomaticIPv6 -and `
                                             [System.Linq.Enumerable]::SequenceEqual($IPv6, @()) -and $IPv6ThroughDhcp -eq $script:constants.VMKernelNetworkAdapterIPv6ThroughDhcp -and `
@@ -285,28 +278,27 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostNetworkAdapterBaseDSC\UpdateVMHostNetworkAdapter' -Tag 'UpdateVMHostNetworkAdapter' {
+        Describe 'VMHostNicBaseDSC\UpdateVMHostNetworkAdapter' -Tag 'UpdateVMHostNetworkAdapter' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostNetworkAdapterBaseDSC
+                New-MocksForVMHostNicBaseDSC
             }
 
             Context 'Invoking with VMKernel Network Adapter settings to update that results in an Error' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenUpdatingVMKernelNetworkAdapterSettingsResultsInAnError
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenUpdatingVMKernelNetworkAdapterSettingsResultsInAnError
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     try {
                         # Act
-                        $vmHostNetworkAdapterBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                        $vmHostNicBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
                     }
                     catch {
                         # Assert
@@ -317,25 +309,24 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should throw the correct error when Updating the VMKernel Network Adapter results in an error' {
                     # Act && Assert
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $vmHostNetworkAdapterBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter) } | Should -Throw "Cannot update VMKernel Network Adapter $($script:constants.VMKernelNetworkAdapterName). For more information: ScriptHalted"
+                    { $vmHostNicBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter) } | Should -Throw "Cannot update VMKernel Network Adapter $($script:constants.VMKernelNetworkAdapterName). For more information: ScriptHalted"
                 }
             }
 
             Context 'Invoking without Dhcp and IPv6Enabled' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenUpdatingVMKernelNetworkAdapterWithoutDhcpAndIPv6Enabled
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenUpdatingVMKernelNetworkAdapterWithoutDhcpAndIPv6Enabled
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $vmHostNicBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     Assert-VerifiableMock
@@ -343,7 +334,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call the Set-VMHostNetworkAdapter mock once' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $vmHostNicBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     $assertMockCalledParams = @{
@@ -362,18 +353,17 @@ InModuleScope -ModuleName $script:moduleName {
             Context 'Invoking with Dhcp and IPv6Enabled' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenUpdatingVMKernelNetworkAdapterWithDhcpAndIPv6Enabled
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenUpdatingVMKernelNetworkAdapterWithDhcpAndIPv6Enabled
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $vmHostNicBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     Assert-VerifiableMock
@@ -381,7 +371,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call the Set-VMHostNetworkAdapter mock once' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $vmHostNicBaseDSC.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     $assertMockCalledParams = @{
@@ -398,28 +388,27 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostNetworkAdapterBaseDSC\RemoveVMHostNetworkAdapter' -Tag 'RemoveVMHostNetworkAdapter' {
+        Describe 'VMHostNicBaseDSC\RemoveVMHostNetworkAdapter' -Tag 'RemoveVMHostNetworkAdapter' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostNetworkAdapterBaseDSC
+                New-MocksForVMHostNicBaseDSC
             }
 
             Context 'Invoking with VMKernel Network Adapter settings to remove that results in an Error' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenRemovingVMKernelNetworkAdapterResultsInAnError
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenRemovingVMKernelNetworkAdapterResultsInAnError
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     try {
                         # Act
-                        $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
+                        $vmHostNicBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
                     }
                     catch {
                         # Assert
@@ -430,25 +419,24 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should throw the correct error when Removing the VMKernel Network Adapter results in an error' {
                     # Act && Assert
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter) } | Should -Throw "Cannot remove VMKernel Network Adapter $($script:constants.VMKernelNetworkAdapterName). For more information: ScriptHalted"
+                    { $vmHostNicBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter) } | Should -Throw "Cannot remove VMKernel Network Adapter $($script:constants.VMKernelNetworkAdapterName). For more information: ScriptHalted"
                 }
             }
 
             Context 'Invoking with VMKernel Network Adapter settings to remove that results in a Success' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenRemovingVMKernelNetworkAdapter
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenRemovingVMKernelNetworkAdapter
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $vmHostNicBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     Assert-VerifiableMock
@@ -456,7 +444,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should call the Remove-VMHostNetworkAdapter mock once' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
+                    $vmHostNicBaseDSC.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
 
                     # Assert
                     $assertMockCalledParams = @{
@@ -472,28 +460,27 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostNetworkAdapterBaseDSC\PopulateResult' -Tag 'PopulateResult' {
+        Describe 'VMHostNicBaseDSC\PopulateResult' -Tag 'PopulateResult' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostNetworkAdapterBaseDSC
+                New-MocksForVMHostNicBaseDSC
             }
 
             Context 'Invoking with existing VMKernel Network Adapter' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterExists
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterExists
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
-                    $result = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
+                    $result = New-Object -TypeName $vmHostNicBaseDSCClassName
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
+                    $vmHostNicBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
 
                     # Assert
                     Assert-VerifiableMock
@@ -501,10 +488,10 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should retrieve the correct settings from the Server and Ensure should be set to Present' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
+                    $vmHostNicBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
 
                     # Assert
-                    $result.PortGroup | Should -Be $script:constants.VirtualPortGroupName
+                    $result.PortGroupName | Should -Be $script:constants.VirtualPortGroupName
                     $result.Ensure | Should -Be 'Present'
                     $result.IP | Should -Be $script:constants.VMKernelNetworkAdapterIP
                     $result.SubnetMask | Should -Be $script:constants.VMKernelNetworkAdapterSubnetMask
@@ -525,19 +512,18 @@ InModuleScope -ModuleName $script:moduleName {
             Context 'Invoking with non existing VMKernel Network Adapter' {
                 BeforeAll {
                     # Arrange
-                    $vmHostNetworkAdapterBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterDoesNotExist
-                    $vmHostNetworkAdapterBaseDSC = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName -Property $vmHostNetworkAdapterBaseDSCProperties
+                    $vmHostNicBaseDSCProperties = New-MocksWhenVMKernelNetworkAdapterDoesNotExist
+                    $vmHostNicBaseDSC = New-Object -TypeName $vmHostNicBaseDSCClassName -Property $vmHostNicBaseDSCProperties
 
-                    $vmHostNetworkAdapterBaseDSC.ConnectVIServer()
-                    $vmHost = $vmHostNetworkAdapterBaseDSC.GetVMHost()
-                    $virtualSwitch = $vmHostNetworkAdapterBaseDSC.GetVirtualSwitch($vmHost, $vmHostNetworkAdapterBaseDSCProperties.VirtualSwitch)
-                    $vmHostNetworkAdapter = $vmHostNetworkAdapterBaseDSC.GetVMHostNetworkAdapter($vmHost, $virtualSwitch)
-                    $result = New-Object -TypeName $vmHostNetworkAdapterBaseDSCClassName
+                    $vmHostNicBaseDSC.ConnectVIServer()
+                    $vmHostNicBaseDSC.RetrieveVMHost()
+                    $vmHostNetworkAdapter = $vmHostNicBaseDSC.GetVMHostNetworkAdapter($script:virtualSwitch)
+                    $result = New-Object -TypeName $vmHostNicBaseDSCClassName
                 }
 
                 It 'Should call all defined mocks' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
+                    $vmHostNicBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
 
                     # Assert
                     Assert-VerifiableMock
@@ -545,24 +531,24 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should retrieve the correct settings from the Resource properties and Ensure should be set to Absent' {
                     # Act
-                    $vmHostNetworkAdapterBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
+                    $vmHostNicBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
 
                     # Assert
-                    $result.PortGroup | Should -Be $vmHostNetworkAdapterBaseDSCProperties.PortGroup
+                    $result.PortGroupName | Should -Be $vmHostNicBaseDSCProperties.PortGroupName
                     $result.Ensure | Should -Be 'Absent'
-                    $result.IP | Should -Be $vmHostNetworkAdapterBaseDSCProperties.IP
-                    $result.SubnetMask | Should -Be $vmHostNetworkAdapterBaseDSCProperties.SubnetMask
-                    $result.Mac | Should -Be $vmHostNetworkAdapterBaseDSCProperties.Mac
-                    $result.AutomaticIPv6 | Should -Be $vmHostNetworkAdapterBaseDSCProperties.AutomaticIPv6
+                    $result.IP | Should -Be $vmHostNicBaseDSCProperties.IP
+                    $result.SubnetMask | Should -Be $vmHostNicBaseDSCProperties.SubnetMask
+                    $result.Mac | Should -Be $vmHostNicBaseDSCProperties.Mac
+                    $result.AutomaticIPv6 | Should -Be $vmHostNicBaseDSCProperties.AutomaticIPv6
                     $result.IPv6 | Should -Be @()
-                    $result.IPv6ThroughDhcp | Should -Be $vmHostNetworkAdapterBaseDSCProperties.IPv6ThroughDhcp
-                    $result.Mtu | Should -Be $vmHostNetworkAdapterBaseDSCProperties.Mtu
+                    $result.IPv6ThroughDhcp | Should -Be $vmHostNicBaseDSCProperties.IPv6ThroughDhcp
+                    $result.Mtu | Should -Be $vmHostNicBaseDSCProperties.Mtu
                     $result.Dhcp | Should -BeNullOrEmpty
                     $result.IPv6Enabled | Should -BeNullOrEmpty
-                    $result.ManagementTrafficEnabled | Should -Be $vmHostNetworkAdapterBaseDSCProperties.ManagementTrafficEnabled
-                    $result.FaultToleranceLoggingEnabled | Should -Be $vmHostNetworkAdapterBaseDSCProperties.FaultToleranceLoggingEnabled
-                    $result.VMotionEnabled | Should -Be $vmHostNetworkAdapterBaseDSCProperties.VMotionEnabled
-                    $result.VsanTrafficEnabled | Should -Be $vmHostNetworkAdapterBaseDSCProperties.VsanTrafficEnabled
+                    $result.ManagementTrafficEnabled | Should -Be $vmHostNicBaseDSCProperties.ManagementTrafficEnabled
+                    $result.FaultToleranceLoggingEnabled | Should -Be $vmHostNicBaseDSCProperties.FaultToleranceLoggingEnabled
+                    $result.VMotionEnabled | Should -Be $vmHostNicBaseDSCProperties.VMotionEnabled
+                    $result.VsanTrafficEnabled | Should -Be $vmHostNicBaseDSCProperties.VsanTrafficEnabled
                 }
             }
         }

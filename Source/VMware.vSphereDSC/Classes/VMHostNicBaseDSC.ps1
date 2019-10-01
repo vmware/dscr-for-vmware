@@ -14,23 +14,15 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
+class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the Virtual Switch to which you want to add the new Network Adapter.
-    #>
-    [DscProperty(Key)]
-    [string] $VirtualSwitch
-
-    <#
-    .DESCRIPTION
-
-    Specifies the Port Group to which you want to add the new Adapter. If a Distributed Switch is passed to the VirtualSwitch parameter, an existing Port Group name should be specified.
+    Specifies the Name of the Port Group to which you want to add the new Adapter. If a Distributed Switch is passed, an existing Port Group name should be specified.
     For Standard Virtual Switches, if the Port Group is non-existent, a new Port Group with the specified name will be created and the new Adapter will be added to the Port Group.
     #>
     [DscProperty(Key)]
-    [string] $PortGroup
+    [string] $PortGroupName
 
     <#
     .DESCRIPTION
@@ -151,8 +143,8 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
     Retrieves the VMKernel Network Adapter connected to the specified Port Group and Virtual Switch and available on the specified VMHost from the server
     if it exists, otherwise returns $null.
     #>
-    [PSObject] GetVMHostNetworkAdapter($vmHost, $virtualSwitch) {
-        return Get-VMHostNetworkAdapter -Server $this.Connection -PortGroup $this.PortGroup -VirtualSwitch $virtualSwitch -VMHost $vmHost -VMKernel -ErrorAction SilentlyContinue
+    [PSObject] GetVMHostNetworkAdapter($virtualSwitch) {
+        return Get-VMHostNetworkAdapter -Server $this.Connection -PortGroup $this.PortGroupName -VirtualSwitch $virtualSwitch -VMHost $this.VMHost -VMKernel -ErrorAction SilentlyContinue
     }
 
     <#
@@ -240,25 +232,25 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
     Creates a new VMKernel Network Adapter connected to the specified Virtual Switch and Port Group for the specified VMHost.
     If the Port Id is specified, the Port Group is ignored and only the Port Id is passed to the cmdlet.
     #>
-    [void] AddVMHostNetworkAdapter($vmHost, $foundVirtualSwitch, $portId) {
+    [void] AddVMHostNetworkAdapter($virtualSwitch, $portId) {
         $vmHostNetworkAdapterParams = $this.GetVMHostNetworkAdapterParams()
 
         $vmHostNetworkAdapterParams.Server = $this.Connection
-        $vmHostNetworkAdapterParams.VMHost = $vmHost
-        $vmHostNetworkAdapterParams.VirtualSwitch = $foundVirtualSwitch
+        $vmHostNetworkAdapterParams.VMHost = $this.VMHost
+        $vmHostNetworkAdapterParams.VirtualSwitch = $virtualSwitch
 
         if ($null -ne $portId) {
             $vmHostNetworkAdapterParams.PortId = $portId
         }
         else {
-            $vmHostNetworkAdapterParams.PortGroup = $this.PortGroup
+            $vmHostNetworkAdapterParams.PortGroup = $this.PortGroupName
         }
 
         try {
             New-VMHostNetworkAdapter @vmHostNetworkAdapterParams
         }
         catch {
-            throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($foundVirtualSwitch.Name) and Port Group $($this.PortGroup). For more information: $($_.Exception.Message)"
+            throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($virtualSwitch.Name) and Port Group $($this.PortGroupName). For more information: $($_.Exception.Message)"
         }
     }
 
@@ -335,7 +327,7 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
     #>
     [void] PopulateResult($vmHostNetworkAdapter, $result) {
         if ($null -ne $vmHostNetworkAdapter) {
-            $result.PortGroup = $vmHostNetworkAdapter.PortGroupName
+            $result.PortGroupName = $vmHostNetworkAdapter.PortGroupName
             $result.Ensure = [Ensure]::Present
             $result.IP = $vmHostNetworkAdapter.IP
             $result.SubnetMask = $vmHostNetworkAdapter.SubnetMask
@@ -352,7 +344,7 @@ class VMHostNetworkAdapterBaseDSC : VMHostNetworkBaseDSC {
             $result.VsanTrafficEnabled = $vmHostNetworkAdapter.VsanTrafficEnabled
         }
         else {
-            $result.PortGroup = $this.PortGroup
+            $result.PortGroupName = $this.PortGroupName
             $result.Ensure = [Ensure]::Absent
             $result.IP = $this.IP
             $result.SubnetMask = $this.SubnetMask

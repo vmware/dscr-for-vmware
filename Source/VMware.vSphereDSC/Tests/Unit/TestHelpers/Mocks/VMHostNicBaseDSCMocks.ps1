@@ -14,16 +14,15 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-VMHostNetworkAdapterBaseDSCProperties {
+function New-VMHostNicBaseDSCProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostNetworkAdapterBaseDSCProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
-        Name = $script:constants.VMHostName
-        VirtualSwitch = $script:constants.VirtualSwitchName
-        PortGroup = $script:constants.VirtualPortGroupName
+        VMHostName = $script:constants.VMHostName
+        PortGroupName = $script:constants.VirtualPortGroupName
         Ensure = 'Present'
         IP = $script:constants.VMKernelNetworkAdapterIP
         SubnetMask = $script:constants.VMKernelNetworkAdapterSubnetMask
@@ -41,23 +40,21 @@ function New-VMHostNetworkAdapterBaseDSCProperties {
     $vmHostNetworkAdapterBaseDSCProperties
 }
 
-function New-MocksForVMHostNetworkAdapterBaseDSC {
+function New-MocksForVMHostNicBaseDSC {
     [CmdletBinding()]
 
     $viServerMock = $script:viServer
     $vmHostMock = $script:vmHost
-    $virtualSwitchMock = $script:virtualSwitch
 
     Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure() -Verifiable
     Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -Verifiable
-    Mock -CommandName Get-VirtualSwitch -MockWith { return $virtualSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualSwitchName -and $VMHost -eq $script:vmHost -and $Standard } -Verifiable
 }
 
 function New-MocksWhenVMKernelNetworkAdapterExists {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
@@ -70,7 +67,7 @@ function New-MocksWhenVMKernelNetworkAdapterDoesNotExist {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel } -Verifiable
 
@@ -81,7 +78,7 @@ function New-MocksWhenVMKernelNetworkAdapterSettingsMatch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
@@ -94,7 +91,7 @@ function New-MocksWhenVMKernelNetworkAdapterSettingsDoesNotMatch {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     $vmHostNetworkAdapterBaseDSCProperties.Mac = $vmHostNetworkAdapterBaseDSCProperties.Mac + $vmHostNetworkAdapterBaseDSCProperties.Mac
     $vmHostNetworkAdapterBaseDSCProperties.Dhcp = $false
@@ -111,7 +108,7 @@ function New-MocksWhenVMKernelNetworkAdapterSettingsResultsInAnError {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel } -Verifiable
     Mock -CommandName New-VMHostNetworkAdapter -MockWith { throw }.GetNewClosure() -Verifiable
@@ -123,7 +120,7 @@ function New-MocksWhenAddingVMKernelNetworkAdapter {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel } -Verifiable
     Mock -CommandName New-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -Verifiable
@@ -135,7 +132,7 @@ function New-MocksWhenUpdatingVMKernelNetworkAdapterSettingsResultsInAnError {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
@@ -149,7 +146,7 @@ function New-MocksWhenUpdatingVMKernelNetworkAdapterWithoutDhcpAndIPv6Enabled {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     $vmHostNetworkAdapterBaseDSCProperties.Mac = $vmHostNetworkAdapterBaseDSCProperties.Mac + $vmHostNetworkAdapterBaseDSCProperties.Mac
     $vmHostNetworkAdapterBaseDSCProperties.ManagementTrafficEnabled = $false
@@ -166,7 +163,7 @@ function New-MocksWhenUpdatingVMKernelNetworkAdapterWithDhcpAndIPv6Enabled {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     $vmHostNetworkAdapterBaseDSCProperties.Dhcp = !($script:constants.VMKernelNetworkAdapterDhcp)
     $vmHostNetworkAdapterBaseDSCProperties.IPv6Enabled = !($script:constants.VMKernelNetworkAdapterIPv6Enabled)
@@ -183,7 +180,7 @@ function New-MocksWhenRemovingVMKernelNetworkAdapterResultsInAnError {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
@@ -197,7 +194,7 @@ function New-MocksWhenRemovingVMKernelNetworkAdapter {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNetworkAdapterBaseDSCProperties
+    $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 

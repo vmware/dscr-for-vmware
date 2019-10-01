@@ -1,4 +1,4 @@
-# VMHostStandardSwitchNetworkAdapter
+# VMHostVssNic
 
 ## Parameters
 
@@ -6,8 +6,9 @@
 | --- | --- | --- | --- | --- |
 | **Server** | Key | string | Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
-| **VirtualSwitch** | Key | string | The Virtual Switch to which you want to add the new Network Adapter. The Switch must be a Standard Switch. ||
-| **PortGroup** | Key | string | The Port Group to which you want to add the new Adapter. If the Port Group is non-existent, a new Port Group with the specified name will be created and the new Adapter will be added to the Port Group. ||
+| **VMHostName** | Key | string | The Name of the VMHost which is going to be used. ||
+| **VssName** | Key | string | The Name of the Virtual Switch to which you want to add the new Network Adapter. The Switch must be a Standard Switch. ||
+| **PortGroupName** | Key | string | The Name of the Port Group to which you want to add the new Adapter. If the Port Group is non-existent, a new Port Group with the specified name will be created and the new Adapter will be added to the Port Group. ||
 | **Ensure** | Mandatory | Ensure | Value indicating if the Network Adapter should be Present or Absent. | Present, Absent |
 | **Dhcp** | Optional | bool | Indicates whether the host Network Adapter uses a Dhcp server. ||
 | **IP** | Optional | string | The IP address for the new Network Adapter. All IP addresses are specified using IPv4 dot notation. If IP is not specified, DHCP mode is enabled. ||
@@ -33,7 +34,7 @@ The resource is used to create, update and remove VMKernel Network Adapters adde
 Creates a new VMKernel Network Adapter with the specified settings adding it to Standard Switch **MyVirtualSwitch** and Port Group **MyVirtualPortGroup**.
 
 ```powershell
-Configuration VMHostStandardSwitchNetworkAdapter_Config {
+Configuration VMHostVssNic_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -48,18 +49,18 @@ Configuration VMHostStandardSwitchNetworkAdapter_Config {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $Name
+        $VMHostName
     )
 
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostStandardSwitchNetworkAdapter VMHostStandardSwitchNetworkAdapter {
+        VMHostVssNic VMHostVssNic {
             Server = $Server
             Credential = $Credential
-            Name = $Name
-            VirtualSwitch = 'MyVirtualSwitch'
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $VMHostName
+            VssName = 'MyVirtualSwitch'
+            PortGroupName = 'MyVirtualPortGroup'
             Ensure = 'Present'
             IP = '192.168.0.1'
             SubnetMask = '255.255.255.0'
@@ -82,7 +83,7 @@ Configuration VMHostStandardSwitchNetworkAdapter_Config {
 The first Configuration creates a new VMKernel Network Adapter with the specified settings adding it to Standard Switch **MyVirtualSwitch** and Port Group **MyVirtualPortGroup**. The second Configuration updates the VMKernel Network Adapter added to Standard Switch **MyVirtualSwitch** and Port Group **MyVirtualPortGroup** by disabling IPv6 and enabling Dhcp.
 
 ```powershell
-Configuration VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapter_Config {
+Configuration VMHostVssNic_WhenAddingVMKernelNetworkAdapter_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -97,18 +98,18 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapte
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $Name
+        $VMHostName
     )
 
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostStandardSwitchNetworkAdapter VMHostStandardSwitchNetworkAdapter {
+        VMHostVssNic VMHostVssNic {
             Server = $Server
             Credential = $Credential
-            Name = $Name
-            VirtualSwitch = 'MyVirtualSwitch'
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $VMHostName
+            VssName = 'MyVirtualSwitch'
+            PortGroupName = 'MyVirtualPortGroup'
             Ensure = 'Present'
             IP = '192.168.0.1'
             SubnetMask = '255.255.255.0'
@@ -125,7 +126,7 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenAddingVMKernelNetworkAdapte
     }
 }
 
-Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdapter_Config {
+Configuration VMHostVssNic_WhenUpdatingVMKernelNetworkAdapter_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -146,12 +147,12 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdap
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostStandardSwitchNetworkAdapter VMHostStandardSwitchNetworkAdapter {
+        VMHostVssNic VMHostVssNic {
             Server = $Server
             Credential = $Credential
-            Name = $Name
-            VirtualSwitch = 'MyVirtualSwitch'
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $VMHostName
+            VssName = 'MyVirtualSwitch'
+            PortGroupName = 'MyVirtualPortGroup'
             Ensure = 'Present'
             IPv6Enabled = $false
             Dhcp = $true
@@ -165,7 +166,7 @@ Configuration VMHostStandardSwitchNetworkAdapter_WhenUpdatingVMKernelNetworkAdap
 Removes the VMKernel Network Adapter added to Standard Switch **MyVirtualSwitch** and Port Group **MyVirtualPortGroup**.
 
 ```powershell
-Configuration VMHostStandardSwitchNetworkAdapter_Config {
+Configuration VMHostVssNic_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -186,12 +187,12 @@ Configuration VMHostStandardSwitchNetworkAdapter_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostStandardSwitchNetworkAdapter VMHostStandardSwitchNetworkAdapter {
+        VMHostVssNic VMHostVssNic {
             Server = $Server
             Credential = $Credential
-            Name = $Name
-            VirtualSwitch = 'MyVirtualSwitch'
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $VMHostName
+            VssName = 'MyVirtualSwitch'
+            PortGroupName = 'MyVirtualPortGroup'
             Ensure = 'Absent'
         }
     }

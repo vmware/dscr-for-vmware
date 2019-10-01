@@ -14,16 +14,16 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-VMHostStandardSwitchNetworkAdapterProperties {
+function New-VMHostVssNicProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostStandardSwitchNetworkAdapterProperties = @{
+    $vmHostVssNicProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
-        Name = $script:constants.VMHostName
-        VirtualSwitch = $script:constants.VirtualSwitchName
-        PortGroup = $script:constants.VirtualPortGroupName
+        VMHostName = $script:constants.VMHostName
+        VssName = $script:constants.VirtualSwitchName
+        PortGroupName = $script:constants.VirtualPortGroupName
         Ensure = 'Present'
         IP = $script:constants.VMKernelNetworkAdapterIP
         SubnetMask = $script:constants.VMKernelNetworkAdapterSubnetMask
@@ -38,10 +38,10 @@ function New-VMHostStandardSwitchNetworkAdapterProperties {
         VsanTrafficEnabled = $script:constants.VMKernelNetworkAdapterVsanTrafficEnabled
     }
 
-    $vmHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties
 }
 
-function New-MocksForVMHostStandardSwitchNetworkAdapter {
+function New-MocksForVMHostVssNic {
     [CmdletBinding()]
 
     $viServerMock = $script:viServer
@@ -57,19 +57,19 @@ function New-MocksWhenEnsurePresentAndVMKernelNetworkAdapterDoesNotExist {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostStandardSwitchNetworkAdapterProperties = New-VMHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties = New-VMHostVssNicProperties
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel }
     Mock -CommandName New-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure()
 
-    $vmHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties
 }
 
 function New-MocksWhenEnsurePresentAndVMKernelNetworkAdapterExists {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostStandardSwitchNetworkAdapterProperties = New-VMHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties = New-VMHostVssNicProperties
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
@@ -77,30 +77,30 @@ function New-MocksWhenEnsurePresentAndVMKernelNetworkAdapterExists {
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:vmHostNetworkAdapter.Name -and $VMHost -eq $script:vmHost -and $VMKernel }
     Mock -CommandName Set-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure()
 
-    $vmHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties
 }
 
 function New-MocksWhenEnsureAbsentAndVMKernelNetworkAdapterDoesNotExist {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostStandardSwitchNetworkAdapterProperties = New-VMHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties = New-VMHostVssNicProperties
 
-    $vmHostStandardSwitchNetworkAdapterProperties.Ensure = 'Absent'
+    $vmHostVssNicProperties.Ensure = 'Absent'
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel }
     Mock -CommandName Remove-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure()
 
-    $vmHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties
 }
 
 function New-MocksWhenEnsureAbsentAndVMKernelNetworkAdapterExists {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostStandardSwitchNetworkAdapterProperties = New-VMHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties = New-VMHostVssNicProperties
 
-    $vmHostStandardSwitchNetworkAdapterProperties.Ensure = 'Absent'
+    $vmHostVssNicProperties.Ensure = 'Absent'
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
@@ -108,34 +108,34 @@ function New-MocksWhenEnsureAbsentAndVMKernelNetworkAdapterExists {
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:vmHostNetworkAdapter.Name -and $VMHost -eq $script:vmHost -and $VMKernel }
     Mock -CommandName Remove-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure()
 
-    $vmHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties
 }
 
 function New-MocksWhenEnsurePresentVMKernelNetworkAdapterExistsAndNonMatchingSettings {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostStandardSwitchNetworkAdapterProperties = New-VMHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties = New-VMHostVssNicProperties
 
-    $vmHostStandardSwitchNetworkAdapterProperties.SubnetMask = $vmHostStandardSwitchNetworkAdapterProperties.SubnetMask + $vmHostStandardSwitchNetworkAdapterProperties.SubnetMask
-    $vmHostStandardSwitchNetworkAdapterProperties.VsanTrafficEnabled = $false
+    $vmHostVssNicProperties.SubnetMask = $vmHostVssNicProperties.SubnetMask + $vmHostVssNicProperties.SubnetMask
+    $vmHostVssNicProperties.VsanTrafficEnabled = $false
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel }
 
-    $vmHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties
 }
 
 function New-MocksInGet {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostStandardSwitchNetworkAdapterProperties = New-VMHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties = New-VMHostVssNicProperties
 
     $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel }
 
-    $vmHostStandardSwitchNetworkAdapterProperties
+    $vmHostVssNicProperties
 }

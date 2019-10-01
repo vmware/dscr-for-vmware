@@ -38,7 +38,7 @@ Param(
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
-$script:dscResourceName = 'VMHostStandardSwitchNetworkAdapter'
+$script:dscResourceName = 'VMHostVssNic'
 $script:moduleFolderPath = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path -Path (Join-Path -Path $moduleFolderPath -ChildPath 'Tests') -ChildPath 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$script:dscResourceName\$($script:dscResourceName)_Config.ps1"
@@ -54,9 +54,9 @@ $script:configurationData = @{
             StandardSwitchResourceName = 'StandardSwitch'
             StandardSwitchResourceId = '[VMHostVss]StandardSwitch'
             VirtualPortGroupResourceName = 'VirtualPortGroup'
-            VirtualPortGroupResourceId = '[VMHostVirtualPortGroup]VirtualPortGroup'
+            VirtualPortGroupResourceId = '[VMHostVssPortGroup]VirtualPortGroup'
             StandardSwitchNetworkAdapterResourceName = 'StandardSwitchNetworkAdapter'
-            StandardSwitchNetworkAdapterResourceId = '[VMHostStandardSwitchNetworkAdapter]StandardSwitchNetworkAdapter'
+            StandardSwitchNetworkAdapterResourceId = '[VMHostVssNic]StandardSwitchNetworkAdapter'
             StandardSwitchName = 'MyStandardSwitch'
             StandardSwitchMtu = 1500
             PortGroup = 'MyVirtualPortGroup'
@@ -158,9 +158,9 @@ Describe "$($script:dscResourceName)_Integration" {
             $standardSwitchResource.Mtu | Should -Be $script:configurationData.AllNodes.StandardSwitchMtu
 
             $standardSwitchNetworkAdapterResource.Server | Should -Be $script:configurationData.AllNodes.Server
-            $standardSwitchNetworkAdapterResource.Name | Should -Be $script:configurationData.AllNodes.Name
-            $standardSwitchNetworkAdapterResource.VirtualSwitch | Should -Be $script:configurationData.AllNodes.StandardSwitchName
-            $standardSwitchNetworkAdapterResource.PortGroup | Should -Be $script:configurationData.AllNodes.PortGroup
+            $standardSwitchNetworkAdapterResource.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $standardSwitchNetworkAdapterResource.VssName | Should -Be $script:configurationData.AllNodes.StandardSwitchName
+            $standardSwitchNetworkAdapterResource.PortGroupName | Should -Be $script:configurationData.AllNodes.PortGroup
             $standardSwitchNetworkAdapterResource.Ensure | Should -Be 'Present'
             $standardSwitchNetworkAdapterResource.IP | Should -Be $script:configurationData.AllNodes.IP1
             $standardSwitchNetworkAdapterResource.SubnetMask | Should -Be $script:configurationData.AllNodes.SubnetMask1
@@ -287,9 +287,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-            $configuration.VirtualSwitch | Should -Be $script:configurationData.AllNodes.StandardSwitchName
-            $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.PortGroup
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $configuration.VssName | Should -Be $script:configurationData.AllNodes.StandardSwitchName
+            $configuration.PortGroupName | Should -Be $script:configurationData.AllNodes.PortGroup
             $configuration.Ensure | Should -Be 'Present'
             $configuration.IP | Should -Be $script:configurationData.AllNodes.IP1
             $configuration.SubnetMask | Should -Be $script:configurationData.AllNodes.SubnetMask1
@@ -406,9 +406,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-            $configuration.VirtualSwitch | Should -Be $script:configurationData.AllNodes.StandardSwitchName
-            $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.PortGroup
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $configuration.VssName | Should -Be $script:configurationData.AllNodes.StandardSwitchName
+            $configuration.PortGroupName | Should -Be $script:configurationData.AllNodes.PortGroup
             $configuration.Ensure | Should -Be 'Present'
             $configuration.IP | Should -Be $script:configurationData.AllNodes.IP2
             $configuration.SubnetMask | Should -Be $script:configurationData.AllNodes.SubnetMask2
@@ -525,9 +525,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-            $configuration.VirtualSwitch | Should -Be $script:configurationData.AllNodes.StandardSwitchName
-            $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.PortGroup
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $configuration.VssName | Should -Be $script:configurationData.AllNodes.StandardSwitchName
+            $configuration.PortGroupName | Should -Be $script:configurationData.AllNodes.PortGroup
             $configuration.Ensure | Should -Be 'Present'
             $configuration.IP | Should -Be $script:configurationData.AllNodes.IP1
             $configuration.SubnetMask | Should -Be $script:configurationData.AllNodes.SubnetMask1
@@ -650,9 +650,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-            $configuration.VirtualSwitch | Should -Be $script:configurationData.AllNodes.StandardSwitchName
-            $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.PortGroup
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $configuration.VssName | Should -Be $script:configurationData.AllNodes.StandardSwitchName
+            $configuration.PortGroupName | Should -Be $script:configurationData.AllNodes.PortGroup
             $configuration.Ensure | Should -Be 'Present'
             $configuration.IP | Should -Be $script:configurationData.AllNodes.DefaultIP
             $configuration.SubnetMask | Should -Be $script:configurationData.AllNodes.DefaultSubnetMask
@@ -769,9 +769,9 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-            $configuration.VirtualSwitch | Should -Be $script:configurationData.AllNodes.StandardSwitchName
-            $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.PortGroup
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+            $configuration.VssName | Should -Be $script:configurationData.AllNodes.StandardSwitchName
+            $configuration.PortGroupName | Should -Be $script:configurationData.AllNodes.PortGroup
             $configuration.Ensure | Should -Be 'Absent'
             $configuration.IP | Should -BeNullOrEmpty
             $configuration.SubnetMask | Should -BeNullOrEmpty

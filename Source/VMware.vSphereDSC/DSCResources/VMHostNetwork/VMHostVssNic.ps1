@@ -15,13 +15,21 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostStandardSwitchNetworkAdapter : VMHostNetworkAdapterBaseDSC {
+class VMHostVssNic : VMHostNicBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Name of the Virtual Switch to which you want to add the new Network Adapter.
+    #>
+    [DscProperty(Key)]
+    [string] $VssName
+
     [void] Set() {
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        $this.RetrieveVMHost()
 
-        $foundVirtualSwitch = $this.GetVirtualSwitch($vmHost, $this.VirtualSwitch)
-        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($vmHost, $foundVirtualSwitch)
+        $virtualSwitch = $this.GetVirtualSwitch()
+        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
         if ($null -ne $vmHostNetworkAdapter) {
             <#
@@ -29,12 +37,12 @@ class VMHostStandardSwitchNetworkAdapter : VMHostNetworkAdapterBaseDSC {
             by Virtual Switch and Port Group produces errors when trying to update or delete it.
             The errors do not occur when the retrieval is done by Name.
             #>
-            $vmHostNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $vmHostNetworkAdapter.Name -VMHost $vmHost -VMKernel
+            $vmHostNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $vmHostNetworkAdapter.Name -VMHost $this.VMHost -VMKernel
         }
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $vmHostNetworkAdapter) {
-                $this.AddVMHostNetworkAdapter($vmHost, $foundVirtualSwitch, $null)
+                $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
             }
             else {
                 $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
@@ -49,10 +57,10 @@ class VMHostStandardSwitchNetworkAdapter : VMHostNetworkAdapterBaseDSC {
 
     [bool] Test() {
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        $this.RetrieveVMHost()
 
-        $foundVirtualSwitch = $this.GetVirtualSwitch($vmHost, $this.VirtualSwitch)
-        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($vmHost, $foundVirtualSwitch)
+        $virtualSwitch = $this.GetVirtualSwitch()
+        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
         if ($this.Ensure -eq [Ensure]::Present) {
             if ($null -eq $vmHostNetworkAdapter) {
@@ -66,21 +74,37 @@ class VMHostStandardSwitchNetworkAdapter : VMHostNetworkAdapterBaseDSC {
         }
     }
 
-    [VMHostStandardSwitchNetworkAdapter] Get() {
-        $result = [VMHostStandardSwitchNetworkAdapter]::new()
+    [VMHostVssNic] Get() {
+        $result = [VMHostVssNic]::new()
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        $this.RetrieveVMHost()
 
-        $foundVirtualSwitch = $this.GetVirtualSwitch($vmHost, $this.VirtualSwitch)
-        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($vmHost, $foundVirtualSwitch)
+        $virtualSwitch = $this.GetVirtualSwitch()
+        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
-        $result.Name = $vmHost.Name
-        $result.VirtualSwitch = $foundVirtualSwitch.Name
+        $result.VMHostName = $this.VMHost.Name
+        $result.VssName = $virtualSwitch.Name
 
         $this.PopulateResult($vmHostNetworkAdapter, $result)
 
         return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Switch with the specified name from the server if it exists.
+    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist, it throws an exception.
+    #>
+    [PSObject] GetVirtualSwitch() {
+        try {
+            $virtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction Stop
+            return $virtualSwitch
+        }
+        catch {
+            throw "Could not retrieve Virtual Switch $($this.VssName) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+        }
     }
 }
