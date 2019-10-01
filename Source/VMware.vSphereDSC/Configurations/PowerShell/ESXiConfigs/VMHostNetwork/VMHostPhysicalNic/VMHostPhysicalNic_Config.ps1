@@ -50,19 +50,19 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostPhysicalNetworkAdapter_Config {
+Configuration VMHostPhysicalNic_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostPhysicalNetworkAdapter VMHostPhysicalNetworkAdapter {
+        VMHostPhysicalNic VMHostPhysicalNic {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PhysicalNetworkAdapter = 'vmnic0'
+            VMHostName = $AllNodes.Name
+            Name = 'vmnic0'
             Duplex = 'Full'
             BitRatePerSecMb = 1000
         }
     }
 }
 
-VMHostPhysicalNetworkAdapter_Config -ConfigurationData $script:configurationData
+VMHostPhysicalNic_Config -ConfigurationData $script:configurationData

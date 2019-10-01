@@ -15,14 +15,14 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostPhysicalNetworkAdapter : VMHostNetworkBaseDSC {
+class VMHostPhysicalNic : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the Physical Network Adapter which is going to be configured.
+    Specifies the Name of the Physical Network Adapter which is going to be configured.
     #>
     [DscProperty(Key)]
-    [string] $PhysicalNetworkAdapter
+    [string] $Name
 
     <#
     .DESCRIPTION
@@ -51,32 +51,32 @@ class VMHostPhysicalNetworkAdapter : VMHostNetworkBaseDSC {
 
     [void] Set() {
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $foundPhysicalNetworkAdapter = $this.GetPhysicalNetworkAdapter($vmHost, $this.PhysicalNetworkAdapter)
+        $this.RetrieveVMHost()
+        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
 
-        $this.UpdatePhysicalNetworkAdapter($foundPhysicalNetworkAdapter)
+        $this.UpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
     }
 
     [bool] Test() {
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $foundPhysicalNetworkAdapter = $this.GetPhysicalNetworkAdapter($vmHost, $this.PhysicalNetworkAdapter)
+        $this.RetrieveVMHost()
+        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
 
-        return !$this.ShouldUpdatePhysicalNetworkAdapter($foundPhysicalNetworkAdapter)
+        return !$this.ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
     }
 
-    [VMHostPhysicalNetworkAdapter] Get() {
-        $result = [VMHostPhysicalNetworkAdapter]::new()
+    [VMHostPhysicalNic] Get() {
+        $result = [VMHostPhysicalNic]::new()
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $foundPhysicalNetworkAdapter = $this.GetPhysicalNetworkAdapter($vmHost, $this.PhysicalNetworkAdapter)
+        $this.RetrieveVMHost()
+        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
 
-        $result.Name = $vmHost.Name
-        $result.PhysicalNetworkAdapter = $foundPhysicalNetworkAdapter.Name
+        $result.VMHostName = $this.VMHost.Name
+        $result.Name = $physicalNetworkAdapter.Name
 
-        $this.PopulateResult($foundPhysicalNetworkAdapter, $result)
+        $this.PopulateResult($physicalNetworkAdapter, $result)
 
         return $result
     }
@@ -84,18 +84,34 @@ class VMHostPhysicalNetworkAdapter : VMHostNetworkBaseDSC {
     <#
     .DESCRIPTION
 
+    Retrieves the Physical Network Adapter with the specified name from the server if it exists.
+    The Network Adapter must be a Physical Network Adapter. If the Physical Network Adapter does not exist, it throws an exception.
+    #>
+    [PSObject] GetPhysicalNetworkAdapter() {
+        try {
+            $physicalNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $this.Name -VMHost $this.VMHost -Physical -ErrorAction Stop
+            return $physicalNetworkAdapter
+        }
+        catch {
+            throw "Could not retrieve Physical Network Adapter $($this.Name) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
     Checks if the Physical Network Adapter should be updated.
     #>
-    [bool] ShouldUpdatePhysicalNetworkAdapter($foundPhysicalNetworkAdapter) {
+    [bool] ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter) {
         $shouldUpdatePhysicalNetworkAdapter = @()
-        $shouldUpdatePhysicalNetworkAdapter += ($null -ne $this.BitRatePerSecMb -and $this.BitRatePerSecMb -ne $foundPhysicalNetworkAdapter.BitRatePerSec)
+        $shouldUpdatePhysicalNetworkAdapter += ($null -ne $this.BitRatePerSecMb -and $this.BitRatePerSecMb -ne $physicalNetworkAdapter.BitRatePerSec)
 
         <#
         The Duplex value on the server is stored as boolean indicating if the link is capable of full-duplex.
         So mapping between the enum and boolean values needs to be performed for comparison purposes.
         #>
         if ($this.Duplex -ne [Duplex]::Unset) {
-            if ($foundPhysicalNetworkAdapter.FullDuplex) {
+            if ($physicalNetworkAdapter.FullDuplex) {
                 $shouldUpdatePhysicalNetworkAdapter += ($this.Duplex -ne [Duplex]::Full)
             }
             else {
@@ -109,10 +125,10 @@ class VMHostPhysicalNetworkAdapter : VMHostNetworkBaseDSC {
         #>
         if ($null -ne $this.AutoNegotiate) {
             if ($this.AutoNegotiate) {
-                $shouldUpdatePhysicalNetworkAdapter += ($null -ne $foundPhysicalNetworkAdapter.ExtensionData.Spec.LinkSpeed)
+                $shouldUpdatePhysicalNetworkAdapter += ($null -ne $physicalNetworkAdapter.ExtensionData.Spec.LinkSpeed)
             }
             else {
-                $shouldUpdatePhysicalNetworkAdapter += ($null -eq $foundPhysicalNetworkAdapter.ExtensionData.Spec.LinkSpeed)
+                $shouldUpdatePhysicalNetworkAdapter += ($null -eq $physicalNetworkAdapter.ExtensionData.Spec.LinkSpeed)
             }
         }
 
@@ -124,10 +140,10 @@ class VMHostPhysicalNetworkAdapter : VMHostNetworkBaseDSC {
 
     Performs an update operation on the specified Physical Network Adapter.
     #>
-    [void] UpdatePhysicalNetworkAdapter($foundPhysicalNetworkAdapter) {
+    [void] UpdatePhysicalNetworkAdapter($physicalNetworkAdapter) {
         $physicalNetworkAdapterParams = @{}
 
-        $physicalNetworkAdapterParams.PhysicalNic = $foundPhysicalNetworkAdapter
+        $physicalNetworkAdapterParams.PhysicalNic = $physicalNetworkAdapter
         $physicalNetworkAdapterParams.Confirm = $false
         $physicalNetworkAdapterParams.ErrorAction = 'Stop'
 
@@ -143,7 +159,7 @@ class VMHostPhysicalNetworkAdapter : VMHostNetworkBaseDSC {
             Set-VMHostNetworkAdapter @physicalNetworkAdapterParams
         }
         catch {
-            throw "Cannot update Physical Network Adapter $($foundPhysicalNetworkAdapter.Name). For more information: $($_.Exception.Message)"
+            throw "Cannot update Physical Network Adapter $($physicalNetworkAdapter.Name). For more information: $($_.Exception.Message)"
         }
     }
 
@@ -152,15 +168,15 @@ class VMHostPhysicalNetworkAdapter : VMHostNetworkBaseDSC {
 
     Populates the result returned from the Get() method with the values of the Physical Network Adapter from the server.
     #>
-    [void] PopulateResult($foundPhysicalNetworkAdapter, $result) {
+    [void] PopulateResult($physicalNetworkAdapter, $result) {
         <#
         AutoNegotiate property is not present on the server, so it should be populated
         with the value provided by user.
         #>
         $result.AutoNegotiate = $this.AutoNegotiate
-        $result.BitRatePerSecMb = $foundPhysicalNetworkAdapter.BitRatePerSec
+        $result.BitRatePerSecMb = $physicalNetworkAdapter.BitRatePerSec
 
-        if ($foundPhysicalNetworkAdapter.FullDuplex) {
+        if ($physicalNetworkAdapter.FullDuplex) {
             $result.Duplex = [Duplex]::Full
         }
         else {

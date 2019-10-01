@@ -14,21 +14,21 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-VMHostPhysicalNetworkAdapterProperties {
+function New-VMHostPhysicalNicProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPhysicalNetworkAdapterProperties = @{
+    $vmHostPhysicalNicProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
-        Name = $script:constants.VMHostName
-        PhysicalNetworkAdapter = $script:constants.PhysicalNetworkAdapterName
+        VMHostName = $script:constants.VMHostName
+        Name = $script:constants.PhysicalNetworkAdapterName
     }
 
-    $vmHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties
 }
 
-function New-MocksForVMHostPhysicalNetworkAdapter {
+function New-MocksForVMHostPhysicalNic {
     [CmdletBinding()]
 
     $viServerMock = $script:viServer
@@ -44,90 +44,90 @@ function New-MocksWhenAutoNegotiateIsNotPassed {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPhysicalNetworkAdapterProperties = New-VMHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties = New-VMHostPhysicalNicProperties
 
-    $vmHostPhysicalNetworkAdapterProperties.Duplex = $script:constants.FullDuplex
-    $vmHostPhysicalNetworkAdapterProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
+    $vmHostPhysicalNicProperties.Duplex = $script:constants.FullDuplex
+    $vmHostPhysicalNicProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
 
     Mock -CommandName Set-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties
 }
 
 function New-MocksWhenAutoNegotiateIsSetToFalse {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPhysicalNetworkAdapterProperties = New-VMHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties = New-VMHostPhysicalNicProperties
 
-    $vmHostPhysicalNetworkAdapterProperties.Duplex = $script:constants.FullDuplex
-    $vmHostPhysicalNetworkAdapterProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
-    $vmHostPhysicalNetworkAdapterProperties.AutoNegotiate = !$script:constants.AutoNegotiate
+    $vmHostPhysicalNicProperties.Duplex = $script:constants.FullDuplex
+    $vmHostPhysicalNicProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
+    $vmHostPhysicalNicProperties.AutoNegotiate = !$script:constants.AutoNegotiate
 
     Mock -CommandName Set-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties
 }
 
 function New-MocksWhenAutoNegotiateIsSetToTrue {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPhysicalNetworkAdapterProperties = New-VMHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties = New-VMHostPhysicalNicProperties
 
-    $vmHostPhysicalNetworkAdapterProperties.Duplex = $script:constants.FullDuplex
-    $vmHostPhysicalNetworkAdapterProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
-    $vmHostPhysicalNetworkAdapterProperties.AutoNegotiate = $script:constants.AutoNegotiate
+    $vmHostPhysicalNicProperties.Duplex = $script:constants.FullDuplex
+    $vmHostPhysicalNicProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
+    $vmHostPhysicalNicProperties.AutoNegotiate = $script:constants.AutoNegotiate
 
     Mock -CommandName Set-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties
 }
 
 function New-MocksWhenThePhysicalNetworkAdapterIsWithFullDuplex {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPhysicalNetworkAdapterProperties = New-VMHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties = New-VMHostPhysicalNicProperties
 
-    $vmHostPhysicalNetworkAdapterProperties.Duplex = $script:constants.HalfDuplex
+    $vmHostPhysicalNicProperties.Duplex = $script:constants.HalfDuplex
 
-    $vmHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties
 }
 
 function New-MocksWhenThePhysicalNetworkAdapterIsWithHalfDuplex {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPhysicalNetworkAdapterProperties = New-VMHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties = New-VMHostPhysicalNicProperties
 
-    $vmHostPhysicalNetworkAdapterProperties.Duplex = $script:constants.FullDuplex
+    $vmHostPhysicalNicProperties.Duplex = $script:constants.FullDuplex
 
-    $vmHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties
 }
 
 function New-MocksInTestWhenAutoNegotiateIsSetToFalse {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPhysicalNetworkAdapterProperties = New-VMHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties = New-VMHostPhysicalNicProperties
 
-    $vmHostPhysicalNetworkAdapterProperties.Duplex = $script:constants.FullDuplex
-    $vmHostPhysicalNetworkAdapterProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
-    $vmHostPhysicalNetworkAdapterProperties.AutoNegotiate = !$script:constants.AutoNegotiate
+    $vmHostPhysicalNicProperties.Duplex = $script:constants.FullDuplex
+    $vmHostPhysicalNicProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
+    $vmHostPhysicalNicProperties.AutoNegotiate = !$script:constants.AutoNegotiate
 
-    $vmHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties
 }
 
 function New-MocksInTestWhenAutoNegotiateIsSetToTrue {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostPhysicalNetworkAdapterProperties = New-VMHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties = New-VMHostPhysicalNicProperties
 
-    $vmHostPhysicalNetworkAdapterProperties.Duplex = $script:constants.FullDuplex
-    $vmHostPhysicalNetworkAdapterProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
-    $vmHostPhysicalNetworkAdapterProperties.AutoNegotiate = $script:constants.AutoNegotiate
+    $vmHostPhysicalNicProperties.Duplex = $script:constants.FullDuplex
+    $vmHostPhysicalNicProperties.BitRatePerSecMb = $script:constants.BitRatePerSecMb
+    $vmHostPhysicalNicProperties.AutoNegotiate = $script:constants.AutoNegotiate
 
-    $vmHostPhysicalNetworkAdapterProperties
+    $vmHostPhysicalNicProperties
 }

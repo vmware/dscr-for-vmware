@@ -56,7 +56,7 @@ Invoke-TestSetup
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
-$script:dscResourceName = 'VMHostPhysicalNetworkAdapter'
+$script:dscResourceName = 'VMHostPhysicalNic'
 $script:moduleFolderPath = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path -Path (Join-Path -Path $moduleFolderPath -ChildPath 'Tests') -ChildPath 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$script:dscResourceName\$($script:dscResourceName)_Config.ps1"
@@ -143,8 +143,8 @@ try {
 
                 # Assert
                 $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-                $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-                $configuration.PhysicalNetworkAdapter | Should -Be $script:configurationData.AllNodes.PhysicalNetworkAdapter
+                $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+                $configuration.Name | Should -Be $script:configurationData.AllNodes.PhysicalNetworkAdapter
                 $configuration.Duplex | Should -Be $script:configurationData.AllNodes.FullDuplex
                 $configuration.BitRatePerSecMb | Should -Be $script:configurationData.AllNodes.FullDuplexBitRatePerSecMb
                 $configuration.AutoNegotiate | Should -BeNullOrEmpty
@@ -236,8 +236,8 @@ try {
 
                 # Assert
                 $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-                $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-                $configuration.PhysicalNetworkAdapter | Should -Be $script:configurationData.AllNodes.PhysicalNetworkAdapter
+                $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+                $configuration.Name | Should -Be $script:configurationData.AllNodes.PhysicalNetworkAdapter
                 $configuration.Duplex | Should -Be $script:configurationData.AllNodes.HalfDuplex
                 $configuration.BitRatePerSecMb | Should -Be $script:configurationData.AllNodes.HalfDuplexBitRatePerSecMb
                 $configuration.AutoNegotiate | Should -Be $false
@@ -329,8 +329,8 @@ try {
 
                 # Assert
                 $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-                $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-                $configuration.PhysicalNetworkAdapter | Should -Be $script:configurationData.AllNodes.PhysicalNetworkAdapter
+                $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+                $configuration.Name | Should -Be $script:configurationData.AllNodes.PhysicalNetworkAdapter
                 $configuration.Duplex | Should -Be $script:configurationData.AllNodes.FullDuplex
                 $configuration.BitRatePerSecMb | Should -Be $script:configurationData.AllNodes.DefaultBitRatePerSecMb
                 $configuration.AutoNegotiate | Should -Be $script:configurationData.AllNodes.AutoNegotiate

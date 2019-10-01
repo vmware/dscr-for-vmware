@@ -30,36 +30,4 @@ class VMHostNetworkBaseDSC : VMHostBaseDSC {
             throw "Could not retrieve NetworkSystem on VMHost with name $($this.Name). For more information: $($_.Exception.Message)"
         }
     }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Virtual Switch with the specified name from the server if it exists.
-    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist, it throws an exception.
-    #>
-    [PSObject] GetVirtualSwitch($vmHost, $virtualSwitchName) {
-        try {
-            $foundVirtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $virtualSwitchName -VMHost $vmHost -Standard -ErrorAction Stop
-            return $foundVirtualSwitch
-        }
-        catch {
-            throw "Could not retrieve Virtual Switch $virtualSwitchName of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Physical Network Adapter with the specified name from the server if it exists.
-    The Network Adapter must be a Physical Network Adapter. If the Physical Network Adapter does not exist, it throws an exception.
-    #>
-    [PSObject] GetPhysicalNetworkAdapter($vmHost, $physicalNetworkAdapterName) {
-        try {
-            $foundPhysicalNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $physicalNetworkAdapterName -VMHost $vmHost -Physical -ErrorAction Stop
-            return $foundPhysicalNetworkAdapter
-        }
-        catch {
-            throw "Could not retrieve Physical Network Adapter $physicalNetworkAdapterName of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
-        }
-    }
 }

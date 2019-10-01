@@ -1,4 +1,4 @@
-# VMHostPhysicalNetworkAdapter
+# VMHostPhysicalNic
 
 ## Parameters
 
@@ -6,8 +6,8 @@
 | --- | --- | --- | --- | --- |
 | **Server** | Key | string | Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
-| **Name** | Key | string | Name of the VMHost to configure. ||
-| **PhysicalNetworkAdapter** | Key | string | The Physical Network Adapter which is going to be configured. ||
+| **VMHostName** | Key | string | The Name of the VMHost which is going to be used. ||
+| **Name** | Key | string | The Name of the Physical Network Adapter which is going to be configured. ||
 | **Duplex** | Optional | Duplex | Indicates whether the link is capable of full-duplex. | Full, Half, Unset |
 | **BitRatePerSecMb** | Optional | int | Specifies the bit rate of the link. ||
 | **AutoNegotiate** | Optional | bool | Indicates that the host network adapter speed/duplex settings are configured automatically. If the property is passed, the Duplex and BitRatePerSecMb properties will be ignored. ||
@@ -22,7 +22,7 @@ The resource is used to update the speed and duplex settings of the specified Ph
 Performs an Update operation on Physical Network Adapter **vmnic0** by setting the **BitRatePerSec** to **1000 Mb** and the **Duplex** to **Full**.
 
 ```powershell
-Configuration VMHostPhysicalNetworkAdapter_Config {
+Configuration VMHostPhysicalNic_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -37,17 +37,17 @@ Configuration VMHostPhysicalNetworkAdapter_Config {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $Name
+        $VMHostName
     )
 
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostPhysicalNetworkAdapter VMHostPhysicalNetworkAdapter {
+        VMHostPhysicalNic VMHostPhysicalNic {
             Server = $Server
             Credential = $Credential
-            Name = $Name
-            PhysicalNetworkAdapter = 'vmnic0'
+            VMHostName = $VMHostName
+            Name = 'vmnic0'
             Duplex = 'Full'
             BitRatePerSecMb = 1000
         }
@@ -60,7 +60,7 @@ Configuration VMHostPhysicalNetworkAdapter_Config {
 Performs an Update operation on Physical Network Adapter **vmnic0** by automatically configuring the **Duplex** and **Speed** settings.
 
 ```powershell
-Configuration VMHostPhysicalNetworkAdapter_Config {
+Configuration VMHostPhysicalNic_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -75,17 +75,17 @@ Configuration VMHostPhysicalNetworkAdapter_Config {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $Name
+        $VMHostName
     )
 
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostPhysicalNetworkAdapter VMHostPhysicalNetworkAdapter {
+        VMHostPhysicalNic VMHostPhysicalNic {
             Server = $Server
             Credential = $Credential
-            Name = $Name
-            PhysicalNetworkAdapter = 'vmnic0'
+            VMHostName = $VMHostName
+            Name = 'vmnic0'
             AutoNegotiate = $true
         }
     }

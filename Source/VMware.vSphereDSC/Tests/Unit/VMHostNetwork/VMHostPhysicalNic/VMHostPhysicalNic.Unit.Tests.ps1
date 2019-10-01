@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostPhysicalNetworkAdapter'
+        $resourceName = 'VMHostPhysicalNic'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostPhysicalNetworkAdapterMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostPhysicalNicMocks.ps1"
 
-        Describe 'VMHostPhysicalNetworkAdapter\Set' -Tag 'Set' {
+        Describe 'VMHostPhysicalNic\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostPhysicalNetworkAdapter
+                New-MocksForVMHostPhysicalNic
             }
 
             Context 'Invoking without specifying AutoNegotiate' {
@@ -140,10 +140,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostPhysicalNetworkAdapter\Test' -Tag 'Test' {
+        Describe 'VMHostPhysicalNic\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostPhysicalNetworkAdapter
+                New-MocksForVMHostPhysicalNic
             }
 
             Context 'Invoking with Physical Network Adapter Full Duplex' {
@@ -251,10 +251,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostPhysicalNetworkAdapter\Get' -Tag 'Get' {
+        Describe 'VMHostPhysicalNic\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostPhysicalNetworkAdapter
+                New-MocksForVMHostPhysicalNic
             }
 
             Context 'Invoking with Physical Network Adapter Full Duplex' {
@@ -278,8 +278,8 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $resourceProperties.Server
-                    $result.Name | Should -Be $script:constants.VMHostName
-                    $result.PhysicalNetworkAdapter | Should -Be $script:constants.PhysicalNetworkAdapterName
+                    $result.VMHostName | Should -Be $script:constants.VMHostName
+                    $result.Name | Should -Be $script:constants.PhysicalNetworkAdapterName
                     $result.Duplex | Should -Be $script:constants.FullDuplex
                     $result.BitRatePerSecMb | Should -Be $script:constants.BitRatePerSecMb
                     $result.AutoNegotiate | Should -BeNullOrEmpty
@@ -310,8 +310,8 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $resourceProperties.Server
-                    $result.Name | Should -Be $script:constants.VMHostName
-                    $result.PhysicalNetworkAdapter | Should -Be $script:constants.PhysicalNetworkAdapterName
+                    $result.VMHostName | Should -Be $script:constants.VMHostName
+                    $result.Name | Should -Be $script:constants.PhysicalNetworkAdapterName
                     $result.Duplex | Should -Be $script:constants.HalfDuplex
                     $result.BitRatePerSecMb | Should -Be $script:constants.BitRatePerSecMb
                     $result.AutoNegotiate | Should -BeNullOrEmpty

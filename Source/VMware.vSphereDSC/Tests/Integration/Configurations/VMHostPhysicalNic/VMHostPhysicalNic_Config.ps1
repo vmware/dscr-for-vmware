@@ -14,44 +14,44 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Configuration VMHostPhysicalNetworkAdapter_WhenSpeedAndDuplexSettingsAreConfiguredAutomatically_Config {
+Configuration VMHostPhysicalNic_WhenSpeedAndDuplexSettingsAreConfiguredAutomatically_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostPhysicalNetworkAdapter $AllNodes.PhysicalNetworkAdapterResourceName {
+        VMHostPhysicalNic $AllNodes.PhysicalNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PhysicalNetworkAdapter = $AllNodes.PhysicalNetworkAdapter
+            VMHostName = $AllNodes.Name
+            Name = $AllNodes.PhysicalNetworkAdapter
             AutoNegotiate = $true
         }
     }
 }
 
-Configuration VMHostPhysicalNetworkAdapter_WhenAutoNegotiateIsNotSpecified_Config {
+Configuration VMHostPhysicalNic_WhenAutoNegotiateIsNotSpecified_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostPhysicalNetworkAdapter $AllNodes.PhysicalNetworkAdapterResourceName {
+        VMHostPhysicalNic $AllNodes.PhysicalNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PhysicalNetworkAdapter = $AllNodes.PhysicalNetworkAdapter
+            VMHostName = $AllNodes.Name
+            Name = $AllNodes.PhysicalNetworkAdapter
             Duplex = $AllNodes.FullDuplex
             BitRatePerSecMb = $AllNodes.FullDuplexBitRatePerSecMb
         }
     }
 }
 
-Configuration VMHostPhysicalNetworkAdapter_WhenAutoNegotiateIsSetToFalse_Config {
+Configuration VMHostPhysicalNic_WhenAutoNegotiateIsSetToFalse_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostPhysicalNetworkAdapter $AllNodes.PhysicalNetworkAdapterResourceName {
+        VMHostPhysicalNic $AllNodes.PhysicalNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PhysicalNetworkAdapter = $AllNodes.PhysicalNetworkAdapter
+            VMHostName = $AllNodes.Name
+            Name = $AllNodes.PhysicalNetworkAdapter
             Duplex = $AllNodes.HalfDuplex
             BitRatePerSecMb = $AllNodes.HalfDuplexBitRatePerSecMb
             AutoNegotiate = !$AllNodes.AutoNegotiate
@@ -59,15 +59,15 @@ Configuration VMHostPhysicalNetworkAdapter_WhenAutoNegotiateIsSetToFalse_Config 
     }
 }
 
-Configuration VMHostPhysicalNetworkAdapter_WhenAutoNegotiateIsSetToTrue_Config {
+Configuration VMHostPhysicalNic_WhenAutoNegotiateIsSetToTrue_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostPhysicalNetworkAdapter $AllNodes.PhysicalNetworkAdapterResourceName {
+        VMHostPhysicalNic $AllNodes.PhysicalNetworkAdapterResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PhysicalNetworkAdapter = $AllNodes.PhysicalNetworkAdapter
+            VMHostName = $AllNodes.Name
+            Name = $AllNodes.PhysicalNetworkAdapter
             Duplex = $AllNodes.FullDuplex
             BitRatePerSecMb = $AllNodes.DefaultBitRatePerSecMb
             AutoNegotiate = $AllNodes.AutoNegotiate
