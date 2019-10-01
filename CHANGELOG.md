@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.20 - 2019-10-01
+### Added
+- Added VMHostVssPortGroupTeaming DSC Resource.
+- Added Unit Tests for VMHostVssPortGroupTeaming DSC Resource.
+- Added Integration Tests for VMHostVssPortGroupTeaming DSC Resource.
+- Added Documentation and example Configuration for VMHostVssPortGroupTeaming DSC Resource.
+
 ## 2.0.0.19 - 2019-10-01
 ### Added
 - Added VMHostVssPortGroupBaseDSC class.
