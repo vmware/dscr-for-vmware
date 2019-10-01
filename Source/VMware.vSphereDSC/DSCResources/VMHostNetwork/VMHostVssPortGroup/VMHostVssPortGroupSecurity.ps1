@@ -157,32 +157,15 @@ class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
     <#
     .DESCRIPTION
 
-    Populates the specified Security Policy Setting. If the Inherited Setting is passed and set to $true,
-    the Security Policy Setting should not be populated because "Parameters of the form "XXX" and "InheritXXX" are mutually exclusive."
-    If the Inherited Setting is set to $false, both parameters can be populated.
-    #>
-    [void] PopulateSecurityPolicySetting($securityPolicyParams, $securityPolicySettingName, $securityPolicySetting, $securityPolicySettingInheritedName, $securityPolicySettingInherited) {
-        if ($null -ne $securityPolicySetting) {
-            if ($null -eq $securityPolicySettingInherited -or !$securityPolicySettingInherited) {
-                $securityPolicyParams.$securityPolicySettingName = $securityPolicySetting
-            }
-        }
-
-        if ($null -ne $securityPolicySettingInherited) { $securityPolicyParams.$securityPolicySettingInheritedName = $securityPolicySettingInherited }
-    }
-
-    <#
-    .DESCRIPTION
-
     Performs an update on the Security Policy of the specified Virtual Port Group.
     #>
     [void] UpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy) {
         $securityPolicyParams = @{}
         $securityPolicyParams.VirtualPortGroupPolicy = $virtualPortGroupSecurityPolicy
 
-        $this.PopulateSecurityPolicySetting($securityPolicyParams, $this.AllowPromiscuousSettingName, $this.AllowPromiscuous, $this.AllowPromiscuousInheritedSettingName, $this.AllowPromiscuousInherited)
-        $this.PopulateSecurityPolicySetting($securityPolicyParams, $this.ForgedTransmitsSettingName, $this.ForgedTransmits, $this.ForgedTransmitsInheritedSettingName, $this.ForgedTransmitsInherited)
-        $this.PopulateSecurityPolicySetting($securityPolicyParams, $this.MacChangesSettingName, $this.MacChanges, $this.MacChangesInheritedSettingName, $this.MacChangesInherited)
+        $this.PopulatePolicySetting($securityPolicyParams, $this.AllowPromiscuousSettingName, $this.AllowPromiscuous, $this.AllowPromiscuousInheritedSettingName, $this.AllowPromiscuousInherited)
+        $this.PopulatePolicySetting($securityPolicyParams, $this.ForgedTransmitsSettingName, $this.ForgedTransmits, $this.ForgedTransmitsInheritedSettingName, $this.ForgedTransmitsInherited)
+        $this.PopulatePolicySetting($securityPolicyParams, $this.MacChangesSettingName, $this.MacChanges, $this.MacChangesInheritedSettingName, $this.MacChangesInherited)
 
         try {
             Set-SecurityPolicy @securityPolicyParams

@@ -52,4 +52,21 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
             }
         }
     }
+
+    <#
+    .DESCRIPTION
+
+    Populates the specified Policy Setting. If the Inherited Setting is passed and set to $true,
+    the Policy Setting should not be populated because "Parameters of the form "XXX" and "InheritXXX" are mutually exclusive."
+    If the Inherited Setting is set to $false, both parameters can be populated.
+    #>
+    [void] PopulatePolicySetting($policyParams, $policySettingName, $policySetting, $policySettingInheritedName, $policySettingInherited) {
+        if ($null -ne $policySetting) {
+            if ($null -eq $policySettingInherited -or !$policySettingInherited) {
+                $policyParams.$policySettingName = $policySetting
+            }
+        }
+
+        if ($null -ne $policySettingInherited) { $policyParams.$policySettingInheritedName = $policySettingInherited }
+    }
 }

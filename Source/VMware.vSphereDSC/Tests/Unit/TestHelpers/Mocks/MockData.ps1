@@ -118,6 +118,21 @@ $script:constants = @{
     ForgedTransmitsInherited = $false
     MacChanges = $true
     MacChangesInherited = $false
+    FailbackEnabled = $true
+    LoadBalancingPolicyIP = 'LoadBalanceIP'
+    LoadBalancingPolicySrcMac = 'LoadBalanceSrcMac'
+    NetworkFailoverDetectionPolicy = 'LinkStatus'
+    NotifySwitches = $true
+    MakeNicActive = @('vmnic0', 'vmnic1')
+    MakeNicActiveSubset = @('vmnic0')
+    MakeNicStandBy = @('vmnic2')
+    MakeNicUnused = @('vmnic3')
+    MakeNicUnusedEmpty = @()
+    InheritFailback = $false
+    InheritFailoverOrder = $false
+    InheritLoadBalancingPolicy = $false
+    InheritNetworkFailoverDetectionPolicy = $false
+    InheritNotifySwitches = $false
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -660,4 +675,20 @@ $script:virtualPortGroupSecurityPolicy = [VMware.VimAutomation.ViCore.Impl.V1.Ho
     ForgedTransmitsInherited = $script:constants.ForgedTransmitsInherited
     MacChanges = $script:constants.MacChanges
     MacChangesInherited = $script:constants.MacChangesInherited
+}
+
+$script:virtualPortGroupTeamingPolicy = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.NicTeamingVirtualPortGroupPolicyImpl] @{
+    VirtualPortGroup = $script:virtualPortGroup
+    FailbackEnabled = $script:constants.FailbackEnabled
+    LoadBalancingPolicy = $script:constants.LoadBalancingPolicyIP
+    NetworkFailoverDetectionPolicy = $script:constants.NetworkFailoverDetectionPolicy
+    NotifySwitches = $script:constants.NotifySwitches
+    ActiveNic = $script:constants.MakeNicActive
+    StandbyNic = $script:constants.MakeNicStandby
+    UnusedNic = $script:constants.MakeNicUnused
+    IsFailbackInherited = $script:constants.InheritFailback
+    IsFailoverOrderInherited = $script:constants.InheritFailoverOrder
+    IsLoadBalancingInherited = $script:constants.InheritLoadBalancingPolicy
+    IsNetworkFailoverDetectionInherited = $script:constants.InheritNetworkFailoverDetectionPolicy
+    IsNotifySwitchesInherited = $script:constants.InheritNotifySwitches
 }

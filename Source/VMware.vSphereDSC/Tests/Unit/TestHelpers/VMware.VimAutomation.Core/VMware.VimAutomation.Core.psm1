@@ -8080,17 +8080,17 @@ function Set-NicTeamingPolicy {
 
         [Parameter(Mandatory = $false, ParameterSetName = "switch", ValueFromPipeline = $false)]
         [Parameter(Mandatory = $false, ParameterSetName = "pg", ValueFromPipeline = $false)]
-        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]]
+        [string[]]
         $MakeNicActive,
 
         [Parameter(Mandatory = $false, ParameterSetName = "switch", ValueFromPipeline = $false)]
         [Parameter(Mandatory = $false, ParameterSetName = "pg", ValueFromPipeline = $false)]
-        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]]
+        [string[]]
         $MakeNicStandby,
 
         [Parameter(Mandatory = $false, ParameterSetName = "switch", ValueFromPipeline = $false)]
         [Parameter(Mandatory = $false, ParameterSetName = "pg", ValueFromPipeline = $false)]
-        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]]
+        [string[]]
         $MakeNicUnused,
 
         [Parameter(Mandatory = $false, ParameterSetName = "switch", ValueFromPipeline = $false)]
