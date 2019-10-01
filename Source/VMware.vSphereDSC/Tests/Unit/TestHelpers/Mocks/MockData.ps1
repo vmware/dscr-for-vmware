@@ -133,6 +133,12 @@ $script:constants = @{
     InheritLoadBalancingPolicy = $false
     InheritNetworkFailoverDetectionPolicy = $false
     InheritNotifySwitches = $false
+    NetworkSystemType = 'HostNetworkSystem'
+    NetworkSystemValue = 'networkSystem-1'
+    ShapingEnabled = $true
+    AverageBandwidth = 104857600000
+    PeakBandwidth = 104857600000
+    BurstSize = 107374182400
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -467,6 +473,10 @@ $script:vmHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
                 Type = $script:constants.CacheConfigurationManagerType
                 Value = $script:constants.CacheConfigurationManagerValue
             }
+            NetworkSystem = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.NetworkSystemType
+                Value = $script:constants.NetworkSystemValue
+            }
         }
         Network = @(
             [VMware.Vim.ManagedObjectReference] @{
@@ -665,6 +675,18 @@ $script:virtualPortGroup = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.
     VirtualSwitch = $script:virtualSwitch
     VirtualSwitchName = $script:constants.VirtualSwitchName
     VLanId = $script:constants.VLanId
+    ExtensionData = [VMware.Vim.HostPortGroup] @{
+        Spec = [VMware.Vim.HostPortGroupSpec] @{
+            Policy = [VMware.Vim.HostNetworkPolicy] @{
+                ShapingPolicy = [VMware.Vim.HostNetworkTrafficShapingPolicy] @{
+                    Enabled = $script:constants.ShapingEnabled
+                    AverageBandwidth = $script:constants.AverageBandwidth
+                    PeakBandwidth = $script:constants.PeakBandwidth
+                    BurstSize = $script:constants.BurstSize
+                }
+            }
+        }
+    }
 }
 
 $script:virtualPortGroupSecurityPolicy = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VirtualPortgroupSecurityPolicyImpl] @{
@@ -691,4 +713,25 @@ $script:virtualPortGroupTeamingPolicy = [VMware.VimAutomation.ViCore.Impl.V1.Hos
     IsLoadBalancingInherited = $script:constants.InheritLoadBalancingPolicy
     IsNetworkFailoverDetectionInherited = $script:constants.InheritNetworkFailoverDetectionPolicy
     IsNotifySwitchesInherited = $script:constants.InheritNotifySwitches
+}
+
+$script:vmHostNetworkSystem = [VMware.Vim.HostNetworkSystem] @{
+    MoRef = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.NetworkSystemType
+        Value = $script:constants.NetworkSystemValue
+    }
+}
+
+$script:virtualPortGroupSpec = [VMware.Vim.HostPortGroupSpec] @{
+    Name = $script:virtualPortGroup.Name
+    VswitchName = $script:virtualPortGroup.VirtualSwitchName
+    VlanId = $script:virtualPortGroup.VLanId
+    Policy = [VMware.Vim.HostNetworkPolicy] @{
+        ShapingPolicy = [VMware.Vim.HostNetworkTrafficShapingPolicy] @{
+            Enabled = $script:constants.ShapingEnabled
+            AverageBandwidth = $script:constants.AverageBandwidth
+            PeakBandwidth = $script:constants.PeakBandwidth
+            BurstSize = $script:constants.BurstSize
+        }
+    }
 }

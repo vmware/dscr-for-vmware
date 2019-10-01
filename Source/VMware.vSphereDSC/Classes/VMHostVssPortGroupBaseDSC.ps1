@@ -34,6 +34,13 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
+    The Network System of the specified VMHost.
+    #>
+    hidden [PSObject] $VMHostNetworkSystem
+
+    <#
+    .DESCRIPTION
+
     Retrieves the Virtual Port Group with the specified name from the server if it exists.
     The Virtual Port Group must be a Standard Virtual Port Group. If the Virtual Port Group does not exist and Ensure is set to 'Absent', $null is returned.
     Otherwise it throws an exception.
@@ -50,6 +57,20 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
             catch {
                 throw "Could not retrieve Virtual Port Group $($this.Name) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
             }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Network System of the specified VMHost.
+    #>
+    [void] GetVMHostNetworkSystem() {
+        try {
+            $this.VMHostNetworkSystem = Get-View -Server $this.Connection -Id $this.VMHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
+        }
+        catch {
+            throw "Could not retrieve the Network System of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
         }
     }
 
