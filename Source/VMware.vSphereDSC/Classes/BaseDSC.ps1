@@ -73,4 +73,36 @@ class BaseDSC {
             }
         }
     }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the passed array is in the desired state and if an update should be performed.
+    #>
+    [bool] ShouldUpdateArraySetting($currentArray, $desiredArray) {
+        if ($null -eq $desiredArray) {
+            # The property is not specified.
+            return $false
+        }
+        elseif ($desiredArray.Length -eq 0 -and $currentArray.Length -ne 0) {
+            # Empty array specified as desired, but current is not an empty array, so update should be performed.
+            return $true
+        }
+        else {
+            $elementsToAdd = $desiredArray | Where-Object { $currentArray -NotContains $_ }
+            $elementsToRemove = $currentArray | Where-Object { $desiredArray -NotContains $_ }
+
+            if ($null -ne $elementsToAdd -or $null -ne $elementsToRemove) {
+                <#
+                The current array does not contain at least one element from desired array or
+                the desired array is a subset of the current array. In both cases
+                we should perform an update operation.
+                #>
+                return $true
+            }
+
+            # No need to perform an update operation.
+            return $false
+        }
+    }
 }

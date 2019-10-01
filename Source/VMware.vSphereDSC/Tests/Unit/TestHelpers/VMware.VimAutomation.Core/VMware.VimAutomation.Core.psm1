@@ -2752,7 +2752,6 @@ function Get-VMHostNetworkAdapter {
         $VirtualSwitch,
 
         [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $true)]
-        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.VirtualPortGroupBase[]]
         $PortGroup,
 
         [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
