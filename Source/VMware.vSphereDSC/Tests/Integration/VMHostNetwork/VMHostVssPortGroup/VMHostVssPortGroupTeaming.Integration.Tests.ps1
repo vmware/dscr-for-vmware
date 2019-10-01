@@ -76,7 +76,7 @@ Invoke-TestSetup
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
-$script:dscResourceName = 'VMHostVirtualPortGroupTeamingPolicy'
+$script:dscResourceName = 'VMHostVssPortGroupTeaming'
 $script:moduleFolderPath = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path -Path (Join-Path -Path $moduleFolderPath -ChildPath 'Tests') -ChildPath 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$script:dscResourceName\$($script:dscResourceName)_Config.ps1"
@@ -96,9 +96,9 @@ $script:configurationData = @{
             StandardSwitchTeamingPolicyResourceName = 'StandardSwitchTeamingPolicy'
             StandardSwitchTeamingPolicyResourceId = '[VMHostVssTeaming]StandardSwitchTeamingPolicy'
             VirtualPortGroupResourceName = 'VirtualPortGroup'
-            VirtualPortGroupResourceId = '[VMHostVirtualPortGroup]VirtualPortGroup'
+            VirtualPortGroupResourceId = '[VMHostVssPortGroup]VirtualPortGroup'
             VirtualPortGroupTeamingPolicyResourceName = 'VirtualPortGroupTeamingPolicy'
-            VirtualPortGroupTeamingPolicyResourceId = '[VMHostVirtualPortGroupTeamingPolicy]VirtualPortGroupTeamingPolicy'
+            VirtualPortGroupTeamingPolicyResourceId = '[VMHostVssPortGroupTeaming]VirtualPortGroupTeamingPolicy'
             StandardSwitchName = 'MyStandardSwitch'
             Mtu = 1500
             BeaconInterval = 1
@@ -209,8 +209,9 @@ try {
 
                 # Assert
                 $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-                $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-                $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+                $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+                $configuration.Name | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+                $configuration.Ensure | Should -Be 'Present'
                 $configuration.FailbackEnabled | Should -Be $script:configurationData.AllNodes.FailbackEnabled
                 $configuration.LoadBalancingPolicy | Should -Be $script:configurationData.AllNodes.LoadBalancingPolicy
                 $configuration.MakeNicActive | Should -Be $script:configurationData.AllNodes.MakeNicActive
@@ -325,8 +326,9 @@ try {
 
                 # Assert
                 $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-                $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-                $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+                $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+                $configuration.Name | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+                $configuration.Ensure | Should -Be 'Present'
                 $configuration.FailbackEnabled | Should -Be $script:configurationData.AllNodes.FailbackEnabled
                 $configuration.LoadBalancingPolicy | Should -Be $script:configurationData.AllNodes.LoadBalancingPolicy
                 $configuration.MakeNicActive | Should -Be $script:configurationData.AllNodes.MakeNicActive
@@ -441,8 +443,9 @@ try {
 
                 # Assert
                 $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-                $configuration.Name | Should -Be $script:configurationData.AllNodes.Name
-                $configuration.PortGroup | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+                $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Name
+                $configuration.Name | Should -Be $script:configurationData.AllNodes.VirtualPortGroupName
+                $configuration.Ensure | Should -Be 'Present'
                 $configuration.FailbackEnabled | Should -Be $script:configurationData.AllNodes.FailbackEnabled
                 $configuration.LoadBalancingPolicy | Should -Be $script:configurationData.AllNodes.LoadBalancingPolicy
                 $configuration.MakeNicActive | Should -Be $script:configurationData.AllNodes.Nic

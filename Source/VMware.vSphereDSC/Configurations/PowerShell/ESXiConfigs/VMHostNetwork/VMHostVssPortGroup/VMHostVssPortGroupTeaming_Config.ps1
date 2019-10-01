@@ -50,7 +50,7 @@ $script:configurationData = @{
     )
 }
 
-Configuration VMHostVirtualPortGroupTeamingPolicy_Config {
+Configuration VMHostVssPortGroupTeaming_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -91,22 +91,23 @@ Configuration VMHostVirtualPortGroupTeamingPolicy_Config {
             DependsOn = "[VMHostVssBridge]VMHostVssBridge"
         }
 
-        VMHostVirtualPortGroup VMHostVirtualPortGroup {
+        VMHostVssPortGroup VMHostVssPortGroup {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroupName = 'MyVirtualPortGroup'
-            VirtualSwitch = 'MyVirtualSwitch'
+            VMHostName = $AllNodes.Name
+            Name = 'MyVirtualPortGroup'
+            VssName = 'MyVirtualSwitch'
             Ensure = 'Present'
             VLanId = 0
             DependsOn = "[VMHostVssTeaming]VMHostVssTeaming"
         }
 
-        VMHostVirtualPortGroupTeamingPolicy VMHostVirtualPortGroupTeamingPolicy {
+        VMHostVssPortGroupTeaming VMHostVssPortGroupTeaming {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            PortGroup = 'MyVirtualPortGroup'
+            VMHostName = $AllNodes.Name
+            Name = 'MyVirtualPortGroup'
+            Ensure = 'Present'
             FailbackEnabled = $false
             LoadBalancingPolicy = 'LoadBalanceIP'
             MakeNicActive = @('vmnic2', 'vmnic3')
@@ -119,9 +120,9 @@ Configuration VMHostVirtualPortGroupTeamingPolicy_Config {
             InheritLoadBalancingPolicy = $false
             InheritNetworkFailoverDetectionPolicy = $false
             InheritNotifySwitches = $false
-            DependsOn = "[VMHostVirtualPortGroup]VMHostVirtualPortGroup"
+            DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
         }
     }
 }
 
-VMHostVirtualPortGroupTeamingPolicy_Config -ConfigurationData $script:configurationData
+VMHostVssPortGroupTeaming_Config -ConfigurationData $script:configurationData

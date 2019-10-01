@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostVirtualPortGroupTeamingPolicy'
+        $resourceName = 'VMHostVssPortGroupTeaming'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVirtualPortGroupTeamingPolicyMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVssPortGroupTeamingMocks.ps1"
 
-        Describe 'VMHostVirtualPortGroupTeamingPolicy\Set' -Tag 'Set' {
+        Describe 'VMHostVssPortGroupTeaming\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroupTeamingPolicy
+                New-MocksForVMHostVssPortGroupTeaming
             }
 
             Context 'Invoking with Teaming Policy Settings and Teaming Policy Settings Inherited are not passed' {
@@ -156,10 +156,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVirtualPortGroupTeamingPolicy\Test' -Tag 'Test' {
+        Describe 'VMHostVssPortGroupTeaming\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroupTeamingPolicy
+                New-MocksForVMHostVssPortGroupTeaming
             }
 
             Context 'Invoking with non matching Teaming Policy Settings' {
@@ -211,10 +211,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVirtualPortGroupTeamingPolicy\Get' -Tag 'Get' {
+        Describe 'VMHostVssPortGroupTeaming\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVirtualPortGroupTeamingPolicy
+                New-MocksForVMHostVssPortGroupTeaming
 
                 $resourceProperties = New-MocksInGet
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
@@ -226,8 +226,9 @@ InModuleScope -ModuleName $script:moduleName {
 
                 # Assert
                 $result.Server | Should -Be $resourceProperties.Server
-                $result.Name | Should -Be $script:constants.VMHostName
-                $result.PortGroup | Should -Be $script:constants.VirtualPortGroupName
+                $result.VMHostName | Should -Be $script:constants.VMHostName
+                $result.Name | Should -Be $script:constants.VirtualPortGroupName
+                $result.Ensure | Should -Be $resourceProperties.Ensure
                 $result.FailbackEnabled | Should -Be $script:constants.FailbackEnabled
                 $result.LoadBalancingPolicy | Should -Be $script:constants.LoadBalancingPolicyIP
                 $result.NetworkFailoverDetectionPolicy | Should -Be $script:constants.NetworkFailoverDetectionPolicy
