@@ -815,6 +815,13 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
+    The Network System of the specified VMHost.
+    #>
+    hidden [PSObject] $VMHostNetworkSystem
+
+    <#
+    .DESCRIPTION
+
     Retrieves the Virtual Port Group with the specified name from the server if it exists.
     The Virtual Port Group must be a Standard Virtual Port Group. If the Virtual Port Group does not exist and Ensure is set to 'Absent', $null is returned.
     Otherwise it throws an exception.
@@ -831,6 +838,20 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
             catch {
                 throw "Could not retrieve Virtual Port Group $($this.Name) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
             }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Network System of the specified VMHost.
+    #>
+    [void] GetVMHostNetworkSystem() {
+        try {
+            $this.VMHostNetworkSystem = Get-View -Server $this.Connection -Id $this.VMHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
+        }
+        catch {
+            throw "Could not retrieve the Network System of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
         }
     }
 
@@ -4647,6 +4668,143 @@ class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
         $result.ForgedTransmitsInherited = $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited
         $result.MacChanges = $virtualPortGroupSecurityPolicy.MacChanges
         $result.MacChangesInherited = $virtualPortGroupSecurityPolicy.MacChangesInherited
+    }
+}
+
+[DscResource()]
+class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
+    <#
+    .DESCRIPTION
+
+    The flag to indicate whether or not traffic shaper is enabled on the port.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Enabled
+
+    <#
+    .DESCRIPTION
+
+    The average bandwidth in bits per second if shaping is enabled on the port.
+    #>
+    [DscProperty()]
+    [nullable[long]] $AverageBandwidth
+
+    <#
+    .DESCRIPTION
+
+    The peak bandwidth during bursts in bits per second if traffic shaping is enabled on the port.
+    #>
+    [DscProperty()]
+    [nullable[long]] $PeakBandwidth
+
+    <#
+    .DESCRIPTION
+
+    The maximum burst size allowed in bytes if shaping is enabled on the port.
+    #>
+    [DscProperty()]
+    [nullable[long]] $BurstSize
+
+    [void] Set() {
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+
+        $this.GetVMHostNetworkSystem()
+        $virtualPortGroup = $this.GetVirtualPortGroup()
+
+        $this.UpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+    }
+
+    [bool] Test() {
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+
+        $virtualPortGroup = $this.GetVirtualPortGroup()
+        if ($null -eq $virtualPortGroup) {
+            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+            return $true
+        }
+
+        return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+    }
+
+    [VMHostVssPortGroupShaping] Get() {
+        $result = [VMHostVssPortGroupShaping]::new()
+        $result.Server = $this.Server
+        $result.Ensure = $this.Ensure
+
+        $this.ConnectVIServer()
+        $this.RetrieveVMHost()
+
+        $result.VMHostName = $this.VMHost.Name
+
+        $virtualPortGroup = $this.GetVirtualPortGroup()
+        if ($null -eq $virtualPortGroup) {
+            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+            $result.Name = $this.Name
+            return $result
+        }
+
+        $result.Name = $virtualPortGroup.Name
+        $this.PopulateResult($virtualPortGroup, $result)
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Shaping Policy of the specified Virtual Port Group should be updated.
+    #>
+    [bool] ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup) {
+        $shouldUpdateVirtualPortGroupShapingPolicy = @()
+
+        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.Enabled -and $this.Enabled -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.Enabled)
+        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.AverageBandwidth -and $this.AverageBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.AverageBandwidth)
+        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.PeakBandwidth -and $this.PeakBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.PeakBandwidth)
+        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.BurstSize -and $this.BurstSize -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.BurstSize)
+
+        return ($shouldUpdateVirtualPortGroupShapingPolicy -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Shaping Policy of the specified Virtual Port Group.
+    #>
+    [void] UpdateVirtualPortGroupShapingPolicy($virtualPortGroup) {
+        $virtualPortGroupSpec = New-Object VMware.Vim.HostPortGroupSpec
+
+        $virtualPortGroupSpec.Name = $virtualPortGroup.Name
+        $virtualPortGroupSpec.VswitchName = $virtualPortGroup.VirtualSwitchName
+        $virtualPortGroupSpec.VlanId = $virtualPortGroup.VLanId
+
+        $virtualPortGroupSpec.Policy = New-Object VMware.Vim.HostNetworkPolicy
+        $virtualPortGroupSpec.Policy.ShapingPolicy = New-Object VMware.Vim.HostNetworkTrafficShapingPolicy
+
+        if ($null -ne $this.Enabled) { $virtualPortGroupSpec.Policy.ShapingPolicy.Enabled = $this.Enabled }
+        if ($null -ne $this.AverageBandwidth) { $virtualPortGroupSpec.Policy.ShapingPolicy.AverageBandwidth = $this.AverageBandwidth }
+        if ($null -ne $this.PeakBandwidth) { $virtualPortGroupSpec.Policy.ShapingPolicy.PeakBandwidth = $this.PeakBandwidth }
+        if ($null -ne $this.BurstSize) { $virtualPortGroupSpec.Policy.ShapingPolicy.BurstSize = $this.BurstSize }
+
+        try {
+            Update-VirtualPortGroup -VMHostNetworkSystem $this.VMHostNetworkSystem -VirtualPortGroupName $virtualPortGroup.Name -Spec $virtualPortGroupSpec
+        }
+        catch {
+            throw "Cannot update Shaping Policy of Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Shaping Policy of the specified Virtual Port Group from the server.
+    #>
+    [void] PopulateResult($virtualPortGroup, $result) {
+        $result.Enabled = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.Enabled
+        $result.AverageBandwidth = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.AverageBandwidth
+        $result.PeakBandwidth = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.PeakBandwidth
+        $result.BurstSize = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.BurstSize
     }
 }
 
