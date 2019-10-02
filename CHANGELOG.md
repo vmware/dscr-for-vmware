@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.24 - 2019-10-02
+### Added
+- Added VDSwitch DSC Resource.
+- Added Unit Tests for VDSwitch DSC Resource.
+- Added Integration Tests for VDSwitch DSC Resource.
+- Added Documentation and example Configuration for VDSwitch DSC Resource.
+
 ## 2.0.0.23 - 2019-10-01
 ### Added
 - Added Unit Tests for BaseDSC class.
