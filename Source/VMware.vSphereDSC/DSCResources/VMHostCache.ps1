@@ -166,7 +166,7 @@ class VMHostCache : VMHostBaseDSC {
         $hostCacheConfigurationTask = Get-Task -Server $this.Connection -Id $hostCacheConfigurationResult
 
         try {
-            Wait-Task -Task $hostCacheConfigurationTask
+            Wait-Task -Task $hostCacheConfigurationTask -ErrorAction Stop
         }
         catch {
             throw "An error occured while updating Cache Configuration for VMHost $($this.Name). For more information: $($_.Exception.Message)"

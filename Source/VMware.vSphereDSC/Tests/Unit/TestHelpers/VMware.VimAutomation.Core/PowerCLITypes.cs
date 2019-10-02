@@ -91692,3 +91692,101 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.VM.Guest
         }
     }
 }
+
+namespace VMware.VimAutomation.Vds.Types.V1
+{
+    public enum LinkDiscoveryOperation
+    {
+        Advertise,
+        Both,
+        Listen,
+        None
+    }
+
+    public enum LinkDiscoveryProtocol
+    {
+        CDP,
+        LLDP
+    }
+
+    public interface VDSwitch
+    {
+        string Id { get; set; }
+
+        string Uid { get; set; }
+
+        string Name { get; set; }
+
+        string Version { get; set; }
+
+        int Mtu { get; set; }
+
+        int NumUplinkPorts { get; set; }
+
+        int MaxPorts { get; set; }
+
+        string ContactDetails { get; set; }
+
+        string ContactName { get; set; }
+
+        string Notes { get; set; }
+
+        LinkDiscoveryOperation LinkDiscoveryProtocolOperation { get; set; }
+
+        LinkDiscoveryProtocol LinkDiscoveryProtocol { get; set; }
+
+        object ExtensionData { get; set; }
+    }
+}
+
+namespace VMware.VimAutomation.Vds.Impl.V1
+{
+    using System;
+    using VMware.VimAutomation.Sdk.Types.V1;
+    using VMware.VimAutomation.ViCore.Types.V1;
+    using VMware.VimAutomation.Vds.Types.V1;
+
+    public class VmwareVDSwitchImpl : VDSwitch, VIObject, VIObjectCore, ExtensionData, IEquatable<VmwareVDSwitchImpl>
+    {
+        public string Id { get; set; }
+
+        public string Uid { get; set; }
+
+        public string Name { get; set; }
+
+        public string Version { get; set; }
+
+        public int Mtu { get; set; }
+
+        public int NumUplinkPorts { get; set; }
+
+        public int MaxPorts { get; set; }
+
+        public string ContactDetails { get; set; }
+
+        public string ContactName { get; set; }
+
+        public string Notes { get; set; }
+
+        public LinkDiscoveryOperation LinkDiscoveryProtocolOperation { get; set; }
+
+        public LinkDiscoveryProtocol LinkDiscoveryProtocol { get; set; }
+
+        public object ExtensionData { get; set; }
+
+        public bool Equals(VmwareVDSwitchImpl vmwareVDSwitchImpl)
+        {
+            return (vmwareVDSwitchImpl != null && this.Id == vmwareVDSwitchImpl.Id && this.Uid == vmwareVDSwitchImpl.Uid && this.Name == vmwareVDSwitchImpl.Name && this.Version == vmwareVDSwitchImpl.Version && this.Mtu == vmwareVDSwitchImpl.Mtu && this.NumUplinkPorts == vmwareVDSwitchImpl.NumUplinkPorts && this.MaxPorts == vmwareVDSwitchImpl.MaxPorts && this.ContactDetails == vmwareVDSwitchImpl.ContactDetails && this.ContactName == vmwareVDSwitchImpl.ContactName && this.Notes == vmwareVDSwitchImpl.Notes && this.LinkDiscoveryProtocolOperation == vmwareVDSwitchImpl.LinkDiscoveryProtocolOperation && this.LinkDiscoveryProtocol == vmwareVDSwitchImpl.LinkDiscoveryProtocol && ((this.ExtensionData == null && vmwareVDSwitchImpl.ExtensionData == null) || (this.ExtensionData != null && this.ExtensionData.Equals(vmwareVDSwitchImpl.ExtensionData))));
+        }
+
+        public override bool Equals(object vmwareVDSwitchImpl)
+        {
+            return Equals(vmwareVDSwitchImpl as VmwareVDSwitchImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Id + "_" + Uid + "_" + Name + "_" + Version + "_" + Mtu + "_" + NumUplinkPorts + "_" + MaxPorts + "_" + ContactDetails + "_" + ContactName + "_" + Notes + "_" + LinkDiscoveryProtocolOperation + "_" + LinkDiscoveryProtocol + "_" + ExtensionData).GetHashCode();
+        }
+    }
+}

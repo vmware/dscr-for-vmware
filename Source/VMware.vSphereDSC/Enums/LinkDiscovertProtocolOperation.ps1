@@ -15,9 +15,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 enum LinkDiscoveryProtocolOperation {
-    Unset
     Advertise
     Both
     Listen
     None
+    Unset
 }

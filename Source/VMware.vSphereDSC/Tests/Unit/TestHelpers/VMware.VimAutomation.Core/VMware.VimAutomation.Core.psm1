@@ -19,6 +19,318 @@ Mocked PowerCLI Types for the purpose of unit testing.
 #>
 Add-Type -Path "$($env:PSModulePath)/VMware.VimAutomation.Core/PowerCLITypes.cs"
 
+function Add-VDSwitchVMHost {
+    [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
+    param(
+        [Parameter(Mandatory = $true, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Vds.Types.V1.VDSwitch]
+        $VDSwitch,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]
+        $VMHost,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $RunAsync,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm
+    )
+
+    return $null
+}
+
+function Get-VDSwitch {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string[]]
+        $Name,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.ViCore.Types.V1.Inventory.FolderContainer[]]
+        $Location,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]
+        $VMHost,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]
+        $VM,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.Tagging.Tag[]]
+        $Tag,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "ById", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "ById", ValueFromPipeline = $false)]
+        [string[]]
+        $Id,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Related", ValueFromPipeline = $true)]
+        $RelatedObject
+    )
+
+    return $null
+}
+
+function New-VDSwitch {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $ContactDetails,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $ContactName,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[VMware.VimAutomation.Vds.Types.V1.LinkDiscoveryProtocol]]
+        $LinkDiscoveryProtocol,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[VMware.VimAutomation.Vds.Types.V1.LinkDiscoveryOperation]]
+        $LinkDiscoveryProtocolOperation,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[int]]
+        $MaxPorts,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[int]]
+        $Mtu,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Notes,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[int]]
+        $NumUplinkPorts,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Version,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $true, ParameterSetName = "CopyFromReferenceSwitch", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [string]
+        $Name,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "CopyFromReferenceSwitch", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.Inventory.VIContainer]
+        $Location,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "CopyFromReferenceSwitch", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $RunAsync,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "CopyFromReferenceSwitch", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "CopyFromReferenceSwitch", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "CopyFromReferenceSwitch", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "CopyFromReferenceSwitch", ValueFromPipeline = $true)]
+        $ReferenceVDSwitch,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "CopyFromReferenceSwitch", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $WithoutPortGroups,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [string]
+        $BackupPath,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $KeepIdentifiers
+    )
+
+    return $null
+}
+
+function Remove-VDSwitch {
+    [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Vds.Types.V1.VDSwitch[]]
+        $VDSwitch,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $RunAsync,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm
+    )
+
+    return $null
+}
+
+function Remove-VDSwitchVMHost {
+    [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
+    param(
+        [Parameter(Mandatory = $true, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Vds.Types.V1.VDSwitch]
+        $VDSwitch,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]
+        $VMHost,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $RunAsync,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm
+    )
+
+    return $null
+}
+
+function Set-VDSwitch {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Name,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $ContactDetails,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $ContactName,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[VMware.VimAutomation.Vds.Types.V1.LinkDiscoveryProtocol]]
+        $LinkDiscoveryProtocol,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[VMware.VimAutomation.Vds.Types.V1.LinkDiscoveryOperation]]
+        $LinkDiscoveryProtocolOperation,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[int]]
+        $MaxPorts,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[int]]
+        $Mtu,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Notes,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [System.Nullable[int]]
+        $NumUplinkPorts,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Version,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ParameterSetName = "RollBack", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Vds.Types.V1.VDSwitch[]]
+        $VDSwitch,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "RollBack", ValueFromPipeline = $false)]
+        [switch]
+        $RunAsync,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "RollBack", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "RollBack", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "RollBack", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [string]
+        $BackupPath,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $WithoutPortGroups,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "RollBack", ValueFromPipeline = $false)]
+        [switch]
+        $RollBackConfiguration
+    )
+
+    return $null
+}
+
 function Add-PassthroughDevice {
     [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
     param(

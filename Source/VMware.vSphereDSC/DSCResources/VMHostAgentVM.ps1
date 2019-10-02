@@ -39,7 +39,10 @@ class VMHostAgentVM : VMHostBaseDSC {
 
     [void] Set() {
         $this.ConnectVIServer()
+
+        # vCenter Connection is needed to retrieve the EsxAgentHostManager.
         $this.EnsureConnectionIsvCenter()
+
         $vmHost = $this.GetVMHost()
         $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
 
@@ -48,7 +51,10 @@ class VMHostAgentVM : VMHostBaseDSC {
 
     [bool] Test() {
         $this.ConnectVIServer()
+
+        # vCenter Connection is needed to retrieve the EsxAgentHostManager.
         $this.EnsureConnectionIsvCenter()
+
         $vmHost = $this.GetVMHost()
         $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
 
@@ -60,7 +66,10 @@ class VMHostAgentVM : VMHostBaseDSC {
         $result.Server = $this.Server
 
         $this.ConnectVIServer()
+
+        # vCenter Connection is needed to retrieve the EsxAgentHostManager.
         $this.EnsureConnectionIsvCenter()
+
         $vmHost = $this.GetVMHost()
         $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
 
@@ -68,18 +77,6 @@ class VMHostAgentVM : VMHostBaseDSC {
         $this.PopulateResult($esxAgentHostManager, $result)
 
         return $result
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the Connection is directly to a vCenter and if not, throws an exception.
-    vCenter Connection is needed to retrieve the EsxAgentHostManager.
-    #>
-    [void] EnsureConnectionIsvCenter() {
-        if ($this.Connection.ProductLine -ne $this.vCenterProductId) {
-            throw 'The Resource operations are only supported when connection is directly to a vCenter.'
-        }
     }
 
     <#
