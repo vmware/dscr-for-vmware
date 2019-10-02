@@ -57,11 +57,8 @@ function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndNoDistributedS
 
     $vdSwitchProperties = New-VDSwitchProperties
 
-    $newDistributedSwitchSuccessTaskMock = $script:newDistributedSwitchSuccessTask
-
     Mock -CommandName Get-VDSwitch -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
-    Mock -CommandName New-VDSwitch -MockWith { return $newDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
-    Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
+    Mock -CommandName New-VDSwitch -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vdSwitchProperties
 }
@@ -82,11 +79,8 @@ function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndDistributedSwi
     $vdSwitchProperties.NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
     $vdSwitchProperties.Version = $script:constants.DistributedSwitchVersion
 
-    $newDistributedSwitchSuccessTaskMock = $script:newDistributedSwitchSuccessTask
-
     Mock -CommandName Get-VDSwitch -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
-    Mock -CommandName New-VDSwitch -MockWith { return $newDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
-    Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
+    Mock -CommandName New-VDSwitch -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vdSwitchProperties
 }
@@ -100,11 +94,8 @@ function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndReferenceDistr
     $vdSwitchProperties.ReferenceVDSwitch = $script:constants.ReferenceDistributedSwitch
     $vdSwitchProperties.WithoutPortGroups = $script:constants.WithoutPortGroups
 
-    $newDistributedSwitchSuccessTaskMock = $script:newDistributedSwitchSuccessTask
-
     Mock -CommandName Get-VDSwitch -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
-    Mock -CommandName New-VDSwitch -MockWith { return $newDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
-    Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
+    Mock -CommandName New-VDSwitch -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vdSwitchProperties
 }
@@ -121,11 +112,9 @@ function New-MocksInSetWhenEnsurePresentAndExistingDistributedSwitch {
     $vdSwitchProperties.Mtu = $script:constants.DistributedSwitchMtu + 1
 
     $distributedSwitchMock = $script:distributedSwitch
-    $updateDistributedSwitchSuccessTaskMock = $script:updateDistributedSwitchSuccessTask
 
     Mock -CommandName Get-VDSwitch -MockWith { return $distributedSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
-    Mock -CommandName Set-VDSwitch -MockWith { return $updateDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
-    Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
+    Mock -CommandName Set-VDSwitch -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vdSwitchProperties
 }
@@ -139,11 +128,9 @@ function New-MocksInSetWhenEnsureAbsentAndExistingDistributedSwitch {
     $vdSwitchProperties.Ensure = 'Absent'
 
     $distributedSwitchMock = $script:distributedSwitch
-    $removeDistributedSwitchSuccessTaskMock = $script:removeDistributedSwitchSuccessTask
 
     Mock -CommandName Get-VDSwitch -MockWith { return $distributedSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable
-    Mock -CommandName Remove-VDSwitch -MockWith { return $removeDistributedSwitchSuccessTaskMock }.GetNewClosure() -Verifiable
-    Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -Verifiable
+    Mock -CommandName Remove-VDSwitch -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vdSwitchProperties
 }

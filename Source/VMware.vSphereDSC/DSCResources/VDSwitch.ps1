@@ -239,7 +239,6 @@ class VDSwitch : DatacenterInventoryBaseDSC {
         $distributedSwitchParams = @{}
 
         $distributedSwitchParams.Server = $this.Connection
-        $distributedSwitchParams.RunAsync = $true
         $distributedSwitchParams.Confirm = $false
         $distributedSwitchParams.ErrorAction = 'Stop'
 
@@ -281,14 +280,11 @@ class VDSwitch : DatacenterInventoryBaseDSC {
         if ($null -ne $this.WithoutPortGroups) { $distributedSwitchParams.WithoutPortGroups = $this.WithoutPortGroups }
 
         try {
-            $newVDSwitchTask = New-VDSwitch @distributedSwitchParams
-            Wait-Task -Task $newVDSwitchTask -ErrorAction Stop
+            New-VDSwitch @distributedSwitchParams
         }
         catch {
             throw "Cannot create Distributed Switch $($this.Name) at Location $($distributedSwitchLocation.Name). For more information: $($_.Exception.Message)"
         }
-
-        Write-VerboseLog -Message "Distributed Switch {0} was successfully created at Location {1}." -Arguments @($this.Name, $distributedSwitchLocation.Name)
     }
 
     <#
@@ -300,14 +296,11 @@ class VDSwitch : DatacenterInventoryBaseDSC {
         $distributedSwitchParams = $this.GetDistributedSwitchParams()
 
         try {
-            $updateVDSwitchTask = $distributedSwitch | Set-VDSwitch @distributedSwitchParams
-            Wait-Task -Task $updateVDSwitchTask -ErrorAction Stop
+            $distributedSwitch | Set-VDSwitch @distributedSwitchParams
         }
         catch {
             throw "Cannot update Distributed Switch $($this.Name). For more information: $($_.Exception.Message)"
         }
-
-        Write-VerboseLog -Message "Distributed Switch {0} was successfully updated." -Arguments @($this.Name)
     }
 
     <#
@@ -317,14 +310,11 @@ class VDSwitch : DatacenterInventoryBaseDSC {
     #>
     [void] RemoveDistributedSwitch($distributedSwitch) {
         try {
-            $removeVDSwitchTask = $distributedSwitch | Remove-VDSwitch -Server $this.Connection -RunAsync -Confirm:$false -ErrorAction Stop
-            Wait-Task -Task $removeVDSwitchTask -ErrorAction Stop
+            $distributedSwitch | Remove-VDSwitch -Server $this.Connection -Confirm:$false -ErrorAction Stop
         }
         catch {
             throw "Cannot remove Distributed Switch $($this.Name). For more information: $($_.Exception.Message)"
         }
-
-        Write-VerboseLog -Message "Distributed Switch {0} was successfully removed." -Arguments @($this.Name)
     }
 
     <#

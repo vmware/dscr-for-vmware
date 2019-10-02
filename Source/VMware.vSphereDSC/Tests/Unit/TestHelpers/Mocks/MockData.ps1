@@ -172,9 +172,6 @@ $script:constants = @{
     DistributedSwitchVersion = '6.6.0'
     ReferenceDistributedSwitch = 'MyReferenceDistributedSwitch'
     WithoutPortGroups = $true
-    NewDistributedSwitchTaskName = 'NewDistributedSwitch_Task'
-    UpdateDistributedSwitchTaskName = 'UpdateDistributedSwitch_Task'
-    RemoveDistributedSwitchTaskName = 'RemoveDistributedSwitch_Task'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -836,19 +833,4 @@ $script:distributedSwitch = [VMware.VimAutomation.Vds.Impl.V1.VmwareVDSwitchImpl
     Notes = $script:constants.DistributedSwitchNotes
     NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
     Version = $script:constants.DistributedSwitchVersion
-}
-
-$script:newDistributedSwitchSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
-    Name = $script:constants.NewDistributedSwitchTaskName
-    State = $script:constants.TaskSuccessState
-}
-
-$script:updateDistributedSwitchSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
-    Name = $script:constants.UpdateDistributedSwitchTaskName
-    State = $script:constants.TaskSuccessState
-}
-
-$script:removeDistributedSwitchSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
-    Name = $script:constants.RemoveDistributedSwitchTaskName
-    State = $script:constants.TaskSuccessState
 }

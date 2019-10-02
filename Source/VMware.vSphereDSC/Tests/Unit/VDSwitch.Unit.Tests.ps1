@@ -61,23 +61,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $assertMockCalledParams = @{
                         CommandName = 'New-VDSwitch'
                         ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and `
-                                            $Location -eq $script:datacenterNetworkFolder -and $RunAsync -and !$Confirm }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Wait-Task mock once' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Wait-Task'
-                        ParameterFilter = { $Task -eq $script:newDistributedSwitchSuccessTask }
+                                            $Location -eq $script:datacenterNetworkFolder -and !$Confirm }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'
@@ -115,23 +99,7 @@ InModuleScope -ModuleName $script:moduleName {
                                             $LinkDiscoveryProtocolOperation -eq $script:constants.DistributedSwitchLinkDiscoveryProtocolOperation -and `
                                             $MaxPorts -eq $script:constants.DistributedSwitchMaxPorts -and $Mtu -eq $script:constants.DistributedSwitchMtu -and `
                                             $Notes -eq $script:constants.DistributedSwitchNotes -and $NumUplinkPorts -eq $script:constants.DistributedSwitchNumUplinkPorts -and `
-                                            $Version -eq $script:constants.DistributedSwitchVersion -and $RunAsync -and !$Confirm }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Wait-Task mock once' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Wait-Task'
-                        ParameterFilter = { $Task -eq $script:newDistributedSwitchSuccessTask }
+                                            $Version -eq $script:constants.DistributedSwitchVersion -and !$Confirm }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'
@@ -164,24 +132,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $assertMockCalledParams = @{
                         CommandName = 'New-VDSwitch'
                         ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder -and `
-                                            $ReferenceVDSwitch -eq $script:constants.ReferenceDistributedSwitch -and $WithoutPortGroups -eq $script:constants.WithoutPortGroups -and `
-                                            $RunAsync -and !$Confirm }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Wait-Task mock once' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Wait-Task'
-                        ParameterFilter = { $Task -eq $script:newDistributedSwitchSuccessTask }
+                                            $ReferenceVDSwitch -eq $script:constants.ReferenceDistributedSwitch -and $WithoutPortGroups -eq $script:constants.WithoutPortGroups -and !$Confirm }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'
@@ -213,26 +164,10 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Set-VDSwitch'
-                        ParameterFilter = { $Server -eq $script:viServer -and $VDSwitch -eq $script:distributedSwitch -and $RunAsync -and !$Confirm -and `
+                        ParameterFilter = { $Server -eq $script:viServer -and $VDSwitch -eq $script:distributedSwitch -and !$Confirm -and `
                                             $ContactDetails -eq ($script:constants.DistributedSwitchContactDetails + $script:constants.DistributedSwitchContactDetails) -and `
                                             $ContactName -eq ($script:constants.DistributedSwitchContactName + $script:constants.DistributedSwitchContactName) -and `
                                             $MaxPorts -eq ($script:constants.DistributedSwitchMaxPorts + 1) -and $Mtu -eq ($script:constants.DistributedSwitchMtu + 1) }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Wait-Task mock once' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Wait-Task'
-                        ParameterFilter = { $Task -eq $script:updateDistributedSwitchSuccessTask }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'
@@ -264,7 +199,7 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Remove-VDSwitch'
-                        ParameterFilter = { $Server -eq $script:viServer -and $VDSwitch -eq $script:distributedSwitch -and $RunAsync -and !$Confirm }
+                        ParameterFilter = { $Server -eq $script:viServer -and $VDSwitch -eq $script:distributedSwitch -and !$Confirm }
                         Exactly = $true
                         Times = 0
                         Scope = 'It'
@@ -296,23 +231,7 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Remove-VDSwitch'
-                        ParameterFilter = { $Server -eq $script:viServer -and $VDSwitch -eq $script:distributedSwitch -and $RunAsync -and !$Confirm }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Wait-Task mock once' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'Wait-Task'
-                        ParameterFilter = { $Task -eq $script:removeDistributedSwitchSuccessTask }
+                        ParameterFilter = { $Server -eq $script:viServer -and $VDSwitch -eq $script:distributedSwitch -and !$Confirm }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'
@@ -483,7 +402,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
                     $result.Ensure | Should -Be 'Absent'
 
-                    $result.ReferenceVDSwitch | Should -Be '' # PowerShell converts the $null string value to empty string.
+                    $result.ReferenceVDSwitch | Should -BeNullOrEmpty
                     $result.WithoutPortGroups | Should -Be $resourceProperties.WithoutPortGroups
                     $result.ContactDetails | Should -Be $resourceProperties.ContactDetails
                     $result.ContactName | Should -Be $resourceProperties.ContactName
@@ -523,7 +442,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
                     $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
                     $result.Ensure | Should -Be 'Present'
-                    $result.ReferenceVDSwitch | Should -Be '' # PowerShell converts the $null string value to empty string.
+                    $result.ReferenceVDSwitch | Should -BeNullOrEmpty
                     $result.WithoutPortGroups | Should -Be $resourceProperties.WithoutPortGroups
                     $result.ContactDetails | Should -Be $script:constants.DistributedSwitchContactDetails
                     $result.ContactName | Should -Be $script:constants.DistributedSwitchContactName
@@ -563,7 +482,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
                     $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
                     $result.Ensure | Should -Be 'Absent'
-                    $result.ReferenceVDSwitch | Should -Be '' # PowerShell converts the $null string value to empty string.
+                    $result.ReferenceVDSwitch | Should -BeNullOrEmpty
                     $result.WithoutPortGroups | Should -Be $resourceProperties.WithoutPortGroups
                     $result.ContactDetails | Should -Be $resourceProperties.ContactDetails
                     $result.ContactName | Should -Be $resourceProperties.ContactName
@@ -603,7 +522,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
                     $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
                     $result.Ensure | Should -Be 'Present'
-                    $result.ReferenceVDSwitch | Should -Be '' # PowerShell converts the $null string value to empty string.
+                    $result.ReferenceVDSwitch | Should -BeNullOrEmpty
                     $result.WithoutPortGroups | Should -Be $resourceProperties.WithoutPortGroups
                     $result.ContactDetails | Should -Be $script:constants.DistributedSwitchContactDetails
                     $result.ContactName | Should -Be $script:constants.DistributedSwitchContactName
