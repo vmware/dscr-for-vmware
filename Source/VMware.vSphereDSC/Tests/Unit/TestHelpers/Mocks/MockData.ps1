@@ -178,6 +178,10 @@ $script:constants = @{
     DistributedPortGroupStaticPortBinding = 'Static'
     DistributedPortGroupDynamicPortBinding = 'Dynamic'
     ReferenceDistributedPortGroupName = 'MyReferenceDistributedPortGroup'
+    VMHostAddedToDistributedSwitchOneName = 'MyVMHostAddedToDistributedSwitchOne'
+    VMHostAddedToDistributedSwitchTwoName = 'MyVMHostAddedToDistributedSwitchTwo'
+    VMHostRemovedFromDistributedSwitchOneName = 'MyVMHostRemovedFromDistributedSwitchOne'
+    VMHostRemovedFromDistributedSwitchTwoName = 'MyVMHostRemovedFromDistributedSwitchTwo'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -847,4 +851,56 @@ $script:distributedPortGroup = [VMware.VimAutomation.Vds.Impl.V1.VmwareVDPortgro
     NumPorts = $script:constants.DistributedPortGroupNumPorts
     PortBinding = $script:constants.DistributedPortGroupStaticPortBinding
     VDSwitch = $script:distributedSwitch
+}
+
+$script:proxySwitch = [VMware.Vim.HostProxySwitch] @{
+    DvsName = $script:constants.DistributedSwitchName
+}
+
+$script:vmHostAddedToDistributedSwitchOne = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Name = $script:constants.VMHostAddedToDistributedSwitchOneName
+    ExtensionData = [VMware.Vim.HostSystem] @{
+        Config = [VMware.Vim.HostConfigInfo] @{
+            Network = [VMware.Vim.HostNetworkInfo] @{
+                ProxySwitch = @(
+                    $script:proxySwitch
+                )
+            }
+        }
+    }
+}
+
+$script:vmHostAddedToDistributedSwitchTwo = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Name = $script:constants.VMHostAddedToDistributedSwitchTwoName
+    ExtensionData = [VMware.Vim.HostSystem] @{
+        Config = [VMware.Vim.HostConfigInfo] @{
+            Network = [VMware.Vim.HostNetworkInfo] @{
+                ProxySwitch = @(
+                    $script:proxySwitch
+                )
+            }
+        }
+    }
+}
+
+$script:vmHostRemovedFromDistributedSwitchOne = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Name = $script:constants.VMHostRemovedFromDistributedSwitchOneName
+    ExtensionData = [VMware.Vim.HostSystem] @{
+        Config = [VMware.Vim.HostConfigInfo] @{
+            Network = [VMware.Vim.HostNetworkInfo] @{
+                ProxySwitch = @()
+            }
+        }
+    }
+}
+
+$script:vmHostRemovedFromDistributedSwitchTwo = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Name = $script:constants.VMHostRemovedFromDistributedSwitchTwoName
+    ExtensionData = [VMware.Vim.HostSystem] @{
+        Config = [VMware.Vim.HostConfigInfo] @{
+            Network = [VMware.Vim.HostNetworkInfo] @{
+                ProxySwitch = @()
+            }
+        }
+    }
 }
