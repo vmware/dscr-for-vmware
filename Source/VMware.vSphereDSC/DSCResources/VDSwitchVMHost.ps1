@@ -63,6 +63,11 @@ class VDSwitchVMHost : BaseDSC {
         $distributedSwitch = $this.GetDistributedSwitch()
         $vmHosts = $this.GetVMHosts()
 
+        if ($null -eq $distributedSwitch) {
+            # If the Distributed Switch is $null, it means that Ensure is 'Absent' and the Distributed Switch does not exist.
+            return $true
+        }
+
         return !$this.ShouldUpdateVMHostsInDistributedSwitch($vmHosts, $distributedSwitch)
     }
 
@@ -75,7 +80,17 @@ class VDSwitchVMHost : BaseDSC {
         $distributedSwitch = $this.GetDistributedSwitch()
         $vmHosts = $this.GetVMHosts()
 
-        $this.PopulateResult($vmHosts, $distributedSwitch, $result)
+        $result.Server = $this.Connection.Name
+        $result.VMHostNames = $vmHosts | Select-Object -ExpandProperty Name
+        $result.Ensure = $this.Ensure
+
+        if ($null -eq $distributedSwitch) {
+            # If the Distributed Switch is $null, it means that Ensure is 'Absent' and the Distributed Switch does not exist.
+            $result.VdsName = $this.Name
+        }
+        else {
+            $result.VdsName = $distributedSwitch.Name
+        }
 
         return $result
     }
@@ -84,15 +99,22 @@ class VDSwitchVMHost : BaseDSC {
     .DESCRIPTION
 
     Retrieves the Distributed Switch with the specified name from the server if it exists.
-    If the Distributed Switch does not exist, it throws an exception.
+    If the Distributed Switch does not exist and Ensure is set to 'Absent', $null is returned.
+    Otherwise it throws an exception.
     #>
     [PSObject] GetDistributedSwitch() {
-        try {
-            $distributedSwitch = Get-VDSwitch -Server $this.Connection -Name $this.VdsName -ErrorAction Stop
+        if ($this.Ensure -eq [Ensure]::Absent) {
+            $distributedSwitch = Get-VDSwitch -Server $this.Connection -Name $this.VdsName -ErrorAction SilentlyContinue
             return $distributedSwitch
         }
-        catch {
-            throw "Could not retrieve Distributed Switch $($this.VdsName). For more information: $($_.Exception.Message)"
+        else {
+            try {
+                $distributedSwitch = Get-VDSwitch -Server $this.Connection -Name $this.VdsName -ErrorAction Stop
+                return $distributedSwitch
+            }
+            catch {
+                throw "Could not retrieve Distributed Switch $($this.VdsName). For more information: $($_.Exception.Message)"
+            }
         }
     }
 
@@ -210,17 +232,5 @@ class VDSwitchVMHost : BaseDSC {
         catch {
             throw "Could not remove VMHosts $filteredVMHosts from Distributed Switch $($distributedSwitch.Name). For more information: $($_.Exception.Message)"
         }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the result returned from the Get() method with the values from the server.
-    #>
-    [void] PopulateResult($vmHosts, $distributedSwitch, $result) {
-        $result.Server = $this.Connection.Name
-        $result.VdsName = $distributedSwitch.Name
-        $result.VMHostNames = $vmHosts | Select-Object -ExpandProperty Name
-        $result.Ensure = $this.Ensure
     }
 }
