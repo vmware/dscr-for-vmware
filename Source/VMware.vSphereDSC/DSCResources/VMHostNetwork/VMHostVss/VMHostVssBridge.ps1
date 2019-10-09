@@ -58,51 +58,66 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     hidden [string] $bridgeType = 'HostVirtualSwitchBondBridge'
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVssBridge($vmHost)
+            $this.UpdateVssBridge($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
+            $vss = $this.GetVss()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $vss -and $this.Equals($vss))
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $vss -and $this.Equals($vss))
+            }
+            else {
+                $this.NicDevice = @()
+                $this.BeaconInterval = 0
+                $this.LinkDiscoveryProtocolProtocol = [LinkDiscoveryProtocolProtocol]::Unset
+
+                return ($null -eq $vss -or $this.Equals($vss))
+            }
         }
-        else {
-            $this.NicDevice = @()
-            $this.BeaconInterval = 0
-            $this.LinkDiscoveryProtocolProtocol = [LinkDiscoveryProtocolProtocol]::Unset
-
-            return ($null -eq $vss -or $this.Equals($vss))
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssBridge] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostVssBridge]::new()
-        $result.Server = $this.Server
+            $result = [VMHostVssBridge]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
+            $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

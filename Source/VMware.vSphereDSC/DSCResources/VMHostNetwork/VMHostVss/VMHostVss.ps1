@@ -65,47 +65,62 @@ class VMHostVss : VMHostVssBaseDSC {
     [string[]] $PortGroup
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVss($vmHost)
+            $this.UpdateVss($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
+            $vss = $this.GetVss()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $vss -and $this.Equals($vss))
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $vss -and $this.Equals($vss))
+            }
+            else {
+                return ($null -eq $vss)
+            }
         }
-        else {
-            return ($null -eq $vss)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVss] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostVss]::new()
-        $result.Server = $this.Server
+            $result = [VMHostVss]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.Key) { 'Present' } else { 'Absent' }
+            $result.Ensure = if ([string]::Empty -ne $result.Key) { 'Present' } else { 'Absent' }
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

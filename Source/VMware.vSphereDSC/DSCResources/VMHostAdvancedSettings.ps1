@@ -27,32 +27,47 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
     [hashtable] $AdvancedSettings
 
     [void] Set() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateVMHostAdvancedSettings($vmHost)
+            $this.UpdateVMHostAdvancedSettings($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-    	$this.ConnectVIServer()
-    	$vmHost = $this.GetVMHost()
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        return !$this.ShouldUpdateVMHostAdvancedSettings($vmHost)
+            return !$this.ShouldUpdateVMHostAdvancedSettings($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostAdvancedSettings] Get() {
-        $result = [VMHostAdvancedSettings]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostAdvancedSettings]::new()
+            $result.Server = $this.Server
 
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $result.Name = $vmHost.Name
-        $result.AdvancedSettings = @{}
+            $result.Name = $vmHost.Name
+            $result.AdvancedSettings = @{}
 
-    	$this.PopulateResult($vmHost, $result)
+            $this.PopulateResult($vmHost, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

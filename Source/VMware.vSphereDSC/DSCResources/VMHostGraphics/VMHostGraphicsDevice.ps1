@@ -33,38 +33,53 @@ class VMHostGraphicsDevice : VMHostGraphicsBaseDSC {
     [GraphicsType] $GraphicsType
 
     [void] Set() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
 
-        $this.EnsureVMHostIsInMaintenanceMode($vmHost)
-        $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
-        $this.RestartVMHost($vmHost)
+            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+            $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
+            $this.RestartVMHost($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-        $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
 
-        return ($this.GraphicsType -eq $foundDevice.GraphicsType)
+            return ($this.GraphicsType -eq $foundDevice.GraphicsType)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostGraphicsDevice] Get() {
-        $result = [VMHostGraphicsDevice]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostGraphicsDevice]::new()
+            $result.Server = $this.Server
 
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-        $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
 
-        $result.Name = $vmHost.Name
-        $result.Id = $foundDevice.DeviceId
-        $result.GraphicsType = $foundDevice.GraphicsType
+            $result.Name = $vmHost.Name
+            $result.Id = $foundDevice.DeviceId
+            $result.GraphicsType = $foundDevice.GraphicsType
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

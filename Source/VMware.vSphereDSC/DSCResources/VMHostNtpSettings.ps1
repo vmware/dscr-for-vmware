@@ -35,47 +35,62 @@ class VMHostNtpSettings : VMHostBaseDSC {
     hidden [string] $ServiceId = "ntpd"
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateVMHostNtpServer($vmHost)
-        $this.UpdateVMHostNtpServicePolicy($vmHost)
+            $this.UpdateVMHostNtpServer($vmHost)
+            $this.UpdateVMHostNtpServicePolicy($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
 
-        $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
-        if ($shouldUpdateVMHostNtpServer) {
-            return $false
+            $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
+            if ($shouldUpdateVMHostNtpServer) {
+                return $false
+            }
+
+            $vmHostServices = $vmHost.ExtensionData.Config.Service
+            $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostServices)
+            if ($shouldUpdateVMHostNtpServicePolicy) {
+                return $false
+            }
+
+            return $true
         }
-
-        $vmHostServices = $vmHost.ExtensionData.Config.Service
-        $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostServices)
-        if ($shouldUpdateVMHostNtpServicePolicy) {
-            return $false
+        finally {
+            $this.DisconnectVIServer()
         }
-
-        return $true
     }
 
     [VMHostNtpSettings] Get() {
-        $result = [VMHostNtpSettings]::new()
+        try {
+            $result = [VMHostNtpSettings]::new()
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
-        $vmHostServices = $vmHost.ExtensionData.Config.Service
-        $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
+            $vmHostServices = $vmHost.ExtensionData.Config.Service
+            $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
 
-        $result.Name = $vmHost.Name
-        $result.Server = $this.Server
-        $result.NtpServer = $vmHostNtpConfig.Server
-        $result.NtpServicePolicy = $vmHostNtpService.Policy
+            $result.Name = $vmHost.Name
+            $result.Server = $this.Server
+            $result.NtpServer = $vmHostNtpConfig.Server
+            $result.NtpServicePolicy = $vmHostNtpService.Policy
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

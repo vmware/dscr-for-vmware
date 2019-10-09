@@ -12,21 +12,36 @@ For any other resource you need to inherit from BaseDSC.
   [DscResource()]
   MyResource : BaseDSC
  ```
-You need to implement your new resource in separate file in the [DSCResources Folder](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/DSCResources). In the Set(), Test() and Get() methods of your resource, you need to call ConnectVIServer() method from the base class to establish a connection either to  a vCenter or an ESXi.
+You need to implement your new resource in separate file in the [DSCResources Folder](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/DSCResources). In the Set(), Test() and Get() methods of your resource, you need to call ConnectVIServer() method from the base class to establish a connection either to  a vCenter or an ESXi. In the finally block of each of the methods(Set, Test and Get), you need to call DisconnectVIServer() method from the base class to close the last open connection to the server.
  ```powershell
   [void] Set() {
-      $this.ConnectVIServer()
-      ...
+      try {
+          $this.ConnectVIServer()
+          ...
+      }
+      finally {
+          $this.DisconnectVIServer()
+      }
   }
 
   [bool] Test() {
-      $this.ConnectVIServer()
-      ...
+      try {
+          $this.ConnectVIServer()
+          ...
+      }
+      finally {
+          $this.DisconnectVIServer()
+      }
   }
 
   [MyResource] Get() {
-      $this.ConnectVIServer()
-      ...
+      try {
+          $this.ConnectVIServer()
+          ...
+      }
+      finally {
+          $this.DisconnectVIServer()
+      }
   }
  ```
 

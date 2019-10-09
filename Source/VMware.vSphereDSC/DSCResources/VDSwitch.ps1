@@ -112,70 +112,85 @@ class VDSwitch : DatacenterInventoryBaseDSC {
     [nullable[bool]] $WithoutPortGroups
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsvCenter()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $distributedSwitch) {
-                $this.AddDistributedSwitch($distributedSwitchLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $distributedSwitch) {
+                    $this.AddDistributedSwitch($distributedSwitchLocation)
+                }
+                else {
+                    $this.UpdateDistributedSwitch($distributedSwitch)
+                }
             }
             else {
-                $this.UpdateDistributedSwitch($distributedSwitch)
+                if ($null -ne $distributedSwitch) {
+                    $this.RemoveDistributedSwitch($distributedSwitch)
+                }
             }
         }
-        else {
-            if ($null -ne $distributedSwitch) {
-                $this.RemoveDistributedSwitch($distributedSwitch)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsvCenter()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $distributedSwitch) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $distributedSwitch) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateDistributedSwitch($distributedSwitch)
             }
-
-            return !$this.ShouldUpdateDistributedSwitch($distributedSwitch)
+            else {
+                return ($null -eq $distributedSwitch)
+            }
         }
-        else {
-            return ($null -eq $distributedSwitch)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VDSwitch] Get() {
-        $result = [VDSwitch]::new()
-        $result.Server = $this.Server
-        $result.Location = $this.Location
-        $result.DatacenterName = $this.DatacenterName
-        $result.DatacenterLocation = $this.DatacenterLocation
-        $result.ReferenceVDSwitch = $this.ReferenceVDSwitch
-        $result.WithoutPortGroups = $this.WithoutPortGroups
+        try {
+            $result = [VDSwitch]::new()
+            $result.Server = $this.Server
+            $result.Location = $this.Location
+            $result.DatacenterName = $this.DatacenterName
+            $result.DatacenterLocation = $this.DatacenterLocation
+            $result.ReferenceVDSwitch = $this.ReferenceVDSwitch
+            $result.WithoutPortGroups = $this.WithoutPortGroups
 
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsvCenter()
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
 
-        $this.PopulateResult($distributedSwitch, $result)
+            $this.PopulateResult($distributedSwitch, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

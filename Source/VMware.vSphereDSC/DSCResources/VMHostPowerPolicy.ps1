@@ -25,33 +25,48 @@ class VMHostPowerPolicy : VMHostBaseDSC {
     [PowerPolicy] $PowerPolicy
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostPowerSystem = $this.GetVMHostPowerSystem($vmHost)
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostPowerSystem = $this.GetVMHostPowerSystem($vmHost)
 
-        $this.UpdatePowerPolicy($vmHostPowerSystem)
+            $this.UpdatePowerPolicy($vmHostPowerSystem)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
 
-        return ($this.PowerPolicy -eq $currentPowerPolicy.Key)
+            return ($this.PowerPolicy -eq $currentPowerPolicy.Key)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostPowerPolicy] Get() {
-        $result = [VMHostPowerPolicy]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostPowerPolicy]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
 
-        $result.Name = $vmHost.Name
-        $result.PowerPolicy = $currentPowerPolicy.Key
+            $result.Name = $vmHost.Name
+            $result.PowerPolicy = $currentPowerPolicy.Key
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

@@ -59,7 +59,7 @@ class BaseDSC {
 
     Connects to the specified Server with the passed Credentials.
     The method sets the Connection property to the established connection.
-    If connection cannot be established, the method writes an error.
+    If connection cannot be established, the method throws an exception.
     #>
     [void] ConnectVIServer() {
         $this.ImportRequiredModules()
@@ -114,6 +114,20 @@ class BaseDSC {
     [void] EnsureConnectionIsvCenter() {
         if ($this.Connection.ProductLine -ne $this.vCenterProductId) {
             throw 'The Resource operations are only supported when connection is directly to a vCenter.'
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Closes the last open connection to the specified Server.
+    #>
+    [void] DisconnectVIServer() {
+        try {
+            Disconnect-VIServer -Server $this.Connection -Confirm:$false -ErrorAction Stop
+        }
+        catch {
+            throw "Cannot close Connection to Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
         }
     }
 }

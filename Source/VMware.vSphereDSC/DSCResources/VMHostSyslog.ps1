@@ -97,33 +97,48 @@ class VMHostSyslog : VMHostBaseDSC {
     [nullable[long]] $DropLogSize
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateVMHostSyslog($vmHost)
+            $this.UpdateVMHostSyslog($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        return !$this.ShouldUpdateVMHostSyslog($vmHost)
+            return !$this.ShouldUpdateVMHostSyslog($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostSyslog] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostSyslog]::new()
+            $result = [VMHostSyslog]::new()
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.PopulateResult($vmHost, $result)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.PopulateResult($vmHost, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
