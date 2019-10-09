@@ -29,6 +29,9 @@ InModuleScope -ModuleName $script:moduleName {
         # Calls the function to Import the mocked VMware.VimAutomation.Core module before all tests.
         Invoke-TestSetup
 
+        . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\BaseDSCMocks.ps1"
+
         Describe 'BaseDSC\ShouldUpdateArraySetting' -Tag 'ShouldUpdateArraySetting' {
             It 'Should return $false when the desired array is $null' {
                 # Arrange
@@ -83,6 +86,69 @@ InModuleScope -ModuleName $script:moduleName {
 
                 # Assert
                 $result | Should -Be $false
+            }
+        }
+
+        Describe 'BaseDSC\DisconnectVIServer' -Tag 'DisconnectVIServer' {
+            Context 'Invoking with Server that successfully closes the Connection' {
+                BeforeAll {
+                    # Arrange
+                    $baseDSCClassProperties = New-MocksWhenDisconnectVIServerClosesTheConnectionSuccessfully
+                    $baseDSCClass = New-Object -TypeName $baseDSCClassName -Property $baseDSCClassProperties
+
+                    $baseDSCClass.ConnectVIServer()
+                }
+
+                It 'Should call all defined mocks' {
+                    # Act
+                    $baseDSCClass.DisconnectVIServer()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should call the Disconnect-VIServer mock once' {
+                    # Act
+                    $baseDSCClass.DisconnectVIServer()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Disconnect-VIServer'
+                        ParameterFilter = { $Server -eq $script:viServer -and !$Confirm }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
+            }
+
+            Context 'Invoking with Server that results in an Error when closing the Connection' {
+                BeforeAll {
+                    # Arrange
+                    $baseDSCClassProperties = New-MocksWhenDisconnectVIServerResultsInAnErrorWhenClosingTheConnection
+                    $baseDSCClass = New-Object -TypeName $baseDSCClassName -Property $baseDSCClassProperties
+
+                    $baseDSCClass.ConnectVIServer()
+                }
+
+                It 'Should call all defined mocks' {
+                    try {
+                        # Act
+                        $baseDSCClass.DisconnectVIServer()
+                    }
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
+                }
+
+                It 'Should throw the correct error when closing the Connection results in an Error' {
+                    # Act && Assert
+                    # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
+                    { $baseDSCClass.DisconnectVIServer() } | Should -Throw "Cannot close Connection to Server $($script:viServer.Name). For more information: ScriptHalted"
+                }
             }
         }
     }
