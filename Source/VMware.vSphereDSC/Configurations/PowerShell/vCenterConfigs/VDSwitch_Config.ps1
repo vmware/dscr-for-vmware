@@ -100,7 +100,7 @@ Configuration VDSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config {
             DatacenterName = 'Datacenter'
             DatacenterLocation = ''
             Ensure = 'Present'
-            ReferenceVDSwitch = 'MyDistributedSwitch'
+            ReferenceVDSwitchName = 'MyDistributedSwitch'
             WithoutPortGroups = $true
             DependsOn = "[VDSwitch]VDSwitch"
         }

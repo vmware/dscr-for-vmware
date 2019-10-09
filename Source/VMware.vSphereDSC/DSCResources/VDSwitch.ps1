@@ -89,10 +89,11 @@ class VDSwitch : DatacenterInventoryBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies a reference vSphere Distributed Switch. The properties of the new vSphere Distributed Switch will be cloned from the reference vSphere Distributed Switch.
+    Specifies the Name for the reference vSphere Distributed Switch.
+    The properties of the new vSphere Distributed Switch will be cloned from the reference vSphere Distributed Switch.
     #>
     [DscProperty()]
-    [string] $ReferenceVDSwitch
+    [string] $ReferenceVDSwitchName
 
     <#
     .DESCRIPTION
@@ -173,7 +174,7 @@ class VDSwitch : DatacenterInventoryBaseDSC {
             $result.Location = $this.Location
             $result.DatacenterName = $this.DatacenterName
             $result.DatacenterLocation = $this.DatacenterLocation
-            $result.ReferenceVDSwitch = $this.ReferenceVDSwitch
+            $result.ReferenceVDSwitchName = $this.ReferenceVDSwitchName
             $result.WithoutPortGroups = $this.WithoutPortGroups
 
             $this.ConnectVIServer()
@@ -222,7 +223,7 @@ class VDSwitch : DatacenterInventoryBaseDSC {
         $shouldUpdateDistributedSwitch = @()
 
         <#
-        The VDSwitch object does not contain information about ReferenceVDSwitch and WithoutPortGroups so those properties are not
+        The VDSwitch object does not contain information about ReferenceVDSwitchName and WithoutPortGroups so those properties are not
         part of the Desired State of the Resource.
         #>
         $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.ContactDetails) -and $this.ContactDetails -ne $distributedSwitch.ContactDetails)
@@ -291,7 +292,7 @@ class VDSwitch : DatacenterInventoryBaseDSC {
         ReferenceVDSwitch and WithoutPortGroups are parameters only for the New-VDSwitch cmdlet
         and are not used for the Set-VDSwitch cmdlet.
         #>
-        if (![string]::IsNullOrEmpty($this.ReferenceVDSwitch)) { $distributedSwitchParams.ReferenceVDSwitch = $this.ReferenceVDSwitch }
+        if (![string]::IsNullOrEmpty($this.ReferenceVDSwitchName)) { $distributedSwitchParams.ReferenceVDSwitch = $this.ReferenceVDSwitchName }
         if ($null -ne $this.WithoutPortGroups) { $distributedSwitchParams.WithoutPortGroups = $this.WithoutPortGroups }
 
         try {

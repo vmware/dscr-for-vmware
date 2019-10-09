@@ -170,7 +170,7 @@ $script:constants = @{
     DistributedSwitchNotes = 'Distributed Switch Description'
     DistributedSwitchNumUplinkPorts = 10
     DistributedSwitchVersion = '6.6.0'
-    ReferenceDistributedSwitch = 'MyReferenceDistributedSwitch'
+    ReferenceDistributedSwitchName = 'MyReferenceDistributedSwitch'
     WithoutPortGroups = $true
 }
 

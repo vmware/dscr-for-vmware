@@ -109,10 +109,10 @@ InModuleScope -ModuleName $script:moduleName {
                 }
             }
 
-            Context 'Invoking with Ensure Present, non existing Distributed Switch and Reference Distributed Switch specified' {
+            Context 'Invoking with Ensure Present, non existing Distributed Switch and Reference Distributed Switch Name specified' {
                 BeforeAll {
                     # Arrange
-                    $resourceProperties = New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndReferenceDistributedSwitchSpecified
+                    $resourceProperties = New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndReferenceDistributedSwitchNameSpecified
                     $resource = New-Object -TypeName $resourceName -Property $resourceProperties
                 }
 
@@ -132,7 +132,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $assertMockCalledParams = @{
                         CommandName = 'New-VDSwitch'
                         ParameterFilter = { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder -and `
-                                            $ReferenceVDSwitch -eq $script:constants.ReferenceDistributedSwitch -and $WithoutPortGroups -eq $script:constants.WithoutPortGroups -and !$Confirm }
+                                            $ReferenceVDSwitch -eq $script:constants.ReferenceDistributedSwitchName -and $WithoutPortGroups -eq $script:constants.WithoutPortGroups -and !$Confirm }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'
@@ -402,7 +402,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
                     $result.Ensure | Should -Be 'Absent'
 
-                    $result.ReferenceVDSwitch | Should -BeNullOrEmpty
+                    $result.ReferenceVDSwitchName | Should -BeNullOrEmpty
                     $result.WithoutPortGroups | Should -Be $resourceProperties.WithoutPortGroups
                     $result.ContactDetails | Should -Be $resourceProperties.ContactDetails
                     $result.ContactName | Should -Be $resourceProperties.ContactName
@@ -442,7 +442,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
                     $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
                     $result.Ensure | Should -Be 'Present'
-                    $result.ReferenceVDSwitch | Should -BeNullOrEmpty
+                    $result.ReferenceVDSwitchName | Should -BeNullOrEmpty
                     $result.WithoutPortGroups | Should -Be $resourceProperties.WithoutPortGroups
                     $result.ContactDetails | Should -Be $script:constants.DistributedSwitchContactDetails
                     $result.ContactName | Should -Be $script:constants.DistributedSwitchContactName
@@ -482,7 +482,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
                     $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
                     $result.Ensure | Should -Be 'Absent'
-                    $result.ReferenceVDSwitch | Should -BeNullOrEmpty
+                    $result.ReferenceVDSwitchName | Should -BeNullOrEmpty
                     $result.WithoutPortGroups | Should -Be $resourceProperties.WithoutPortGroups
                     $result.ContactDetails | Should -Be $resourceProperties.ContactDetails
                     $result.ContactName | Should -Be $resourceProperties.ContactName
@@ -522,7 +522,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.DatacenterName | Should -Be $resourceProperties.DatacenterName
                     $result.DatacenterLocation | Should -Be $resourceProperties.DatacenterLocation
                     $result.Ensure | Should -Be 'Present'
-                    $result.ReferenceVDSwitch | Should -BeNullOrEmpty
+                    $result.ReferenceVDSwitchName | Should -BeNullOrEmpty
                     $result.WithoutPortGroups | Should -Be $resourceProperties.WithoutPortGroups
                     $result.ContactDetails | Should -Be $script:constants.DistributedSwitchContactDetails
                     $result.ContactName | Should -Be $script:constants.DistributedSwitchContactName

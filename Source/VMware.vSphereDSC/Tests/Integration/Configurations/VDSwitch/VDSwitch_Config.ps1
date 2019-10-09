@@ -60,7 +60,7 @@ Configuration VDSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config {
             DatacenterName = $AllNodes.DatacenterName
             DatacenterLocation = $AllNodes.DatacenterLocation
             Ensure = 'Present'
-            ReferenceVDSwitch = $AllNodes.DistributedSwitchName
+            ReferenceVDSwitchName = $AllNodes.DistributedSwitchName
             WithoutPortGroups = $AllNodes.WithoutPortGroups
         }
     }
