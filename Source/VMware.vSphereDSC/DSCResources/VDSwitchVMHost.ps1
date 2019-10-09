@@ -41,58 +41,73 @@ class VDSwitchVMHost : BaseDSC {
     [Ensure] $Ensure
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsvCenter()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
 
-        $distributedSwitch = $this.GetDistributedSwitch()
-        $vmHosts = $this.GetVMHosts()
-        $filteredVMHosts = $this.GetFilteredVMHosts($vmHosts, $distributedSwitch)
+            $distributedSwitch = $this.GetDistributedSwitch()
+            $vmHosts = $this.GetVMHosts()
+            $filteredVMHosts = $this.GetFilteredVMHosts($vmHosts, $distributedSwitch)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            $this.AddVMHostsToDistributedSwitch($filteredVMHosts, $distributedSwitch)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                $this.AddVMHostsToDistributedSwitch($filteredVMHosts, $distributedSwitch)
+            }
+            else {
+                $this.RemoveVMHostsFromDistributedSwitch($filteredVMHosts, $distributedSwitch)
+            }
         }
-        else {
-            $this.RemoveVMHostsFromDistributedSwitch($filteredVMHosts, $distributedSwitch)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsvCenter()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
 
-        $distributedSwitch = $this.GetDistributedSwitch()
-        $vmHosts = $this.GetVMHosts()
+            $distributedSwitch = $this.GetDistributedSwitch()
+            $vmHosts = $this.GetVMHosts()
 
-        if ($null -eq $distributedSwitch) {
-            # If the Distributed Switch is $null, it means that Ensure is 'Absent' and the Distributed Switch does not exist.
-            return $true
+            if ($null -eq $distributedSwitch) {
+                # If the Distributed Switch is $null, it means that Ensure is 'Absent' and the Distributed Switch does not exist.
+                return $true
+            }
+
+            return !$this.ShouldUpdateVMHostsInDistributedSwitch($vmHosts, $distributedSwitch)
         }
-
-        return !$this.ShouldUpdateVMHostsInDistributedSwitch($vmHosts, $distributedSwitch)
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VDSwitchVMHost] Get() {
-        $result = [VDSwitchVMHost]::new()
+        try {
+            $result = [VDSwitchVMHost]::new()
 
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsvCenter()
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
 
-        $distributedSwitch = $this.GetDistributedSwitch()
-        $vmHosts = $this.GetVMHosts()
+            $distributedSwitch = $this.GetDistributedSwitch()
+            $vmHosts = $this.GetVMHosts()
 
-        $result.Server = $this.Connection.Name
-        $result.VMHostNames = $vmHosts | Select-Object -ExpandProperty Name
-        $result.Ensure = $this.Ensure
+            $result.Server = $this.Connection.Name
+            $result.VMHostNames = $vmHosts | Select-Object -ExpandProperty Name
+            $result.Ensure = $this.Ensure
 
-        if ($null -eq $distributedSwitch) {
-            # If the Distributed Switch is $null, it means that Ensure is 'Absent' and the Distributed Switch does not exist.
-            $result.VdsName = $this.Name
+            if ($null -eq $distributedSwitch) {
+                # If the Distributed Switch is $null, it means that Ensure is 'Absent' and the Distributed Switch does not exist.
+                $result.VdsName = $this.Name
+            }
+            else {
+                $result.VdsName = $distributedSwitch.Name
+            }
+
+            return $result
         }
-        else {
-            $result.VdsName = $distributedSwitch.Name
+        finally {
+            $this.DisconnectVIServer()
         }
-
-        return $result
     }
 
     <#
