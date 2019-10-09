@@ -97,23 +97,38 @@ class vCenterSettings : BaseDSC {
     hidden [string] $IssueSettingName = "etc.issue"
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.UpdatevCenterSettings($this.Connection)
+        try {
+            $this.ConnectVIServer()
+            $this.UpdatevCenterSettings($this.Connection)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        return !$this.ShouldUpdatevCenterSettings($this.Connection)
+        try {
+            $this.ConnectVIServer()
+            return !$this.ShouldUpdatevCenterSettings($this.Connection)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [vCenterSettings] Get() {
-        $result = [vCenterSettings]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [vCenterSettings]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.PopulateResult($this.Connection, $result)
+            $this.ConnectVIServer()
+            $this.PopulateResult($this.Connection, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

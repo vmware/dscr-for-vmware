@@ -38,45 +38,60 @@ class VMHostAgentVM : VMHostBaseDSC {
     hidden [string] $GetAgentVmNetworkAsViewObjectMethodName = 'GetAgentVmNetworkAsViewObject'
 
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        # vCenter Connection is needed to retrieve the EsxAgentHostManager.
-        $this.EnsureConnectionIsvCenter()
+            # vCenter Connection is needed to retrieve the EsxAgentHostManager.
+            $this.EnsureConnectionIsvCenter()
 
-        $vmHost = $this.GetVMHost()
-        $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
+            $vmHost = $this.GetVMHost()
+            $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
 
-        $this.UpdateAgentVMConfiguration($vmHost, $esxAgentHostManager)
+            $this.UpdateAgentVMConfiguration($vmHost, $esxAgentHostManager)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        # vCenter Connection is needed to retrieve the EsxAgentHostManager.
-        $this.EnsureConnectionIsvCenter()
+            # vCenter Connection is needed to retrieve the EsxAgentHostManager.
+            $this.EnsureConnectionIsvCenter()
 
-        $vmHost = $this.GetVMHost()
-        $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
+            $vmHost = $this.GetVMHost()
+            $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
 
-        return !$this.ShouldUpdateAgentVMConfiguration($esxAgentHostManager)
+            return !$this.ShouldUpdateAgentVMConfiguration($esxAgentHostManager)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostAgentVM] Get() {
-        $result = [VMHostAgentVM]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostAgentVM]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        # vCenter Connection is needed to retrieve the EsxAgentHostManager.
-        $this.EnsureConnectionIsvCenter()
+            # vCenter Connection is needed to retrieve the EsxAgentHostManager.
+            $this.EnsureConnectionIsvCenter()
 
-        $vmHost = $this.GetVMHost()
-        $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
+            $vmHost = $this.GetVMHost()
+            $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($esxAgentHostManager, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($esxAgentHostManager, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

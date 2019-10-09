@@ -52,36 +52,51 @@ class VMHostTpsSettings : VMHostBaseDSC {
     hidden [string] $MemValue = "Mem."
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateTpsSettings($vmHost)
+            $this.UpdateTpsSettings($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $shouldUpdateTpsSettings = $this.ShouldUpdateTpsSettings($vmHost)
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $shouldUpdateTpsSettings = $this.ShouldUpdateTpsSettings($vmHost)
 
-        return !$shouldUpdateTpsSettings
+            return !$shouldUpdateTpsSettings
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostTpsSettings] Get() {
-        $result = [VMHostTpsSettings]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostTpsSettings]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $result.Name = $vmHost.Name
-        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $result.Name = $vmHost.Name
+            $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
 
-        foreach ($tpsSetting in $tpsSettings) {
-            $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
+            foreach ($tpsSetting in $tpsSettings) {
+                $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
 
-            $result.$tpsSettingName = $tpsSetting.Value
+                $result.$tpsSettingName = $tpsSetting.Value
+            }
+
+            return $result
         }
-
-        return $result
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

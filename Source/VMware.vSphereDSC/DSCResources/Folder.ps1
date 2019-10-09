@@ -26,60 +26,75 @@ class Folder : DatacenterInventoryBaseDSC {
     [FolderType] $FolderType
 
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.FolderType)Folder"
-        $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $folder = $this.GetInventoryItem($folderLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.FolderType)Folder"
+            $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $folder = $this.GetInventoryItem($folderLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $folder) {
-                $this.AddFolder($folderLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $folder) {
+                    $this.AddFolder($folderLocation)
+                }
+            }
+            else {
+                if ($null -ne $folder) {
+                    $this.RemoveFolder($folder)
+                }
             }
         }
-        else {
-            if ($null -ne $folder) {
-                $this.RemoveFolder($folder)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.FolderType)Folder"
-        $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $folder = $this.GetInventoryItem($folderLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.FolderType)Folder"
+            $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $folder = $this.GetInventoryItem($folderLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $folder)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $folder)
+            }
+            else {
+                return ($null -eq $folder)
+            }
         }
-        else {
-            return ($null -eq $folder)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [Folder] Get() {
-        $result = [Folder]::new()
+        try {
+            $result = [Folder]::new()
 
-        $result.Server = $this.Server
-        $result.Location = $this.Location
-        $result.DatacenterName = $this.DatacenterName
-        $result.DatacenterLocation = $this.DatacenterLocation
-        $result.FolderType = $this.FolderType
+            $result.Server = $this.Server
+            $result.Location = $this.Location
+            $result.DatacenterName = $this.DatacenterName
+            $result.DatacenterLocation = $this.DatacenterLocation
+            $result.FolderType = $this.FolderType
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.FolderType)Folder"
-        $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $folder = $this.GetInventoryItem($folderLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.FolderType)Folder"
+            $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $folder = $this.GetInventoryItem($folderLocation)
 
-        $this.PopulateResult($folder, $result)
+            $this.PopulateResult($folder, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

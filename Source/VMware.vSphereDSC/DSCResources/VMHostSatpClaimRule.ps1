@@ -137,67 +137,82 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
     [bool] $Force
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
-        $satpClaimRulePresent = ($null -ne $satpClaimRule)
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
+            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+            $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if (!$satpClaimRulePresent) {
-                $this.AddSatpClaimRule($esxCli)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if (!$satpClaimRulePresent) {
+                    $this.AddSatpClaimRule($esxCli)
+                }
+            }
+            else {
+                if ($satpClaimRulePresent) {
+                    $this.RemoveSatpClaimRule($esxCli)
+                }
             }
         }
-        else {
-            if ($satpClaimRulePresent) {
-                $this.RemoveSatpClaimRule($esxCli)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
-        $satpClaimRulePresent = ($null -ne $satpClaimRule)
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
+            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+            $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return $satpClaimRulePresent
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return $satpClaimRulePresent
+            }
+            else {
+                return -not $satpClaimRulePresent
+            }
         }
-        else {
-            return -not $satpClaimRulePresent
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostSatpClaimRule] Get() {
-        $result = [VMHostSatpClaimRule]::new()
+        try {
+            $result = [VMHostSatpClaimRule]::new()
 
-        $result.Server = $this.Server
-        $result.RuleName = $this.RuleName
-        $result.Boot = $this.Boot
-        $result.Type = $this.Type
-        $result.Force = $this.Force
+            $result.Server = $this.Server
+            $result.RuleName = $this.RuleName
+            $result.Boot = $this.Boot
+            $result.Type = $this.Type
+            $result.Force = $this.Force
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $result.Name = $vmHost.Name
-        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
-        $satpClaimRulePresent = ($null -ne $satpClaimRule)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $result.Name = $vmHost.Name
+            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
+            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+            $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
-        if (!$satpClaimRulePresent) {
-            $result.Ensure = "Absent"
-            $result.Psp = $this.Psp
-            $this.PopulateResult($result, $this)
+            if (!$satpClaimRulePresent) {
+                $result.Ensure = "Absent"
+                $result.Psp = $this.Psp
+                $this.PopulateResult($result, $this)
+            }
+            else {
+                $result.Ensure = "Present"
+                $result.Psp = $satpClaimRule.DefaultPSP
+                $this.PopulateResult($result, $satpClaimRule)
+            }
+
+            return $result
         }
-        else {
-            $result.Ensure = "Present"
-            $result.Psp = $satpClaimRule.DefaultPSP
-            $this.PopulateResult($result, $satpClaimRule)
+        finally {
+            $this.DisconnectVIServer()
         }
-
-        return $result
     }
 
     <#

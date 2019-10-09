@@ -33,36 +33,51 @@ class VMHostGraphics : VMHostGraphicsBaseDSC {
     [SharedPassthruAssignmentPolicy] $SharedPassthruAssignmentPolicy
 
     [void] Set() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
 
-        $this.EnsureVMHostIsInMaintenanceMode($vmHost)
-        $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
-        $this.RestartVMHost($vmHost)
+            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+            $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
+            $this.RestartVMHost($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
 
-        return !$this.ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager)
+            return !$this.ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostGraphics] Get() {
-        $result = [VMHostGraphics]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostGraphics]::new()
+            $result.Server = $this.Server
 
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
 
-        $result.Name = $vmHost.Name
-        $result.GraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
-        $result.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
+            $result.Name = $vmHost.Name
+            $result.GraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
+            $result.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

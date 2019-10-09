@@ -61,53 +61,68 @@ class VMHostAccount : BaseDSC {
     hidden [string] $DescriptionParameterName = 'Description'
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsESXi()
-        $vmHostAccount = $this.GetVMHostAccount()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsESXi()
+            $vmHostAccount = $this.GetVMHostAccount()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $vmHostAccount) {
-                $this.AddVMHostAccount()
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostAccount) {
+                    $this.AddVMHostAccount()
+                }
+                else {
+                    $this.UpdateVMHostAccount($vmHostAccount)
+                }
             }
             else {
-                $this.UpdateVMHostAccount($vmHostAccount)
+                if ($null -ne $vmHostAccount) {
+                    $this.RemoveVMHostAccount($vmHostAccount)
+                }
             }
         }
-        else {
-            if ($null -ne $vmHostAccount) {
-                $this.RemoveVMHostAccount($vmHostAccount)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsESXi()
-        $vmHostAccount = $this.GetVMHostAccount()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsESXi()
+            $vmHostAccount = $this.GetVMHostAccount()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $vmHostAccount) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostAccount) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateVMHostAccount($vmHostAccount) -or !$this.ShouldCreateAcountPermission($vmHostAccount)
             }
-
-            return !$this.ShouldUpdateVMHostAccount($vmHostAccount) -or !$this.ShouldCreateAcountPermission($vmHostAccount)
+            else {
+                return ($null -eq $vmHostAccount)
+            }
         }
-        else {
-            return ($null -eq $vmHostAccount)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostAccount] Get() {
-        $result = [VMHostAccount]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostAccount]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsESXi()
-        $vmHostAccount = $this.GetVMHostAccount()
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsESXi()
+            $vmHostAccount = $this.GetVMHostAccount()
 
-        $this.PopulateResult($vmHostAccount, $result)
+            $this.PopulateResult($vmHostAccount, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

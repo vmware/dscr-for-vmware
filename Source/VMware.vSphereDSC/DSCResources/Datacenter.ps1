@@ -17,51 +17,66 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 [DscResource()]
 class Datacenter : InventoryBaseDSC {
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenterLocation = $this.GetInventoryItemLocation()
-        $datacenter = $this.GetDatacenter($datacenterLocation)
+            $datacenterLocation = $this.GetInventoryItemLocation()
+            $datacenter = $this.GetDatacenter($datacenterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $datacenter) {
-                $this.AddDatacenter($datacenterLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $datacenter) {
+                    $this.AddDatacenter($datacenterLocation)
+                }
+            }
+            else {
+                if ($null -ne $datacenter) {
+                    $this.RemoveDatacenter($datacenter)
+                }
             }
         }
-        else {
-            if ($null -ne $datacenter) {
-                $this.RemoveDatacenter($datacenter)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenterLocation = $this.GetInventoryItemLocation()
-        $datacenter = $this.GetDatacenter($datacenterLocation)
+            $datacenterLocation = $this.GetInventoryItemLocation()
+            $datacenter = $this.GetDatacenter($datacenterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $datacenter)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $datacenter)
+            }
+            else {
+                return ($null -eq $datacenter)
+            }
         }
-        else {
-            return ($null -eq $datacenter)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [Datacenter] Get() {
-        $result = [Datacenter]::new()
+        try {
+            $result = [Datacenter]::new()
 
-        $result.Server = $this.Server
-        $result.Location = $this.Location
+            $result.Server = $this.Server
+            $result.Location = $this.Location
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        $datacenterLocation = $this.GetInventoryItemLocation()
-        $datacenter = $this.GetDatacenter($datacenterLocation)
+            $datacenterLocation = $this.GetInventoryItemLocation()
+            $datacenter = $this.GetDatacenter($datacenterLocation)
 
-        $this.PopulateResult($datacenter, $result)
+            $this.PopulateResult($datacenter, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

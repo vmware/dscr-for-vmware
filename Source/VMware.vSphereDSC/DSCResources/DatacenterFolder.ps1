@@ -17,51 +17,66 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 [DscResource()]
 class DatacenterFolder : InventoryBaseDSC {
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenterFolderLocation = $this.GetInventoryItemLocation()
-        $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
+            $datacenterFolderLocation = $this.GetInventoryItemLocation()
+            $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $datacenterFolder) {
-                $this.AddDatacenterFolder($datacenterFolderLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $datacenterFolder) {
+                    $this.AddDatacenterFolder($datacenterFolderLocation)
+                }
+            }
+            else {
+                if ($null -ne $datacenterFolder) {
+                    $this.RemoveDatacenterFolder($datacenterFolder)
+                }
             }
         }
-        else {
-            if ($null -ne $datacenterFolder) {
-                $this.RemoveDatacenterFolder($datacenterFolder)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenterFolderLocation = $this.GetInventoryItemLocation()
-        $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
+            $datacenterFolderLocation = $this.GetInventoryItemLocation()
+            $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $datacenterFolder)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $datacenterFolder)
+            }
+            else {
+                return ($null -eq $datacenterFolder)
+            }
         }
-        else {
-            return ($null -eq $datacenterFolder)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [DatacenterFolder] Get() {
-        $result = [DatacenterFolder]::new()
+        try {
+            $result = [DatacenterFolder]::new()
 
-        $result.Server = $this.Server
-        $result.Location = $this.Location
+            $result.Server = $this.Server
+            $result.Location = $this.Location
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        $datacenterFolderLocation = $this.GetInventoryItemLocation()
-        $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
+            $datacenterFolderLocation = $this.GetInventoryItemLocation()
+            $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
 
-        $this.PopulateResult($datacenterFolder, $result)
+            $this.PopulateResult($datacenterFolder, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

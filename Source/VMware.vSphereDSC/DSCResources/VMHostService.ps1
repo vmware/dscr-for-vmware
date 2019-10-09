@@ -65,34 +65,49 @@ class VMHostService : VMHostBaseDSC {
     [string[]] $Ruleset
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateVMHostService($vmHost)
+            $this.UpdateVMHostService($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        return !$this.ShouldUpdateVMHostService($vmHost)
+            return !$this.ShouldUpdateVMHostService($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostService] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostService]::new()
-        $result.Server = $this.Server
+            $result = [VMHostService]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.PopulateResult($vmHost, $result)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.PopulateResult($vmHost, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

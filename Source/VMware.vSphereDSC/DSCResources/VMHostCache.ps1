@@ -34,30 +34,45 @@ class VMHostCache : VMHostBaseDSC {
     [double] $SwapSizeGB
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateHostCacheConfiguration($vmHost)
+            $this.UpdateHostCacheConfiguration($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        return !$this.ShouldUpdateHostCacheConfiguration($vmHost)
+            return !$this.ShouldUpdateHostCacheConfiguration($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostCache] Get() {
-        $result = [VMHostCache]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostCache]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     hidden [int] $NumberOfFractionalDigits = 3

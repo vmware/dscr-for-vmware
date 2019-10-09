@@ -71,65 +71,80 @@ class HACluster : DatacenterInventoryBaseDSC {
     hidden [string] $HARestartPriorityParemeterName = 'HARestartPriority'
 
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $cluster = $this.GetInventoryItem($clusterLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $cluster = $this.GetInventoryItem($clusterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $cluster) {
-                $this.AddCluster($clusterLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $cluster) {
+                    $this.AddCluster($clusterLocation)
+                }
+                else {
+                    $this.UpdateCluster($cluster)
+                }
             }
             else {
-                $this.UpdateCluster($cluster)
+                if ($null -ne $cluster) {
+                    $this.RemoveCluster($cluster)
+                }
             }
         }
-        else {
-            if ($null -ne $cluster) {
-                $this.RemoveCluster($cluster)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $cluster = $this.GetInventoryItem($clusterLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $cluster = $this.GetInventoryItem($clusterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $cluster) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $cluster) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateCluster($cluster)
             }
-
-            return !$this.ShouldUpdateCluster($cluster)
+            else {
+                return ($null -eq $cluster)
+            }
         }
-        else {
-            return ($null -eq $cluster)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [HACluster] Get() {
-        $result = [HACluster]::new()
-        $result.Server = $this.Server
-        $result.Location = $this.Location
-        $result.DatacenterName = $this.DatacenterName
-        $result.DatacenterLocation = $this.DatacenterLocation
+        try {
+            $result = [HACluster]::new()
+            $result.Server = $this.Server
+            $result.Location = $this.Location
+            $result.DatacenterName = $this.DatacenterName
+            $result.DatacenterLocation = $this.DatacenterLocation
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $cluster = $this.GetInventoryItem($clusterLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $cluster = $this.GetInventoryItem($clusterLocation)
 
-        $this.PopulateResult($cluster, $result)
+            $this.PopulateResult($cluster, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

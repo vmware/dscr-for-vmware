@@ -74,38 +74,53 @@ class VMHostDnsSettings : VMHostBaseDSC {
     [string] $VirtualNicDevice
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateDns($vmHost)
+            $this.UpdateDns($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
-        return $this.Equals($vmHostDnsConfig)
+            return $this.Equals($vmHostDnsConfig)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostDnsSettings] Get() {
-        $result = [VMHostDnsSettings]::new()
+        try {
+            $result = [VMHostDnsSettings]::new()
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
-        $result.Name = $vmHost.Name
-        $result.Server = $this.Server
-        $result.Address = $vmHostDnsConfig.Address
-        $result.Dhcp = $vmHostDnsConfig.Dhcp
-        $result.DomainName = $vmHostDnsConfig.DomainName
-        $result.HostName = $vmHostDnsConfig.HostName
-        $result.Ipv6VirtualNicDevice = $vmHostDnsConfig.Ipv6VirtualNicDevice
-        $result.SearchDomain = $vmHostDnsConfig.SearchDomain
-        $result.VirtualNicDevice = $vmHostDnsConfig.VirtualNicDevice
+            $result.Name = $vmHost.Name
+            $result.Server = $this.Server
+            $result.Address = $vmHostDnsConfig.Address
+            $result.Dhcp = $vmHostDnsConfig.Dhcp
+            $result.DomainName = $vmHostDnsConfig.DomainName
+            $result.HostName = $vmHostDnsConfig.HostName
+            $result.Ipv6VirtualNicDevice = $vmHostDnsConfig.Ipv6VirtualNicDevice
+            $result.SearchDomain = $vmHostDnsConfig.SearchDomain
+            $result.VirtualNicDevice = $vmHostDnsConfig.VirtualNicDevice
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

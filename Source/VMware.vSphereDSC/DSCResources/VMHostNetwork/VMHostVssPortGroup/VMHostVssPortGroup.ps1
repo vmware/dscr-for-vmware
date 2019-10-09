@@ -39,60 +39,75 @@ class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
     hidden [int] $VLanIdMaxValue = 4095
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $portGroup) {
-                $this.AddVirtualPortGroup($virtualSwitch)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $portGroup) {
+                    $this.AddVirtualPortGroup($virtualSwitch)
+                }
+                else {
+                    $this.UpdateVirtualPortGroup($portGroup)
+                }
             }
             else {
-                $this.UpdateVirtualPortGroup($portGroup)
+                if ($null -ne $portGroup) {
+                    $this.RemoveVirtualPortGroup($portGroup)
+                }
             }
         }
-        else {
-            if ($null -ne $portGroup) {
-                $this.RemoveVirtualPortGroup($portGroup)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $portGroup) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $portGroup) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateVirtualPortGroup($portGroup)
             }
-
-            return !$this.ShouldUpdateVirtualPortGroup($portGroup)
+            else {
+                return ($null -eq $portGroup)
+            }
         }
-        else {
-            return ($null -eq $portGroup)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssPortGroup] Get() {
-        $result = [VMHostVssPortGroup]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostVssPortGroup]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
-        $result.VMHostName = $this.VMHost.Name
-        $this.PopulateResult($portGroup, $result)
+            $result.VMHostName = $this.VMHost.Name
+            $this.PopulateResult($portGroup, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
