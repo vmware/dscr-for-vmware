@@ -50,35 +50,50 @@ class VMHostPhysicalNic : VMHostEntityBaseDSC {
     [nullable[bool]] $AutoNegotiate
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
-        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+            $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
 
-        $this.UpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+            $this.UpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
-        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+            $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
 
-        return !$this.ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+            return !$this.ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostPhysicalNic] Get() {
-        $result = [VMHostPhysicalNic]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostPhysicalNic]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
-        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+            $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
 
-        $result.VMHostName = $this.VMHost.Name
-        $result.Name = $physicalNetworkAdapter.Name
+            $result.VMHostName = $this.VMHost.Name
+            $result.Name = $physicalNetworkAdapter.Name
 
-        $this.PopulateResult($physicalNetworkAdapter, $result)
+            $this.PopulateResult($physicalNetworkAdapter, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

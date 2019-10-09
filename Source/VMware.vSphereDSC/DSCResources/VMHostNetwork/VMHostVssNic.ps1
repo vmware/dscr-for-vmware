@@ -25,71 +25,86 @@ class VMHostVssNic : VMHostNicBaseDSC {
     [string] $VssName
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
-        if ($null -ne $vmHostNetworkAdapter) {
-            <#
-            Here the retrieval of the VMKernel is done for the second time because retrieving it
-            by Virtual Switch and Port Group produces errors when trying to update or delete it.
-            The errors do not occur when the retrieval is done by Name.
-            #>
-            $vmHostNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $vmHostNetworkAdapter.Name -VMHost $this.VMHost -VMKernel
-        }
+            if ($null -ne $vmHostNetworkAdapter) {
+                <#
+                Here the retrieval of the VMKernel is done for the second time because retrieving it
+                by Virtual Switch and Port Group produces errors when trying to update or delete it.
+                The errors do not occur when the retrieval is done by Name.
+                #>
+                $vmHostNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $vmHostNetworkAdapter.Name -VMHost $this.VMHost -VMKernel
+            }
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $vmHostNetworkAdapter) {
-                $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostNetworkAdapter) {
+                    $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
+                }
+                else {
+                    $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                }
             }
             else {
-                $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                if ($null -ne $vmHostNetworkAdapter) {
+                    $this.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
+                }
             }
         }
-        else {
-            if ($null -ne $vmHostNetworkAdapter) {
-                $this.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $vmHostNetworkAdapter) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostNetworkAdapter) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
             }
-
-            return !$this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+            else {
+                return ($null -eq $vmHostNetworkAdapter)
+            }
         }
-        else {
-            return ($null -eq $vmHostNetworkAdapter)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssNic] Get() {
-        $result = [VMHostVssNic]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostVssNic]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
-        $result.VMHostName = $this.VMHost.Name
-        $result.VssName = $virtualSwitch.Name
+            $result.VMHostName = $this.VMHost.Name
+            $result.VssName = $virtualSwitch.Name
 
-        $this.PopulateResult($vmHostNetworkAdapter, $result)
+            $this.PopulateResult($vmHostNetworkAdapter, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

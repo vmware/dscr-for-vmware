@@ -66,54 +66,69 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     [nullable[bool]] $RollingOrder
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVssTeaming($vmHost)
+            $this.UpdateVssTeaming($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
+            $vss = $this.GetVss()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $vss -and $this.Equals($vss))
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $vss -and $this.Equals($vss))
+            }
+            else {
+                $this.CheckBeacon = $false
+                $this.ActiveNic = @()
+                $this.StandbyNic = @()
+                $this.NotifySwitches = $true
+                $this.Policy = [NicTeamingPolicy]::Loadbalance_srcid
+                $this.RollingOrder = $false
+
+                return ($null -eq $vss -or $this.Equals($vss))
+            }
         }
-        else {
-            $this.CheckBeacon = $false
-            $this.ActiveNic = @()
-            $this.StandbyNic = @()
-            $this.NotifySwitches = $true
-            $this.Policy = [NicTeamingPolicy]::Loadbalance_srcid
-            $this.RollingOrder = $false
-
-            return ($null -eq $vss -or $this.Equals($vss))
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssTeaming] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostVssTeaming]::new()
-        $result.Server = $this.Server
+            $result = [VMHostVssTeaming]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
+            $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

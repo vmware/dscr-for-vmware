@@ -59,40 +59,55 @@ class vCenterStatistics : BaseDSC {
     hidden [int] $SecondsInAMinute = 60
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $performanceManager = $this.GetPerformanceManager()
-        $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
+        try {
+            $this.ConnectVIServer()
+            $performanceManager = $this.GetPerformanceManager()
+            $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
-        $this.UpdatePerformanceInterval($performanceManager, $currentPerformanceInterval)
+            $this.UpdatePerformanceInterval($performanceManager, $currentPerformanceInterval)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $performanceManager = $this.GetPerformanceManager()
-        $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
+        try {
+            $this.ConnectVIServer()
+            $performanceManager = $this.GetPerformanceManager()
+            $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
-        return $this.Equals($currentPerformanceInterval)
+            return $this.Equals($currentPerformanceInterval)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [vCenterStatistics] Get() {
-        $result = [vCenterStatistics]::new()
-        $result.Server = $this.Server
-        $result.Period = $this.Period
+        try {
+            $result = [vCenterStatistics]::new()
+            $result.Server = $this.Server
+            $result.Period = $this.Period
 
-        $this.ConnectVIServer()
-        $performanceManager = $this.GetPerformanceManager()
-        $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
+            $this.ConnectVIServer()
+            $performanceManager = $this.GetPerformanceManager()
+            $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
-        $result.Level = $currentPerformanceInterval.Level
-        $result.Enabled = $currentPerformanceInterval.Enabled
+            $result.Level = $currentPerformanceInterval.Level
+            $result.Enabled = $currentPerformanceInterval.Enabled
 
-        # Converts the Sampling Period from seconds to minutes
-        $result.IntervalMinutes = $currentPerformanceInterval.SamplingPeriod / $this.SecondsInAMinute
+            # Converts the Sampling Period from seconds to minutes
+            $result.IntervalMinutes = $currentPerformanceInterval.SamplingPeriod / $this.SecondsInAMinute
 
-        # Converts the PeriodLength from seconds to the specified Period type
-        $result.PeriodLength = $currentPerformanceInterval.Length / $this.Period
+            # Converts the PeriodLength from seconds to the specified Period type
+            $result.PeriodLength = $currentPerformanceInterval.Length / $this.Period
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

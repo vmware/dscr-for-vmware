@@ -44,51 +44,66 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     [nullable[bool]] $MacChanges
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVssSecurity($vmHost)
+            $this.UpdateVssSecurity($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
+            $vss = $this.GetVss()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $vss -and $this.Equals($vss))
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $vss -and $this.Equals($vss))
+            }
+            else {
+                $this.AllowPromiscuous = $false
+                $this.ForgedTransmits = $true
+                $this.MacChanges = $true
+
+                return ($null -eq $vss -or $this.Equals($vss))
+            }
         }
-        else {
-            $this.AllowPromiscuous = $false
-            $this.ForgedTransmits = $true
-            $this.MacChanges = $true
-
-            return ($null -eq $vss -or $this.Equals($vss))
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssSecurity] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostVssSecurity]::new()
-        $result.Server = $this.Server
+            $result = [VMHostVssSecurity]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
+            $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

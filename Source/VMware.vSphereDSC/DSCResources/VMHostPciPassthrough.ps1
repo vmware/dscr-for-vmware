@@ -33,45 +33,60 @@ class VMHostPciPassthrough : VMHostBaseDSC {
     [bool] $Enabled
 
     [void] Set() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
-        $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
+            $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
 
-        $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
-        $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+            $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
+            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
 
-        $this.UpdatePciPassthruConfiguration($vmHostPciPassthruSystem)
-        $this.RestartVMHost($vmHost)
+            $this.UpdatePciPassthruConfiguration($vmHostPciPassthruSystem)
+            $this.RestartVMHost($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
 
-        $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
-        $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
+            $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
+            $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
 
-        return ($this.Enabled -eq $pciDevice.PassthruEnabled)
+            return ($this.Enabled -eq $pciDevice.PassthruEnabled)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostPciPassthrough] Get() {
-        $result = [VMHostPciPassthrough]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostPciPassthrough]::new()
+            $result.Server = $this.Server
 
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
 
-        $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
-        $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
+            $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
+            $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
 
-        $result.Name = $vmHost.Name
-    	$result.Id = $pciDevice.Id
-        $result.Enabled = $pciDevice.PassthruEnabled
+            $result.Name = $vmHost.Name
+            $result.Id = $pciDevice.Id
+            $result.Enabled = $pciDevice.PassthruEnabled
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

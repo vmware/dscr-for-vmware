@@ -49,49 +49,64 @@ class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
     [nullable[long]] $BurstSize
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $this.GetVMHostNetworkSystem()
-        $virtualPortGroup = $this.GetVirtualPortGroup()
+            $this.GetVMHostNetworkSystem()
+            $virtualPortGroup = $this.GetVirtualPortGroup()
 
-        $this.UpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+            $this.UpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        if ($null -eq $virtualPortGroup) {
-            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-            return $true
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                return $true
+            }
+
+            return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
         }
-
-        return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostVssPortGroupShaping] Get() {
-        $result = [VMHostVssPortGroupShaping]::new()
-        $result.Server = $this.Server
-        $result.Ensure = $this.Ensure
+        try {
+            $result = [VMHostVssPortGroupShaping]::new()
+            $result.Server = $this.Server
+            $result.Ensure = $this.Ensure
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $result.VMHostName = $this.VMHost.Name
+            $result.VMHostName = $this.VMHost.Name
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        if ($null -eq $virtualPortGroup) {
-            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-            $result.Name = $this.Name
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                $result.Name = $this.Name
+                return $result
+            }
+
+            $result.Name = $virtualPortGroup.Name
+            $this.PopulateResult($virtualPortGroup, $result)
+
             return $result
         }
-
-        $result.Name = $virtualPortGroup.Name
-        $this.PopulateResult($virtualPortGroup, $result)
-
-        return $result
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
