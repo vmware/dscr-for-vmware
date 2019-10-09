@@ -203,7 +203,7 @@ class BaseDSC {
 
     Connects to the specified Server with the passed Credentials.
     The method sets the Connection property to the established connection.
-    If connection cannot be established, the method writes an error.
+    If connection cannot be established, the method throws an exception.
     #>
     [void] ConnectVIServer() {
         $this.ImportRequiredModules()
@@ -258,6 +258,20 @@ class BaseDSC {
     [void] EnsureConnectionIsvCenter() {
         if ($this.Connection.ProductLine -ne $this.vCenterProductId) {
             throw 'The Resource operations are only supported when connection is directly to a vCenter.'
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Closes the last open connection to the specified Server.
+    #>
+    [void] DisconnectVIServer() {
+        try {
+            Disconnect-VIServer -Server $this.Connection -Confirm:$false -ErrorAction Stop
+        }
+        catch {
+            throw "Cannot close Connection to Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
         }
     }
 }
@@ -1274,51 +1288,66 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
 [DscResource()]
 class Datacenter : InventoryBaseDSC {
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenterLocation = $this.GetInventoryItemLocation()
-        $datacenter = $this.GetDatacenter($datacenterLocation)
+            $datacenterLocation = $this.GetInventoryItemLocation()
+            $datacenter = $this.GetDatacenter($datacenterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $datacenter) {
-                $this.AddDatacenter($datacenterLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $datacenter) {
+                    $this.AddDatacenter($datacenterLocation)
+                }
+            }
+            else {
+                if ($null -ne $datacenter) {
+                    $this.RemoveDatacenter($datacenter)
+                }
             }
         }
-        else {
-            if ($null -ne $datacenter) {
-                $this.RemoveDatacenter($datacenter)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenterLocation = $this.GetInventoryItemLocation()
-        $datacenter = $this.GetDatacenter($datacenterLocation)
+            $datacenterLocation = $this.GetInventoryItemLocation()
+            $datacenter = $this.GetDatacenter($datacenterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $datacenter)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $datacenter)
+            }
+            else {
+                return ($null -eq $datacenter)
+            }
         }
-        else {
-            return ($null -eq $datacenter)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [Datacenter] Get() {
-        $result = [Datacenter]::new()
+        try {
+            $result = [Datacenter]::new()
 
-        $result.Server = $this.Server
-        $result.Location = $this.Location
+            $result.Server = $this.Server
+            $result.Location = $this.Location
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        $datacenterLocation = $this.GetInventoryItemLocation()
-        $datacenter = $this.GetDatacenter($datacenterLocation)
+            $datacenterLocation = $this.GetInventoryItemLocation()
+            $datacenter = $this.GetDatacenter($datacenterLocation)
 
-        $this.PopulateResult($datacenter, $result)
+            $this.PopulateResult($datacenter, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -1396,51 +1425,66 @@ class Datacenter : InventoryBaseDSC {
 [DscResource()]
 class DatacenterFolder : InventoryBaseDSC {
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenterFolderLocation = $this.GetInventoryItemLocation()
-        $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
+            $datacenterFolderLocation = $this.GetInventoryItemLocation()
+            $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $datacenterFolder) {
-                $this.AddDatacenterFolder($datacenterFolderLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $datacenterFolder) {
+                    $this.AddDatacenterFolder($datacenterFolderLocation)
+                }
+            }
+            else {
+                if ($null -ne $datacenterFolder) {
+                    $this.RemoveDatacenterFolder($datacenterFolder)
+                }
             }
         }
-        else {
-            if ($null -ne $datacenterFolder) {
-                $this.RemoveDatacenterFolder($datacenterFolder)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenterFolderLocation = $this.GetInventoryItemLocation()
-        $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
+            $datacenterFolderLocation = $this.GetInventoryItemLocation()
+            $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $datacenterFolder)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $datacenterFolder)
+            }
+            else {
+                return ($null -eq $datacenterFolder)
+            }
         }
-        else {
-            return ($null -eq $datacenterFolder)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [DatacenterFolder] Get() {
-        $result = [DatacenterFolder]::new()
+        try {
+            $result = [DatacenterFolder]::new()
 
-        $result.Server = $this.Server
-        $result.Location = $this.Location
+            $result.Server = $this.Server
+            $result.Location = $this.Location
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        $datacenterFolderLocation = $this.GetInventoryItemLocation()
-        $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
+            $datacenterFolderLocation = $this.GetInventoryItemLocation()
+            $datacenterFolder = $this.GetDatacenterFolder($datacenterFolderLocation)
 
-        $this.PopulateResult($datacenterFolder, $result)
+            $this.PopulateResult($datacenterFolder, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -1527,60 +1571,75 @@ class Folder : DatacenterInventoryBaseDSC {
     [FolderType] $FolderType
 
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.FolderType)Folder"
-        $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $folder = $this.GetInventoryItem($folderLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.FolderType)Folder"
+            $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $folder = $this.GetInventoryItem($folderLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $folder) {
-                $this.AddFolder($folderLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $folder) {
+                    $this.AddFolder($folderLocation)
+                }
+            }
+            else {
+                if ($null -ne $folder) {
+                    $this.RemoveFolder($folder)
+                }
             }
         }
-        else {
-            if ($null -ne $folder) {
-                $this.RemoveFolder($folder)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.FolderType)Folder"
-        $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $folder = $this.GetInventoryItem($folderLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.FolderType)Folder"
+            $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $folder = $this.GetInventoryItem($folderLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $folder)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $folder)
+            }
+            else {
+                return ($null -eq $folder)
+            }
         }
-        else {
-            return ($null -eq $folder)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [Folder] Get() {
-        $result = [Folder]::new()
+        try {
+            $result = [Folder]::new()
 
-        $result.Server = $this.Server
-        $result.Location = $this.Location
-        $result.DatacenterName = $this.DatacenterName
-        $result.DatacenterLocation = $this.DatacenterLocation
-        $result.FolderType = $this.FolderType
+            $result.Server = $this.Server
+            $result.Location = $this.Location
+            $result.DatacenterName = $this.DatacenterName
+            $result.DatacenterLocation = $this.DatacenterLocation
+            $result.FolderType = $this.FolderType
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.FolderType)Folder"
-        $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $folder = $this.GetInventoryItem($folderLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.FolderType)Folder"
+            $folderLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $folder = $this.GetInventoryItem($folderLocation)
 
-        $this.PopulateResult($folder, $result)
+            $this.PopulateResult($folder, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -1959,23 +2018,38 @@ class vCenterSettings : BaseDSC {
     hidden [string] $IssueSettingName = "etc.issue"
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.UpdatevCenterSettings($this.Connection)
+        try {
+            $this.ConnectVIServer()
+            $this.UpdatevCenterSettings($this.Connection)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        return !$this.ShouldUpdatevCenterSettings($this.Connection)
+        try {
+            $this.ConnectVIServer()
+            return !$this.ShouldUpdatevCenterSettings($this.Connection)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [vCenterSettings] Get() {
-        $result = [vCenterSettings]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [vCenterSettings]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.PopulateResult($this.Connection, $result)
+            $this.ConnectVIServer()
+            $this.PopulateResult($this.Connection, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -2156,40 +2230,55 @@ class vCenterStatistics : BaseDSC {
     hidden [int] $SecondsInAMinute = 60
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $performanceManager = $this.GetPerformanceManager()
-        $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
+        try {
+            $this.ConnectVIServer()
+            $performanceManager = $this.GetPerformanceManager()
+            $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
-        $this.UpdatePerformanceInterval($performanceManager, $currentPerformanceInterval)
+            $this.UpdatePerformanceInterval($performanceManager, $currentPerformanceInterval)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $performanceManager = $this.GetPerformanceManager()
-        $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
+        try {
+            $this.ConnectVIServer()
+            $performanceManager = $this.GetPerformanceManager()
+            $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
-        return $this.Equals($currentPerformanceInterval)
+            return $this.Equals($currentPerformanceInterval)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [vCenterStatistics] Get() {
-        $result = [vCenterStatistics]::new()
-        $result.Server = $this.Server
-        $result.Period = $this.Period
+        try {
+            $result = [vCenterStatistics]::new()
+            $result.Server = $this.Server
+            $result.Period = $this.Period
 
-        $this.ConnectVIServer()
-        $performanceManager = $this.GetPerformanceManager()
-        $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
+            $this.ConnectVIServer()
+            $performanceManager = $this.GetPerformanceManager()
+            $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
-        $result.Level = $currentPerformanceInterval.Level
-        $result.Enabled = $currentPerformanceInterval.Enabled
+            $result.Level = $currentPerformanceInterval.Level
+            $result.Enabled = $currentPerformanceInterval.Enabled
 
-        # Converts the Sampling Period from seconds to minutes
-        $result.IntervalMinutes = $currentPerformanceInterval.SamplingPeriod / $this.SecondsInAMinute
+            # Converts the Sampling Period from seconds to minutes
+            $result.IntervalMinutes = $currentPerformanceInterval.SamplingPeriod / $this.SecondsInAMinute
 
-        # Converts the PeriodLength from seconds to the specified Period type
-        $result.PeriodLength = $currentPerformanceInterval.Length / $this.Period
+            # Converts the PeriodLength from seconds to the specified Period type
+            $result.PeriodLength = $currentPerformanceInterval.Length / $this.Period
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -2381,70 +2470,85 @@ class VDSwitch : DatacenterInventoryBaseDSC {
     [nullable[bool]] $WithoutPortGroups
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsvCenter()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $distributedSwitch) {
-                $this.AddDistributedSwitch($distributedSwitchLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $distributedSwitch) {
+                    $this.AddDistributedSwitch($distributedSwitchLocation)
+                }
+                else {
+                    $this.UpdateDistributedSwitch($distributedSwitch)
+                }
             }
             else {
-                $this.UpdateDistributedSwitch($distributedSwitch)
+                if ($null -ne $distributedSwitch) {
+                    $this.RemoveDistributedSwitch($distributedSwitch)
+                }
             }
         }
-        else {
-            if ($null -ne $distributedSwitch) {
-                $this.RemoveDistributedSwitch($distributedSwitch)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsvCenter()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $distributedSwitch) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $distributedSwitch) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateDistributedSwitch($distributedSwitch)
             }
-
-            return !$this.ShouldUpdateDistributedSwitch($distributedSwitch)
+            else {
+                return ($null -eq $distributedSwitch)
+            }
         }
-        else {
-            return ($null -eq $distributedSwitch)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VDSwitch] Get() {
-        $result = [VDSwitch]::new()
-        $result.Server = $this.Server
-        $result.Location = $this.Location
-        $result.DatacenterName = $this.DatacenterName
-        $result.DatacenterLocation = $this.DatacenterLocation
-        $result.ReferenceVDSwitch = $this.ReferenceVDSwitch
-        $result.WithoutPortGroups = $this.WithoutPortGroups
+        try {
+            $result = [VDSwitch]::new()
+            $result.Server = $this.Server
+            $result.Location = $this.Location
+            $result.DatacenterName = $this.DatacenterName
+            $result.DatacenterLocation = $this.DatacenterLocation
+            $result.ReferenceVDSwitch = $this.ReferenceVDSwitch
+            $result.WithoutPortGroups = $this.WithoutPortGroups
 
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsvCenter()
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
 
-        $this.PopulateResult($distributedSwitch, $result)
+            $this.PopulateResult($distributedSwitch, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -2668,53 +2772,68 @@ class VMHostAccount : BaseDSC {
     hidden [string] $DescriptionParameterName = 'Description'
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsESXi()
-        $vmHostAccount = $this.GetVMHostAccount()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsESXi()
+            $vmHostAccount = $this.GetVMHostAccount()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $vmHostAccount) {
-                $this.AddVMHostAccount()
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostAccount) {
+                    $this.AddVMHostAccount()
+                }
+                else {
+                    $this.UpdateVMHostAccount($vmHostAccount)
+                }
             }
             else {
-                $this.UpdateVMHostAccount($vmHostAccount)
+                if ($null -ne $vmHostAccount) {
+                    $this.RemoveVMHostAccount($vmHostAccount)
+                }
             }
         }
-        else {
-            if ($null -ne $vmHostAccount) {
-                $this.RemoveVMHostAccount($vmHostAccount)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsESXi()
-        $vmHostAccount = $this.GetVMHostAccount()
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsESXi()
+            $vmHostAccount = $this.GetVMHostAccount()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $vmHostAccount) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostAccount) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateVMHostAccount($vmHostAccount) -or !$this.ShouldCreateAcountPermission($vmHostAccount)
             }
-
-            return !$this.ShouldUpdateVMHostAccount($vmHostAccount) -or !$this.ShouldCreateAcountPermission($vmHostAccount)
+            else {
+                return ($null -eq $vmHostAccount)
+            }
         }
-        else {
-            return ($null -eq $vmHostAccount)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostAccount] Get() {
-        $result = [VMHostAccount]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostAccount]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.EnsureConnectionIsESXi()
-        $vmHostAccount = $this.GetVMHostAccount()
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsESXi()
+            $vmHostAccount = $this.GetVMHostAccount()
 
-        $this.PopulateResult($vmHostAccount, $result)
+            $this.PopulateResult($vmHostAccount, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -2913,32 +3032,47 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
     [hashtable] $AdvancedSettings
 
     [void] Set() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateVMHostAdvancedSettings($vmHost)
+            $this.UpdateVMHostAdvancedSettings($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-    	$this.ConnectVIServer()
-    	$vmHost = $this.GetVMHost()
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        return !$this.ShouldUpdateVMHostAdvancedSettings($vmHost)
+            return !$this.ShouldUpdateVMHostAdvancedSettings($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostAdvancedSettings] Get() {
-        $result = [VMHostAdvancedSettings]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostAdvancedSettings]::new()
+            $result.Server = $this.Server
 
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $result.Name = $vmHost.Name
-        $result.AdvancedSettings = @{}
+            $result.Name = $vmHost.Name
+            $result.AdvancedSettings = @{}
 
-    	$this.PopulateResult($vmHost, $result)
+            $this.PopulateResult($vmHost, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -3134,45 +3268,60 @@ class VMHostAgentVM : VMHostBaseDSC {
     hidden [string] $GetAgentVmNetworkAsViewObjectMethodName = 'GetAgentVmNetworkAsViewObject'
 
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        # vCenter Connection is needed to retrieve the EsxAgentHostManager.
-        $this.EnsureConnectionIsvCenter()
+            # vCenter Connection is needed to retrieve the EsxAgentHostManager.
+            $this.EnsureConnectionIsvCenter()
 
-        $vmHost = $this.GetVMHost()
-        $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
+            $vmHost = $this.GetVMHost()
+            $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
 
-        $this.UpdateAgentVMConfiguration($vmHost, $esxAgentHostManager)
+            $this.UpdateAgentVMConfiguration($vmHost, $esxAgentHostManager)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        # vCenter Connection is needed to retrieve the EsxAgentHostManager.
-        $this.EnsureConnectionIsvCenter()
+            # vCenter Connection is needed to retrieve the EsxAgentHostManager.
+            $this.EnsureConnectionIsvCenter()
 
-        $vmHost = $this.GetVMHost()
-        $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
+            $vmHost = $this.GetVMHost()
+            $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
 
-        return !$this.ShouldUpdateAgentVMConfiguration($esxAgentHostManager)
+            return !$this.ShouldUpdateAgentVMConfiguration($esxAgentHostManager)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostAgentVM] Get() {
-        $result = [VMHostAgentVM]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostAgentVM]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        # vCenter Connection is needed to retrieve the EsxAgentHostManager.
-        $this.EnsureConnectionIsvCenter()
+            # vCenter Connection is needed to retrieve the EsxAgentHostManager.
+            $this.EnsureConnectionIsvCenter()
 
-        $vmHost = $this.GetVMHost()
-        $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
+            $vmHost = $this.GetVMHost()
+            $esxAgentHostManager = $this.GetEsxAgentHostManager($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($esxAgentHostManager, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($esxAgentHostManager, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -3382,30 +3531,45 @@ class VMHostCache : VMHostBaseDSC {
     [double] $SwapSizeGB
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateHostCacheConfiguration($vmHost)
+            $this.UpdateHostCacheConfiguration($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        return !$this.ShouldUpdateHostCacheConfiguration($vmHost)
+            return !$this.ShouldUpdateHostCacheConfiguration($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostCache] Get() {
-        $result = [VMHostCache]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostCache]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     hidden [int] $NumberOfFractionalDigits = 3
@@ -3598,38 +3762,53 @@ class VMHostDnsSettings : VMHostBaseDSC {
     [string] $VirtualNicDevice
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateDns($vmHost)
+            $this.UpdateDns($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
-        return $this.Equals($vmHostDnsConfig)
+            return $this.Equals($vmHostDnsConfig)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostDnsSettings] Get() {
-        $result = [VMHostDnsSettings]::new()
+        try {
+            $result = [VMHostDnsSettings]::new()
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
-        $result.Name = $vmHost.Name
-        $result.Server = $this.Server
-        $result.Address = $vmHostDnsConfig.Address
-        $result.Dhcp = $vmHostDnsConfig.Dhcp
-        $result.DomainName = $vmHostDnsConfig.DomainName
-        $result.HostName = $vmHostDnsConfig.HostName
-        $result.Ipv6VirtualNicDevice = $vmHostDnsConfig.Ipv6VirtualNicDevice
-        $result.SearchDomain = $vmHostDnsConfig.SearchDomain
-        $result.VirtualNicDevice = $vmHostDnsConfig.VirtualNicDevice
+            $result.Name = $vmHost.Name
+            $result.Server = $this.Server
+            $result.Address = $vmHostDnsConfig.Address
+            $result.Dhcp = $vmHostDnsConfig.Dhcp
+            $result.DomainName = $vmHostDnsConfig.DomainName
+            $result.HostName = $vmHostDnsConfig.HostName
+            $result.Ipv6VirtualNicDevice = $vmHostDnsConfig.Ipv6VirtualNicDevice
+            $result.SearchDomain = $vmHostDnsConfig.SearchDomain
+            $result.VirtualNicDevice = $vmHostDnsConfig.VirtualNicDevice
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -3728,47 +3907,62 @@ class VMHostNtpSettings : VMHostBaseDSC {
     hidden [string] $ServiceId = "ntpd"
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateVMHostNtpServer($vmHost)
-        $this.UpdateVMHostNtpServicePolicy($vmHost)
+            $this.UpdateVMHostNtpServer($vmHost)
+            $this.UpdateVMHostNtpServicePolicy($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
 
-        $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
-        if ($shouldUpdateVMHostNtpServer) {
-            return $false
+            $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
+            if ($shouldUpdateVMHostNtpServer) {
+                return $false
+            }
+
+            $vmHostServices = $vmHost.ExtensionData.Config.Service
+            $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostServices)
+            if ($shouldUpdateVMHostNtpServicePolicy) {
+                return $false
+            }
+
+            return $true
         }
-
-        $vmHostServices = $vmHost.ExtensionData.Config.Service
-        $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostServices)
-        if ($shouldUpdateVMHostNtpServicePolicy) {
-            return $false
+        finally {
+            $this.DisconnectVIServer()
         }
-
-        return $true
     }
 
     [VMHostNtpSettings] Get() {
-        $result = [VMHostNtpSettings]::new()
+        try {
+            $result = [VMHostNtpSettings]::new()
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
-        $vmHostServices = $vmHost.ExtensionData.Config.Service
-        $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
+            $vmHostServices = $vmHost.ExtensionData.Config.Service
+            $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
 
-        $result.Name = $vmHost.Name
-        $result.Server = $this.Server
-        $result.NtpServer = $vmHostNtpConfig.Server
-        $result.NtpServicePolicy = $vmHostNtpService.Policy
+            $result.Name = $vmHost.Name
+            $result.Server = $this.Server
+            $result.NtpServer = $vmHostNtpConfig.Server
+            $result.NtpServicePolicy = $vmHostNtpService.Policy
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -3877,45 +4071,60 @@ class VMHostPciPassthrough : VMHostBaseDSC {
     [bool] $Enabled
 
     [void] Set() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
-        $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
+            $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
 
-        $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
-        $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+            $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
+            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
 
-        $this.UpdatePciPassthruConfiguration($vmHostPciPassthruSystem)
-        $this.RestartVMHost($vmHost)
+            $this.UpdatePciPassthruConfiguration($vmHostPciPassthruSystem)
+            $this.RestartVMHost($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
 
-        $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
-        $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
+            $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
+            $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
 
-        return ($this.Enabled -eq $pciDevice.PassthruEnabled)
+            return ($this.Enabled -eq $pciDevice.PassthruEnabled)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostPciPassthrough] Get() {
-        $result = [VMHostPciPassthrough]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostPciPassthrough]::new()
+            $result.Server = $this.Server
 
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostPciPassthruSystem = $this.GetVMHostPciPassthruSystem($vmHost)
 
-        $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
-        $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
+            $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
+            $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
 
-        $result.Name = $vmHost.Name
-    	$result.Id = $pciDevice.Id
-        $result.Enabled = $pciDevice.PassthruEnabled
+            $result.Name = $vmHost.Name
+            $result.Id = $pciDevice.Id
+            $result.Enabled = $pciDevice.PassthruEnabled
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -3989,33 +4198,48 @@ class VMHostPowerPolicy : VMHostBaseDSC {
     [PowerPolicy] $PowerPolicy
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostPowerSystem = $this.GetVMHostPowerSystem($vmHost)
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostPowerSystem = $this.GetVMHostPowerSystem($vmHost)
 
-        $this.UpdatePowerPolicy($vmHostPowerSystem)
+            $this.UpdatePowerPolicy($vmHostPowerSystem)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
 
-        return ($this.PowerPolicy -eq $currentPowerPolicy.Key)
+            return ($this.PowerPolicy -eq $currentPowerPolicy.Key)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostPowerPolicy] Get() {
-        $result = [VMHostPowerPolicy]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostPowerPolicy]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
 
-        $result.Name = $vmHost.Name
-        $result.PowerPolicy = $currentPowerPolicy.Key
+            $result.Name = $vmHost.Name
+            $result.PowerPolicy = $currentPowerPolicy.Key
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -4171,67 +4395,82 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
     [bool] $Force
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
-        $satpClaimRulePresent = ($null -ne $satpClaimRule)
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
+            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+            $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if (!$satpClaimRulePresent) {
-                $this.AddSatpClaimRule($esxCli)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if (!$satpClaimRulePresent) {
+                    $this.AddSatpClaimRule($esxCli)
+                }
+            }
+            else {
+                if ($satpClaimRulePresent) {
+                    $this.RemoveSatpClaimRule($esxCli)
+                }
             }
         }
-        else {
-            if ($satpClaimRulePresent) {
-                $this.RemoveSatpClaimRule($esxCli)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
-        $satpClaimRulePresent = ($null -ne $satpClaimRule)
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
+            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+            $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return $satpClaimRulePresent
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return $satpClaimRulePresent
+            }
+            else {
+                return -not $satpClaimRulePresent
+            }
         }
-        else {
-            return -not $satpClaimRulePresent
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostSatpClaimRule] Get() {
-        $result = [VMHostSatpClaimRule]::new()
+        try {
+            $result = [VMHostSatpClaimRule]::new()
 
-        $result.Server = $this.Server
-        $result.RuleName = $this.RuleName
-        $result.Boot = $this.Boot
-        $result.Type = $this.Type
-        $result.Force = $this.Force
+            $result.Server = $this.Server
+            $result.RuleName = $this.RuleName
+            $result.Boot = $this.Boot
+            $result.Type = $this.Type
+            $result.Force = $this.Force
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $result.Name = $vmHost.Name
-        $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-        $satpClaimRule = $this.GetSatpClaimRule($esxCli)
-        $satpClaimRulePresent = ($null -ne $satpClaimRule)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $result.Name = $vmHost.Name
+            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
+            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+            $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
-        if (!$satpClaimRulePresent) {
-            $result.Ensure = "Absent"
-            $result.Psp = $this.Psp
-            $this.PopulateResult($result, $this)
+            if (!$satpClaimRulePresent) {
+                $result.Ensure = "Absent"
+                $result.Psp = $this.Psp
+                $this.PopulateResult($result, $this)
+            }
+            else {
+                $result.Ensure = "Present"
+                $result.Psp = $satpClaimRule.DefaultPSP
+                $this.PopulateResult($result, $satpClaimRule)
+            }
+
+            return $result
         }
-        else {
-            $result.Ensure = "Present"
-            $result.Psp = $satpClaimRule.DefaultPSP
-            $this.PopulateResult($result, $satpClaimRule)
+        finally {
+            $this.DisconnectVIServer()
         }
-
-        return $result
     }
 
     <#
@@ -4439,34 +4678,49 @@ class VMHostService : VMHostBaseDSC {
     [string[]] $Ruleset
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateVMHostService($vmHost)
+            $this.UpdateVMHostService($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        return !$this.ShouldUpdateVMHostService($vmHost)
+            return !$this.ShouldUpdateVMHostService($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostService] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostService]::new()
-        $result.Server = $this.Server
+            $result = [VMHostService]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.PopulateResult($vmHost, $result)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.PopulateResult($vmHost, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -4568,34 +4822,49 @@ class VMHostSettings : VMHostBaseDSC {
     hidden [string] $MotdSettingName = "Config.Etc.motd"
 
     [void] Set() {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+    	try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-    	$this.ConnectVIServer()
-    	$vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateVMHostSettings($vmHost)
+            $this.UpdateVMHostSettings($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+    	try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-    	$this.ConnectVIServer()
-    	$vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        return !$this.ShouldUpdateVMHostSettings($vmHost)
+            return !$this.ShouldUpdateVMHostSettings($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostSettings] Get() {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+    	try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostSettings]::new()
-        $result.Server = $this.Server
+            $result = [VMHostSettings]::new()
+            $result.Server = $this.Server
 
-    	$this.ConnectVIServer()
-    	$vmHost = $this.GetVMHost()
-    	$this.PopulateResult($vmHost, $result)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.PopulateResult($vmHost, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -4772,33 +5041,48 @@ class VMHostSyslog : VMHostBaseDSC {
     [nullable[long]] $DropLogSize
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateVMHostSyslog($vmHost)
+            $this.UpdateVMHostSyslog($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        return !$this.ShouldUpdateVMHostSyslog($vmHost)
+            return !$this.ShouldUpdateVMHostSyslog($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostSyslog] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostSyslog]::new()
+            $result = [VMHostSyslog]::new()
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.PopulateResult($vmHost, $result)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.PopulateResult($vmHost, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -4921,36 +5205,51 @@ class VMHostTpsSettings : VMHostBaseDSC {
     hidden [string] $MemValue = "Mem."
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
 
-        $this.UpdateTpsSettings($vmHost)
+            $this.UpdateTpsSettings($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $shouldUpdateTpsSettings = $this.ShouldUpdateTpsSettings($vmHost)
+        try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $shouldUpdateTpsSettings = $this.ShouldUpdateTpsSettings($vmHost)
 
-        return !$shouldUpdateTpsSettings
+            return !$shouldUpdateTpsSettings
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostTpsSettings] Get() {
-        $result = [VMHostTpsSettings]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostTpsSettings]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $result.Name = $vmHost.Name
-        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $result.Name = $vmHost.Name
+            $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
 
-        foreach ($tpsSetting in $tpsSettings) {
-            $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
+            foreach ($tpsSetting in $tpsSettings) {
+                $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
 
-            $result.$tpsSettingName = $tpsSetting.Value
+                $result.$tpsSettingName = $tpsSetting.Value
+            }
+
+            return $result
         }
-
-        return $result
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -5003,71 +5302,86 @@ class VMHostVssNic : VMHostNicBaseDSC {
     [string] $VssName
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
-        if ($null -ne $vmHostNetworkAdapter) {
-            <#
-            Here the retrieval of the VMKernel is done for the second time because retrieving it
-            by Virtual Switch and Port Group produces errors when trying to update or delete it.
-            The errors do not occur when the retrieval is done by Name.
-            #>
-            $vmHostNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $vmHostNetworkAdapter.Name -VMHost $this.VMHost -VMKernel
-        }
+            if ($null -ne $vmHostNetworkAdapter) {
+                <#
+                Here the retrieval of the VMKernel is done for the second time because retrieving it
+                by Virtual Switch and Port Group produces errors when trying to update or delete it.
+                The errors do not occur when the retrieval is done by Name.
+                #>
+                $vmHostNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $vmHostNetworkAdapter.Name -VMHost $this.VMHost -VMKernel
+            }
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $vmHostNetworkAdapter) {
-                $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostNetworkAdapter) {
+                    $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
+                }
+                else {
+                    $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                }
             }
             else {
-                $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                if ($null -ne $vmHostNetworkAdapter) {
+                    $this.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
+                }
             }
         }
-        else {
-            if ($null -ne $vmHostNetworkAdapter) {
-                $this.RemoveVMHostNetworkAdapter($vmHostNetworkAdapter)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $vmHostNetworkAdapter) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostNetworkAdapter) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
             }
-
-            return !$this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+            else {
+                return ($null -eq $vmHostNetworkAdapter)
+            }
         }
-        else {
-            return ($null -eq $vmHostNetworkAdapter)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssNic] Get() {
-        $result = [VMHostVssNic]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostVssNic]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
-        $result.VMHostName = $this.VMHost.Name
-        $result.VssName = $virtualSwitch.Name
+            $result.VMHostName = $this.VMHost.Name
+            $result.VssName = $virtualSwitch.Name
 
-        $this.PopulateResult($vmHostNetworkAdapter, $result)
+            $this.PopulateResult($vmHostNetworkAdapter, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -5123,35 +5437,50 @@ class VMHostPhysicalNic : VMHostEntityBaseDSC {
     [nullable[bool]] $AutoNegotiate
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
-        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+            $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
 
-        $this.UpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+            $this.UpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
-        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+            $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
 
-        return !$this.ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+            return !$this.ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostPhysicalNic] Get() {
-        $result = [VMHostPhysicalNic]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostPhysicalNic]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
-        $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+            $physicalNetworkAdapter = $this.GetPhysicalNetworkAdapter()
 
-        $result.VMHostName = $this.VMHost.Name
-        $result.Name = $physicalNetworkAdapter.Name
+            $result.VMHostName = $this.VMHost.Name
+            $result.Name = $physicalNetworkAdapter.Name
 
-        $this.PopulateResult($physicalNetworkAdapter, $result)
+            $this.PopulateResult($physicalNetworkAdapter, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -5283,60 +5612,75 @@ class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
     hidden [int] $VLanIdMaxValue = 4095
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $portGroup) {
-                $this.AddVirtualPortGroup($virtualSwitch)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $portGroup) {
+                    $this.AddVirtualPortGroup($virtualSwitch)
+                }
+                else {
+                    $this.UpdateVirtualPortGroup($portGroup)
+                }
             }
             else {
-                $this.UpdateVirtualPortGroup($portGroup)
+                if ($null -ne $portGroup) {
+                    $this.RemoveVirtualPortGroup($portGroup)
+                }
             }
         }
-        else {
-            if ($null -ne $portGroup) {
-                $this.RemoveVirtualPortGroup($portGroup)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $portGroup) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $portGroup) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateVirtualPortGroup($portGroup)
             }
-
-            return !$this.ShouldUpdateVirtualPortGroup($portGroup)
+            else {
+                return ($null -eq $portGroup)
+            }
         }
-        else {
-            return ($null -eq $portGroup)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssPortGroup] Get() {
-        $result = [VMHostVssPortGroup]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostVssPortGroup]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualSwitch = $this.GetVirtualSwitch()
-        $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
-        $result.VMHostName = $this.VMHost.Name
-        $this.PopulateResult($portGroup, $result)
+            $result.VMHostName = $this.VMHost.Name
+            $this.PopulateResult($portGroup, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -5552,53 +5896,68 @@ class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
     hidden [string] $MacChangesInheritedSettingName = 'MacChangesInherited'
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
 
-        $this.UpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
+            $this.UpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        if ($null -eq $virtualPortGroup) {
-            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-            return $true
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                return $true
+            }
+
+            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+
+            return !$this.ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
         }
-
-        $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
-
-        return !$this.ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostVssPortGroupSecurity] Get() {
-        $result = [VMHostVssPortGroupSecurity]::new()
-        $result.Server = $this.Server
-        $result.Ensure = $this.Ensure
+        try {
+            $result = [VMHostVssPortGroupSecurity]::new()
+            $result.Server = $this.Server
+            $result.Ensure = $this.Ensure
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $result.VMHostName = $this.VMHost.Name
+            $result.VMHostName = $this.VMHost.Name
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        if ($null -eq $virtualPortGroup) {
-            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-            $result.Name = $this.Name
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                $result.Name = $this.Name
+                return $result
+            }
+
+            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+            $result.Name = $virtualPortGroup.Name
+
+            $this.PopulateResult($virtualPortGroupSecurityPolicy, $result)
+
             return $result
         }
-
-        $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
-        $result.Name = $virtualPortGroup.Name
-
-        $this.PopulateResult($virtualPortGroupSecurityPolicy, $result)
-
-        return $result
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -5705,49 +6064,64 @@ class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
     [nullable[long]] $BurstSize
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $this.GetVMHostNetworkSystem()
-        $virtualPortGroup = $this.GetVirtualPortGroup()
+            $this.GetVMHostNetworkSystem()
+            $virtualPortGroup = $this.GetVirtualPortGroup()
 
-        $this.UpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+            $this.UpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        if ($null -eq $virtualPortGroup) {
-            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-            return $true
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                return $true
+            }
+
+            return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
         }
-
-        return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostVssPortGroupShaping] Get() {
-        $result = [VMHostVssPortGroupShaping]::new()
-        $result.Server = $this.Server
-        $result.Ensure = $this.Ensure
+        try {
+            $result = [VMHostVssPortGroupShaping]::new()
+            $result.Server = $this.Server
+            $result.Ensure = $this.Ensure
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $result.VMHostName = $this.VMHost.Name
+            $result.VMHostName = $this.VMHost.Name
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        if ($null -eq $virtualPortGroup) {
-            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-            $result.Name = $this.Name
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                $result.Name = $this.Name
+                return $result
+            }
+
+            $result.Name = $virtualPortGroup.Name
+            $this.PopulateResult($virtualPortGroup, $result)
+
             return $result
         }
-
-        $result.Name = $virtualPortGroup.Name
-        $this.PopulateResult($virtualPortGroup, $result)
-
-        return $result
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -5931,53 +6305,68 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
     hidden [string] $InheritFailoverOrderSettingName = 'InheritFailoverOrder'
 
     [void] Set() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
 
-        $this.UpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
+            $this.UpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        if ($null -eq $virtualPortGroup) {
-            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-            return $true
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                return $true
+            }
+
+            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+
+            return !$this.ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
         }
-
-        $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
-
-        return !$this.ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostVssPortGroupTeaming] Get() {
-        $result = [VMHostVssPortGroupTeaming]::new()
-        $result.Server = $this.Server
-        $result.Ensure = $this.Ensure
+        try {
+            $result = [VMHostVssPortGroupTeaming]::new()
+            $result.Server = $this.Server
+            $result.Ensure = $this.Ensure
 
-        $this.ConnectVIServer()
-        $this.RetrieveVMHost()
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
 
-        $result.VMHostName = $this.VMHost.Name
+            $result.VMHostName = $this.VMHost.Name
 
-        $virtualPortGroup = $this.GetVirtualPortGroup()
-        if ($null -eq $virtualPortGroup) {
-            # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-            $result.Name = $this.Name
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                $result.Name = $this.Name
+                return $result
+            }
+
+            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+            $result.Name = $virtualPortGroup.Name
+
+            $this.PopulateResult($virtualPortGroupTeamingPolicy, $result)
+
             return $result
         }
-
-        $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
-        $result.Name = $virtualPortGroup.Name
-
-        $this.PopulateResult($virtualPortGroupTeamingPolicy, $result)
-
-        return $result
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -6187,47 +6576,62 @@ class VMHostVss : VMHostVssBaseDSC {
     [string[]] $PortGroup
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVss($vmHost)
+            $this.UpdateVss($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
+            $vss = $this.GetVss()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $vss -and $this.Equals($vss))
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $vss -and $this.Equals($vss))
+            }
+            else {
+                return ($null -eq $vss)
+            }
         }
-        else {
-            return ($null -eq $vss)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVss] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostVss]::new()
-        $result.Server = $this.Server
+            $result = [VMHostVss]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.Key) { 'Present' } else { 'Absent' }
+            $result.Ensure = if ([string]::Empty -ne $result.Key) { 'Present' } else { 'Absent' }
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -6355,51 +6759,66 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     hidden [string] $bridgeType = 'HostVirtualSwitchBondBridge'
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVssBridge($vmHost)
+            $this.UpdateVssBridge($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
+            $vss = $this.GetVss()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $vss -and $this.Equals($vss))
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $vss -and $this.Equals($vss))
+            }
+            else {
+                $this.NicDevice = @()
+                $this.BeaconInterval = 0
+                $this.LinkDiscoveryProtocolProtocol = [LinkDiscoveryProtocolProtocol]::Unset
+
+                return ($null -eq $vss -or $this.Equals($vss))
+            }
         }
-        else {
-            $this.NicDevice = @()
-            $this.BeaconInterval = 0
-            $this.LinkDiscoveryProtocolProtocol = [LinkDiscoveryProtocolProtocol]::Unset
-
-            return ($null -eq $vss -or $this.Equals($vss))
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssBridge] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostVssBridge]::new()
-        $result.Server = $this.Server
+            $result = [VMHostVssBridge]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
+            $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -6531,51 +6950,66 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     [nullable[bool]] $MacChanges
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVssSecurity($vmHost)
+            $this.UpdateVssSecurity($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
+            $vss = $this.GetVss()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $vss -and $this.Equals($vss))
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $vss -and $this.Equals($vss))
+            }
+            else {
+                $this.AllowPromiscuous = $false
+                $this.ForgedTransmits = $true
+                $this.MacChanges = $true
+
+                return ($null -eq $vss -or $this.Equals($vss))
+            }
         }
-        else {
-            $this.AllowPromiscuous = $false
-            $this.ForgedTransmits = $true
-            $this.MacChanges = $true
-
-            return ($null -eq $vss -or $this.Equals($vss))
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssSecurity] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostVssSecurity]::new()
-        $result.Server = $this.Server
+            $result = [VMHostVssSecurity]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
+            $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -6691,52 +7125,67 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     [nullable[long]] $PeakBandwidth
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVssShaping($vmHost)
+            $this.UpdateVssShaping($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
+            $vss = $this.GetVss()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $vss -and $this.Equals($vss))
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $vss -and $this.Equals($vss))
+            }
+            else {
+                $this.AverageBandwidth = 100000
+                $this.BurstSize = 100000
+                $this.Enabled = $false
+                $this.PeakBandwidth = 100000
+
+                return ($null -eq $vss -or $this.Equals($vss))
+            }
         }
-        else {
-            $this.AverageBandwidth = 100000
-            $this.BurstSize = 100000
-            $this.Enabled = $false
-            $this.PeakBandwidth = 100000
-
-            return ($null -eq $vss -or $this.Equals($vss))
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssShaping] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostVssShaping]::new()
-        $result.Server = $this.Server
+            $result = [VMHostVssShaping]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
+            $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -6874,54 +7323,69 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     [nullable[bool]] $RollingOrder
 
     [void] Set() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $this.UpdateVssTeaming($vmHost)
+            $this.UpdateVssTeaming($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
-        $vss = $this.GetVss()
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
+            $vss = $this.GetVss()
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            return ($null -ne $vss -and $this.Equals($vss))
+            if ($this.Ensure -eq [Ensure]::Present) {
+                return ($null -ne $vss -and $this.Equals($vss))
+            }
+            else {
+                $this.CheckBeacon = $false
+                $this.ActiveNic = @()
+                $this.StandbyNic = @()
+                $this.NotifySwitches = $true
+                $this.Policy = [NicTeamingPolicy]::Loadbalance_srcid
+                $this.RollingOrder = $false
+
+                return ($null -eq $vss -or $this.Equals($vss))
+            }
         }
-        else {
-            $this.CheckBeacon = $false
-            $this.ActiveNic = @()
-            $this.StandbyNic = @()
-            $this.NotifySwitches = $true
-            $this.Policy = [NicTeamingPolicy]::Loadbalance_srcid
-            $this.RollingOrder = $false
-
-            return ($null -eq $vss -or $this.Equals($vss))
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [VMHostVssTeaming] Get() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        try {
+            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $result = [VMHostVssTeaming]::new()
-        $result.Server = $this.Server
+            $result = [VMHostVssTeaming]::new()
+            $result.Server = $this.Server
 
-        $this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $this.GetNetworkSystem($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $this.GetNetworkSystem($vmHost)
 
-        $result.Name = $vmHost.Name
-        $this.PopulateResult($vmHost, $result)
+            $result.Name = $vmHost.Name
+            $this.PopulateResult($vmHost, $result)
 
-        $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
+            $result.Ensure = if ([string]::Empty -ne $result.VssName) { 'Present' } else { 'Absent' }
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -7063,36 +7527,51 @@ class VMHostGraphics : VMHostGraphicsBaseDSC {
     [SharedPassthruAssignmentPolicy] $SharedPassthruAssignmentPolicy
 
     [void] Set() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
 
-        $this.EnsureVMHostIsInMaintenanceMode($vmHost)
-        $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
-        $this.RestartVMHost($vmHost)
+            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+            $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
+            $this.RestartVMHost($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
 
-        return !$this.ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager)
+            return !$this.ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostGraphics] Get() {
-        $result = [VMHostGraphics]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostGraphics]::new()
+            $result.Server = $this.Server
 
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
 
-        $result.Name = $vmHost.Name
-        $result.GraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
-        $result.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
+            $result.Name = $vmHost.Name
+            $result.GraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
+            $result.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -7151,38 +7630,53 @@ class VMHostGraphicsDevice : VMHostGraphicsBaseDSC {
     [GraphicsType] $GraphicsType
 
     [void] Set() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
 
-        $this.EnsureVMHostIsInMaintenanceMode($vmHost)
-        $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
-        $this.RestartVMHost($vmHost)
+            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+            $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
+            $this.RestartVMHost($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [bool] Test() {
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-        $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
 
-        return ($this.GraphicsType -eq $foundDevice.GraphicsType)
+            return ($this.GraphicsType -eq $foundDevice.GraphicsType)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     [VMHostGraphicsDevice] Get() {
-        $result = [VMHostGraphicsDevice]::new()
-        $result.Server = $this.Server
+        try {
+            $result = [VMHostGraphicsDevice]::new()
+            $result.Server = $this.Server
 
-    	$this.ConnectVIServer()
-        $vmHost = $this.GetVMHost()
-        $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-        $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
 
-        $result.Name = $vmHost.Name
-        $result.Id = $foundDevice.DeviceId
-        $result.GraphicsType = $foundDevice.GraphicsType
+            $result.Name = $vmHost.Name
+            $result.Id = $foundDevice.DeviceId
+            $result.GraphicsType = $foundDevice.GraphicsType
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -7292,65 +7786,80 @@ class DrsCluster : DatacenterInventoryBaseDSC {
     hidden [string] $CPUOverCommitmentSettingName = 'MaxVcpusPerClusterPct'
 
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $cluster = $this.GetInventoryItem($clusterLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $cluster = $this.GetInventoryItem($clusterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $cluster) {
-                $this.AddCluster($clusterLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $cluster) {
+                    $this.AddCluster($clusterLocation)
+                }
+                else {
+                    $this.UpdateCluster($cluster)
+                }
             }
             else {
-                $this.UpdateCluster($cluster)
+                if ($null -ne $cluster) {
+                    $this.RemoveCluster($cluster)
+                }
             }
         }
-        else {
-            if ($null -ne $cluster) {
-                $this.RemoveCluster($cluster)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $cluster = $this.GetInventoryItem($clusterLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $cluster = $this.GetInventoryItem($clusterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $cluster) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $cluster) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateCluster($cluster)
             }
-
-            return !$this.ShouldUpdateCluster($cluster)
+            else {
+                return ($null -eq $cluster)
+            }
         }
-        else {
-            return ($null -eq $cluster)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [DrsCluster] Get() {
-        $result = [DrsCluster]::new()
-        $result.Server = $this.Server
-        $result.Location = $this.Location
-        $result.DatacenterName = $this.DatacenterName
-        $result.DatacenterLocation = $this.DatacenterLocation
+        try {
+            $result = [DrsCluster]::new()
+            $result.Server = $this.Server
+            $result.Location = $this.Location
+            $result.DatacenterName = $this.DatacenterName
+            $result.DatacenterLocation = $this.DatacenterLocation
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $cluster = $this.GetInventoryItem($clusterLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $cluster = $this.GetInventoryItem($clusterLocation)
 
-        $this.PopulateResult($cluster, $result)
+            $this.PopulateResult($cluster, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#
@@ -7616,65 +8125,80 @@ class HACluster : DatacenterInventoryBaseDSC {
     hidden [string] $HARestartPriorityParemeterName = 'HARestartPriority'
 
     [void] Set() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $cluster = $this.GetInventoryItem($clusterLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $cluster = $this.GetInventoryItem($clusterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $cluster) {
-                $this.AddCluster($clusterLocation)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $cluster) {
+                    $this.AddCluster($clusterLocation)
+                }
+                else {
+                    $this.UpdateCluster($cluster)
+                }
             }
             else {
-                $this.UpdateCluster($cluster)
+                if ($null -ne $cluster) {
+                    $this.RemoveCluster($cluster)
+                }
             }
         }
-        else {
-            if ($null -ne $cluster) {
-                $this.RemoveCluster($cluster)
-            }
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [bool] Test() {
-        $this.ConnectVIServer()
+        try {
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $cluster = $this.GetInventoryItem($clusterLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $cluster = $this.GetInventoryItem($clusterLocation)
 
-        if ($this.Ensure -eq [Ensure]::Present) {
-            if ($null -eq $cluster) {
-                return $false
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $cluster) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateCluster($cluster)
             }
-
-            return !$this.ShouldUpdateCluster($cluster)
+            else {
+                return ($null -eq $cluster)
+            }
         }
-        else {
-            return ($null -eq $cluster)
+        finally {
+            $this.DisconnectVIServer()
         }
     }
 
     [HACluster] Get() {
-        $result = [HACluster]::new()
-        $result.Server = $this.Server
-        $result.Location = $this.Location
-        $result.DatacenterName = $this.DatacenterName
-        $result.DatacenterLocation = $this.DatacenterLocation
+        try {
+            $result = [HACluster]::new()
+            $result.Server = $this.Server
+            $result.Location = $this.Location
+            $result.DatacenterName = $this.DatacenterName
+            $result.DatacenterLocation = $this.DatacenterLocation
 
-        $this.ConnectVIServer()
+            $this.ConnectVIServer()
 
-        $datacenter = $this.GetDatacenter()
-        $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
-        $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
-        $cluster = $this.GetInventoryItem($clusterLocation)
+            $datacenter = $this.GetDatacenter()
+            $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
+            $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+            $cluster = $this.GetInventoryItem($clusterLocation)
 
-        $this.PopulateResult($cluster, $result)
+            $this.PopulateResult($cluster, $result)
 
-        return $result
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
     }
 
     <#

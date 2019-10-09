@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.25 - 2019-10-09
+### Added
+- Added DisconnectVIServer logic in BaseDSC class.
+- Added Unit Tests for DisconnectVIServer() in BaseDSC class.
+
+### Changed
+- Refactored all existing DSC Resources to use DisconnectVIServer() from BaseDSC.
+-  Updated CODING_GUIDELINES section for creating new DSC Resources.
+
 ## 2.0.0.24 - 2019-10-02
 ### Added
 - Added VDSwitch DSC Resource.
