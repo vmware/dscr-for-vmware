@@ -172,6 +172,12 @@ $script:constants = @{
     DistributedSwitchVersion = '6.6.0'
     ReferenceDistributedSwitchName = 'MyReferenceDistributedSwitch'
     WithoutPortGroups = $true
+    DistributedPortGroupName = 'MyDistributedPortGroup'
+    DistributedPortGroupNotes = 'Distributed Port Group Description'
+    DistributedPortGroupNumPorts = 128
+    DistributedPortGroupStaticPortBinding = 'Static'
+    DistributedPortGroupDynamicPortBinding = 'Dynamic'
+    ReferenceDistributedPortGroupName = 'MyReferenceDistributedPortGroup'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -833,4 +839,12 @@ $script:distributedSwitch = [VMware.VimAutomation.Vds.Impl.V1.VmwareVDSwitchImpl
     Notes = $script:constants.DistributedSwitchNotes
     NumUplinkPorts = $script:constants.DistributedSwitchNumUplinkPorts
     Version = $script:constants.DistributedSwitchVersion
+}
+
+$script:distributedPortGroup = [VMware.VimAutomation.Vds.Impl.V1.VmwareVDPortgroupImpl] @{
+    Name = $script:constants.DistributedPortGroupName
+    Notes = $script:constants.DistributedPortGroupNotes
+    NumPorts = $script:constants.DistributedPortGroupNumPorts
+    PortBinding = $script:constants.DistributedPortGroupStaticPortBinding
+    VDSwitch = $script:distributedSwitch
 }
