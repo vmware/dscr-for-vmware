@@ -91695,6 +91695,8 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.VM.Guest
 
 namespace VMware.VimAutomation.Vds.Types.V1
 {
+    using VMware.VimAutomation.ViCore.Types.V1.Host.Networking;
+
     public enum LinkDiscoveryOperation
     {
         Advertise,
@@ -91707,6 +91709,25 @@ namespace VMware.VimAutomation.Vds.Types.V1
     {
         CDP,
         LLDP
+    }
+
+    public interface VDPortGroup
+    {
+        string Id { get; set; }
+
+        string Uid { get; set; }
+
+        string Name { get; set; }
+
+        string Notes { get; set; }
+
+        int NumPorts { get; set; }
+
+        DistributedPortGroupPortBinding PortBinding { get; set; }
+
+        VDSwitch VDSwitch { get; set; }
+
+        object ExtensionData { get; set; }
     }
 
     public interface VDSwitch
@@ -91744,7 +91765,42 @@ namespace VMware.VimAutomation.Vds.Impl.V1
     using System;
     using VMware.VimAutomation.Sdk.Types.V1;
     using VMware.VimAutomation.ViCore.Types.V1;
+    using VMware.VimAutomation.ViCore.Types.V1.Host.Networking;
     using VMware.VimAutomation.Vds.Types.V1;
+
+    public class VmwareVDPortgroupImpl : VDPortGroup, VIObject, VIObjectCore, ExtensionData, IEquatable<VmwareVDPortgroupImpl>
+    {
+        public string Id { get; set; }
+
+        public string Uid { get; set; }
+
+        public string Name { get; set; }
+
+        public string Notes { get; set; }
+
+        public int NumPorts { get; set; }
+
+        public DistributedPortGroupPortBinding PortBinding { get; set; }
+
+        public VDSwitch VDSwitch { get; set; }
+
+        public object ExtensionData { get; set; }
+
+        public bool Equals(VmwareVDPortgroupImpl vmwareVDPortgroupImpl)
+        {
+            return (vmwareVDPortgroupImpl != null && this.Id == vmwareVDPortgroupImpl.Id && this.Uid == vmwareVDPortgroupImpl.Uid && this.Name == vmwareVDPortgroupImpl.Name && this.Notes == vmwareVDPortgroupImpl.Notes && this.NumPorts == vmwareVDPortgroupImpl.NumPorts && this.PortBinding == vmwareVDPortgroupImpl.PortBinding && ((this.VDSwitch == null && vmwareVDPortgroupImpl.VDSwitch == null) || (this.VDSwitch != null && this.VDSwitch.Equals(vmwareVDPortgroupImpl.VDSwitch))) && ((this.ExtensionData == null && vmwareVDPortgroupImpl.ExtensionData == null) || (this.ExtensionData != null && this.ExtensionData.Equals(vmwareVDPortgroupImpl.ExtensionData))));
+        }
+
+        public override bool Equals(object vmwareVDPortgroupImpl)
+        {
+            return Equals(vmwareVDPortgroupImpl as VmwareVDPortgroupImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Id + "_" + Uid + "_" + Name + "_" + Notes + "_" + NumPorts + "_" + PortBinding + "_" + VDSwitch + "_" + ExtensionData).GetHashCode();
+        }
+    }
 
     public class VmwareVDSwitchImpl : VDSwitch, VIObject, VIObjectCore, ExtensionData, IEquatable<VmwareVDSwitchImpl>
     {
