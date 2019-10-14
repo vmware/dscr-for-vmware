@@ -87,7 +87,6 @@ class VMHostVssNic : VMHostNicBaseDSC {
     [VMHostVssNic] Get() {
         try {
             $result = [VMHostVssNic]::new()
-            $result.Server = $this.Server
 
             $this.ConnectVIServer()
             $this.RetrieveVMHost()
@@ -95,9 +94,7 @@ class VMHostVssNic : VMHostNicBaseDSC {
             $virtualSwitch = $this.GetVirtualSwitch()
             $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
-            $result.VMHostName = $this.VMHost.Name
             $result.VssName = $virtualSwitch.Name
-
             $this.PopulateResult($vmHostNetworkAdapter, $result)
 
             return $result

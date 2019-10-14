@@ -236,8 +236,6 @@ InModuleScope -ModuleName $script:moduleName {
                 $result = $resource.Get()
 
                 # Assert
-                $result.Server | Should -Be $resourceProperties.Server
-                $result.VMHostName | Should -Be $script:constants.VMHostName
                 $result.VssName | Should -Be $script:constants.VirtualSwitchName
             }
         }
