@@ -144,6 +144,14 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     if it exists, otherwise returns $null.
     #>
     [PSObject] GetVMHostNetworkAdapter($virtualSwitch) {
+        if ($null -eq $virtualSwitch) {
+            <#
+            If the Virtual Switch is $null, it means that Ensure was set to 'Absent' and
+            the VMKernel Network Adapter does not exist for the specified Virtual Switch.
+            #>
+            return $null
+        }
+
         return Get-VMHostNetworkAdapter -Server $this.Connection -PortGroup $this.PortGroupName -VirtualSwitch $virtualSwitch -VMHost $this.VMHost -VMKernel -ErrorAction SilentlyContinue
     }
 

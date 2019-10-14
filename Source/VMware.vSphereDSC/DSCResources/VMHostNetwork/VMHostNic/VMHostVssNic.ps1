@@ -111,15 +111,21 @@ class VMHostVssNic : VMHostNicBaseDSC {
     .DESCRIPTION
 
     Retrieves the Virtual Switch with the specified name from the server if it exists.
-    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist, it throws an exception.
+    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist and Ensure is set to 'Absent', $null is returned.
+    Otherwise it throws an exception.
     #>
     [PSObject] GetVirtualSwitch() {
-        try {
-            $virtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction Stop
-            return $virtualSwitch
+        if ($this.Ensure -eq [Ensure]::Absent) {
+            return Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction SilentlyContinue
         }
-        catch {
-            throw "Could not retrieve Virtual Switch $($this.VssName) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+        else {
+            try {
+                $virtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction Stop
+                return $virtualSwitch
+            }
+            catch {
+                throw "Could not retrieve Virtual Switch $($this.VssName) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+            }
         }
     }
 }
