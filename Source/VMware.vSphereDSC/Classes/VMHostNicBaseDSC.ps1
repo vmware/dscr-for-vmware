@@ -334,6 +334,9 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     Populates the result returned from the Get() method with the values of the VMKernel Network Adapter from the server.
     #>
     [void] PopulateResult($vmHostNetworkAdapter, $result) {
+        $result.Server = $this.Connection.Name
+        $result.VMHostName = $this.VMHost.Name
+
         if ($null -ne $vmHostNetworkAdapter) {
             $result.PortGroupName = $vmHostNetworkAdapter.PortGroupName
             $result.Ensure = [Ensure]::Present

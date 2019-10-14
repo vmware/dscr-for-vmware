@@ -491,6 +491,8 @@ InModuleScope -ModuleName $script:moduleName {
                     $vmHostNicBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
 
                     # Assert
+                    $result.Server | Should -Be $script:viServer.Name
+                    $result.VMHostName | Should -Be $script:vmHost.Name
                     $result.PortGroupName | Should -Be $script:constants.VirtualPortGroupName
                     $result.Ensure | Should -Be 'Present'
                     $result.IP | Should -Be $script:constants.VMKernelNetworkAdapterIP
@@ -534,6 +536,8 @@ InModuleScope -ModuleName $script:moduleName {
                     $vmHostNicBaseDSC.PopulateResult($vmHostNetworkAdapter, $result)
 
                     # Assert
+                    $result.Server | Should -Be $script:viServer.Name
+                    $result.VMHostName | Should -Be $script:vmHost.Name
                     $result.PortGroupName | Should -Be $vmHostNicBaseDSCProperties.PortGroupName
                     $result.Ensure | Should -Be 'Absent'
                     $result.IP | Should -Be $vmHostNicBaseDSCProperties.IP
