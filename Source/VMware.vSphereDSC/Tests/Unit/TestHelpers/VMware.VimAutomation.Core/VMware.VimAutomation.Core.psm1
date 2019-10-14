@@ -3275,7 +3275,6 @@ function Get-VMHostNetworkAdapter {
         $VMHost,
 
         [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $true)]
-        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.VirtualSwitchBase[]]
         $VirtualSwitch,
 
         [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $true)]
@@ -6374,7 +6373,6 @@ function New-VMHostNetworkAdapter {
         $PortId,
 
         [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
-        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.VirtualSwitchBase]
         $VirtualSwitch,
 
         [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]

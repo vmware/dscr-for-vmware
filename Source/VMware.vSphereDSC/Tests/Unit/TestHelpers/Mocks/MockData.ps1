@@ -182,6 +182,7 @@ $script:constants = @{
     VMHostAddedToDistributedSwitchTwoName = 'MyVMHostAddedToDistributedSwitchTwo'
     VMHostRemovedFromDistributedSwitchOneName = 'MyVMHostRemovedFromDistributedSwitchOne'
     VMHostRemovedFromDistributedSwitchTwoName = 'MyVMHostRemovedFromDistributedSwitchTwo'
+    DistributedPortGroupPortId = '0'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -900,6 +901,32 @@ $script:vmHostRemovedFromDistributedSwitchTwo = [VMware.VimAutomation.ViCore.Imp
         Config = [VMware.Vim.HostConfigInfo] @{
             Network = [VMware.Vim.HostNetworkInfo] @{
                 ProxySwitch = @()
+            }
+        }
+    }
+}
+
+$script:vmHostNetworkAdapterConnectedToDistributedSwitch = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.HostVMKernelVirtualNicImpl] @{
+    Name = $script:constants.VMKernelNetworkAdapterName
+    VMHost = $script:vmHostAddedToDistributedSwitchOne
+    PortGroupName = $script:constants.DistributedPortGroupName
+    IP = $script:constants.VMKernelNetworkAdapterIP
+    SubnetMask = $script:constants.VMKernelNetworkAdapterSubnetMask
+    Mac = $script:constants.VMKernelNetworkAdapterMac
+    DhcpEnabled = $script:constants.VMKernelNetworkAdapterDhcp
+    AutomaticIPv6 = $script:constants.VMKernelNetworkAdapterAutomaticIPv6
+    IPv6 = @()
+    IPv6ThroughDhcp = $script:constants.VMKernelNetworkAdapterIPv6ThroughDhcp
+    Mtu = $script:constants.VMKernelNetworkAdapterMtu
+    IPv6Enabled = $script:constants.VMKernelNetworkAdapterIPv6Enabled
+    ManagementTrafficEnabled = $script:constants.VMKernelNetworkAdapterManagementTrafficEnabled
+    FaultToleranceLoggingEnabled = $script:constants.VMKernelNetworkAdapterFaultToleranceLoggingEnabled
+    VMotionEnabled = $script:constants.VMKernelNetworkAdapterVMotionEnabled
+    VsanTrafficEnabled = $script:constants.VMKernelNetworkAdapterVsanTrafficEnabled
+    ExtensionData = [VMware.Vim.HostVirtualNic] @{
+        Spec = [VMware.Vim.HostVirtualNicSpec] @{
+            DistributedVirtualPort = [VMware.Vim.DistributedVirtualSwitchPortConnection] @{
+                PortKey = $script:constants.DistributedPortGroupPortId
             }
         }
     }
