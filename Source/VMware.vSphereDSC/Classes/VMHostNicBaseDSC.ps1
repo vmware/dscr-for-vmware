@@ -18,8 +18,8 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the Name of the Port Group to which you want to add the new Adapter. If a Distributed Switch is passed, an existing Port Group name should be specified.
-    For Standard Virtual Switches, if the Port Group is non-existent, a new Port Group with the specified name will be created and the new Adapter will be added to the Port Group.
+    Specifies the name of the Port Group to which the VMKernel Network Adapter should be connected. If a Distributed Switch is passed, an existing Port Group name should be specified.
+    For Standard Virtual Switches, if the Port Group is non-existent, a new Port Group with the specified name will be created and the VMKernel Network Adapter will be connected to it.
     #>
     [DscProperty(Key)]
     [string] $PortGroupName
@@ -27,7 +27,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Value indicating if the Network Adapter should be Present or Absent.
+    Value indicating if the VMKernel Network Adapter should be Present or Absent.
     #>
     [DscProperty(Mandatory)]
     [Ensure] $Ensure
@@ -35,7 +35,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Indicates whether the host Network Adapter uses a Dhcp server.
+    Indicates whether the VMKernel Network Adapter uses a Dhcp server.
     #>
     [DscProperty()]
     [nullable[bool]] $Dhcp
@@ -43,7 +43,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies an IP address for the new Network Adapter. All IP addresses are specified using IPv4 dot notation. If IP is not specified, DHCP mode is enabled.
+    Specifies an IP address for the VMKernel Network Adapter. All IP addresses are specified using IPv4 dot notation. If IP is not specified, DHCP mode is enabled.
     #>
     [DscProperty()]
     [string] $IP
@@ -51,7 +51,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies a Subnet Mask for the new Network Adapter.
+    Specifies a Subnet Mask for the VMKernel Network Adapter.
     #>
     [DscProperty()]
     [string] $SubnetMask
@@ -59,7 +59,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies a media access control (MAC) address for the new Virtual Network Adapter.
+    Specifies a media access control (MAC) address for the VMKernel Network Adapter.
     #>
     [DscProperty()]
     [string] $Mac
@@ -108,7 +108,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Indicates that you want to enable the Network Adapter for management traffic.
+    Indicates that you want to enable the VMKernel Network Adapter for management traffic.
     #>
     [DscProperty()]
     [nullable[bool]] $ManagementTrafficEnabled
@@ -116,7 +116,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Indicates that the Network Adapter is enabled for Fault Tolerance (FT) logging.
+    Indicates that the VMKernel Network Adapter is enabled for Fault Tolerance (FT) logging.
     #>
     [DscProperty()]
     [nullable[bool]] $FaultToleranceLoggingEnabled
@@ -124,7 +124,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Indicates that you want to use the new Virtual host/VMKernel Network Adapter for VMotion.
+    Indicates that you want to use the VMKernel Network Adapter for VMotion.
     #>
     [DscProperty()]
     [nullable[bool]] $VMotionEnabled
@@ -132,7 +132,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Indicates that Virtual SAN traffic is enabled on this network adapter.
+    Indicates that Virtual SAN traffic is enabled on this VMKernel Network Adapter.
     #>
     [DscProperty()]
     [nullable[bool]] $VsanTrafficEnabled

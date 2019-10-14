@@ -19,7 +19,7 @@ class VMHostVssNic : VMHostNicBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the Name of the Virtual Switch to which you want to add the new Network Adapter.
+    Specifies the name of the Virtual Switch to which the VMKernel Network Adapter should be connected.
     #>
     [DscProperty(Key)]
     [string] $VssName
