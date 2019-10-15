@@ -13,7 +13,6 @@
 | **VLanId** | Optional | int | The VLAN ID for ports using this Port Group. | 0 - 4095 |
 
 ## Description
-
 The resource is used to create, update and delete Port Groups which are associated with the specified Virtual Switch. If Ensure is 'Absent', all VMs connected to the Port Group must be **PoweredOff** to successfully remove the Port Group. If one or more of the VMs are **PoweredOn**, the removal would not be successful because the Port Group is used by the VMs.
 
 ## Examples
