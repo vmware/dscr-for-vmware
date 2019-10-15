@@ -25,6 +25,7 @@
 | **VsanTrafficEnabled** | Optional | bool | Indicates that Virtual SAN traffic is enabled on this network adapter. ||
 
 ## Description
+
 The resource is used to create, update and remove VMKernel Network Adapters added to the specified Standard Switch and Port Group. If the Port Group is not existing, it will be created and the new Adapter will be added to it.
 
 ## Examples

@@ -13,6 +13,7 @@
 | **AutoNegotiate** | Optional | bool | Indicates that the host network adapter speed/duplex settings are configured automatically. If the property is passed, the Duplex and BitRatePerSecMb properties will be ignored. ||
 
 ## Description
+
 The resource is used to update the speed and duplex settings of the specified Physical Network Adapter.
 
 ## Examples
