@@ -11,7 +11,6 @@
 | **Ensure** | Mandatory | Ensure | Value indicating if the Datacenter should be Present or Absent. | Present, Absent |
 
 ## Description
-
 The resource is used to create and delete Datacenters in a specified Inventory.
 
 ## Examples

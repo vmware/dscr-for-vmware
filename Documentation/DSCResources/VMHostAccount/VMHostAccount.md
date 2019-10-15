@@ -12,6 +12,7 @@
 | **AccountPassword** | Optional | string | Specifies the Password for the host account. ||
 | **Description** | Optional | string | Provides a description for the host account. The maximum length of the text is 255 symbols. ||
 
+
 ## Description
 
 The resource is used to create, update and delete VMHost Accounts in the specified VMHost we are connected to.

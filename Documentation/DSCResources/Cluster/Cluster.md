@@ -24,7 +24,6 @@
 | **CPUOverCommitment** | Optional | int | Controls CPU over-commitment in the cluster. Min value is 0 and Max value is 500. ||
 
 ## Description
-
 The resource is used to create, update and delete Clusters in a specified Datacenter. The resource also takes care to configure Cluster's High Availability (HA) and Drs settings.
 
 ## Examples

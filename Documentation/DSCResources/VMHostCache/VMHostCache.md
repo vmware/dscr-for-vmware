@@ -11,7 +11,6 @@
 | **SwapSizeGB** | Mandatory | double | The space to allocate on the specified Datastore to implement swap performance enhancements, in GB. This value should be less than or equal to the free space capacity of the Datastore. ||
 
 ## Description
-
 The resource is used to Configure the host cache/swap performance enhancement by setting the Space to allocate on the specified SSD based Datastore.
 
 ## Examples

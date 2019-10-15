@@ -23,7 +23,6 @@
 | **InheritNotifySwitches** | Optional | bool | Indicates that the value of the NotifySwitches parameter is inherited from the Virtual Switch. ||
 
 ## Description
-
 The resource is used to update the Teaming Policy of the specified Virtual Port Group.
 
 ## Examples
