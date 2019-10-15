@@ -11,7 +11,6 @@
 | **Policy** | Optional | ServicePolicy | The state of the service after a VMHost reboot. |Unset, On, Off, Automatic|
 | **Running** | Optional | bool | The current state of the service. ||
 
-
 ## Description
 
 The resource is used to configure the host services on an ESXi host.

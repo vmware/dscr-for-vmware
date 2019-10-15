@@ -11,6 +11,7 @@
 | **AgentVmNetwork** | Optional | string | The Management Network used for Agent VMs on this VMHost. ||
 
 ## Description
+
 The resource is used to update the configuration of Agent Virtual Machine resources of the specified VMHost. If the AgentVm settings are not passed or set to $null, the values are cleared on the VMHost. The entire configuration is set each time since all values are overwritten.
 
 ## Examples
