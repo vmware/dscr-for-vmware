@@ -15,6 +15,7 @@
 | **ReferenceVDPortGroupName** | Optional | string | The name for the reference Distributed Port Group. The properties of the new Distributed Port Group will be cloned from the reference Distributed Port Group. ||
 
 ## Description
+
 The resource is used to create, modify the configuration or remove the specified Distributed Port Group.
 
 ## Examples

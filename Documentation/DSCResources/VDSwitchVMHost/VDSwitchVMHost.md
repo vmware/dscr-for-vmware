@@ -11,6 +11,7 @@
 | **Ensure** | Mandatory | Ensure | Value indicating if the VMHosts should be Present/Absent to/from the specified vSphere Distributed Switch. | Present, Absent |
 
 ## Description
+
 The resource is used to add/remove VMHosts to/from the specified vSphere Distributed Switch.
 
 ## Examples
