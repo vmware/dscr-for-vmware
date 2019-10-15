@@ -15,6 +15,7 @@
 | **BurstSize** | Optional | long | The maximum burst size allowed in bytes if shaping is enabled on the port. ||
 
 ## Description
+
 The resource is used to update the Shaping Policy of the specified Virtual Port Group.
 
 ## Examples

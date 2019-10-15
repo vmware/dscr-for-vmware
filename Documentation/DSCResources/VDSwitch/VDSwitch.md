@@ -24,6 +24,7 @@
 | **WithoutPortGroups** | Optional | bool | Indicates whether the new vSphere Distributed Switch will be created without importing the port groups from the specified reference vSphere Distributed Switch. ||
 
 ## Description
+
 The resource is used to create, update and remove vSphere Distributed Switches.
 
 ## Examples
