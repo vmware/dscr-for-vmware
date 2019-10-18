@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.26 - 2019-10-18
+### Added
+- Added Tips & Tricks page from Wiki to Documentation.
+
+### Changed
+- Extend README.md with how to install VMware.vSphereDSC Module from PowerShell Gallery.
+
 ## 2.0.0.25 - 2019-10-09
 ### Added
 - Added DisconnectVIServer logic in BaseDSC class.
