@@ -19,7 +19,9 @@ The Module also contains resources for Creating, Updating and Deleting **Cluster
 For more information about all available **Resources**, please visit the **wiki** page of the repository: [Wiki](https://github.com/vmware/dscr-for-vmware/wiki).
 
 ## Getting Started
+
 ## Requirements
+
 **VMware.vSphereDSC** module contains Microsoft PowerShell Desired State Configuration Resources.
 The following table describes the required dependencies for running VMware.vSphereDSC Resources.
 
@@ -36,7 +38,17 @@ You also need to configure the DSC LCM on a Windows machine where the resources 
 
 ## Installing the VMware.vSphereDSC Resources
 
-1. Copy the VMware.vSphereDSC Module to one of the system PowerShell module directories.For more information on installing PowerShell Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/developer/module/installing-a-powershell-module#rules-for-installing-modules).
+There are two ways to install the VMware.vSphereDSC Module: Download it from the PowerShell Gallery or download it from the [Releases page](https://github.com/vmware/dscr-for-vmware/releases).
+
+### PowerShell Gallery
+
+```powershell
+ Install-Module -Name VMware.vSphereDSC
+```
+
+### Download it from [Releases](https://github.com/vmware/dscr-for-vmware/releases)
+
+1. Copy the VMware.vSphereDSC Module to one of the system PowerShell module directories. For more information on installing PowerShell Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/developer/module/installing-a-powershell-module#rules-for-installing-modules).
 2. In PowerShell import the VMware.vSphereDSC Module:
    ```
     Import-Module -Name 'VMware.vSphereDSC'
@@ -48,10 +60,13 @@ You also need to configure the DSC LCM on a Windows machine where the resources 
    ```
 
 ## Applying VMware.vSphereDSC Resource Configuration
+
 # Configuring PowerCLI
+
 To configure PowerCLI you can use the **PowerCLISettings DSC Resource** and specify which settings you want to be configured. For more information on the available settings, please visit the wiki page of the [PowerCLISettings DSC Resource](https://github.com/vmware/dscr-for-vmware/wiki/PowerCLISettings).
 
 # Example
+
 The following example uses [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) and configures the NTP Server and the 'ntpd' Service Policy.
 
 1. You need to compile the [Configuration File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Configurations/PowerShell/ESXiConfigs/VMHostNtpSettings_Config.ps1) to [MOF](https://docs.microsoft.com/en-us/windows/desktop/wmisdk/managed-object-format--mof-):
@@ -107,6 +122,7 @@ If you have any questions about the project you can join us on Slack:
     ```
 
 ## License
+
 The Desired State Configuration Resources for VMware is distributed under the [BSD-2](https://github.com/vmware/dscr-for-vmware/blob/master/LICENSE.txt).
 
 For more details, please refer to the [BSD-2 License File](https://github.com/vmware/dscr-for-vmware/blob/master/LICENSE.txt).
