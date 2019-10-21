@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.27 - 2019-10-21
+### Changed
+- Fixed spacing around **Description** in all DSC Resources Documentation.
+
 ## 2.0.0.26 - 2019-10-18
 ### Added
 - Added Tips & Tricks page from Wiki to Documentation.
