@@ -10,6 +10,7 @@
 | **AdvancedSettings** | Mandatory | hashtable | Hashtable containing the advanced settings of the specified VMHost, where each key-value pair represents one advanced setting - the key is the name of the setting and the value is the desired value for the setting. ||
 
 ## Description
+
 The resource is used to update the Advanced Settings of the specified VMHost. If the hashtable contains an invalid Advanced Setting, it is ignored. Values of type 'System.Int32' are not allowed in the hashtable and need to be cast to 'long'.
 
 ## Examples

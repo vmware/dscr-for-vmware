@@ -17,6 +17,7 @@
 | **MacChangesInherited** | Optional | bool | Specifies whether the MacChanges setting is inherited from the parent Standard Virtual Switch. ||
 
 ## Description
+
 The resource is used to update the Security Policy of the specified Virtual Port Group.
 
 ## Examples
