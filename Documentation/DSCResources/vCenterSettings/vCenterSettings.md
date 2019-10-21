@@ -16,7 +16,6 @@
 | **Issue** | Optional | string | Issue Advanced Setting value. ||
 | **IssueClear** | Optional | bool | Indicates whether the Issue content should be cleared. ||
 
-
 ## Description
 
 The resource is used to Update EventMaxAge Settings, TaskMaxAge Settings, Motd Setting, Issue Setting and the Logging Level of a vCenter.

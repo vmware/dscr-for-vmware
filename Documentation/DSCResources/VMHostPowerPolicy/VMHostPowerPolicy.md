@@ -10,6 +10,7 @@
 | **PowerPolicy** | Mandatory | PowerPolicy | The Power Management Policy for the specified VMHost. | HighPerformance, Balanced, LowPower, Custom |
 
 ## Description
+
 The resource is used to update the Power Management Policy of the specified VMHost.
 
 ## Examples
