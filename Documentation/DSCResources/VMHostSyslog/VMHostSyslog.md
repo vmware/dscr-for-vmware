@@ -64,19 +64,19 @@ Configuration VMHostSyslog_Config {
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
 
         VMHostSyslog vmHostSyslog {
-            Name = $Name
-            Server = $Server
-            Credential = $Credential
-            Loghost = 'udp:://syslog.domain:514'   # RemoteHost
-            CheckSslCerts = $true                  # EnforceSSLCertificates
-            DefaultRotate = 10                     # LocalLoggingDefaultRotations
-            DefaultRotateSize = 100                # LocalLoggingDefaultRotationSize
-            DefaultTimeout = 180                   # DefaultNetworkRetryTimeout
-            Logdir = '/scratch/log'                # LocalLogOutput
-            LogdirUnique = $false                  # LogToUniqueSubdirectory
-            DropLogRotate = 8                      # DroppedLogFileRotations
-            DropLogSize = 50                       # DroppedLogFileRotationSize
-            QueueDropMark = 90                     # MessageQueueDropMark
+            Name           = $Name
+            Server         = $Server
+            Credential     = $Credential
+            Loghost        = 'udp:://syslog.domain:514' # RemoteHost
+            CheckSslCerts  = $true                      # EnforceSSLCertificates
+            DefaultRotate  = 10                         # LocalLoggingDefaultRotations
+            DefaultSize    = 100                        # LocalLoggingDefaultRotationSize
+            DefaultTimeout = 180                        # DefaultNetworkRetryTimeout
+            Logdir         = '/scratch/log'             # LocalLogOutput
+            LogdirUnique   = $false                     # LogToUniqueSubdirectory
+            DropLogRotate  = 8                          # DroppedLogFileRotations
+            DropLogSize    = 50                         # DroppedLogFileRotationSize
+            QueueDropMark  = 90                         # MessageQueueDropMark
         }
     }
 }
