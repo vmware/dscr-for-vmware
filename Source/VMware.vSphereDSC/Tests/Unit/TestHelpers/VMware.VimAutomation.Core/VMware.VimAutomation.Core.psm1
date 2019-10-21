@@ -19,6 +19,39 @@ Mocked PowerCLI Types for the purpose of unit testing.
 #>
 Add-Type -Path "$($env:PSModulePath)/VMware.VimAutomation.Core/PowerCLITypes.cs"
 
+function Add-VDSwitchPhysicalNetworkAdapter {
+    [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
+    param(
+        [Parameter(Mandatory = $true, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]]
+        $VMHostPhysicalNic,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $true)]
+        $DistributedSwitch,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        $VirtualNicPortgroup,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.HostVirtualNic[]]
+        $VMHostVirtualNic,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm
+    )
+
+    return $null
+}
+
 function Add-VDSwitchVMHost {
     [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
     param(

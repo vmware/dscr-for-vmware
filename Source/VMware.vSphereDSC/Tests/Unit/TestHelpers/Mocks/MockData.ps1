@@ -182,6 +182,18 @@ $script:constants = @{
     VMHostAddedToDistributedSwitchTwoName = 'MyVMHostAddedToDistributedSwitchTwo'
     VMHostRemovedFromDistributedSwitchOneName = 'MyVMHostRemovedFromDistributedSwitchOne'
     VMHostRemovedFromDistributedSwitchTwoName = 'MyVMHostRemovedFromDistributedSwitchTwo'
+    DistributedPortGroupPortId = '0'
+    ConnectedPhysicalNetworkAdapterOneName = 'MyConnectedPhysicalNetworkAdapterOne'
+    ConnectedPhysicalNetworkAdapterTwoName = 'MyConnectedPhysicalNetworkAdapterTwo'
+    ConnectedPhysicalNetworkAdapterBitRatePerSecMb = 1000
+    DisconnectedPhysicalNetworkAdapterOneName = 'MyDisconnectedPhysicalNetworkAdapterOne'
+    DisconnectedPhysicalNetworkAdapterTwoName = 'MyDisconnectedPhysicalNetworkAdapterTwo'
+    DisconnectedPhysicalNetworkAdapterBitRatePerSecMb = 0
+    VMKernelNetworkAdapterOneName = 'MyVMKernelNetworkAdapterOne'
+    VMKernelNetworkAdapterTwoName = 'MyVMKernelNetworkAdapterTwo'
+    PortGroupOneName = 'MyPortGroupOneName'
+    PortGroupTwoName = 'MyPortGroupTwoName'
+    DistributedSwitchWithoutAddedPhysicalNetworkAdaptersName = 'MyDistributedSwitchWithoutAddedPhysicalNetworkAdapters'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -901,6 +913,105 @@ $script:vmHostRemovedFromDistributedSwitchTwo = [VMware.VimAutomation.ViCore.Imp
             Network = [VMware.Vim.HostNetworkInfo] @{
                 ProxySwitch = @()
             }
+        }
+    }
+}
+
+$script:vmHostNetworkAdapterConnectedToDistributedSwitch = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.HostVMKernelVirtualNicImpl] @{
+    Name = $script:constants.VMKernelNetworkAdapterName
+    VMHost = $script:vmHostAddedToDistributedSwitchOne
+    PortGroupName = $script:constants.DistributedPortGroupName
+    IP = $script:constants.VMKernelNetworkAdapterIP
+    SubnetMask = $script:constants.VMKernelNetworkAdapterSubnetMask
+    Mac = $script:constants.VMKernelNetworkAdapterMac
+    DhcpEnabled = $script:constants.VMKernelNetworkAdapterDhcp
+    AutomaticIPv6 = $script:constants.VMKernelNetworkAdapterAutomaticIPv6
+    IPv6 = @()
+    IPv6ThroughDhcp = $script:constants.VMKernelNetworkAdapterIPv6ThroughDhcp
+    Mtu = $script:constants.VMKernelNetworkAdapterMtu
+    IPv6Enabled = $script:constants.VMKernelNetworkAdapterIPv6Enabled
+    ManagementTrafficEnabled = $script:constants.VMKernelNetworkAdapterManagementTrafficEnabled
+    FaultToleranceLoggingEnabled = $script:constants.VMKernelNetworkAdapterFaultToleranceLoggingEnabled
+    VMotionEnabled = $script:constants.VMKernelNetworkAdapterVMotionEnabled
+    VsanTrafficEnabled = $script:constants.VMKernelNetworkAdapterVsanTrafficEnabled
+    ExtensionData = [VMware.Vim.HostVirtualNic] @{
+        Spec = [VMware.Vim.HostVirtualNicSpec] @{
+            DistributedVirtualPort = [VMware.Vim.DistributedVirtualSwitchPortConnection] @{
+                PortKey = $script:constants.DistributedPortGroupPortId
+            }
+        }
+    }
+}
+
+$script:connectedPhysicalNetworkAdapterOne = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.PhysicalNicImpl] @{
+    Name = $script:constants.ConnectedPhysicalNetworkAdapterOneName
+    BitRatePerSec = $script:constants.ConnectedPhysicalNetworkAdapterBitRatePerSecMb
+}
+
+$script:connectedPhysicalNetworkAdapterTwo = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.PhysicalNicImpl] @{
+    Name = $script:constants.ConnectedPhysicalNetworkAdapterTwoName
+    BitRatePerSec = $script:constants.ConnectedPhysicalNetworkAdapterBitRatePerSecMb
+}
+
+$script:disconnectedPhysicalNetworkAdapterOne = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.PhysicalNicImpl] @{
+    Name = $script:constants.DisconnectedPhysicalNetworkAdapterOneName
+    BitRatePerSec = $script:constants.DisconnectedPhysicalNetworkAdapterBitRatePerSecMb
+}
+
+$script:disconnectedPhysicalNetworkAdapterTwo = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.PhysicalNicImpl] @{
+    Name = $script:constants.DisconnectedPhysicalNetworkAdapterTwoName
+    BitRatePerSec = $script:constants.DisconnectedPhysicalNetworkAdapterBitRatePerSecMb
+}
+
+$script:vmKernelNetworkAdapterOne = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.HostVMKernelVirtualNicImpl] @{
+    Name = $script:constants.VMKernelNetworkAdapterOneName
+    VMHost = $script:vmHostAddedToDistributedSwitchOne
+    PortGroupName = $script:constants.PortGroupOneName
+}
+
+$script:vmKernelNetworkAdapterTwo = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.HostVMKernelVirtualNicImpl] @{
+    Name = $script:constants.VMKernelNetworkAdapterTwoName
+    VMHost = $script:vmHostAddedToDistributedSwitchOne
+    PortGroupName = $script:constants.PortGroupTwoName
+}
+
+$script:distributedSwitchWithoutAddedPhysicalNetworkAdapters = [VMware.VimAutomation.Vds.Impl.V1.VmwareVDSwitchImpl] @{
+    Name = $script:constants.DistributedSwitchWithoutAddedPhysicalNetworkAdaptersName
+    ExtensionData = [VMware.Vim.VmwareDistributedVirtualSwitch] @{
+        Config = [VMware.Vim.VMwareDVSConfigInfo] @{
+            Host = @(
+                [VMware.Vim.DistributedVirtualSwitchHostMember] @{
+                    Config = [VMware.Vim.DistributedVirtualSwitchHostMemberConfigInfo] @{
+                        Backing = [VMware.Vim.DistributedVirtualSwitchHostMemberPnicBacking] @{
+                            PnicSpec = @()
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+$script:distributedSwitchWithAddedPhysicalNetworkAdapters = [VMware.VimAutomation.Vds.Impl.V1.VmwareVDSwitchImpl] @{
+    Name = $script:constants.DistributedSwitchName
+    ExtensionData = [VMware.Vim.VmwareDistributedVirtualSwitch] @{
+        Config = [VMware.Vim.VMwareDVSConfigInfo] @{
+            Host = @(
+                [VMware.Vim.DistributedVirtualSwitchHostMember] @{
+                    Config = [VMware.Vim.DistributedVirtualSwitchHostMemberConfigInfo] @{
+                        Backing = [VMware.Vim.DistributedVirtualSwitchHostMemberPnicBacking] @{
+                            PnicSpec = @(
+                                [VMware.Vim.DistributedVirtualSwitchHostMemberPnicSpec] @{
+                                    PnicDevice = $script:constants.ConnectedPhysicalNetworkAdapterOneName
+                                },
+                                [VMware.Vim.DistributedVirtualSwitchHostMemberPnicSpec] @{
+                                    PnicDevice = $script:constants.DisconnectedPhysicalNetworkAdapterOneName
+                                }
+                            )
+                        }
+                    }
+                }
+            )
         }
     }
 }
