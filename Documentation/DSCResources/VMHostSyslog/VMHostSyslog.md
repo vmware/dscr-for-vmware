@@ -28,7 +28,7 @@ The resource is used to configure the syslog settings on an ESXi node.
 
 Updates the syslog settings of the passed ESXi host.
 
-````powershell
+````Powershell
 param(
     [Parameter(Mandatory = $true)]
     [string]
