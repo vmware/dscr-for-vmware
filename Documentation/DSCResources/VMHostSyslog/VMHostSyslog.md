@@ -18,7 +18,6 @@
 | **DropLogRotate** | Optional | long | Number of rotated dropped log files to keep. ||
 | **DropLogSize** | Optional | long | Size of dropped log file before rotation, in KiB. ||
 
-
 ## Description
 
 The resource is used to configure the syslog settings on an ESXi node.
