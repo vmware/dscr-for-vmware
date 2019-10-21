@@ -12,9 +12,11 @@
 | **RestartTimeoutMinutes** | Optional | int | The time in minutes to wait for the VMHost to restart before timing out and aborting the operation. The default value is 5 minutes. ||
 
 ## Prerequisite
+
 The specified VMHost must be in **Maintenance** mode.
 
 ## Description
+
 The resource is used to update the PciPassthru configuration by changing the Passthrough enabled value of the specified PCI Device on the specified VMHost. The resource also restarts the VMHost after a successful Update operation.
 
 ## Examples
