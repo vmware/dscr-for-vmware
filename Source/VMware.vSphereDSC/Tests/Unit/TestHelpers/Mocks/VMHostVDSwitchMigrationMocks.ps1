@@ -358,9 +358,47 @@ function New-MocksWhenOnePhysicalNetworkAdapterIsPassedAndItIsAddedToTheDistribu
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
-    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
-        $script:constants.ConnectedPhysicalNetworkAdapterOneName
-    )
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.ConnectedPhysicalNetworkAdapterOneName)
+
+    $distributedSwitchMock = $script:distributedSwitchWithAddedPhysicalNetworkAdapters
+    $physicalNetworkAdapterMock = $script:connectedPhysicalNetworkAdapterOne
+
+    # We need to mock Get-VDSwitch again here to change the Distributed Switch we use in all the other tests.
+    Mock -CommandName Get-VDSwitch -MockWith { return $distributedSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.ConnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+
+    $vmHostVDSwitchMigrationProperties
+}
+
+function New-MocksWhenOneVMKernelNetworkAdapterAndZeroPortGroupsArePassed {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
+
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.ConnectedPhysicalNetworkAdapterOneName)
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName)
+    $vmHostVDSwitchMigrationProperties.PortGroupNames = @()
+
+    $distributedSwitchMock = $script:distributedSwitchWithAddedPhysicalNetworkAdapters
+    $physicalNetworkAdapterMock = $script:connectedPhysicalNetworkAdapterOne
+
+    # We need to mock Get-VDSwitch again here to change the Distributed Switch we use in all the other tests.
+    Mock -CommandName Get-VDSwitch -MockWith { return $distributedSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.ConnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+
+    $vmHostVDSwitchMigrationProperties
+}
+
+function New-MocksWhenZeroVMKernelNetworkAdaptersAndOnePortGroupArePassed {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
+
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.ConnectedPhysicalNetworkAdapterOneName)
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @()
+    $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
 
     $distributedSwitchMock = $script:distributedSwitchWithAddedPhysicalNetworkAdapters
     $physicalNetworkAdapterMock = $script:connectedPhysicalNetworkAdapterOne
@@ -378,9 +416,7 @@ function New-MocksWhenTwoVMKernelNetworkAdaptersAndOnePortGroupArePassedAndTheSe
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
-    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
-        $script:constants.ConnectedPhysicalNetworkAdapterOneName
-    )
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.ConnectedPhysicalNetworkAdapterOneName)
     $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
         $script:constants.VMKernelNetworkAdapterOneName,
         $script:constants.VMKernelNetworkAdapterTwoName
@@ -406,9 +442,7 @@ function New-MocksWhenTwoVMKernelNetworkAdaptersAndTwoPortGroupsArePassedAndTheS
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
-    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
-        $script:constants.ConnectedPhysicalNetworkAdapterOneName
-    )
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.ConnectedPhysicalNetworkAdapterOneName)
     $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
         $script:constants.VMKernelNetworkAdapterOneName,
         $script:constants.VMKernelNetworkAdapterTwoName
