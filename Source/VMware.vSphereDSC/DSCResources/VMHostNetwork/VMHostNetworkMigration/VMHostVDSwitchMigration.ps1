@@ -44,10 +44,10 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the names of the Port Groups to which the specified VMKernel Network Adapters should be attached. Accepts either one Port Group,
+    Specifies the names of the Port Groups to which the specified VMKernel Network Adapters should be attached. Accepts either one Port Group
     or the same number of Port Groups as the number of VMKernel Network Adapters specified. If one Port Group is specified, all Adapters are attached to that Port Group.
     If the same number of Port Groups as the number of VMKernel Network Adapters are specified, the first Adapter is attached to the first Port Group,
-    the second Adapter - to the second Port Group, and so on.
+    the second Adapter to the second Port Group, and so on.
     #>
     [DscProperty()]
     [string[]] $PortGroupNames
