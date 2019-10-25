@@ -38,6 +38,31 @@ InModuleScope -ModuleName $script:moduleName {
                 New-MocksForVMHostVDSwitchMigration
             }
 
+            Context 'One disconnected Physical Network Adapter is passed and Server error occurs during migration' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenOneDisconnectedPhysicalNetworkAdapterIsPassedAndServerErrorOccursDuringMigration
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks with the correct parameters' {
+                    try {
+                        # Act
+                        $resource.Set()
+                    }
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
+                }
+
+                It 'Should throw the correct error when one disconnected Physical Network Adapter is passed and Server error occurs during migration' {
+                    # Act && Assert
+                    # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapter $script:disconnectedPhysicalNetworkAdapterOne to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
+                }
+            }
+
             Context 'One disconnected Physical Network Adapter is passed' {
                 BeforeAll {
                     # Arrange
@@ -74,6 +99,36 @@ InModuleScope -ModuleName $script:moduleName {
                     }
 
                     Assert-MockCalled @assertMockCalledParams
+                }
+            }
+
+            Context 'Two disconnected Physical Network Adapters are passed and Server error occurs during migration' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersArePassedAndServerErrorOccursDuringMigration
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks with the correct parameters' {
+                    try {
+                        # Act
+                        $resource.Set()
+                    }
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
+                }
+
+                It 'Should throw the correct error when two disconnected Physical Network Adapters are passed and Server error occurs during migration' {
+                    # Act && Assert
+                    $vmHostPhysicalNetworkAdaptersToMigrate = @(
+                        $script:disconnectedPhysicalNetworkAdapterOne,
+                        $script:disconnectedPhysicalNetworkAdapterTwo
+                    )
+
+                    # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $vmHostPhysicalNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -116,6 +171,36 @@ InModuleScope -ModuleName $script:moduleName {
                     }
 
                     Assert-MockCalled @assertMockCalledParams
+                }
+            }
+
+            Context 'Two connected and one disconnected Physical Network Adapters are passed and Server error occurs during migration' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenTwoConnectedAndOneDisconnectedPhysicalNetworkAdaptersArePassedAndServerErrorOccursDuringMigration
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks with the correct parameters' {
+                    try {
+                        # Act
+                        $resource.Set()
+                    }
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
+                }
+
+                It 'Should throw the correct error when two connected and one disconnected Physical Network Adapters are passed and Server error occurs during migration' {
+                    # Act && Assert
+                    $vmHostPhysicalNetworkAdaptersToMigrate = @(
+                        $script:connectedPhysicalNetworkAdapterTwo,
+                        $script:disconnectedPhysicalNetworkAdapterOne
+                    )
+
+                    # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $vmHostPhysicalNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -184,6 +269,33 @@ InModuleScope -ModuleName $script:moduleName {
                 }
             }
 
+            Context 'One disconnected Physical Network Adapter, two VMKernel Network Adapters and one Port Group are passed and Server error occurs during migration' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAdaptersAndOnePortGroupArePassedAndServerErrorOccursDuringMigration
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks with the correct parameters' {
+                    try {
+                        # Act
+                        $resource.Set()
+                    }
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
+                }
+
+                It 'Should throw the correct error when one disconnected Physical Network Adapter, two VMKernel Network Adapters and one Port Group are passed and Server error occurs during migration' {
+                    # Act && Assert
+                    $vmHostPhysicalNetworkAdaptersToMigrate = @($script:disconnectedPhysicalNetworkAdapterOne)
+
+                    # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapter $vmHostPhysicalNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
+                }
+            }
+
             Context 'One disconnected Physical Network Adapter, two VMKernel Network Adapters and one Port Group are passed' {
                 BeforeAll {
                     # Arrange
@@ -205,10 +317,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne)
-                    $expectedVMHostVirtualNic = @(
-                        $script:vmKernelNetworkAdapterOne,
-                        $script:vmKernelNetworkAdapterTwo
-                    )
+                    $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
                     $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName)
 
                     $assertMockCalledParams = @{
@@ -251,10 +360,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne)
-                    $expectedVMHostVirtualNic = @(
-                        $script:vmKernelNetworkAdapterOne,
-                        $script:vmKernelNetworkAdapterTwo
-                    )
+                    $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
                     $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
                     $assertMockCalledParams = @{
@@ -273,6 +379,34 @@ InModuleScope -ModuleName $script:moduleName {
                     }
 
                     Assert-MockCalled @assertMockCalledParams
+                }
+            }
+
+            Context 'Two disconnected Physical Network Adapters, two VMKernel Network Adapters and one Port Group are passed and Server error occurs during migration' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroupArePassedAndServerErrorOccursDuringMigration
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks with the correct parameters' {
+                    try {
+                        # Act
+                        $resource.Set()
+                    }
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
+                }
+
+                It 'Should throw the correct error when two disconnected Physical Network Adapters, two VMKernel Network Adapters and one Port Group are passed and Server error occurs during migration' {
+                    # Act && Assert
+                    $vmHostPhysicalNetworkAdaptersToMigrate = @($script:disconnectedPhysicalNetworkAdapterOne, $script:disconnectedPhysicalNetworkAdapterTwo)
+                    $vmKernelNetworkAdaptersToMigrate = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
+
+                    # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $vmHostPhysicalNetworkAdaptersToMigrate and $vmKernelNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -297,10 +431,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne, $script:disconnectedPhysicalNetworkAdapterTwo)
-                    $expectedVMHostVirtualNic = @(
-                        $script:vmKernelNetworkAdapterOne,
-                        $script:vmKernelNetworkAdapterTwo
-                    )
+                    $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
                     $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName)
 
                     $assertMockCalledParams = @{
@@ -343,10 +474,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne, $script:disconnectedPhysicalNetworkAdapterTwo)
-                    $expectedVMHostVirtualNic = @(
-                        $script:vmKernelNetworkAdapterOne,
-                        $script:vmKernelNetworkAdapterTwo
-                    )
+                    $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
                     $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
                     $assertMockCalledParams = @{
@@ -412,10 +540,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
-                    $expectedVMHostVirtualNic = @(
-                        $script:vmKernelNetworkAdapterOne,
-                        $script:vmKernelNetworkAdapterTwo
-                    )
+                    $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
                     $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName)
 
                     $assertMockCalledParams = @{
@@ -481,10 +606,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
-                    $expectedVMHostVirtualNic = @(
-                        $script:vmKernelNetworkAdapterOne,
-                        $script:vmKernelNetworkAdapterTwo
-                    )
+                    $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
                     $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
                     $assertMockCalledParams = @{
@@ -728,18 +850,9 @@ InModuleScope -ModuleName $script:moduleName {
                 $result = $resource.Get()
 
                 # Assert
-                $expectedPhysicalNicNames = @(
-                    $script:constants.ConnectedPhysicalNetworkAdapterOneName,
-                    $script:constants.DisconnectedPhysicalNetworkAdapterOneName
-                )
-                $expectedVMKernelNicNames = @(
-                    $script:constants.VMKernelNetworkAdapterOneName,
-                    $script:constants.VMKernelNetworkAdapterTwoName
-                )
-                $expectedPortGroupNames = @(
-                    $script:constants.PortGroupOneName,
-                    $script:constants.PortGroupTwoName
-                )
+                $expectedPhysicalNicNames = @($script:constants.ConnectedPhysicalNetworkAdapterOneName, $script:constants.DisconnectedPhysicalNetworkAdapterOneName)
+                $expectedVMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
+                $expectedPortGroupNames = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
                 $result.Server | Should -Be $script:viServer.Name
                 $result.VMHostName | Should -Be $script:vmHostAddedToDistributedSwitchOne.Name

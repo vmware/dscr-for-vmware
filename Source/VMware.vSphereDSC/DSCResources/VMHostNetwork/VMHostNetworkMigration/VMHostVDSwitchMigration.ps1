@@ -135,6 +135,7 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
 
     <#
     .DESCRIPTION
+
     Retrieves the Distributed Switch with the specified name from the server if it exists.
     Otherwise it throws an exception.
     #>
@@ -184,7 +185,7 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
     .DESCRIPTION
 
     Retrieves the VMKernel Network Adapters with the specified names from the server if they exist.
-    For every VMKernel Network Adapter that does not exist, a warning message is shown to the user without throwing an exception.
+    If one of the passed VMKernel Network Adapters does not exist, an exception is thrown.
     #>
     [array] GetVMKernelNetworkAdapters() {
         $vmKernelNetworkAdapters = @()

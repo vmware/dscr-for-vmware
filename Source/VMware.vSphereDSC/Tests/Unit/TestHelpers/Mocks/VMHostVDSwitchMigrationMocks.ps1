@@ -41,6 +41,22 @@ function New-MocksForVMHostVDSwitchMigration {
     Mock -CommandName Disconnect-VIServer -MockWith { return $null }.GetNewClosure() -Verifiable
 }
 
+function New-MocksWhenOneDisconnectedPhysicalNetworkAdapterIsPassedAndServerErrorOccursDuringMigration {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
+
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName)
+
+    $physicalNetworkAdapterMock = $script:disconnectedPhysicalNetworkAdapterOne
+
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+    Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { throw }.GetNewClosure() -Verifiable
+
+    $vmHostVDSwitchMigrationProperties
+}
+
 function New-MocksWhenOneDisconnectedPhysicalNetworkAdapterIsPassed {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
@@ -53,6 +69,27 @@ function New-MocksWhenOneDisconnectedPhysicalNetworkAdapterIsPassed {
 
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
     Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { return $null }.GetNewClosure() -Verifiable
+
+    $vmHostVDSwitchMigrationProperties
+}
+
+function New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersArePassedAndServerErrorOccursDuringMigration {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
+
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
+        $script:constants.DisconnectedPhysicalNetworkAdapterOneName,
+        $script:constants.DisconnectedPhysicalNetworkAdapterTwoName
+    )
+
+    $physicalNetworkAdapterOneMock = $script:disconnectedPhysicalNetworkAdapterOne
+    $physicalNetworkAdapterTwoMock = $script:disconnectedPhysicalNetworkAdapterTwo
+
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterTwoName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+    Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { throw }.GetNewClosure() -Verifiable
 
     $vmHostVDSwitchMigrationProperties
 }
@@ -78,6 +115,31 @@ function New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersArePassed {
     $vmHostVDSwitchMigrationProperties
 }
 
+function New-MocksWhenTwoConnectedAndOneDisconnectedPhysicalNetworkAdaptersArePassedAndServerErrorOccursDuringMigration {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
+
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
+        $script:constants.ConnectedPhysicalNetworkAdapterOneName,
+        $script:constants.ConnectedPhysicalNetworkAdapterTwoName,
+        $script:constants.DisconnectedPhysicalNetworkAdapterOneName
+    )
+
+    $physicalNetworkAdapterOneMock = $script:connectedPhysicalNetworkAdapterOne
+    $physicalNetworkAdapterTwoMock = $script:connectedPhysicalNetworkAdapterTwo
+    $physicalNetworkAdapterThreeMock = $script:disconnectedPhysicalNetworkAdapterOne
+
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.ConnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.ConnectedPhysicalNetworkAdapterTwoName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterThreeMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+    Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $DistributedSwitch -eq $script:distributedSwitch -and [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] @($script:connectedPhysicalNetworkAdapterOne)) -and !$Confirm } -Verifiable
+    Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { throw }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $DistributedSwitch -eq $script:distributedSwitch -and [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)) -and !$Confirm } -Verifiable
+
+    $vmHostVDSwitchMigrationProperties
+}
+
 function New-MocksWhenTwoConnectedAndOneDisconnectedPhysicalNetworkAdaptersArePassed {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
@@ -98,6 +160,33 @@ function New-MocksWhenTwoConnectedAndOneDisconnectedPhysicalNetworkAdaptersArePa
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.ConnectedPhysicalNetworkAdapterTwoName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterThreeMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
     Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { return $null }.GetNewClosure() -Verifiable
+
+    $vmHostVDSwitchMigrationProperties
+}
+
+function New-MocksWhenOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAdaptersAndOnePortGroupArePassedAndServerErrorOccursDuringMigration {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
+
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName)
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
+        $script:constants.VMKernelNetworkAdapterOneName,
+        $script:constants.VMKernelNetworkAdapterTwoName
+    )
+    $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
+
+    $physicalNetworkAdapterMock = $script:disconnectedPhysicalNetworkAdapterOne
+    $vmKernelNetworkAdapterOneMock = $script:vmKernelNetworkAdapterOne
+    $vmKernelNetworkAdapterTwoMock = $script:vmKernelNetworkAdapterTwo
+
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmKernelNetworkAdapterOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VMKernelNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $VMKernel } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmKernelNetworkAdapterTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VMKernelNetworkAdapterTwoName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $VMKernel } -Verifiable
+    Mock -CommandName Get-VDPortgroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.PortGroupOneName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
+    Mock -CommandName New-VDPortgroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.PortGroupOneName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
+    Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { throw }.GetNewClosure() -Verifiable
 
     $vmHostVDSwitchMigrationProperties
 }
@@ -154,6 +243,38 @@ function New-MocksWhenOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAda
     Mock -CommandName New-VDPortgroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.PortGroupOneName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
     Mock -CommandName New-VDPortgroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.PortGroupTwoName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
     Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { return $null }.GetNewClosure() -Verifiable
+
+    $vmHostVDSwitchMigrationProperties
+}
+
+function New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroupArePassedAndServerErrorOccursDuringMigration {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
+
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
+        $script:constants.DisconnectedPhysicalNetworkAdapterOneName,
+        $script:constants.DisconnectedPhysicalNetworkAdapterTwoName
+    )
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
+        $script:constants.VMKernelNetworkAdapterOneName,
+        $script:constants.VMKernelNetworkAdapterTwoName
+    )
+    $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
+
+    $physicalNetworkAdapterOneMock = $script:disconnectedPhysicalNetworkAdapterOne
+    $physicalNetworkAdapterTwoMock = $script:disconnectedPhysicalNetworkAdapterTwo
+    $vmKernelNetworkAdapterOneMock = $script:vmKernelNetworkAdapterOne
+    $vmKernelNetworkAdapterTwoMock = $script:vmKernelNetworkAdapterTwo
+
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterTwoName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmKernelNetworkAdapterOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VMKernelNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $VMKernel } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $vmKernelNetworkAdapterTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VMKernelNetworkAdapterTwoName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $VMKernel } -Verifiable
+    Mock -CommandName Get-VDPortgroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.PortGroupOneName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
+    Mock -CommandName New-VDPortgroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.PortGroupOneName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
+    Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { throw }.GetNewClosure() -Verifiable
 
     $vmHostVDSwitchMigrationProperties
 }
