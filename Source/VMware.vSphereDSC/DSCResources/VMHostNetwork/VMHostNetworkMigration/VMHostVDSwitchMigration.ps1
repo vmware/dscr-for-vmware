@@ -371,10 +371,9 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
     .DESCRIPTION
 
     Ensures that the passed VMKernel Network Adapter names and Port Group names count meets the following criteria:
-    If at least one VMKernel Network Adapter is specified, one of the following requirements should be met.
+    If at least one VMKernel Network Adapter is specified, one of the following requirements should be met:
     1. The number of specified Port Groups should be equal to the number of specified VMKernel Network Adapters.
     2. Only one Port Group is passed.
-    All other cases are invalid.
     If no VMKernel Network Adapter names are passed, no Port Group names should be passed as well.
     #>
     [void] EnsureVMKernelNetworkAdapterAndPortGroupNamesCountIsCorrect() {
@@ -411,7 +410,15 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
     #>
     [void] AddConnectedPhysicalNetworkAdapterToDistributedSwitch($connectedPhysicalNetworkAdapter, $distributedSwitch) {
         try {
-            Add-VDSwitchPhysicalNetworkAdapter -Server $this.Connection -DistributedSwitch $distributedSwitch -VMHostPhysicalNic $connectedPhysicalNetworkAdapter -ErrorAction Stop
+            $addVDSwitchPhysicalNetworkAdapterParams = @{
+                Server = $this.Connection
+                DistributedSwitch = $distributedSwitch
+                VMHostPhysicalNic = $connectedPhysicalNetworkAdapter
+                Confirm = $false
+                ErrorAction = 'Stop'
+            }
+
+            Add-VDSwitchPhysicalNetworkAdapter @addVDSwitchPhysicalNetworkAdapterParams
         }
         catch {
             throw "Could not migrate Physical Network Adapter $($connectedPhysicalNetworkAdapter.Name) to Distributed Switch $($distributedSwitch.Name). For more information: $($_.Exception.Message)"
@@ -426,7 +433,15 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
     [void] AddPhysicalNetworkAdaptersToDistributedSwitch($physicalNetworkAdapters, $distributedSwitch) {
         if ($physicalNetworkAdapters.Length -eq 1) {
             try {
-                Add-VDSwitchPhysicalNetworkAdapter -Server $this.Connection -DistributedSwitch $distributedSwitch -VMHostPhysicalNic $physicalNetworkAdapters -ErrorAction Stop
+                $addVDSwitchPhysicalNetworkAdapterParams = @{
+                    Server = $this.Connection
+                    DistributedSwitch = $distributedSwitch
+                    VMHostPhysicalNic = $physicalNetworkAdapters
+                    Confirm = $false
+                    ErrorAction = 'Stop'
+                }
+
+                Add-VDSwitchPhysicalNetworkAdapter @addVDSwitchPhysicalNetworkAdapterParams
                 return
             }
             catch {
@@ -439,7 +454,15 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
 
         if ($connectedPhysicalNetworkAdapters.Length -eq 0) {
             try {
-                Add-VDSwitchPhysicalNetworkAdapter -Server $this.Connection -DistributedSwitch $distributedSwitch -VMHostPhysicalNic $disconnectedPhysicalNetworkAdapters -ErrorAction Stop
+                $addVDSwitchPhysicalNetworkAdapterParams = @{
+                    Server = $this.Connection
+                    DistributedSwitch = $distributedSwitch
+                    VMHostPhysicalNic = $disconnectedPhysicalNetworkAdapters
+                    Confirm = $false
+                    ErrorAction = 'Stop'
+                }
+
+                Add-VDSwitchPhysicalNetworkAdapter @addVDSwitchPhysicalNetworkAdapterParams
             }
             catch {
                 throw "Could not migrate Physical Network Adapters $($disconnectedPhysicalNetworkAdapters) to Distributed Switch $($distributedSwitch.Name). For more information: $($_.Exception.Message)"
@@ -457,7 +480,15 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
             $physicalNetworkAdaptersToMigrate = $connectedPhysicalNetworkAdapters + $disconnectedPhysicalNetworkAdapters
 
             try {
-                Add-VDSwitchPhysicalNetworkAdapter -Server $this.Connection -DistributedSwitch $distributedSwitch -VMHostPhysicalNic $physicalNetworkAdaptersToMigrate -ErrorAction Stop
+                $addVDSwitchPhysicalNetworkAdapterParams = @{
+                    Server = $this.Connection
+                    DistributedSwitch = $distributedSwitch
+                    VMHostPhysicalNic = $physicalNetworkAdaptersToMigrate
+                    Confirm = $false
+                    ErrorAction = 'Stop'
+                }
+
+                Add-VDSwitchPhysicalNetworkAdapter @addVDSwitchPhysicalNetworkAdapterParams
             }
             catch {
                 throw "Could not migrate Physical Network Adapters $($physicalNetworkAdaptersToMigrate) to Distributed Switch $($distributedSwitch.Name). For more information: $($_.Exception.Message)"
