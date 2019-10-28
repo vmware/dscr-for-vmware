@@ -1003,3 +1003,21 @@ $script:vmHostAuthenticationInfoWithDomain = [VMware.VimAutomation.ViCore.Impl.V
     Domain = $script:constants.DomainName
     VMHost = $script:vmHost
 }
+
+$script:standardSwitchWithOnePhysicalNetworkAdapter = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VirtualSwitchImpl] @{
+    Name = $script:constants.VirtualSwitchName
+    VMHost = $script:vmHost
+    Nic = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName)
+}
+
+$script:vmKernelNetworkAdapterToMigrateToStandardSwitch = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.HostVMKernelVirtualNicImpl] @{
+    Name = $script:constants.VMKernelNetworkAdapterOneName
+    VMHost = $script:vmHost
+    PortGroupName = $script:constants.PortGroupOneName
+}
+
+$script:portGroupWithAttachedVMKernelNetworkAdapter = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VirtualPortGroupImpl] @{
+    Name = $script:constants.PortGroupOneName
+    VirtualSwitch = $script:standardSwitchWithOnePhysicalNetworkAdapter
+    VirtualSwitchName = $script:constants.VirtualSwitchName
+}

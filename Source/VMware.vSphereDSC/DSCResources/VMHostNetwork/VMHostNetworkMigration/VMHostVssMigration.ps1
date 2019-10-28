@@ -43,20 +43,14 @@ class VMHostVssMigration : VMHostNetworkMigrationBaseDSC {
             $standardSwitch = $this.GetStandardSwitch()
 
             $physicalNetworkAdapters = $this.GetPhysicalNetworkAdapters()
-            $filteredPhysicalNetworkAdapters = $this.GetPhysicalNetworkAdaptersNotAddedToStandardSwitch($physicalNetworkAdapters, $standardSwitch)
-
-            if ($filteredPhysicalNetworkAdapters.Length -eq 0) {
-                throw "At least one Physical Network Adapter that is not added to Standard Switch $($standardSwitch.Name) needs to be specified."
-            }
-
             if ($this.VMkernelNicNames.Length -eq 0) {
-                $this.AddPhysicalNetworkAdaptersToStandardSwitch($filteredPhysicalNetworkAdapters, $standardSwitch)
+                $this.AddPhysicalNetworkAdaptersToStandardSwitch($physicalNetworkAdapters, $standardSwitch)
             }
             else {
                 $vmKernelNetworkAdapters = $this.GetVMKernelNetworkAdapters()
                 $this.EnsureVMKernelNetworkAdapterAndPortGroupNamesCountIsCorrect()
 
-                $this.AddPhysicalNetworkAdaptersAndVMKernelNetworkAdaptersToStandardSwitch($filteredPhysicalNetworkAdapters, $vmKernelNetworkAdapters, $standardSwitch)
+                $this.AddPhysicalNetworkAdaptersAndVMKernelNetworkAdaptersToStandardSwitch($physicalNetworkAdapters, $vmKernelNetworkAdapters, $standardSwitch)
             }
         }
         finally {
@@ -121,30 +115,6 @@ class VMHostVssMigration : VMHostNetworkMigrationBaseDSC {
         catch {
             throw "Could not retrieve Standard Switch $($this.VssName). For more information: $($_.Exception.Message)"
         }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Physical Network Adapters that are not added to the specified Standard Switch.
-    #>
-    [array] GetPhysicalNetworkAdaptersNotAddedToStandardSwitch($physicalNetworkAdapters, $standardSwitch) {
-        $filteredPhysicalNetworkAdapters = @()
-
-        if ($null -eq $standardSwitch.Nic) {
-            # No Physical Network Adapters are added to the Standard Switch.
-            return $physicalNetworkAdapters
-        }
-
-        foreach ($physicalNetworkAdapter in $physicalNetworkAdapters) {
-            $addedPhysicalNetworkAdapter = $standardSwitch.Nic | Where-Object -FilterScript { $_ -eq $physicalNetworkAdapter.Name }
-
-            if ($null -eq $addedPhysicalNetworkAdapter) {
-                $filteredPhysicalNetworkAdapters += $physicalNetworkAdapter
-            }
-        }
-
-        return $filteredPhysicalNetworkAdapters
     }
 
     <#
