@@ -83,6 +83,20 @@ Configuration VMHostVDSwitchMigration_CreateManagementVMKernelNetworkAdapterAndv
     }
 }
 
+Configuration VMHostVDSwitchMigration_MigrateThreePhysicalNetworkAdaptersToStandardSwitch_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VMHostVssMigration $AllNodes.VMHostVssMigrationResourceName {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            VMHostName = $AllNodes.VMHostName
+            VssName = $AllNodes.StandardSwitchName
+            PhysicalNicNames = $AllNodes.PhysicalNetworkAdapterNames
+        }
+    }
+}
+
 Configuration VMHostVDSwitchMigration_MigrateOneDisconnectedPhysicalNetworkAdapter_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
