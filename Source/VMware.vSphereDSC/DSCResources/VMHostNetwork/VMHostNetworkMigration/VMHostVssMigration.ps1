@@ -267,7 +267,13 @@ class VMHostVssMigration : VMHostNetworkMigrationBaseDSC {
         $result.VMkernelNicNames = @()
         $result.PortGroupNames = @()
 
-        $vmKernelNetworkAdapters = Get-VMHostNetworkAdapter -Server $this.Connection -VMHost $this.VMHost -VirtualSwitch $standardSwitch -VMKernel -ErrorAction SilentlyContinue
+        if ($this.VMKernelNicNames.Length -eq 0) {
+            return
+        }
+
+        $vmKernelNetworkAdapters = Get-VMHostNetworkAdapter -Server $this.Connection -VMHost $this.VMHost -VirtualSwitch $standardSwitch -VMKernel -ErrorAction SilentlyContinue |
+                                   Where-Object -FilterScript { $this.VMKernelNicNames.Contains($_.Name) }
+
         foreach ($vmKernelNetworkAdapter in $vmKernelNetworkAdapters) {
             $result.VMkernelNicNames += $vmKernelNetworkAdapter.Name
             $result.PortGroupNames += $vmKernelNetworkAdapter.PortGroupName
