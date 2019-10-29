@@ -248,7 +248,7 @@ function New-MocksWhenOnePhysicalNetworkAdapterIsPassedAndItIsAddedToTheStandard
     $vmHostVssMigrationProperties
 }
 
-function New-MocksWhenOneVMKernelNetworkAdapterAndZeroPortGroupsArePassed {
+function New-MocksWhenTwoVMKernelNetworkAdaptersAndOnePortGroupArePassed {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
@@ -256,8 +256,28 @@ function New-MocksWhenOneVMKernelNetworkAdapterAndZeroPortGroupsArePassed {
 
     $vmHostVssMigrationProperties.VssName = $script:constants.VirtualSwitchName
     $vmHostVssMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName)
-    $vmHostVssMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName)
-    $vmHostVssMigrationProperties.PortGroupNames = @()
+    $vmHostVssMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
+    $vmHostVssMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
+
+    $standardSwitchMock = $script:standardSwitchWithOnePhysicalNetworkAdapter
+    $physicalNetworkAdapterMock = $script:disconnectedPhysicalNetworkAdapterOne
+
+    Mock -CommandName Get-VirtualSwitch -MockWith { return $standardSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.VirtualSwitchName -and $VMHost -eq $script:vmHost -and $Standard } -Verifiable
+    Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.disconnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHost -and $Physical } -Verifiable
+
+    $vmHostVssMigrationProperties
+}
+
+function New-MocksWhenZeroVMKernelNetworkAdaptersAndOnePortGroupArePassed {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostVssMigrationProperties = New-VMHostVssMigrationProperties
+
+    $vmHostVssMigrationProperties.VssName = $script:constants.VirtualSwitchName
+    $vmHostVssMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName)
+    $vmHostVssMigrationProperties.VMKernelNicNames = @()
+    $vmHostVssMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
 
     $standardSwitchMock = $script:standardSwitchWithOnePhysicalNetworkAdapter
     $physicalNetworkAdapterMock = $script:disconnectedPhysicalNetworkAdapterOne

@@ -328,10 +328,10 @@ InModuleScope -ModuleName $script:moduleName {
                 }
             }
 
-            Context 'One VMKernel Network Adapter and zero Port Groups are passed' {
+            Context 'Two VMKernel Network Adapters and one Port Group are passed' {
                 BeforeAll {
                     # Arrange
-                    $resourceProperties = New-MocksWhenOneVMKernelNetworkAdapterAndZeroPortGroupsArePassed
+                    $resourceProperties = New-MocksWhenTwoVMKernelNetworkAdaptersAndOnePortGroupArePassed
                     $resource = New-Object -TypeName $resourceName -Property $resourceProperties
                 }
 
@@ -346,7 +346,31 @@ InModuleScope -ModuleName $script:moduleName {
                     }
                 }
 
-                It 'Should throw the correct error when one VMKernel Network Adapter and zero Port Groups are passed' {
+                It 'Should throw the correct error when two VMKernel Network Adapters and one Port Group are passed' {
+                    # Act && Assert
+                    { $resource.Test() } | Should -Throw "$($resourceProperties.VMKernelNicNames.Length) VMKernel Network Adapters specified and $($resourceProperties.PortGroupNames.Length) Port Groups specified which is not valid."
+                }
+            }
+
+            Context 'Zero VMKernel Network Adapters and one Port Group are passed' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenZeroVMKernelNetworkAdaptersAndOnePortGroupArePassed
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks with the correct parameters' {
+                    try {
+                        # Act
+                        $resource.Test()
+                    }
+                    catch {
+                        # Assert
+                        Assert-VerifiableMock
+                    }
+                }
+
+                It 'Should throw the correct error when zero VMKernel Network Adapters and one Port Group are passed' {
                     # Act && Assert
                     { $resource.Test() } | Should -Throw "$($resourceProperties.VMKernelNicNames.Length) VMKernel Network Adapters specified and $($resourceProperties.PortGroupNames.Length) Port Groups specified which is not valid."
                 }

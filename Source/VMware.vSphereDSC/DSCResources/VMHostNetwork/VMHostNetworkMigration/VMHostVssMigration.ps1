@@ -178,11 +178,20 @@ class VMHostVssMigration : VMHostNetworkMigrationBaseDSC {
     .DESCRIPTION
 
     Ensures that the passed VMKernel Network Adapter names and Port Group names count meets the following criteria:
-    The number of passed VMKernel Network Adapter names should be equal to the number of passed Port Group names.
+    If VMKernel Network Adapter names are passed, the following requirements should be met:
+    No Port Group names are passed or the number of Port Group names is the same as the number of VMKernel Network Adapter names.
+    If no VMKernel Network Adapter names are passed, no Port Group names should be passed as well.
     #>
     [void] EnsureVMKernelNetworkAdapterAndPortGroupNamesCountIsCorrect() {
-        if ($this.VMkernelNicNames.Length -ne $this.PortGroupNames.Length) {
-            throw "$($this.VMKernelNicNames.Length) VMKernel Network Adapters specified and $($this.PortGroupNames.Length) Port Groups specified which is not valid."
+        if ($this.VMKernelNicNames.Length -gt 0) {
+            if ($this.PortGroupNames.Length -gt 0 -and $this.VMkernelNicNames.Length -ne $this.PortGroupNames.Length) {
+                throw "$($this.VMKernelNicNames.Length) VMKernel Network Adapters specified and $($this.PortGroupNames.Length) Port Groups specified which is not valid."
+            }
+        }
+        else {
+            if ($this.PortGroupNames.Length -gt 0) {
+                throw "$($this.VMKernelNicNames.Length) VMKernel Network Adapters specified and $($this.PortGroupNames.Length) Port Groups specified which is not valid."
+            }
         }
     }
 
