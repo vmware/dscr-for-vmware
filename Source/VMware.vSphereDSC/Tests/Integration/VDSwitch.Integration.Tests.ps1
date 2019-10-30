@@ -28,8 +28,15 @@ Param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]
-    $Password
+    $Password,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Name
 )
+
+# Mandatory Integration Tests parameter is not used so it is set to $null.
+$Name = $null
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
