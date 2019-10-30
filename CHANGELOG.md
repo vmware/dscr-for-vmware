@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.30 - 2019-10-30
+### Added
+- Added VDSwitchVMHost DSC Resource.
+- Added Unit Tests for VDSwitchVMHost DSC Resource.
+- Added Integration Tests for VDSwitchVMHost DSC Resource.
+- Added Documentation and example Configuration for VDSwitchVMHost DSC Resource.
+
 ## 2.0.0.29 - 2019-10-30
 ### Added
 - Added VDPortGroup DSC Resource.
