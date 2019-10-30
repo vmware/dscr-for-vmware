@@ -60,7 +60,7 @@ Configuration VMHostVssMigration_MigratePhysicalNics_Config {
 Migrates Physical Network Adapters **vmnic0** and **vmnic1** to Standard Switch **MyStandardSwitch**. Migrates VMKernel Network Adapters **vmk0** and **vmk1** to Standard Switch **MyStandardSwitch** and attaches them to Port Groups **Management Network** and **VM Network** respectively.
 
 ```powershell
-Configuration VMHostVssMigration_MigratePhysicalNicsAndVMKernelNics_Config {
+Configuration VMHostVssMigration_MigratePhysicalNicsAndVMKernelNicsWithPortGroups_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -89,6 +89,44 @@ Configuration VMHostVssMigration_MigratePhysicalNicsAndVMKernelNics_Config {
             PhysicalNicNames = @('vmnic0', 'vmnic1')
             VMKernelNicNames = @('vmk0', 'vmk1')
             PortGroupNames = @('Management Network', 'VM Network')
+        }
+    }
+}
+```
+
+### Example 3
+
+Migrates Physical Network Adapters **vmnic0** and **vmnic1** to Standard Switch **MyStandardSwitch**. Migrates VMKernel Network Adapters **vmk0** and **vmk1** to Standard Switch **MyStandardSwitch**. The VMKernel Network Adapters are attached to newly created Port Groups which name has the **VMKernel** prefix.
+
+```powershell
+Configuration VMHostVssMigration_MigratePhysicalNicsAndVMKernelNics_Config {
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Server,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.PSCredential]
+        $Credential,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $VMHostName
+    )
+
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostVssMigration VMHostVssMigration {
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            VssName = 'MyStandardSwitch'
+            PhysicalNicNames = @('vmnic0', 'vmnic1')
+            VMKernelNicNames = @('vmk0', 'vmk1')
         }
     }
 }

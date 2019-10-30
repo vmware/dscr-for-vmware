@@ -54,10 +54,10 @@ $script:configurationData = @{
 .DESCRIPTION
 
 Migrates Physical Network Adapters 'vmnic0' and 'vmnic1' to Standard Switch 'MyStandardSwitch'.
-Migrates VMKernel Network Adapters 'vmk0' and 'vmk1' to Standard Switch 'MyStandardSwitch'. The VMKernel Network Adapters are attached to newly created
-Port Groups which name has the 'VMKernel' prefix.
+Migrates VMKernel Network Adapters 'vmk0' and 'vmk1' to Standard Switch 'MyStandardSwitch' and attaches them to Port Groups 'Management Network' and 'VM Network' respectively.
+If the Port Groups are not present on Standard Switch 'MyStandardSwitch', they are created by the DSC Resource before the migration occurs.
 #>
-Configuration VMHostVssMigration_MigratePhysicalNicsAndVMKernelNics_Config {
+Configuration VMHostVssMigration_MigratePhysicalNicsAndVMKernelNicsWithPortGroups_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -68,8 +68,9 @@ Configuration VMHostVssMigration_MigratePhysicalNicsAndVMKernelNics_Config {
             VssName = 'MyStandardSwitch'
             PhysicalNicNames = @('vmnic0', 'vmnic1')
             VMKernelNicNames = @('vmk0', 'vmk1')
+            PortGroupNames = @('Management Network', 'VM Network')
         }
     }
 }
 
-VMHostVssMigration_MigratePhysicalNicsAndVMKernelNics_Config -ConfigurationData $script:configurationData
+VMHostVssMigration_MigratePhysicalNicsAndVMKernelNicsWithPortGroups_Config -ConfigurationData $script:configurationData
