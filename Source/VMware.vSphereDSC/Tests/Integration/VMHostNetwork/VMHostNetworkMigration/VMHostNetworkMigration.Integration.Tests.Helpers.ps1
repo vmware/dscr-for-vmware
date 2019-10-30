@@ -155,7 +155,7 @@ function Invoke-TestSetup {
         }
     }
 
-    Disconnect-VIServer -Server $Server -Confirm:$false
+    Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop
 }
 
 <#
@@ -182,7 +182,7 @@ function Get-VMKernelNetworkAdapterNamesConnectedToStandardSwitch {
     # Here we need to modify the Configuration Data passed to each Configuration to include the retrieved VMKernel Network Adapter names.
     $script:configurationData.AllNodes[0].VMKernelNetworkAdapterNames = @($vmKernelNetworkAdapterWithManagementTrafficEnabled.Name, $vmKernelNetworkAdapterWithvMotionEnabled.Name)
 
-    Disconnect-VIServer -Server $Server -Confirm:$false
+    Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop
 }
 
 <#
@@ -209,5 +209,32 @@ function Get-VMKernelNetworkAdapterNamesConnectedToDistributedSwitch {
     # Here we need to modify the Configuration Data passed to each Configuration to include the retrieved VMKernel Network Adapter names.
     $script:configurationData.AllNodes[0].VMKernelNetworkAdapterNames = @($vmKernelNetworkAdapterWithManagementTrafficEnabled.Name, $vmKernelNetworkAdapterWithvMotionEnabled.Name)
 
-    Disconnect-VIServer -Server $Server -Confirm:$false
+    Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop
+}
+
+<#
+.DESCRIPTION
+
+Retrieves the names of the Port Groups of the VMKernel Network Adapters used in the Integration Tests.
+When no Port Group names are passed to the VMHostVssMigration DSC Resource, for every passed VMKernel Network Adapter
+a new Port Group with VMKernel prefix is created and the VMKernel Network Adapter is connected to it.
+#>
+function Get-PortGroupNamesWithVMKernelPrefix {
+    [CmdletBinding()]
+
+    $standardSwitchName = $script:configurationData.AllNodes.StandardSwitchName
+    $vmKernelNetworkAdapterWithManagementTrafficEnabledName = $script:configurationData.AllNodes.VMKernelNetworkAdapterNames[0]
+    $vmKernelNetworkAdapterWithvMotionEnabledName = $script:configurationData.AllNodes.VMKernelNetworkAdapterNames[1]
+
+    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password -ErrorAction Stop
+    $vmHost = Get-VMHost -Server $viServer -Name $Name -ErrorAction Stop
+    $standardSwitch = Get-VirtualSwitch -Server $viServer -VMHost $vmHost -Name $standardSwitchName -ErrorAction Stop
+
+    $vmKernelNetworkAdapterWithManagementTrafficEnabled = Get-VMHostNetworkAdapter -Server $viServer -Name $vmKernelNetworkAdapterWithManagementTrafficEnabledName -VMHost $vmHost -VirtualSwitch $standardSwitch -VMKernel -ErrorAction Stop
+    $vmKernelNetworkAdapterWithvMotionEnabled = Get-VMHostNetworkAdapter -Server $viServer -Name $vmKernelNetworkAdapterWithvMotionEnabledName -VMHost $vmHost -VirtualSwitch $standardSwitch -VMKernel -ErrorAction Stop
+
+    # Here we need to modify the Configuration Data passed to each Configuration to include the retrieved Port Group names with VMKernel prefix.
+    $script:configurationData.AllNodes[0].PortGroupNamesWithVMKernelPrefix = @($vmKernelNetworkAdapterWithManagementTrafficEnabled.PortGroupName, $vmKernelNetworkAdapterWithvMotionEnabled.PortGroupName)
+
+    Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop
 }

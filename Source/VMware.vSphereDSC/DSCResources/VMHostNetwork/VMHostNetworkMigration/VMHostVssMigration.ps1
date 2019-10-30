@@ -153,16 +153,18 @@ class VMHostVssMigration : VMHostNetworkMigrationBaseDSC {
 
         for ($i = 0; $i -lt $this.VMKernelNicNames.Length; $i++) {
             $vmKernelNetworkAdapterName = $this.VMKernelNicNames[$i]
-            $portGroupName = $this.PortGroupNames[$i]
 
             $getVMHostNetworkAdapterParams = @{
                 Server = $this.Connection
                 Name = $vmKernelNetworkAdapterName
                 VMHost = $this.VMHost
                 VirtualSwitch = $standardSwitch
-                PortGroup = $portGroupName
                 VMKernel = $true
                 ErrorAction = 'SilentlyContinue'
+            }
+
+            if ($this.PortGroupNames.Length -gt 0) {
+                $getVMHostNetworkAdapterParams.PortGroup = $this.PortGroupNames[$i]
             }
 
             $vmKernelNetworkAdapter = Get-VMHostNetworkAdapter @getVMHostNetworkAdapterParams
@@ -251,9 +253,12 @@ class VMHostVssMigration : VMHostNetworkMigrationBaseDSC {
                 VirtualSwitch = $standardSwitch
                 VMHostPhysicalNic = $physicalNetworkAdapters
                 VMHostVirtualNic = $vmKernelNetworkAdapters
-                VirtualNicPortgroup = $this.PortGroupNames
                 Confirm = $false
                 ErrorAction = 'Stop'
+            }
+
+            if ($this.PortGroupNames.Length -gt 0) {
+                $addVirtualSwitchPhysicalNetworkAdapterParams.VirtualNicPortgroup = $this.PortGroupNames
             }
 
             Add-VirtualSwitchPhysicalNetworkAdapter @addVirtualSwitchPhysicalNetworkAdapterParams
