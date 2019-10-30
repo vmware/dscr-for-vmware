@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.29 - 2019-10-30
+### Added
+- Added VDPortGroup DSC Resource.
+- Added Unit Tests for VDPortGroup DSC Resource.
+- Added Integration Tests for VDPortGroup DSC Resource.
+- Added Documentation and example Configurations for VDPortGroup DSC Resource.
+
+### Changed
+- Changed ReferenceVDSwitch property of VDSwitch DSC Resource to ReferenceVDSwitchName.
+
 ## 2.0.0.28 - 2019-10-21
 ### Changed
 - Changed **DefaultRotateSize** to **DefaultSize** in VMHostSyslog DSC Resource Documentation.

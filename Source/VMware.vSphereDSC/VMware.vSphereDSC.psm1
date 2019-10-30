@@ -85,6 +85,13 @@ enum Period {
     Year = 31556926
 }
 
+enum PortBinding {
+    Static
+    Dynamic
+    Ephemeral
+    Unset
+}
+
 enum PowerPolicy {
     HighPerformance = 1
     Balanced = 2
@@ -2373,6 +2380,327 @@ class vCenterStatistics : BaseDSC {
 }
 
 [DscResource()]
+class VDPortGroup : BaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the Distributed Port Group.
+    #>
+    [DscProperty(Key)]
+    [string] $Name
+
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the vSphere Distributed Switch associated with the Distributed Port Group.
+    #>
+    [DscProperty(Mandatory)]
+    [string] $VdsName
+
+    <#
+    .DESCRIPTION
+
+    Value indicating if the Distributed Port Group should be Present or Absent.
+    #>
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Specifies a description for the Distributed Port Group.
+    #>
+    [DscProperty()]
+    [string] $Notes
+
+    <#
+    .DESCRIPTION
+
+    Specifies the number of ports that the Distributed Port Group will have.
+    If the parameter is not specified, the number of ports for the Distributed Port Group is 128.
+    #>
+    [DscProperty()]
+    [nullable[int]] $NumPorts
+
+    <#
+    .DESCRIPTION
+
+    Specifies the port binding setting for the Distributed Port Group.
+    Valid values are Static, Dynamic, and Ephemeral.
+    #>
+    [DscProperty()]
+    [PortBinding] $PortBinding = [PortBinding]::Unset
+
+    <#
+    .DESCRIPTION
+
+    Specifies the name for the reference Distributed Port Group.
+    The properties of the new Distributed Port Group will be cloned from the reference Distributed Port Group.
+    #>
+    [DscProperty()]
+    [string] $ReferenceVDPortGroupName
+
+    [void] Set() {
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
+
+            $distributedSwitch = $this.GetDistributedSwitch()
+            $distributedPortGroup = $this.GetDistributedPortGroup($distributedSwitch)
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $distributedPortGroup) {
+                    $this.AddDistributedPortGroup($distributedSwitch)
+                }
+                else {
+                    $this.UpdateDistributedPortGroup($distributedPortGroup)
+                }
+            }
+            else {
+                if ($null -ne $distributedPortGroup) {
+                    $this.RemoveDistributedPortGroup($distributedPortGroup)
+                }
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [bool] Test() {
+        try {
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
+
+            $distributedSwitch = $this.GetDistributedSwitch()
+            $distributedPortGroup = $this.GetDistributedPortGroup($distributedSwitch)
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $distributedPortGroup) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateDistributedPortGroup($distributedPortGroup)
+            }
+            else {
+                return ($null -eq $distributedPortGroup)
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [VDPortGroup] Get() {
+        try {
+            $result = [VDPortGroup]::new()
+
+            $this.ConnectVIServer()
+            $this.EnsureConnectionIsvCenter()
+
+            $distributedSwitch = $this.GetDistributedSwitch()
+            $distributedPortGroup = $this.GetDistributedPortGroup($distributedSwitch)
+
+            $this.PopulateResult($distributedPortGroup, $result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Distributed Switch with the specified name from the server if it exists.
+    If the Distributed Switch does not exist and Ensure is set to 'Absent', $null is returned.
+    Otherwise it throws an exception.
+    #>
+    [PSObject] GetDistributedSwitch() {
+        <#
+        The Verbose logic here is needed to suppress the Exporting and Importing of the
+        cmdlets from the VMware.VimAutomation.Vds Module.
+        #>
+        $savedVerbosePreference = $global:VerbosePreference
+        $global:VerbosePreference = 'SilentlyContinue'
+
+        try {
+            if ($this.Ensure -eq [Ensure]::Absent) {
+                return Get-VDSwitch -Server $this.Connection -Name $this.VdsName -ErrorAction SilentlyContinue
+            }
+            else {
+                try {
+                    $distributedSwitch = Get-VDSwitch -Server $this.Connection -Name $this.VdsName -ErrorAction Stop
+                    return $distributedSwitch
+                }
+                catch {
+                    throw "Could not retrieve Distributed Switch $($this.VdsName). For more information: $($_.Exception.Message)"
+                }
+            }
+        }
+        finally {
+            $global:VerbosePreference = $savedVerbosePreference
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Distributed Port Group with the specified name, available on the specified Distributed Switch from the server if it exists.
+    Otherwise returns $null.
+    #>
+    [PSObject] GetDistributedPortGroup($distributedSwitch) {
+        if ($null -eq $distributedSwitch) {
+            <#
+            If the Distributed Switch is $null, it means that Ensure was set to 'Absent' and
+            the Distributed Port Group does not exist for the specified Distributed Switch.
+            #>
+            return $null
+        }
+
+        return Get-VDPortgroup -Server $this.Connection -Name $this.Name -VDSwitch $distributedSwitch -ErrorAction SilentlyContinue
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the passed Distributed Port Group needs be modified based on the passed properties.
+    #>
+    [bool] ShouldUpdateDistributedPortGroup($distributedPortGroup) {
+        $shouldUpdateDistributedPortGroup = @()
+
+        <#
+        The VDPortGroup object does not contain information about ReferenceVDPortGroupName so the property is not
+        part of the Desired State of the Resource.
+        #>
+        if ($null -ne $this.Notes) {
+            <#
+            The server value for Notes property can be both $null and empty string. The DSC Resource will support only empty string value.
+            Null value means that the property was not passed in the Configuration.
+            #>
+            if ($this.Notes -eq [string]::Empty) {
+                $shouldUpdateDistributedPortGroup += ($null -ne $distributedPortGroup.Notes -and $distributedPortGroup.Notes -ne [string]::Empty)
+            }
+            else {
+                $shouldUpdateDistributedPortGroup += ($this.Notes -ne $distributedPortGroup.Notes)
+            }
+        }
+
+        $shouldUpdateDistributedPortGroup += ($null -ne $this.NumPorts -and $this.NumPorts -ne $distributedPortGroup.NumPorts)
+
+        if ($this.PortBinding -ne [PortBinding]::Unset) {
+            $shouldUpdateDistributedPortGroup += ($this.PortBinding.ToString() -ne $distributedPortGroup.PortBinding.ToString())
+        }
+
+        return ($shouldUpdateDistributedPortGroup -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the populated Distributed Port Group parameters.
+    #>
+    [hashtable] GetDistributedPortGroupParams() {
+        $distributedPortGroupParams = @{}
+
+        $distributedPortGroupParams.Server = $this.Connection
+        $distributedPortGroupParams.Confirm = $false
+        $distributedPortGroupParams.ErrorAction = 'Stop'
+
+        if ($null -ne $this.Notes) { $distributedPortGroupParams.Notes = $this.Notes }
+        if ($null -ne $this.NumPorts) { $distributedPortGroupParams.NumPorts = $this.NumPorts }
+
+        if ($this.PortBinding -ne [PortBinding]::Unset) {
+            $distributedPortGroupParams.PortBinding = $this.PortBinding.ToString()
+        }
+
+        return $distributedPortGroupParams
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Distributed Port Group available on the specified Distributed Switch.
+    #>
+    [void] AddDistributedPortGroup($distributedSwitch) {
+        $distributedPortGroupParams = $this.GetDistributedPortGroupParams()
+        $distributedPortGroupParams.Name = $this.Name
+        $distributedPortGroupParams.VDSwitch = $distributedSwitch
+
+        <#
+        ReferencePortGroup is parameter only for the New-VDPortgroup cmdlet
+        and is not used for the Set-VDPortgroup cmdlet.
+        #>
+        if (![string]::IsNullOrEmpty($this.ReferenceVDPortGroupName)) { $distributedPortGroupParams.ReferencePortgroup = $this.ReferenceVDPortGroupName }
+
+        try {
+            New-VDPortgroup @distributedPortGroupParams
+        }
+        catch {
+            throw "Cannot create Distributed Port Group $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Modifies the configuration of the specified Distributed Port Group with the passed properties.
+    #>
+    [void] UpdateDistributedPortGroup($distributedPortGroup) {
+        $distributedPortGroupParams = $this.GetDistributedPortGroupParams()
+
+        try {
+            $distributedPortGroup | Set-VDPortgroup @distributedPortGroupParams
+        }
+        catch {
+            throw "Cannot update Distributed Port Group $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the specified Distributed Port Group from the vSphere Distributed Switch that it belongs to.
+    #>
+    [void] RemoveDistributedPortGroup($distributedPortGroup) {
+        try {
+            $distributedPortGroup | Remove-VDPortGroup -Server $this.Connection -Confirm:$false -ErrorAction Stop
+        }
+        catch {
+            throw "Cannot remove Distributed Port Group $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method.
+    #>
+    [void] PopulateResult($distributedPortGroup, $result) {
+        $result.Server = $this.Connection.Name
+        $result.ReferenceVDPortGroupName = $this.ReferenceVDPortGroupName
+
+        if ($null -ne $distributedPortGroup) {
+            $result.Name = $distributedPortGroup.Name
+            $result.VdsName = $distributedPortGroup.VDSwitch.Name
+            $result.Ensure = [Ensure]::Present
+            $result.Notes = $distributedPortGroup.Notes
+            $result.NumPorts = $distributedPortGroup.NumPorts
+            $result.PortBinding = $distributedPortGroup.PortBinding.ToString()
+        }
+        else {
+            $result.Name = $this.Name
+            $result.VdsName = $this.VdsName
+            $result.Ensure = [Ensure]::Absent
+            $result.Notes = $this.Notes
+            $result.NumPorts = $this.NumPorts
+            $result.PortBinding = $this.PortBinding
+        }
+    }
+}
+
+[DscResource()]
 class VDSwitch : DatacenterInventoryBaseDSC {
     DistributedSwitch() {
         $this.InventoryItemFolderType = [FolderType]::Network
@@ -2447,10 +2775,11 @@ class VDSwitch : DatacenterInventoryBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies a reference vSphere Distributed Switch. The properties of the new vSphere Distributed Switch will be cloned from the reference vSphere Distributed Switch.
+    Specifies the Name for the reference vSphere Distributed Switch.
+    The properties of the new vSphere Distributed Switch will be cloned from the reference vSphere Distributed Switch.
     #>
     [DscProperty()]
-    [string] $ReferenceVDSwitch
+    [string] $ReferenceVDSwitchName
 
     <#
     .DESCRIPTION
@@ -2531,7 +2860,7 @@ class VDSwitch : DatacenterInventoryBaseDSC {
             $result.Location = $this.Location
             $result.DatacenterName = $this.DatacenterName
             $result.DatacenterLocation = $this.DatacenterLocation
-            $result.ReferenceVDSwitch = $this.ReferenceVDSwitch
+            $result.ReferenceVDSwitchName = $this.ReferenceVDSwitchName
             $result.WithoutPortGroups = $this.WithoutPortGroups
 
             $this.ConnectVIServer()
@@ -2580,7 +2909,7 @@ class VDSwitch : DatacenterInventoryBaseDSC {
         $shouldUpdateDistributedSwitch = @()
 
         <#
-        The VDSwitch object does not contain information about ReferenceVDSwitch and WithoutPortGroups so those properties are not
+        The VDSwitch object does not contain information about ReferenceVDSwitchName and WithoutPortGroups so those properties are not
         part of the Desired State of the Resource.
         #>
         $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.ContactDetails) -and $this.ContactDetails -ne $distributedSwitch.ContactDetails)
@@ -2649,7 +2978,7 @@ class VDSwitch : DatacenterInventoryBaseDSC {
         ReferenceVDSwitch and WithoutPortGroups are parameters only for the New-VDSwitch cmdlet
         and are not used for the Set-VDSwitch cmdlet.
         #>
-        if (![string]::IsNullOrEmpty($this.ReferenceVDSwitch)) { $distributedSwitchParams.ReferenceVDSwitch = $this.ReferenceVDSwitch }
+        if (![string]::IsNullOrEmpty($this.ReferenceVDSwitchName)) { $distributedSwitchParams.ReferenceVDSwitch = $this.ReferenceVDSwitchName }
         if ($null -ne $this.WithoutPortGroups) { $distributedSwitchParams.WithoutPortGroups = $this.WithoutPortGroups }
 
         try {
