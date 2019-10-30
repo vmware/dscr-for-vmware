@@ -210,7 +210,7 @@ class VDSwitchVMHost : BaseDSC {
             foreach ($vmHost in $vmHosts) {
                 $removedVMHost = $vmHost.ExtensionData.Config.Network.ProxySwitch | Where-Object -FilterScript { $_.DvsName -eq $distributedSwitch.Name }
                 if ($null -eq $removedVMHost) {
-                    Write-WarningLog -Message "VMHost {0} is already removed from Distributed Switch {1} and it will be ignored." -Arguments @($vmHost.Name, $distributedSwitch.Name)
+                    Write-WarningLog -Message "VMHost {0} is not added to Distributed Switch {1} and it will be ignored." -Arguments @($vmHost.Name, $distributedSwitch.Name)
                     continue
                 }
 
