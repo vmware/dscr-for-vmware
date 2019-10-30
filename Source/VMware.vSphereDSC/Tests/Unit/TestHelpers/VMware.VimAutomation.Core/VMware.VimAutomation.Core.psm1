@@ -50,6 +50,45 @@ function Add-VDSwitchVMHost {
     return $null
 }
 
+function Get-VDPortgroup {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string[]]
+        $Name,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.ViCore.Types.V1.VirtualDevice.NetworkAdapter[]]
+        $NetworkAdapter,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Vds.Types.V1.VDSwitch[]]
+        $VDSwitch,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.HostVirtualNic[]]
+        $VMHostNetworkAdapter,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "ById", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.Tagging.Tag[]]
+        $Tag,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "ById", ValueFromPipeline = $false)]
+        [string[]]
+        $Id,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "RelatedObject", ValueFromPipeline = $true)]
+        $RelatedObject
+    )
+
+    return $null
+}
+
 function Get-VDSwitch {
     [CmdletBinding(DefaultParameterSetName = "Default")]
     param(
@@ -84,6 +123,79 @@ function Get-VDSwitch {
 
         [Parameter(Mandatory = $true, ParameterSetName = "Related", ValueFromPipeline = $true)]
         $RelatedObject
+    )
+
+    return $null
+}
+
+function New-VDPortgroup {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $true, ParameterSetName = "ReferencePortgroup", ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $true, ParameterSetName = "FromBackup", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Vds.Types.V1.VDSwitch]
+        $VDSwitch,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "ReferencePortgroup", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [string]
+        $Name,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Notes,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [int]
+        $NumPorts,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [int]
+        $VlanId,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        $VlanTrunkRange,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.DistributedPortGroupPortBinding]
+        $PortBinding,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "ReferencePortgroup", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $RunAsync,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "ReferencePortgroup", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "ReferencePortgroup", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "ReferencePortgroup", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "ReferencePortgroup", ValueFromPipeline = $true)]
+        $ReferencePortgroup,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [string]
+        $BackupPath,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $KeepIdentifiers
     )
 
     return $null
@@ -184,6 +296,33 @@ function New-VDSwitch {
     return $null
 }
 
+function Remove-VDPortGroup {
+    [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Vds.Types.V1.VDPortgroup[]]
+        $VDPortGroup,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $RunAsync,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm
+    )
+
+    return $null
+}
+
 function Remove-VDSwitch {
     [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
     param(
@@ -237,6 +376,82 @@ function Remove-VDSwitchVMHost {
         [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
         [switch]
         $Confirm
+    )
+
+    return $null
+}
+
+function Set-VDPortgroup {
+    [CmdletBinding(DefaultParameterSetName = "")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Name,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Notes,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [int]
+        $NumPorts,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [int]
+        $VlanId,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        $VlanTrunkRange,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [int]
+        $PrivateVlanId,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.DistributedPortGroupPortBinding]
+        $PortBinding,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $DisableVlan,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $true, ParameterSetName = "Rollback", ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $true, ParameterSetName = "FromBackup", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Vds.Types.V1.VDPortgroup[]]
+        $VDPortgroup,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "Rollback", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $RunAsync,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "Rollback", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "Rollback", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "Rollback", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Rollback", ValueFromPipeline = $false)]
+        [switch]
+        $RollbackConfiguration,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "FromBackup", ValueFromPipeline = $false)]
+        [string]
+        $BackupPath
     )
 
     return $null

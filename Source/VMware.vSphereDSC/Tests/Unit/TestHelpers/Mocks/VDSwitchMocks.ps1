@@ -85,13 +85,13 @@ function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndDistributedSwi
     $vdSwitchProperties
 }
 
-function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndReferenceDistributedSwitchSpecified {
+function New-MocksWhenEnsurePresentNonExistingDistributedSwitchAndReferenceDistributedSwitchNameSpecified {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
     $vdSwitchProperties = New-VDSwitchProperties
 
-    $vdSwitchProperties.ReferenceVDSwitch = $script:constants.ReferenceDistributedSwitch
+    $vdSwitchProperties.ReferenceVDSwitchName = $script:constants.ReferenceDistributedSwitchName
     $vdSwitchProperties.WithoutPortGroups = $script:constants.WithoutPortGroups
 
     Mock -CommandName Get-VDSwitch -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName -and $Location -eq $script:datacenterNetworkFolder } -Verifiable

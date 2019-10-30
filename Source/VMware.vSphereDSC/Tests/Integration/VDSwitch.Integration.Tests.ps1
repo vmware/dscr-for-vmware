@@ -157,7 +157,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $distributedSwitchResource.Notes | Should -Be $script:configurationData.AllNodes.Notes
             $distributedSwitchResource.NumUplinkPorts | Should -Be $script:configurationData.AllNodes.NumUplinkPorts
             $distributedSwitchResource.Version | Should -Be $script:configurationData.AllNodes.Version
-            $distributedSwitchResource.ReferenceVDSwitch | Should -BeNullOrEmpty
+            $distributedSwitchResource.ReferenceVDSwitchName | Should -BeNullOrEmpty
             $distributedSwitchResource.WithoutPortGroups | Should -BeNullOrEmpty
         }
 
@@ -285,7 +285,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.Notes | Should -Be $script:configurationData.AllNodes.Notes
             $configuration.NumUplinkPorts | Should -Be $script:configurationData.AllNodes.NumUplinkPorts
             $configuration.Version | Should -Be $script:configurationData.AllNodes.Version
-            $configuration.ReferenceVDSwitch | Should -Be $script:configurationData.AllNodes.DistributedSwitchName
+            $configuration.ReferenceVDSwitchName | Should -Be $script:configurationData.AllNodes.DistributedSwitchName
             $configuration.WithoutPortGroups | Should -Be $script:configurationData.AllNodes.WithoutPortGroups
         }
 
@@ -403,7 +403,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.Notes | Should -Be $script:configurationData.AllNodes.Notes
             $configuration.NumUplinkPorts | Should -Be $script:configurationData.AllNodes.NumUplinkPorts
             $configuration.Version | Should -Be $script:configurationData.AllNodes.Version
-            $configuration.ReferenceVDSwitch | Should -BeNullOrEmpty
+            $configuration.ReferenceVDSwitchName | Should -BeNullOrEmpty
             $configuration.WithoutPortGroups | Should -BeNullOrEmpty
         }
 
@@ -521,7 +521,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.Notes | Should -BeNullOrEmpty
             $configuration.NumUplinkPorts | Should -BeNullOrEmpty
             $configuration.Version | Should -BeNullOrEmpty
-            $configuration.ReferenceVDSwitch | Should -BeNullOrEmpty
+            $configuration.ReferenceVDSwitchName | Should -BeNullOrEmpty
             $configuration.WithoutPortGroups | Should -BeNullOrEmpty
         }
 

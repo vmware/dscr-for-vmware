@@ -14,7 +14,7 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Configuration VDSwitch_WhenAddingDistributedSwitch_Config {
+Configuration VDPortGroup_CreateDatacenterAndVDSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
@@ -26,104 +26,112 @@ Configuration VDSwitch_WhenAddingDistributedSwitch_Config {
             Ensure = 'Present'
         }
 
-        VDSwitch $AllNodes.DistributedSwitchResourceName {
+        VDSwitch $AllNodes.VDSwitchResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.DistributedSwitchName
-            Location = $AllNodes.Location
+            Name = $AllNodes.VDSwitchName
+            Location = $AllNodes.VDSwitchLocation
             DatacenterName = $AllNodes.DatacenterName
             DatacenterLocation = $AllNodes.DatacenterLocation
             Ensure = 'Present'
-            ContactDetails = $AllNodes.ContactDetails
-            ContactName = $AllNodes.ContactName
-            LinkDiscoveryProtocol = $AllNodes.LinkDiscoveryProtocol
-            LinkDiscoveryProtocolOperation = $AllNodes.LinkDiscoveryProtocolOperationAdvertise
-            MaxPorts = $AllNodes.MaxPorts
-            Mtu = $AllNodes.Mtu
-            Notes = $AllNodes.Notes
-            NumUplinkPorts = $AllNodes.NumUplinkPorts
-            Version = $AllNodes.Version
             DependsOn = $AllNodes.DatacenterResourceId
         }
     }
 }
 
-Configuration VDSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config {
+Configuration VDPortGroup_CreateVDPortGroup_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VDSwitch $AllNodes.ReferenceVDSwitchResourceName {
+        VDPortGroup $AllNodes.VDPortGroupResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.ReferenceVDSwitchName
-            Location = $AllNodes.Location
-            DatacenterName = $AllNodes.DatacenterName
-            DatacenterLocation = $AllNodes.DatacenterLocation
+            Name = $AllNodes.VDPortGroupName
+            VdsName = $AllNodes.VDSwitchName
             Ensure = 'Present'
-            ReferenceVDSwitchName = $AllNodes.DistributedSwitchName
-            WithoutPortGroups = $AllNodes.WithoutPortGroups
+            Notes = $AllNodes.VDPortGroupNotes
+            NumPorts = $AllNodes.VDPortGroupNumPorts
+            PortBinding = $AllNodes.VDPortGroupPortBinding
         }
     }
 }
 
-Configuration VDSwitch_WhenUpdatingDistributedSwitch_Config {
+Configuration VDPortGroup_CreateVDPortGroupViaReferenceVDPortGroup_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VDSwitch $AllNodes.DistributedSwitchResourceName {
+        VDPortGroup $AllNodes.ReferenceVDPortGroupResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.DistributedSwitchName
-            Location = $AllNodes.Location
-            DatacenterName = $AllNodes.DatacenterName
-            DatacenterLocation = $AllNodes.DatacenterLocation
+            Name = $AllNodes.ReferenceVDPortGroupName
+            VdsName = $AllNodes.VDSwitchName
             Ensure = 'Present'
-            ContactName = $AllNodes.UpdatedContactName
-            LinkDiscoveryProtocolOperation = $AllNodes.LinkDiscoveryProtocolOperationListen
-            Mtu = $AllNodes.UpdatedMtu
+            ReferenceVDPortGroupName = $AllNodes.VDPortGroupName
         }
     }
 }
 
-Configuration VDSwitch_WhenRemovingDistributedSwitch_Config {
+Configuration VDPortGroup_ModifyVDPortGroupNotesAndNumPorts_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VDSwitch $AllNodes.DistributedSwitchResourceName {
+        VDPortGroup $AllNodes.VDPortGroupResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.DistributedSwitchName
-            Location = $AllNodes.Location
-            DatacenterName = $AllNodes.DatacenterName
-            DatacenterLocation = $AllNodes.DatacenterLocation
+            Name = $AllNodes.VDPortGroupName
+            VdsName = $AllNodes.VDSwitchName
+            Ensure = 'Present'
+            Notes = $AllNodes.VDPortGroupDefaultNotes
+            NumPorts = $AllNodes.VDPortGroupDefaultNumPorts
+            PortBinding = $AllNodes.VDPortGroupPortBinding
+        }
+    }
+}
+
+Configuration VDPortGroup_RemoveVDPortGroup_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VDPortGroup $AllNodes.VDPortGroupResourceName {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            Name = $AllNodes.VDPortGroupName
+            VdsName = $AllNodes.VDSwitchName
             Ensure = 'Absent'
         }
     }
 }
 
-Configuration VDSwitch_WhenRemovingDistributedSwitchesAndDatacenter_Config {
+Configuration VDPortGroup_RemoveDatacenterVDSwitchAndVDPortGroup_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VDSwitch $AllNodes.ReferenceVDSwitchResourceName {
+        VDPortGroup $AllNodes.ReferenceVDPortGroupResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.ReferenceVDSwitchName
-            Location = $AllNodes.Location
-            DatacenterName = $AllNodes.DatacenterName
-            DatacenterLocation = $AllNodes.DatacenterLocation
+            Name = $AllNodes.ReferenceVDPortGroupName
+            VdsName = $AllNodes.VDSwitchName
             Ensure = 'Absent'
         }
 
-        VDSwitch $AllNodes.DistributedSwitchResourceName {
+        VDPortGroup $AllNodes.VDPortGroupResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.DistributedSwitchName
-            Location = $AllNodes.Location
+            Name = $AllNodes.VDPortGroupName
+            VdsName = $AllNodes.VDSwitchName
+            Ensure = 'Absent'
+            DependsOn = $AllNodes.ReferenceVDPortGroupResourceId
+        }
+
+        VDSwitch $AllNodes.VDSwitchResourceName {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            Name = $AllNodes.VDSwitchName
+            Location = $AllNodes.VDSwitchLocation
             DatacenterName = $AllNodes.DatacenterName
             DatacenterLocation = $AllNodes.DatacenterLocation
             Ensure = 'Absent'
-            DependsOn = $AllNodes.ReferenceVDSwitchResourceId
+            DependsOn = $AllNodes.VDPortGroupResourceId
         }
 
         Datacenter $AllNodes.DatacenterResourceName {
@@ -132,7 +140,7 @@ Configuration VDSwitch_WhenRemovingDistributedSwitchesAndDatacenter_Config {
             Name = $AllNodes.DatacenterName
             Location = $AllNodes.DatacenterLocation
             Ensure = 'Absent'
-            DependsOn = $AllNodes.DistributedSwitchResourceId
+            DependsOn = $AllNodes.VDSwitchResourceId
         }
     }
 }

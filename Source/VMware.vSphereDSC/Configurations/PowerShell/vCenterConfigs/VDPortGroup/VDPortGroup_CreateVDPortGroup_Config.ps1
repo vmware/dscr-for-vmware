@@ -44,85 +44,49 @@ $script:configurationData = @{
     )
 }
 
-Configuration VDSwitch_WhenAddingDistributedSwitch_Config {
+<#
+.DESCRIPTION
+
+Creates a new Datacenter 'Datacenter' in the Root Folder of the Inventory.
+Creates a new vSphere Distributed Switch 'MyVDSwitch' in the Network Folder of Datacenter 'Datacenter'.
+Creates a new Distributed Port Group 'MyVDPortGroup' on vSphere Distributed Switch 'MyVDSwitch' with
+Static Port Binding and 128 Ports.
+#>
+Configuration VDPortGroup_CreateVDPortGroup_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
+        Datacenter Datacenter {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            Name = 'Datacenter'
+            Location = ''
+            Ensure = 'Present'
+        }
+
         VDSwitch VDSwitch {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = 'MyDistributedSwitch'
+            Name = 'MyVDSwitch'
             Location = ''
             DatacenterName = 'Datacenter'
             DatacenterLocation = ''
             Ensure = 'Present'
-            ContactDetails = 'My Contact Details'
-            ContactName = 'My Contact Name'
-            LinkDiscoveryProtocol = 'CDP'
-            LinkDiscoveryProtocolOperation = 'Advertise'
-            MaxPorts = 100
-            Mtu = 2000
-            Notes = 'My Notes for Distributed Switch'
-            NumUplinkPorts = 10
-            Version = '6.6.0'
+            DependsOn = '[Datacenter]Datacenter'
         }
-    }
-}
 
-Configuration VDSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VDSwitch VDSwitch {
+        VDPortGroup VDPortGroup {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = 'MyDistributedSwitch'
-            Location = ''
-            DatacenterName = 'Datacenter'
-            DatacenterLocation = ''
+            Name = 'MyVDPortGroup'
+            VdsName = 'MyVDSwitch'
             Ensure = 'Present'
-            ContactDetails = 'My Contact Details'
-            ContactName = 'My Contact Name'
-            LinkDiscoveryProtocol = 'CDP'
-            LinkDiscoveryProtocolOperation = 'Advertise'
-            MaxPorts = 100
-            Mtu = 2000
-            Notes = 'My Notes for Distributed Switch'
-            NumUplinkPorts = 10
-            Version = '6.6.0'
-        }
-
-        VDSwitch VDSwitchViaReferenceVDSwitch {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            Name = 'MyDistributedSwitchViaReferenceVDSwitch'
-            Location = ''
-            DatacenterName = 'Datacenter'
-            DatacenterLocation = ''
-            Ensure = 'Present'
-            ReferenceVDSwitchName = 'MyDistributedSwitch'
-            WithoutPortGroups = $true
-            DependsOn = "[VDSwitch]VDSwitch"
+            NumPorts = 128
+            Notes = 'MyVDPortGroup Notes'
+            PortBinding = 'Static'
+            DependsOn = '[VDSwitch]VDSwitch'
         }
     }
 }
 
-Configuration VDSwitch_WhenRemovingDistributedSwitch_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VDSwitch VDSwitch {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            Name = 'MyDistributedSwitch'
-            Location = ''
-            DatacenterName = 'Datacenter'
-            DatacenterLocation = ''
-            Ensure = 'Absent'
-        }
-    }
-}
-
-VDSwitch_WhenAddingDistributedSwitch_Config -ConfigurationData $script:configurationData
-VDSwitch_WhenAddingDistributedSwitchViaReferenceVDSwitch_Config -ConfigurationData $script:configurationData
-VDSwitch_WhenRemovingDistributedSwitch_Config -ConfigurationData $script:configurationData
+VDPortGroup_CreateVDPortGroup_Config -ConfigurationData $script:configurationData

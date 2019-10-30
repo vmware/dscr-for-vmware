@@ -19,7 +19,7 @@
 | **Mtu** | Optional | int | The maximum MTU size for the vSphere Distributed Switch that you want to configure. Valid values are positive integers only. ||
 | **Notes** | Optional | string | The description for the vSphere Distributed Switch that you want to configure. ||
 | **NumUplinkPorts** | Optional | int | The number of uplink ports on the vSphere Distributed Switch that you want to configure. ||
-| **ReferenceVDSwitch** | Optional | string | The reference vSphere Distributed Switch. The properties of the new vSphere Distributed Switch will be cloned from the reference vSphere Distributed Switch. ||
+| **ReferenceVDSwitchName** | Optional | string | The Name for the reference vSphere Distributed Switch. The properties of the new vSphere Distributed Switch will be cloned from the reference vSphere Distributed Switch. ||
 | **Version** | Optional | string | The version of the vSphere Distributed Switch that you want to configure. You cannot specify a version that is incompatible with the version of the vCenter Server system you are connected to. ||
 | **WithoutPortGroups** | Optional | bool | Indicates whether the new vSphere Distributed Switch will be created without importing the port groups from the specified reference vSphere Distributed Switch. ||
 
@@ -120,7 +120,7 @@ Configuration VDSwitch_Config {
             DatacenterName = 'Datacenter'
             DatacenterLocation = ''
             Ensure = 'Present'
-            ReferenceVDSwitch = 'MyDistributedSwitch'
+            ReferenceVDSwitchName = 'MyDistributedSwitch'
             WithoutPortGroups = $true
             DependsOn = "[VDSwitch]VDSwitch"
         }
