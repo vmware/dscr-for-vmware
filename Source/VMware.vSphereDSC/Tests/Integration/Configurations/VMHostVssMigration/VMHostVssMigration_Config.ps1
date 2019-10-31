@@ -65,32 +65,6 @@ Configuration VMHostVssMigration_CreateVDSwitchTwoVDPortGroupsStandardSwitchAndA
     }
 }
 
-Configuration VMHostVssMigration_CreateManagementAndvMotionVMKernelNetworkAdapters_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostVdsNic $AllNodes.VMHostVdsManagementNicResourceName {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.VMHostName
-            VdsName = $AllNodes.VDSwitchName
-            PortGroupName = $AllNodes.ManagementPortGroupName
-            Ensure = 'Present'
-            ManagementTrafficEnabled = $AllNodes.ManagementTrafficEnabled
-        }
-
-        VMHostVdsNic $AllNodes.VMHostVdsvMotionNicResourceName {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.VMHostName
-            VdsName = $AllNodes.VDSwitchName
-            PortGroupName = $AllNodes.VMotionPortGroupName
-            Ensure = 'Present'
-            VMotionEnabled = $AllNodes.VMotionEnabled
-        }
-    }
-}
-
 Configuration VMHostVssMigration_MigrateThreePhysicalNetworkAdaptersToDistributedSwitch_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 

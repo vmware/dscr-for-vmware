@@ -161,6 +161,28 @@ function Invoke-TestSetup {
 <#
 .DESCRIPTION
 
+Creates two VMKernel Network Adapters on different Distributed Port Groups and on the same Distributed Switch.
+#>
+function New-VMKernelNetworkAdaptersOnDistributedSwitch {
+    [CmdletBinding()]
+
+    $distributedSwitchName = $script:configurationData.AllNodes.VDSwitchName
+    $managementPortGroupName = $script:configurationData.AllNodes.ManagementPortGroupName
+    $vMotionPortGroupName = $script:configurationData.AllNodes.VMotionPortGroupName
+
+    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password -ErrorAction Stop
+    $vmHost = Get-VMHost -Server $viServer -Name $Name -ErrorAction Stop
+    $distributedSwitch = Get-VDSwitch -Server $viServer -Name $distributedSwitchName -ErrorAction Stop
+
+    New-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -VirtualSwitch $distributedSwitch -PortGroup $managementPortGroupName -ManagementTrafficEnabled:$true -ErrorAction Stop
+    New-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -VirtualSwitch $distributedSwitch -PortGroup $vMotionPortGroupName -VMotionEnabled:$true -ErrorAction Stop
+
+    Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop
+}
+
+<#
+.DESCRIPTION
+
 Retrieves the names of the VMKernel Network Adapters connected to Standard Switch used in the Integration Tests.
 #>
 function Get-VMKernelNetworkAdapterNamesConnectedToStandardSwitch {
@@ -235,6 +257,55 @@ function Get-PortGroupNamesWithVMKernelPrefix {
 
     # Here we need to modify the Configuration Data passed to each Configuration to include the retrieved Port Group names with VMKernel prefix.
     $script:configurationData.AllNodes[0].PortGroupNamesWithVMKernelPrefix = @($vmKernelNetworkAdapterWithManagementTrafficEnabled.PortGroupName, $vmKernelNetworkAdapterWithvMotionEnabled.PortGroupName)
+
+    Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop
+}
+
+<#
+.DESCRIPTION
+
+Removes VMKernel Network Adapters connected to the same Distributed Port Group.
+#>
+function Remove-ManagementAndvMotionVMKernelNetworkAdaptersConnectedToTheSamePortGroup {
+    [CmdletBinding()]
+
+    $distributedSwitchName = $script:configurationData.AllNodes.VDSwitchName
+    $portGroupName = $script:configurationData.AllNodes.PortGroupName
+
+    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password -ErrorAction Stop
+    $vmHost = Get-VMHost -Server $viServer -Name $Name -ErrorAction Stop
+    $distributedSwitch = Get-VDSwitch -Server $viServer -Name $distributedSwitchName -ErrorAction Stop
+    $portGroup = Get-VDPortgroup -Server $viServer -Name $portGroupName -VDSwitch $distributedSwitch -ErrorAction Stop
+
+    $vmKernelNetworkAdapters = Get-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -VirtualSwitch $distributedSwitch -PortGroup $portGroup -VMKernel -ErrorAction Stop
+    $vmKernelNetworkAdapters | Remove-VMHostNetworkAdapter -Confirm:$false -ErrorAction Stop
+
+    Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop
+}
+
+<#
+.DESCRIPTION
+
+Removes VMKernel Network Adapters connected to different Distributed Port Groups on the same Distributed Switch.
+#>
+function Remove-ManagementAndvMotionVMKernelNetworkAdaptersConnectedToDifferentPortGroups {
+    [CmdletBinding()]
+
+    $distributedSwitchName = $script:configurationData.AllNodes.VDSwitchName
+    $managementPortGroupName = $script:configurationData.AllNodes.ManagementPortGroupName
+    $vMotionPortGroupName = $script:configurationData.AllNodes.VMotionPortGroupName
+
+    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password -ErrorAction Stop
+    $vmHost = Get-VMHost -Server $viServer -Name $Name -ErrorAction Stop
+    $distributedSwitch = Get-VDSwitch -Server $viServer -Name $distributedSwitchName -ErrorAction Stop
+    $managementPortGroup = Get-VDPortgroup -Server $viServer -Name $managementPortGroupName -VDSwitch $distributedSwitch -ErrorAction Stop
+    $vMotionPortGroup = Get-VDPortgroup -Server $viServer -Name $vMotionPortGroupName -VDSwitch $distributedSwitch -ErrorAction Stop
+
+    $vmKernelNetworkAdapterWithManagementTrafficEnabled = Get-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -VirtualSwitch $distributedSwitch -PortGroup $managementPortGroup -VMKernel -ErrorAction Stop
+    $vmKernelNetworkAdapterWithvMotionEnabled = Get-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -VirtualSwitch $distributedSwitch -PortGroup $vMotionPortGroup -VMKernel -ErrorAction Stop
+
+    $vmKernelNetworkAdapterWithManagementTrafficEnabled | Remove-VMHostNetworkAdapter -Confirm:$false -ErrorAction Stop
+    $vmKernelNetworkAdapterWithvMotionEnabled | Remove-VMHostNetworkAdapter -Confirm:$false -ErrorAction Stop
 
     Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop
 }

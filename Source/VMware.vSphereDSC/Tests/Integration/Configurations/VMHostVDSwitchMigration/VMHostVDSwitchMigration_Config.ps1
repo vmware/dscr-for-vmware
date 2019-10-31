@@ -235,45 +235,6 @@ Configuration VMHostVDSwitchMigration_MigrateTwoDisconnectedAndOneConnectedPhysi
     }
 }
 
-Configuration VMHostVDSwitchMigration_RemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostVdsNic $AllNodes.VMHostVdsNicResourceName {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.VMHostName
-            VdsName = $AllNodes.VDSwitchName
-            PortGroupName = $AllNodes.PortGroupName
-            Ensure = 'Absent'
-        }
-    }
-}
-
-Configuration VMHostVDSwitchMigration_RemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostVdsNic $AllNodes.VMHostVdsManagementNicResourceName {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.VMHostName
-            VdsName = $AllNodes.VDSwitchName
-            PortGroupName = $AllNodes.ManagementPortGroupName
-            Ensure = 'Absent'
-        }
-
-        VMHostVdsNic $AllNodes.VMHostVdsvMotionNicResourceName {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.VMHostName
-            VdsName = $AllNodes.VDSwitchName
-            PortGroupName = $AllNodes.VMotionPortGroupName
-            Ensure = 'Absent'
-        }
-    }
-}
-
 Configuration VMHostVDSwitchMigration_RemoveVDSwitchStandardSwitchAndStandardPortGroup_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
