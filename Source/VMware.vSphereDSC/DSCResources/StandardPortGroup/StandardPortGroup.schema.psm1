@@ -14,6 +14,9 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
+$script:moduleRoot = (Get-Item -Path $PSScriptRoot).Parent.Parent.FullName
+. "$script:moduleRoot/VMware.vSphereDSC.CompositeResourcesHelper.ps1"
+
 Configuration StandardPortGroup {
     Param(
         [Parameter(Mandatory = $true)]
@@ -48,57 +51,57 @@ Configuration StandardPortGroup {
         $Ensure,
 
         [Parameter(Mandatory = $false)]
-        [int]
+        [nullable[int]]
         $VLanId,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $AllowPromiscuous,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $AllowPromiscuousInherited,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $ForgedTransmits,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $ForgedTransmitsInherited,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $MacChanges,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $MacChangesInherited,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $Enabled,
 
         [Parameter(Mandatory = $false)]
-        [long]
+        [nullable[long]]
         $AverageBandwidth,
 
         [Parameter(Mandatory = $false)]
-        [long]
+        [nullable[long]]
         $PeakBandwidth,
 
         [Parameter(Mandatory = $false)]
-        [long]
+        [nullable[long]]
         $BurstSize,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $FailbackEnabled,
 
         [Parameter(Mandatory = $false)]
-        [ValidateSet('LoadBalanceIP', 'LoadBalanceSrcMac', 'LoadBalanceSrcId', 'ExplicitFailover')]
+        [ValidateSet('LoadBalanceIP', 'LoadBalanceSrcMac', 'LoadBalanceSrcId', 'ExplicitFailover', 'Unset')]
         [string]
-        $LoadBalancingPolicy,
+        $LoadBalancingPolicy = 'Unset',
 
         [Parameter(Mandatory = $false)]
         [string[]]
@@ -113,93 +116,117 @@ Configuration StandardPortGroup {
         $MakeNicUnused,
 
         [Parameter(Mandatory = $false)]
-        [ValidateSet('LinkStatus', 'BeaconProbing')]
+        [ValidateSet('LinkStatus', 'BeaconProbing', 'Unset')]
         [string]
-        $NetworkFailoverDetectionPolicy,
+        $NetworkFailoverDetectionPolicy = 'Unset',
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $NotifySwitches,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $InheritFailback,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $InheritFailoverOrder,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $InheritLoadBalancingPolicy,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $InheritNetworkFailoverDetectionPolicy,
 
         [Parameter(Mandatory = $false)]
-        [bool]
+        [nullable[bool]]
         $InheritNotifySwitches
     )
 
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    VMHostVssPortGroup VMHostVssPortGroup {
+    # Constructs VMHostVssPortGroup Resource Block.
+    $nullableVMHostVssPortGroupProperties = @{
+        VLanId = $VLanId
+    }
+    $vmHostVssPortGroupProperties = @{
         Server = $Server
         Credential = $Credential
         VMHostName = $VMHostName
         Name = $Name
         VssName = $VssName
         Ensure = $Ensure
-        VLanId = $VLanId
     }
 
-    VMHostVssPortGroupSecurity VMHostVssPortGroupSecurity {
+    Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssPortGroupProperties -NullableProperties $nullableVMHostVssPortGroupProperties
+    New-DscResourceBlock -ResourceName 'VMHostVssPortGroup' -Properties $vmHostVssPortGroupProperties
+
+    # Constructs VMHostVssPortGroupShaping Resource Block.
+    $nullableVMHostVssPortGroupShapingProperties = @{
+        Enabled = $Enabled
+        AverageBandwidth = $AverageBandwidth
+        PeakBandwidth = $PeakBandwidth
+        BurstSize = $BurstSize
+    }
+    $vmHostVssPortGroupShapingProperties = @{
         Server = $Server
         Credential = $Credential
         VMHostName = $VMHostName
         Name = $Name
         Ensure = $Ensure
+        DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
+    }
+
+    Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssPortGroupShapingProperties -NullableProperties $nullableVMHostVssPortGroupShapingProperties
+    New-DscResourceBlock -ResourceName 'VMHostVssPortGroupShaping' -Properties $vmHostVssPortGroupShapingProperties
+
+    # Constructs VMHostVssPortGroupSecurity Resource Block.
+    $nullableVMHostVssPortGroupSecurityProperties = @{
         AllowPromiscuous = $AllowPromiscuous
         AllowPromiscuousInherited = $AllowPromiscuousInherited
         ForgedTransmits = $ForgedTransmits
         ForgedTransmitsInherited = $ForgedTransmitsInherited
         MacChanges = $MacChanges
         MacChangesInherited = $MacChangesInherited
-        DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
     }
-
-    VMHostVssPortGroupShaping VMHostVssPortGroupShaping {
+    $vmHostVssPortGroupSecurityProperties = @{
         Server = $Server
         Credential = $Credential
         VMHostName = $VMHostName
         Name = $Name
         Ensure = $Ensure
-        Enabled = $Enabled
-        AverageBandwidth = $AverageBandwidth
-        PeakBandwidth = $PeakBandwidth
-        BurstSize = $BurstSize
         DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
     }
 
-    VMHostVssPortGroupTeaming VMHostVssPortGroupTeaming {
-        Server = $Server
-        Credential = $Credential
-        VMHostName = $VMHostName
-        Name = $Name
-        Ensure = $Ensure
+    Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssPortGroupSecurityProperties -NullableProperties $nullableVMHostVssPortGroupSecurityProperties
+    New-DscResourceBlock -ResourceName 'VMHostVssPortGroupSecurity' -Properties $vmHostVssPortGroupSecurityProperties
+
+    # Constructs VMHostVssPortGroupTeaming Resource Block.
+    $nullableVMHostVssPortGroupTeamingProperties = @{
         FailbackEnabled = $FailbackEnabled
-        LoadBalancingPolicy = $LoadBalancingPolicy
-        MakeNicActive = $MakeNicActive
-        MakeNicStandby = $MakeNicStandby
-        MakeNicUnused = $MakeNicUnused
-        NetworkFailoverDetectionPolicy = $NetworkFailoverDetectionPolicy
         NotifySwitches = $NotifySwitches
         InheritFailback = $InheritFailback
         InheritFailoverOrder = $InheritFailoverOrder
         InheritLoadBalancingPolicy = $InheritLoadBalancingPolicy
         InheritNetworkFailoverDetectionPolicy = $InheritNetworkFailoverDetectionPolicy
         InheritNotifySwitches = $InheritNotifySwitches
+    }
+    $vmHostVssPortGroupTeamingProperties = @{
+        Server = $Server
+        Credential = $Credential
+        VMHostName = $VMHostName
+        Name = $Name
+        Ensure = $Ensure
+        LoadBalancingPolicy = $LoadBalancingPolicy
+        MakeNicActive = $MakeNicActive
+        MakeNicStandby = $MakeNicStandby
+        MakeNicUnused = $MakeNicUnused
+        NetworkFailoverDetectionPolicy = $NetworkFailoverDetectionPolicy
         DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
     }
+
+    Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssPortGroupTeamingProperties -NullableProperties $nullableVMHostVssPortGroupTeamingProperties
+    New-DscResourceBlock -ResourceName 'VMHostVssPortGroupTeaming' -Properties $vmHostVssPortGroupTeamingProperties
 }
