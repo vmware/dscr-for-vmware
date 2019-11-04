@@ -14,72 +14,104 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
+$script:moduleRoot = (Get-Item -Path $PSScriptRoot).Parent.Parent.FullName
+. "$script:moduleRoot/VMware.vSphereDSC.CompositeResourcesHelper.ps1"
+
 Configuration Cluster {
     Param(
         [Parameter(Mandatory = $true)]
-        [string] $Server,
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Server,
 
         [Parameter(Mandatory = $true)]
-        [PSCredential] $Credential,
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.PSCredential]
+        $Credential,
 
         [Parameter(Mandatory = $true)]
-        [string] $Name,
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Name,
 
         [Parameter(Mandatory = $true)]
         [AllowEmptyString()]
-        [string] $Location,
+        [string]
+        $Location,
 
         [Parameter(Mandatory = $true)]
-        [string] $DatacenterName,
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $DatacenterName,
 
         [Parameter(Mandatory = $true)]
         [AllowEmptyString()]
-        [string] $DatacenterLocation,
+        [string]
+        $DatacenterLocation,
 
         [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
         [ValidateSet('Present', 'Absent')]
-        [string] $Ensure,
+        [string]
+        $Ensure,
 
         [Parameter(Mandatory = $false)]
-        [bool] $HAEnabled,
+        [nullable[bool]]
+        $HAEnabled,
 
         [Parameter(Mandatory = $false)]
-        [bool] $HAAdmissionControlEnabled,
+        [nullable[bool]]
+        $HAAdmissionControlEnabled,
 
         [Parameter(Mandatory = $false)]
-        [int] $HAFailoverLevel,
+        [nullable[int]]
+        $HAFailoverLevel,
 
         [Parameter(Mandatory = $false)]
         [ValidateSet('PowerOff', 'DoNothing', 'Shutdown', 'Unset')]
-        [string] $HAIsolationResponse,
+        [string]
+        $HAIsolationResponse = 'Unset',
 
         [Parameter(Mandatory = $false)]
         [ValidateSet('Disabled', 'Low', 'Medium', 'High', 'Unset')]
-        [string] $HARestartPriority,
+        [string]
+        $HARestartPriority = 'Unset',
 
         [Parameter(Mandatory = $false)]
-        [bool] $DrsEnabled,
+        [nullable[bool]]
+        $DrsEnabled,
 
         [Parameter(Mandatory = $false)]
         [ValidateSet('FullyAutomated', 'Manual', 'PartiallyAutomated', 'Disabled', 'Unset')]
-        [string] $DrsAutomationLevel,
+        [string]
+        $DrsAutomationLevel = 'Unset',
 
         [Parameter(Mandatory = $false)]
-        [int] $DrsMigrationThreshold,
+        [nullable[int]]
+        $DrsMigrationThreshold,
 
         [Parameter(Mandatory = $false)]
-        [int] $DrsDistribution,
+        [nullable[int]]
+        $DrsDistribution,
 
         [Parameter(Mandatory = $false)]
-        [int] $MemoryLoadBalancing,
+        [nullable[int]]
+        $MemoryLoadBalancing,
 
         [Parameter(Mandatory = $false)]
-        [int] $CPUOverCommitment
+        [nullable[int]]
+        $CPUOverCommitment
     )
 
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    HACluster haCluster {
+    # Constructs HACluster Resource Block.
+    $nullableHAClusterProperties = @{
+        HAEnabled = $HAEnabled
+        HAAdmissionControlEnabled = $HAAdmissionControlEnabled
+        HAFailoverLevel = $HAFailoverLevel
+    }
+    $haClusterProperties = @{
         Server = $Server
         Credential = $Credential
         Ensure = $Ensure
@@ -87,26 +119,32 @@ Configuration Cluster {
         DatacenterName = $DatacenterName
         DatacenterLocation = $DatacenterLocation
         Name = $Name
-        HAEnabled = $HAEnabled
-        HAAdmissionControlEnabled = $HAAdmissionControlEnabled
-        HAFailoverLevel = $HAFailoverLevel
         HAIsolationResponse = $HAIsolationResponse
         HARestartPriority = $HARestartPriority
     }
 
-    DrsCluster drsCluster {
-        Server = $Server
-        Credential = $Credential
-        Ensure = $Ensure
-        Location = $Location
-        DatacenterName = $DatacenterName
-        DatacenterLocation = $DatacenterLocation
-        Name = $Name
+    Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $haClusterProperties -NullableProperties $nullableHAClusterProperties
+    New-DscResourceBlock -ResourceName 'HACluster' -Properties $haClusterProperties
+
+    # Constructs DrsCluster Resource Block.
+    $nullableDrsClusterProperties = @{
         DrsEnabled = $DrsEnabled
-        DrsAutomationLevel = $DrsAutomationLevel
         DrsMigrationThreshold = $DrsMigrationThreshold
         DrsDistribution = $DrsDistribution
         MemoryLoadBalancing = $MemoryLoadBalancing
         CPUOverCommitment = $CPUOverCommitment
     }
+    $drsClusterProperties = @{
+        Server = $Server
+        Credential = $Credential
+        Ensure = $Ensure
+        Location = $Location
+        DatacenterName = $DatacenterName
+        DatacenterLocation = $DatacenterLocation
+        Name = $Name
+        DrsAutomationLevel = $DrsAutomationLevel
+    }
+
+    Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $drsClusterProperties -NullableProperties $nullableDrsClusterProperties
+    New-DscResourceBlock -ResourceName 'DrsCluster' -Properties $drsClusterProperties
 }
