@@ -51,9 +51,9 @@ function New-MocksWhenTeamingPolicySettingsArePassedAndTeamingPolicySettingsInhe
     $vmHostVssPortGroupTeamingProperties.LoadBalancingPolicy = $script:constants.LoadBalancingPolicyIP
     $vmHostVssPortGroupTeamingProperties.NetworkFailoverDetectionPolicy = $script:constants.NetworkFailoverDetectionPolicy
     $vmHostVssPortGroupTeamingProperties.NotifySwitches = $script:constants.NotifySwitches
-    $vmHostVssPortGroupTeamingProperties.MakeNicActive = $script:constants.MakeNicActive
-    $vmHostVssPortGroupTeamingProperties.MakeNicStandby = $script:constants.MakeNicStandby
-    $vmHostVssPortGroupTeamingProperties.MakeNicUnused = $script:constants.MakeNicUnused
+    $vmHostVssPortGroupTeamingProperties.ActiveNic = $script:constants.ActiveNic
+    $vmHostVssPortGroupTeamingProperties.StandbyNic = $script:constants.StandbyNic
+    $vmHostVssPortGroupTeamingProperties.UnusedNic = $script:constants.UnusedNic
 
     $virtualPortGroupTeamingPolicyMock = $script:virtualPortGroupTeamingPolicy
 
@@ -73,9 +73,9 @@ function New-MocksWhenTeamingPolicySettingsArePassedAndTeamingPolicySettingsInhe
     $vmHostVssPortGroupTeamingProperties.LoadBalancingPolicy = $script:constants.LoadBalancingPolicyIP
     $vmHostVssPortGroupTeamingProperties.NetworkFailoverDetectionPolicy = $script:constants.NetworkFailoverDetectionPolicy
     $vmHostVssPortGroupTeamingProperties.NotifySwitches = $script:constants.NotifySwitches
-    $vmHostVssPortGroupTeamingProperties.MakeNicActive = $script:constants.MakeNicActive
-    $vmHostVssPortGroupTeamingProperties.MakeNicStandby = $script:constants.MakeNicStandby
-    $vmHostVssPortGroupTeamingProperties.MakeNicUnused = $script:constants.MakeNicUnused
+    $vmHostVssPortGroupTeamingProperties.ActiveNic = $script:constants.ActiveNic
+    $vmHostVssPortGroupTeamingProperties.StandbyNic = $script:constants.StandbyNic
+    $vmHostVssPortGroupTeamingProperties.UnusedNic = $script:constants.UnusedNic
     $vmHostVssPortGroupTeamingProperties.InheritFailback = $script:constants.InheritFailback
     $vmHostVssPortGroupTeamingProperties.InheritFailoverOrder = $script:constants.InheritFailoverOrder
     $vmHostVssPortGroupTeamingProperties.InheritLoadBalancingPolicy = $script:constants.InheritLoadBalancingPolicy
@@ -100,9 +100,9 @@ function New-MocksWhenTeamingPolicySettingsArePassedAndTeamingPolicySettingsInhe
     $vmHostVssPortGroupTeamingProperties.LoadBalancingPolicy = $script:constants.LoadBalancingPolicyIP
     $vmHostVssPortGroupTeamingProperties.NetworkFailoverDetectionPolicy = $script:constants.NetworkFailoverDetectionPolicy
     $vmHostVssPortGroupTeamingProperties.NotifySwitches = $script:constants.NotifySwitches
-    $vmHostVssPortGroupTeamingProperties.MakeNicActive = $script:constants.MakeNicActive
-    $vmHostVssPortGroupTeamingProperties.MakeNicStandby = $script:constants.MakeNicStandby
-    $vmHostVssPortGroupTeamingProperties.MakeNicUnused = $script:constants.MakeNicUnused
+    $vmHostVssPortGroupTeamingProperties.ActiveNic = $script:constants.ActiveNic
+    $vmHostVssPortGroupTeamingProperties.StandbyNic = $script:constants.StandbyNic
+    $vmHostVssPortGroupTeamingProperties.UnusedNic = $script:constants.UnusedNic
     $vmHostVssPortGroupTeamingProperties.InheritFailback = !$script:constants.InheritFailback
     $vmHostVssPortGroupTeamingProperties.InheritFailoverOrder = !$script:constants.InheritFailoverOrder
     $vmHostVssPortGroupTeamingProperties.InheritLoadBalancingPolicy = !$script:constants.InheritLoadBalancingPolicy
@@ -125,8 +125,8 @@ function New-MocksWhenTheTeamingPolicySettingsAreNonMatching {
 
     $vmHostVssPortGroupTeamingProperties.FailbackEnabled = !$script:constants.FailbackEnabled
     $vmHostVssPortGroupTeamingProperties.LoadBalancingPolicy = $script:constants.LoadBalancingPolicySrcMac
-    $vmHostVssPortGroupTeamingProperties.MakeNicActive = $script:constants.MakeNicActiveSubset
-    $vmHostVssPortGroupTeamingProperties.MakeNicUnused = $script:constants.MakeNicUnusedEmpty
+    $vmHostVssPortGroupTeamingProperties.ActiveNic = $script:constants.ActiveNicSubset
+    $vmHostVssPortGroupTeamingProperties.UnusedNic = $script:constants.UnusedNicEmpty
     $vmHostVssPortGroupTeamingProperties.InheritNotifySwitches = !$script:constants.InheritNotifySwitches
 
     $virtualPortGroupTeamingPolicyMock = $script:virtualPortGroupTeamingPolicy
@@ -146,9 +146,9 @@ function New-MocksWhenTheTeamingPolicySettingsAreMatching {
     $vmHostVssPortGroupTeamingProperties.LoadBalancingPolicy = $script:constants.LoadBalancingPolicyIP
     $vmHostVssPortGroupTeamingProperties.NetworkFailoverDetectionPolicy = $script:constants.NetworkFailoverDetectionPolicy
     $vmHostVssPortGroupTeamingProperties.NotifySwitches = $script:constants.NotifySwitches
-    $vmHostVssPortGroupTeamingProperties.MakeNicActive = $script:constants.MakeNicActive
-    $vmHostVssPortGroupTeamingProperties.MakeNicStandby = $script:constants.MakeNicStandby
-    $vmHostVssPortGroupTeamingProperties.MakeNicUnused = $script:constants.MakeNicUnused
+    $vmHostVssPortGroupTeamingProperties.ActiveNic = $script:constants.ActiveNic
+    $vmHostVssPortGroupTeamingProperties.StandbyNic = $script:constants.StandbyNic
+    $vmHostVssPortGroupTeamingProperties.UnusedNic = $script:constants.UnusedNic
     $vmHostVssPortGroupTeamingProperties.InheritFailback = $script:constants.InheritFailback
     $vmHostVssPortGroupTeamingProperties.InheritFailoverOrder = $script:constants.InheritFailoverOrder
     $vmHostVssPortGroupTeamingProperties.InheritLoadBalancingPolicy = $script:constants.InheritLoadBalancingPolicy

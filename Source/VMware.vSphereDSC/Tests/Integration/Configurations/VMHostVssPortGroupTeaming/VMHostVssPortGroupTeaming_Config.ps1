@@ -80,9 +80,9 @@ Configuration VMHostVssPortGroupTeaming_WhenUpdatingTeamingPolicyWithoutInheritS
             Ensure = 'Present'
             FailbackEnabled = $AllNodes.FailbackEnabled
             LoadBalancingPolicy = $AllNodes.LoadBalancingPolicy
-            MakeNicActive = $AllNodes.MakeNicActive
-            MakeNicStandby = $AllNodes.MakeNicStandby
-            MakeNicUnused = $AllNodes.DefaultMakeNicUnused
+            ActiveNic = $AllNodes.ActiveNic
+            StandbyNic = $AllNodes.StandbyNic
+            UnusedNic = $AllNodes.DefaultUnusedNic
             NetworkFailoverDetectionPolicy = $AllNodes.NetworkFailoverDetectionPolicyLinkStatus
             NotifySwitches = $AllNodes.NotifySwitches
         }
@@ -101,9 +101,9 @@ Configuration VMHostVssPortGroupTeaming_WhenUpdatingTeamingPolicyWithInheritSett
             Ensure = 'Present'
             FailbackEnabled = $AllNodes.FailbackEnabled
             LoadBalancingPolicy = $AllNodes.LoadBalancingPolicy
-            MakeNicActive = $AllNodes.MakeNicActive
-            MakeNicStandby = $AllNodes.DefaultMakeNicStandby
-            MakeNicUnused = $AllNodes.MakeNicUnused
+            ActiveNic = $AllNodes.ActiveNic
+            StandbyNic = $AllNodes.DefaultStandbyNic
+            UnusedNic = $AllNodes.UnusedNic
             NetworkFailoverDetectionPolicy = $AllNodes.NetworkFailoverDetectionPolicyLinkStatus
             NotifySwitches = $AllNodes.NotifySwitches
             InheritFailback = $AllNodes.InheritFailback
@@ -126,9 +126,9 @@ Configuration VMHostVssPortGroupTeaming_WhenUpdatingTeamingPolicyWithInheritSett
             Ensure = 'Present'
             FailbackEnabled = $AllNodes.FailbackEnabled
             LoadBalancingPolicy = $AllNodes.LoadBalancingPolicy
-            MakeNicActive = $AllNodes.Nic
-            MakeNicStandby = $AllNodes.DefaultMakeNicStandby
-            MakeNicUnused = $AllNodes.DefaultMakeNicUnused
+            ActiveNic = $AllNodes.Nic
+            StandbyNic = $AllNodes.DefaultStandbyNic
+            UnusedNic = $AllNodes.DefaultUnusedNic
             NetworkFailoverDetectionPolicy = $AllNodes.NetworkFailoverDetectionPolicyBeaconProbing
             NotifySwitches = $AllNodes.NotifySwitches
             InheritFailback = !$AllNodes.InheritFailback

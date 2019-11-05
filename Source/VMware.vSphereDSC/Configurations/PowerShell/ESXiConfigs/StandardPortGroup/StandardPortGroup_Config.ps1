@@ -84,9 +84,9 @@ Configuration StandardPortGroup_Config {
             MacChangesInherited = $false
             FailbackEnabled = $false
             LoadBalancingPolicy = 'LoadBalanceIP'
-            MakeNicActive = @('vmnic2', 'vmnic3')
-            MakeNicStandby = @()
-            MakeNicUnused = @()
+            ActiveNic = @('vmnic2', 'vmnic3')
+            StandbyNic = @()
+            UnusedNic = @()
             NetworkFailoverDetectionPolicy = 'LinkStatus'
             NotifySwitches = $false
             InheritFailback = $false

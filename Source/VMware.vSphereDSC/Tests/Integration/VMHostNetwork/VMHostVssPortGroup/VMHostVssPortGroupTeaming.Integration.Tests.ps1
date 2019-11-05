@@ -115,11 +115,11 @@ $script:configurationData = @{
             VlanId = 0
             FailbackEnabled = $false
             LoadBalancingPolicy = 'LoadBalanceIP'
-            MakeNicActive = @($script:physicalNic1)
-            MakeNicStandby = @($script:physicalNic2)
-            DefaultMakeNicStandby = @()
-            MakeNicUnused = @($script:physicalNic2)
-            DefaultMakeNicUnused = @()
+            ActiveNic = @($script:physicalNic1)
+            StandbyNic = @($script:physicalNic2)
+            DefaultStandbyNic = @()
+            UnusedNic = @($script:physicalNic2)
+            DefaultUnusedNic = @()
             NetworkFailoverDetectionPolicyLinkStatus = 'LinkStatus'
             NetworkFailoverDetectionPolicyBeaconProbing = 'BeaconProbing'
             InheritFailback = $false
@@ -214,9 +214,9 @@ try {
                 $configuration.Ensure | Should -Be 'Present'
                 $configuration.FailbackEnabled | Should -Be $script:configurationData.AllNodes.FailbackEnabled
                 $configuration.LoadBalancingPolicy | Should -Be $script:configurationData.AllNodes.LoadBalancingPolicy
-                $configuration.MakeNicActive | Should -Be $script:configurationData.AllNodes.MakeNicActive
-                $configuration.MakeNicStandby | Should -Be $script:configurationData.AllNodes.MakeNicStandby
-                $configuration.MakeNicUnused | Should -Be $script:configurationData.AllNodes.DefaultMakeNicUnused
+                $configuration.ActiveNic | Should -Be $script:configurationData.AllNodes.ActiveNic
+                $configuration.StandbyNic | Should -Be $script:configurationData.AllNodes.StandbyNic
+                $configuration.UnusedNic | Should -Be $script:configurationData.AllNodes.DefaultUnusedNic
                 $configuration.NetworkFailoverDetectionPolicy | Should -Be $script:configurationData.AllNodes.NetworkFailoverDetectionPolicyLinkStatus
                 $configuration.NotifySwitches | Should -Be $script:configurationData.AllNodes.NotifySwitches
                 $configuration.InheritFailback | Should -Be $script:configurationData.AllNodes.InheritFailback
@@ -331,9 +331,9 @@ try {
                 $configuration.Ensure | Should -Be 'Present'
                 $configuration.FailbackEnabled | Should -Be $script:configurationData.AllNodes.FailbackEnabled
                 $configuration.LoadBalancingPolicy | Should -Be $script:configurationData.AllNodes.LoadBalancingPolicy
-                $configuration.MakeNicActive | Should -Be $script:configurationData.AllNodes.MakeNicActive
-                $configuration.MakeNicStandby | Should -Be $script:configurationData.AllNodes.DefaultMakeNicStandby
-                $configuration.MakeNicUnused | Should -Be $script:configurationData.AllNodes.MakeNicUnused
+                $configuration.ActiveNic | Should -Be $script:configurationData.AllNodes.ActiveNic
+                $configuration.StandbyNic | Should -Be $script:configurationData.AllNodes.DefaultStandbyNic
+                $configuration.UnusedNic | Should -Be $script:configurationData.AllNodes.UnusedNic
                 $configuration.NetworkFailoverDetectionPolicy | Should -Be $script:configurationData.AllNodes.NetworkFailoverDetectionPolicyLinkStatus
                 $configuration.NotifySwitches | Should -Be $script:configurationData.AllNodes.NotifySwitches
                 $configuration.InheritFailback | Should -Be $script:configurationData.AllNodes.InheritFailback
@@ -448,9 +448,9 @@ try {
                 $configuration.Ensure | Should -Be 'Present'
                 $configuration.FailbackEnabled | Should -Be $script:configurationData.AllNodes.FailbackEnabled
                 $configuration.LoadBalancingPolicy | Should -Be $script:configurationData.AllNodes.LoadBalancingPolicy
-                $configuration.MakeNicActive | Should -Be $script:configurationData.AllNodes.Nic
-                $configuration.MakeNicStandby | Should -Be $script:configurationData.AllNodes.DefaultMakeNicStandby
-                $configuration.MakeNicUnused | Should -Be $script:configurationData.AllNodes.DefaultMakeNicUnused
+                $configuration.ActiveNic | Should -Be $script:configurationData.AllNodes.Nic
+                $configuration.StandbyNic | Should -Be $script:configurationData.AllNodes.DefaultStandbyNic
+                $configuration.UnusedNic | Should -Be $script:configurationData.AllNodes.DefaultUnusedNic
                 $configuration.NetworkFailoverDetectionPolicy | Should -Be $script:configurationData.AllNodes.NetworkFailoverDetectionPolicyBeaconProbing
                 $configuration.NotifySwitches | Should -Be $script:configurationData.AllNodes.NotifySwitches
                 $configuration.InheritFailback | Should -Be $true

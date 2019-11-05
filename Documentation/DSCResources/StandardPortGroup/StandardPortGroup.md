@@ -23,13 +23,13 @@
 | **MacChangesInherited** | Optional | bool | Specifies whether the MacChanges setting is inherited from the parent Standard Switch. ||
 | **FailbackEnabled** | Optional | bool | Specifies how a Physical Adapter is returned to active duty after recovering from a failure. ||
 | **LoadBalancingPolicy** | Optional | LoadBalancingPolicy | Determines how network traffic is distributed between the network Adapters assigned to a Switch. | LoadBalanceIP, LoadBalanceSrcMac, LoadBalanceSrcId, ExplicitFailover |
-| **MakeNicActive** | Optional | string[] | The Adapters you want to continue to use when the network Adapter connectivity is available and active. ||
-| **MakeNicStandby** | Optional | string[] | The Adapters you want to use if one of the active Adapter's connectivity is unavailable. ||
-| **MakeNicUnused** | Optional | string[] | The Adapters you do not want to use. ||
+| **ActiveNic** | Optional | string[] | The Adapters you want to continue to use when the network Adapter connectivity is available and active. ||
+| **StandbyNic** | Optional | string[] | The Adapters you want to use if one of the active Adapter's connectivity is unavailable. ||
+| **UnusedNic** | Optional | string[] | The Adapters you do not want to use. ||
 | **NetworkFailoverDetectionPolicy** | Optional | NetworkFailoverDetectionPolicy | Specifies how to reroute traffic in the event of an Adapter failure. | LinkStatus, BeaconProbing |
 | **NotifySwitches** | Optional | bool | Indicates that whenever a virtual NIC is connected to the Standard Switch or whenever that virtual NIC's traffic is routed over a different physical NIC in the team because of a failover event, a notification is sent over the network to update the lookup tables on the physical Switches. ||
 | **InheritFailback** | Optional | bool | Indicates that the value of the FailbackEnabled parameter is inherited from the Standard Switch. ||
-| **InheritFailoverOrder** | Optional | bool | Indicates that the value of the MakeNicActive, MakeNicStandBy, and MakeNicUnused parameters are inherited from the Standard Switch. ||
+| **InheritFailoverOrder** | Optional | bool | Indicates that the values of the ActiveNic, StandbyNic, and UnusedNic parameters are inherited from the Standard Switch. ||
 | **InheritLoadBalancingPolicy** | Optional | bool | Indicates that the value of the LoadBalancingPolicy parameter is inherited from the Standard Switch. ||
 | **InheritNetworkFailoverDetectionPolicy** | Optional | bool | Indicates that the value of the NetworkFailoverDetectionPolicy parameter is inherited from the Standard Switch. ||
 | **InheritNotifySwitches** | Optional | bool | Indicates that the value of the NotifySwitches parameter is inherited from the Standard Switch. ||
@@ -92,9 +92,9 @@ Configuration StandardPortGroup_Config {
             MacChangesInherited = $false
             FailbackEnabled = $false
             LoadBalancingPolicy = 'LoadBalanceIP'
-            MakeNicActive = @('vmnic2', 'vmnic3')
-            MakeNicStandby = @()
-            MakeNicUnused = @()
+            ActiveNic = @('vmnic2', 'vmnic3')
+            StandbyNic = @()
+            UnusedNic = @()
             NetworkFailoverDetectionPolicy = 'LinkStatus'
             NotifySwitches = $false
             InheritFailback = $false

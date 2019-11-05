@@ -105,15 +105,15 @@ Configuration StandardPortGroup {
 
         [Parameter(Mandatory = $false)]
         [string[]]
-        $MakeNicActive,
+        $ActiveNic,
 
         [Parameter(Mandatory = $false)]
         [string[]]
-        $MakeNicStandby,
+        $StandbyNic,
 
         [Parameter(Mandatory = $false)]
         [string[]]
-        $MakeNicUnused,
+        $UnusedNic,
 
         [Parameter(Mandatory = $false)]
         [ValidateSet('LinkStatus', 'BeaconProbing', 'Unset')]
@@ -220,9 +220,9 @@ Configuration StandardPortGroup {
         Name = $Name
         Ensure = $Ensure
         LoadBalancingPolicy = $LoadBalancingPolicy
-        MakeNicActive = $MakeNicActive
-        MakeNicStandby = $MakeNicStandby
-        MakeNicUnused = $MakeNicUnused
+        ActiveNic = $ActiveNic
+        StandbyNic = $StandbyNic
+        UnusedNic = $UnusedNic
         NetworkFailoverDetectionPolicy = $NetworkFailoverDetectionPolicy
         DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
     }
