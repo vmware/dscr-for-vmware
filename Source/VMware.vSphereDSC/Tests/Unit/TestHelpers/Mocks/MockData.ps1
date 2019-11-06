@@ -193,9 +193,15 @@ $script:constants = @{
     PortGroupOneName = 'MyPortGroupOneName'
     PortGroupTwoName = 'MyPortGroupTwoName'
     DistributedSwitchWithoutAddedPhysicalNetworkAdaptersName = 'MyDistributedSwitchWithoutAddedPhysicalNetworkAdapters'
+    DomainName = 'MyDomain'
+    DomainUsername = 'MyDomainUsername'
+    DomainPassword = 'MyDomainPassword' | ConvertTo-SecureString -AsPlainText -Force
+    DomainActionJoin = 'Join'
+    DomainActionLeave = 'Leave'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
+$script:domainCredential = New-Object System.Management.Automation.PSCredential($script:constants.DomainUsername, $script:constants.DomainPassword)
 
 $script:viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
     Name = $script:constants.VIServerName
@@ -987,4 +993,13 @@ $script:distributedSwitchWithAddedPhysicalNetworkAdapters = [VMware.VimAutomatio
             )
         }
     }
+}
+
+$script:vmHostAuthenticationInfoWithoutDomain = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHostAuthenticationImpl] @{
+    VMHost = $script:vmHost
+}
+
+$script:vmHostAuthenticationInfoWithDomain = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHostAuthenticationImpl] @{
+    Domain = $script:constants.DomainName
+    VMHost = $script:vmHost
 }
