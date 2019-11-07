@@ -19,7 +19,7 @@ class VMHostAuthentication : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the name of the domain to join/leave.
+    Specifies the name of the domain to join/leave. The name should be the fully qualified domain name (FQDN).
     #>
     [DscProperty(Mandatory)]
     [string] $DomainName
