@@ -38,7 +38,19 @@ class BaseDSC {
     #>
     hidden [PSObject] $Connection
 
+    hidden [string] $DscResourceName = $this.GetType().Name
+    hidden [string] $DscResourceIsInDesiredStateMessage = "{0} DSC Resource is in Desired State."
+    hidden [string] $DscResourceIsNotInDesiredStateMessage = "{0} DSC Resource is not in Desired State."
+
+    hidden [string] $TestMethodStartMessage = "Begin executing Test functionality for {0} DSC Resource."
+    hidden [string] $TestMethodEndMessage = "End executing Test functionality for {0} DSC Resource."
+    hidden [string] $SetMethodStartMessage = "Begin executing Set functionality for {0} DSC Resource."
+    hidden [string] $SetMethodEndMessage = "End executing Set functionality for {0} DSC Resource."
+    hidden [string] $GetMethodStartMessage = "Begin executing Get functionality for {0} DSC Resource."
+    hidden [string] $GetMethodEndMessage = "End executing Get functionality for {0} DSC Resource."
+
     hidden [string] $vCenterProductId = 'vpx'
+    hidden [string] $ESXiProductId = 'embeddedEsx'
 
     <#
     .DESCRIPTION
@@ -114,6 +126,31 @@ class BaseDSC {
     [void] EnsureConnectionIsvCenter() {
         if ($this.Connection.ProductLine -ne $this.vCenterProductId) {
             throw 'The Resource operations are only supported when connection is directly to a vCenter.'
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Connection is directly to an ESXi host and if not, throws an exception.
+    #>
+    [void] EnsureConnectionIsESXi() {
+        if ($this.Connection.ProductLine -ne $this.ESXiProductId) {
+            throw 'The Resource operations are only supported when connection is directly to an ESXi host.'
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Writes a Verbose message specifying if the DSC Resource is in the Desired State.
+    #>
+    [void] WriteDscResourceState($result) {
+        if ($result) {
+            Write-VerboseLog -Message $this.DscResourceIsInDesiredStateMessage -Arguments @($this.DscResourceName)
+        }
+        else {
+            Write-VerboseLog -Message $this.DscResourceIsNotInDesiredStateMessage -Arguments @($this.DscResourceName)
         }
     }
 

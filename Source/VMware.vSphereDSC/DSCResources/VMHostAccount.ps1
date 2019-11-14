@@ -56,7 +56,6 @@ class VMHostAccount : BaseDSC {
     [DscProperty()]
     [string] $Description
 
-    hidden [string] $ESXiProductId = 'embeddedEsx'
     hidden [string] $AccountPasswordParameterName = 'Password'
     hidden [string] $DescriptionParameterName = 'Description'
 
@@ -122,17 +121,6 @@ class VMHostAccount : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the Connection is directly to an ESXi host and if not, throws an exception.
-    #>
-    [void] EnsureConnectionIsESXi() {
-        if ($this.Connection.ProductLine -ne $this.ESXiProductId) {
-            throw 'The Resource operations are only supported when connection is directly to an ESXi host.'
         }
     }
 
