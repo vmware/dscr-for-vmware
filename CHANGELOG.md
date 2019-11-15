@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.34 - 2019-11-15
+### Added
+- Introduced VMHostNetworkMigrationBaseDSC class.
+- Added VMHostVssMigration DSC Resource.
+- Added Unit Tests for VMHostVssMigration DSC Resource.
+- Added Integration Tests for VMHostVssMigration DSC Resource.
+- Added Documentation and example Configurations for VMHostVssMigration DSC Resource.
+
+### Changed
+- Modified Get() method of VMHostVDSwitchMigration DSC Resource to retrieve only the passed VMKernel Network Adapters connected to the VDSwitch.
+
+### Removed
+- Removed filtration of Physical Network Adapters in VMHostVDSwitchMigration DSC Resource.
+
 ## 2.0.0.33 - 2019-11-15
 ### Added
 - Added VMHostAuthentication DSC Resource.
