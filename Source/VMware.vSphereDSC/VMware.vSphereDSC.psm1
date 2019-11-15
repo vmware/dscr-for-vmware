@@ -5868,6 +5868,944 @@ class VMHostTpsSettings : VMHostBaseDSC {
 }
 
 [DscResource()]
+class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Name of the Virtual Switch associated with the Port Group.
+    The Virtual Switch must be a Standard Virtual Switch.
+    #>
+    [DscProperty(Mandatory)]
+    [string] $VssName
+
+    <#
+    .DESCRIPTION
+
+    Specifies the VLAN ID for ports using this Port Group. The following values are valid:
+    0 - specifies that you do not want to associate the Port Group with a VLAN.
+    1 to 4094 - specifies a VLAN ID for the Port Group.
+    4095 - specifies that the Port Group should use trunk mode, which allows the guest operating system to manage its own VLAN tags.
+    #>
+    [DscProperty()]
+    [nullable[int]] $VLanId
+
+    hidden [int] $VLanIdMaxValue = 4095
+
+    [void] Set() {
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $portGroup) {
+                    $this.AddVirtualPortGroup($virtualSwitch)
+                }
+                else {
+                    $this.UpdateVirtualPortGroup($portGroup)
+                }
+            }
+            else {
+                if ($null -ne $portGroup) {
+                    $this.RemoveVirtualPortGroup($portGroup)
+                }
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [bool] Test() {
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $portGroup) {
+                    return $false
+                }
+
+                return !$this.ShouldUpdateVirtualPortGroup($portGroup)
+            }
+            else {
+                return ($null -eq $portGroup)
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [VMHostVssPortGroup] Get() {
+        try {
+            $result = [VMHostVssPortGroup]::new()
+            $result.Server = $this.Server
+
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $virtualSwitch = $this.GetVirtualSwitch()
+            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
+
+            $result.VMHostName = $this.VMHost.Name
+            $this.PopulateResult($portGroup, $result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Switch with the specified name from the server if it exists.
+    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist and Ensure is set to 'Absent', $null is returned.
+    Otherwise it throws an exception.
+    #>
+    [PSObject] GetVirtualSwitch() {
+        if ($this.Ensure -eq [Ensure]::Absent) {
+            return Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction SilentlyContinue
+        }
+        else {
+            try {
+                $virtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction Stop
+                return $virtualSwitch
+            }
+            catch {
+                throw "Could not retrieve Virtual Switch $($this.VssName) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+            }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Port Group with the specified Name, available on the specified Virtual Switch and VMHost from the server if it exists,
+    otherwise returns $null.
+    #>
+    [PSObject] GetVirtualPortGroup($virtualSwitch) {
+        if ($null -eq $virtualSwitch) {
+            <#
+            If the Virtual Switch is $null, it means that Ensure was set to 'Absent' and
+            the Port Group does not exist for the specified Virtual Switch.
+            #>
+            return $null
+        }
+
+        return Get-VirtualPortGroup -Server $this.Connection -Name $this.Name -VirtualSwitch $virtualSwitch -VMHost $this.VMHost -ErrorAction SilentlyContinue
+    }
+
+    <#
+    .DESCRIPTION
+
+    Ensures that the passed VLanId value is in the range [0, 4095].
+    #>
+    [void] EnsureVLanIdValueIsValid() {
+        if ($this.VLanId -lt 0 -or $this.VLanId -gt $this.VLanIdMaxValue) {
+            throw "The passed VLanId value $($this.VLanId) is not valid. The valid values are in the following range: [0, $($this.VLanIdMaxValue)]."
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the VLanId is specified and needs to be updated.
+    #>
+    [bool] ShouldUpdateVirtualPortGroup($portGroup) {
+        if ($null -eq $this.VLanId) {
+            return $false
+        }
+
+        return ($this.VLanId -ne $portGroup.VLanId)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the populated Port Group parameters.
+    #>
+    [hashtable] GetPortGroupParams() {
+        $portGroupParams = @{}
+
+        $portGroupParams.Confirm = $false
+        $portGroupParams.ErrorAction = 'Stop'
+
+        if ($null -ne $this.VLanId) {
+            $this.EnsureVLanIdValueIsValid()
+            $portGroupParams.VLanId = $this.VLanId
+        }
+
+        return $portGroupParams
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Port Group available on the specified Virtual Switch.
+    #>
+    [void] AddVirtualPortGroup($virtualSwitch) {
+        $portGroupParams = $this.GetPortGroupParams()
+
+        $portGroupParams.Server = $this.Connection
+        $portGroupParams.Name = $this.Name
+        $portGroupParams.VirtualSwitch = $virtualSwitch
+
+        try {
+            New-VirtualPortGroup @portGroupParams
+        }
+        catch {
+            throw "Cannot create Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Updates the Port Group by changing its VLanId value.
+    #>
+    [void] UpdateVirtualPortGroup($portGroup) {
+        $portGroupParams = $this.GetPortGroupParams()
+
+        try {
+            $portGroup | Set-VirtualPortGroup @portGroupParams
+        }
+        catch {
+            throw "Cannot update Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the specified Port Group available on the Virtual Switch. All VMs connected to the Port Group must be PoweredOff to successfully remove the Port Group.
+    If one or more of the VMs are PoweredOn, the removal would not be successful because the Port Group is used by the VMs.
+    #>
+    [void] RemoveVirtualPortGroup($portGroup) {
+        try {
+            $portGroup | Remove-VirtualPortGroup -Confirm:$false -ErrorAction Stop
+        }
+        catch {
+            throw "Cannot remove Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Port Group from the server.
+    #>
+    [void] PopulateResult($portGroup, $result) {
+        if ($null -ne $portGroup) {
+            $result.Name = $portGroup.Name
+            $result.VssName = $portGroup.VirtualSwitchName
+            $result.Ensure = [Ensure]::Present
+            $result.VLanId = $portGroup.VLanId
+        }
+        else {
+            $result.Name = $this.Name
+            $result.VssName = $this.VssName
+            $result.Ensure = [Ensure]::Absent
+            $result.VLanId = $this.VLanId
+        }
+    }
+}
+
+[DscResource()]
+class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies whether promiscuous mode is enabled for the corresponding Virtual Port Group.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $AllowPromiscuous
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the AllowPromiscuous setting is inherited from the parent Standard Virtual Switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $AllowPromiscuousInherited
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether forged transmits are enabled for the corresponding Virtual Port Group.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $ForgedTransmits
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the ForgedTransmits setting is inherited from the parent Standard Virtual Switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $ForgedTransmitsInherited
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether MAC address changes are enabled for the corresponding Virtual Port Group.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $MacChanges
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the MacChanges setting is inherited from the parent Standard Virtual Switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $MacChangesInherited
+
+    hidden [string] $AllowPromiscuousSettingName = 'AllowPromiscuous'
+    hidden [string] $AllowPromiscuousInheritedSettingName = 'AllowPromiscuousInherited'
+    hidden [string] $ForgedTransmitsSettingName = 'ForgedTransmits'
+    hidden [string] $ForgedTransmitsInheritedSettingName = 'ForgedTransmitsInherited'
+    hidden [string] $MacChangesSettingName = 'MacChanges'
+    hidden [string] $MacChangesInheritedSettingName = 'MacChangesInherited'
+
+    [void] Set() {
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+
+            $this.UpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [bool] Test() {
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                return $true
+            }
+
+            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+
+            return !$this.ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [VMHostVssPortGroupSecurity] Get() {
+        try {
+            $result = [VMHostVssPortGroupSecurity]::new()
+            $result.Server = $this.Server
+            $result.Ensure = $this.Ensure
+
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $result.VMHostName = $this.VMHost.Name
+
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                $result.Name = $this.Name
+                return $result
+            }
+
+            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+            $result.Name = $virtualPortGroup.Name
+
+            $this.PopulateResult($virtualPortGroupSecurityPolicy, $result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Port Group Security Policy from the server.
+    #>
+    [PSObject] GetVirtualPortGroupSecurityPolicy($virtualPortGroup) {
+        try {
+            $virtualPortGroupSecurityPolicy = Get-SecurityPolicy -Server $this.Connection -VirtualPortGroup $virtualPortGroup -ErrorAction Stop
+            return $virtualPortGroupSecurityPolicy
+        }
+        catch {
+            throw "Could not retrieve Virtual Port Group $($this.PortGroup) Security Policy. For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Security Policy of the specified Virtual Port Group should be updated.
+    #>
+    [bool] ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy) {
+        $shouldUpdateVirtualPortGroupSecurityPolicy = @()
+
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuous -and $this.AllowPromiscuous -ne $virtualPortGroupSecurityPolicy.AllowPromiscuous)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuousInherited -and $this.AllowPromiscuousInherited -ne $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmits -and $this.ForgedTransmits -ne $virtualPortGroupSecurityPolicy.ForgedTransmits)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmitsInherited -and $this.ForgedTransmitsInherited -ne $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChanges -and $this.MacChanges -ne $virtualPortGroupSecurityPolicy.MacChanges)
+        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChangesInherited -and $this.MacChangesInherited -ne $virtualPortGroupSecurityPolicy.MacChangesInherited)
+
+        return ($shouldUpdateVirtualPortGroupSecurityPolicy -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Security Policy of the specified Virtual Port Group.
+    #>
+    [void] UpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy) {
+        $securityPolicyParams = @{}
+        $securityPolicyParams.VirtualPortGroupPolicy = $virtualPortGroupSecurityPolicy
+
+        $this.PopulatePolicySetting($securityPolicyParams, $this.AllowPromiscuousSettingName, $this.AllowPromiscuous, $this.AllowPromiscuousInheritedSettingName, $this.AllowPromiscuousInherited)
+        $this.PopulatePolicySetting($securityPolicyParams, $this.ForgedTransmitsSettingName, $this.ForgedTransmits, $this.ForgedTransmitsInheritedSettingName, $this.ForgedTransmitsInherited)
+        $this.PopulatePolicySetting($securityPolicyParams, $this.MacChangesSettingName, $this.MacChanges, $this.MacChangesInheritedSettingName, $this.MacChangesInherited)
+
+        try {
+            Set-SecurityPolicy @securityPolicyParams
+        }
+        catch {
+            throw "Cannot update Security Policy of Virtual Port Group $($this.PortGroup). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Security Policy of the specified Virtual Port Group from the server.
+    #>
+    [void] PopulateResult($virtualPortGroupSecurityPolicy, $result) {
+        $result.AllowPromiscuous = $virtualPortGroupSecurityPolicy.AllowPromiscuous
+        $result.AllowPromiscuousInherited = $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited
+        $result.ForgedTransmits = $virtualPortGroupSecurityPolicy.ForgedTransmits
+        $result.ForgedTransmitsInherited = $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited
+        $result.MacChanges = $virtualPortGroupSecurityPolicy.MacChanges
+        $result.MacChangesInherited = $virtualPortGroupSecurityPolicy.MacChangesInherited
+    }
+}
+
+[DscResource()]
+class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
+    <#
+    .DESCRIPTION
+
+    The flag to indicate whether or not traffic shaper is enabled on the port.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Enabled
+
+    <#
+    .DESCRIPTION
+
+    The average bandwidth in bits per second if shaping is enabled on the port.
+    #>
+    [DscProperty()]
+    [nullable[long]] $AverageBandwidth
+
+    <#
+    .DESCRIPTION
+
+    The peak bandwidth during bursts in bits per second if traffic shaping is enabled on the port.
+    #>
+    [DscProperty()]
+    [nullable[long]] $PeakBandwidth
+
+    <#
+    .DESCRIPTION
+
+    The maximum burst size allowed in bytes if shaping is enabled on the port.
+    #>
+    [DscProperty()]
+    [nullable[long]] $BurstSize
+
+    [void] Set() {
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $this.GetVMHostNetworkSystem()
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+
+            $this.UpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [bool] Test() {
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                return $true
+            }
+
+            return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [VMHostVssPortGroupShaping] Get() {
+        try {
+            $result = [VMHostVssPortGroupShaping]::new()
+            $result.Server = $this.Server
+            $result.Ensure = $this.Ensure
+
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $result.VMHostName = $this.VMHost.Name
+
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                $result.Name = $this.Name
+                return $result
+            }
+
+            $result.Name = $virtualPortGroup.Name
+            $this.PopulateResult($virtualPortGroup, $result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Shaping Policy of the specified Virtual Port Group should be updated.
+    #>
+    [bool] ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup) {
+        $shouldUpdateVirtualPortGroupShapingPolicy = @()
+
+        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.Enabled -and $this.Enabled -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.Enabled)
+        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.AverageBandwidth -and $this.AverageBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.AverageBandwidth)
+        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.PeakBandwidth -and $this.PeakBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.PeakBandwidth)
+        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.BurstSize -and $this.BurstSize -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.BurstSize)
+
+        return ($shouldUpdateVirtualPortGroupShapingPolicy -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Shaping Policy of the specified Virtual Port Group.
+    #>
+    [void] UpdateVirtualPortGroupShapingPolicy($virtualPortGroup) {
+        $virtualPortGroupSpec = New-Object VMware.Vim.HostPortGroupSpec
+
+        $virtualPortGroupSpec.Name = $virtualPortGroup.Name
+        $virtualPortGroupSpec.VswitchName = $virtualPortGroup.VirtualSwitchName
+        $virtualPortGroupSpec.VlanId = $virtualPortGroup.VLanId
+
+        $virtualPortGroupSpec.Policy = New-Object VMware.Vim.HostNetworkPolicy
+        $virtualPortGroupSpec.Policy.ShapingPolicy = New-Object VMware.Vim.HostNetworkTrafficShapingPolicy
+
+        if ($null -ne $this.Enabled) { $virtualPortGroupSpec.Policy.ShapingPolicy.Enabled = $this.Enabled }
+        if ($null -ne $this.AverageBandwidth) { $virtualPortGroupSpec.Policy.ShapingPolicy.AverageBandwidth = $this.AverageBandwidth }
+        if ($null -ne $this.PeakBandwidth) { $virtualPortGroupSpec.Policy.ShapingPolicy.PeakBandwidth = $this.PeakBandwidth }
+        if ($null -ne $this.BurstSize) { $virtualPortGroupSpec.Policy.ShapingPolicy.BurstSize = $this.BurstSize }
+
+        try {
+            Update-VirtualPortGroup -VMHostNetworkSystem $this.VMHostNetworkSystem -VirtualPortGroupName $virtualPortGroup.Name -Spec $virtualPortGroupSpec
+        }
+        catch {
+            throw "Cannot update Shaping Policy of Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Shaping Policy of the specified Virtual Port Group from the server.
+    #>
+    [void] PopulateResult($virtualPortGroup, $result) {
+        $result.Enabled = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.Enabled
+        $result.AverageBandwidth = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.AverageBandwidth
+        $result.PeakBandwidth = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.PeakBandwidth
+        $result.BurstSize = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.BurstSize
+    }
+}
+
+[DscResource()]
+class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies how a physical adapter is returned to active duty after recovering from a failure.
+    If the value is $true, the adapter is returned to active duty immediately on recovery, displacing the standby adapter that took over its slot, if any.
+    If the value is $false, a failed adapter is left inactive even after recovery until another active adapter fails, requiring its replacement.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $FailbackEnabled
+
+    <#
+    .DESCRIPTION
+
+    Determines how network traffic is distributed between the network adapters assigned to a switch. The following values are valid:
+    LoadBalanceIP - Route based on IP hash. Choose an uplink based on a hash of the source and destination IP addresses of each packet.
+    For non-IP packets, whatever is at those offsets is used to compute the hash.
+    LoadBalanceSrcMac - Route based on source MAC hash. Choose an uplink based on a hash of the source Ethernet.
+    LoadBalanceSrcId - Route based on the originating port ID. Choose an uplink based on the virtual port where the traffic entered the virtual switch.
+    ExplicitFailover - Always use the highest order uplink from the list of Active adapters that passes failover detection criteria.
+    #>
+    [DscProperty()]
+    [LoadBalancingPolicy] $LoadBalancingPolicy = [LoadBalancingPolicy]::Unset
+
+    <#
+    .DESCRIPTION
+
+    Specifies the adapters you want to continue to use when the network adapter connectivity is available and active.
+    #>
+    [DscProperty()]
+    [string[]] $ActiveNic
+
+    <#
+    .DESCRIPTION
+
+    Specifies the adapters you want to use if one of the active adapter's connectivity is unavailable.
+    #>
+    [DscProperty()]
+    [string[]] $StandbyNic
+
+    <#
+    .DESCRIPTION
+
+    Specifies the adapters you do not want to use.
+    #>
+    [DscProperty()]
+    [string[]] $UnusedNic
+
+    <#
+    .DESCRIPTION
+
+    Specifies how to reroute traffic in the event of an adapter failure. The following values are valid:
+    LinkStatus - Relies solely on the link status that the network adapter provides. This option detects failures, such as cable pulls and physical switch power failures,
+    but not configuration errors, such as a physical switch port being blocked by spanning tree or misconfigured to the wrong VLAN or cable pulls on the other side of a physical switch.
+    BeaconProbing - Sends out and listens for beacon probes on all NICs in the team and uses this information, in addition to link status, to determine link failure.
+    This option detects many of the failures mentioned above that are not detected by link status alone.
+    #>
+    [DscProperty()]
+    [NetworkFailoverDetectionPolicy] $NetworkFailoverDetectionPolicy = [NetworkFailoverDetectionPolicy]::Unset
+
+    <#
+    .DESCRIPTION
+
+    Indicates that whenever a virtual NIC is connected to the virtual switch or whenever that virtual NIC's traffic is routed over a different physical NIC in the team because of a
+    failover event, a notification is sent over the network to update the lookup tables on the physical switches.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $NotifySwitches
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the value of the FailbackEnabled parameter is inherited from the virtual switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $InheritFailback
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the values of the ActiveNic, StandbyNic, and UnusedNic parameters are inherited from the virtual switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $InheritFailoverOrder
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the value of the LoadBalancingPolicy parameter is inherited from the virtual switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $InheritLoadBalancingPolicy
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the value of the NetworkFailoverDetectionPolicy parameter is inherited from the virtual switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $InheritNetworkFailoverDetectionPolicy
+
+    <#
+    .DESCRIPTION
+
+    Indicates that the value of the NotifySwitches parameter is inherited from the virtual switch.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $InheritNotifySwitches
+
+    hidden [string] $FailbackEnabledSettingName = 'FailbackEnabled'
+    hidden [string] $InheritFailbackSettingName = 'InheritFailback'
+    hidden [string] $LoadBalancingPolicySettingName = 'LoadBalancingPolicy'
+    hidden [string] $InheritLoadBalancingPolicySettingName = 'InheritLoadBalancingPolicy'
+    hidden [string] $NetworkFailoverDetectionPolicySettingName = 'NetworkFailoverDetectionPolicy'
+    hidden [string] $InheritNetworkFailoverDetectionPolicySettingName = 'InheritNetworkFailoverDetectionPolicy'
+    hidden [string] $NotifySwitchesSettingName = 'NotifySwitches'
+    hidden [string] $InheritNotifySwitchesSettingName = 'InheritNotifySwitches'
+    hidden [string] $MakeNicActiveSettingName = 'MakeNicActive'
+    hidden [string] $MakeNicStandbySettingName = 'MakeNicStandby'
+    hidden [string] $MakeNicUnusedSettingName = 'MakeNicUnused'
+    hidden [string] $InheritFailoverOrderSettingName = 'InheritFailoverOrder'
+
+    [void] Set() {
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+
+            $this.UpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [bool] Test() {
+        try {
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                return $true
+            }
+
+            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+
+            return !$this.ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [VMHostVssPortGroupTeaming] Get() {
+        try {
+            $result = [VMHostVssPortGroupTeaming]::new()
+            $result.Server = $this.Server
+            $result.Ensure = $this.Ensure
+
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $result.VMHostName = $this.VMHost.Name
+
+            $virtualPortGroup = $this.GetVirtualPortGroup()
+            if ($null -eq $virtualPortGroup) {
+                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
+                $result.Name = $this.Name
+                return $result
+            }
+
+            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+            $result.Name = $virtualPortGroup.Name
+
+            $this.PopulateResult($virtualPortGroupTeamingPolicy, $result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Port Group Teaming Policy from the server.
+    #>
+    [PSObject] GetVirtualPortGroupTeamingPolicy($virtualPortGroup) {
+        try {
+            $virtualPortGroupTeamingPolicy = Get-NicTeamingPolicy -Server $this.Connection -VirtualPortGroup $virtualPortGroup -ErrorAction Stop
+            return $virtualPortGroupTeamingPolicy
+        }
+        catch {
+            throw "Could not retrieve Virtual Port Group $($this.Name) Teaming Policy. For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the passed Nic array is in the desired state and if an update should be performed.
+    #>
+    [bool] ShouldUpdateNicArray($currentNicArray, $desiredNicArray) {
+        if ($null -eq $desiredNicArray -or $desiredNicArray.Length -eq 0) {
+            # The property is not specified or an empty Nic array is passed.
+            return $false
+        }
+        else {
+            $nicsToAdd = $desiredNicArray | Where-Object { $currentNicArray -NotContains $_ }
+            $nicsToRemove = $currentNicArray | Where-Object { $desiredNicArray -NotContains $_ }
+
+            if ($null -ne $nicsToAdd -or $null -ne $nicsToRemove) {
+                <#
+                The current Nic array does not contain at least one Nic from desired Nic array or
+                the desired Nic array is a subset of the current Nic array. In both cases
+                we should perform an update operation.
+                #>
+                return $true
+            }
+
+            # No need to perform an update operation.
+            return $false
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Teaming Policy of the specified Virtual Port Group should be updated.
+    #>
+    [bool] ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy) {
+        $shouldUpdateVirtualPortGroupTeamingPolicy = @()
+
+        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.ActiveNic, $this.ActiveNic)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.StandbyNic, $this.StandbyNic)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.UnusedNic, $this.UnusedNic)
+
+        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.FailbackEnabled -and $this.FailbackEnabled -ne $virtualPortGroupTeamingPolicy.FailbackEnabled)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.NotifySwitches -and $this.NotifySwitches -ne $virtualPortGroupTeamingPolicy.NotifySwitches)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritFailback -and $this.InheritFailback -ne $virtualPortGroupTeamingPolicy.IsFailbackInherited)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritFailoverOrder -and $this.InheritFailoverOrder -ne $virtualPortGroupTeamingPolicy.IsFailoverOrderInherited)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritLoadBalancingPolicy -and $this.InheritLoadBalancingPolicy -ne $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritNetworkFailoverDetectionPolicy -and $this.InheritNetworkFailoverDetectionPolicy -ne $virtualPortGroupTeamingPolicy.IsNetworkFailoverDetectionInherited)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritNotifySwitches -and $this.InheritNotifySwitches -ne $virtualPortGroupTeamingPolicy.IsNotifySwitchesInherited)
+
+        if ($this.LoadBalancingPolicy -ne [LoadBalancingPolicy]::Unset) {
+            $shouldUpdateVirtualPortGroupTeamingPolicy += ($this.LoadBalancingPolicy.ToString() -ne $virtualPortGroupTeamingPolicy.LoadBalancingPolicy.ToString())
+        }
+
+        if ($this.NetworkFailoverDetectionPolicy -ne [NetworkFailoverDetectionPolicy]::Unset) {
+            $shouldUpdateVirtualPortGroupTeamingPolicy += ($this.NetworkFailoverDetectionPolicy.ToString() -ne $virtualPortGroupTeamingPolicy.NetworkFailoverDetectionPolicy.ToString())
+        }
+
+        return ($shouldUpdateVirtualPortGroupTeamingPolicy -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the specified Enum Policy Setting. If the Inherited Setting is passed and set to $true,
+    the Policy Setting should not be populated because "Parameters of the form "XXX" and "InheritXXX" are mutually exclusive."
+    If the Inherited Setting is set to $false, both parameters can be populated.
+    #>
+    [void] PopulateEnumPolicySetting($policyParams, $policySettingName, $policySetting, $policySettingInheritedName, $policySettingInherited) {
+        if ($policySetting -ne 'Unset') {
+            if ($null -eq $policySettingInherited -or !$policySettingInherited) {
+                $policyParams.$policySettingName = $policySetting
+            }
+        }
+
+        if ($null -ne $policySettingInherited) { $policyParams.$policySettingInheritedName = $policySettingInherited }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the specified Array Policy Setting. If the Inherited Setting is passed and set to $true,
+    the Policy Setting should not be populated because "Parameters of the form "XXX" and "InheritXXX" are mutually exclusive."
+    If the Inherited Setting is set to $false, both parameters can be populated.
+    #>
+    [void] PopulateArrayPolicySetting($policyParams, $policySettingName, $policySetting, $policySettingInheritedName, $policySettingInherited) {
+        if ($null -ne $policySetting -and $policySetting.Length -gt 0) {
+            if ($null -eq $policySettingInherited -or !$policySettingInherited) {
+                $policyParams.$policySettingName = $policySetting
+            }
+        }
+
+        if ($null -ne $policySettingInherited) { $policyParams.$policySettingInheritedName = $policySettingInherited }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Teaming Policy of the specified Virtual Port Group.
+    #>
+    [void] UpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy) {
+        $teamingPolicyParams = @{}
+        $teamingPolicyParams.VirtualPortGroupPolicy = $virtualPortGroupTeamingPolicy
+
+        $this.PopulatePolicySetting($teamingPolicyParams, $this.FailbackEnabledSettingName, $this.FailbackEnabled, $this.InheritFailbackSettingName, $this.InheritFailback)
+        $this.PopulatePolicySetting($teamingPolicyParams, $this.NotifySwitchesSettingName, $this.NotifySwitches, $this.InheritNotifySwitchesSettingName, $this.InheritNotifySwitches)
+
+        $this.PopulateEnumPolicySetting($teamingPolicyParams, $this.LoadBalancingPolicySettingName, $this.LoadBalancingPolicy.ToString(), $this.InheritLoadBalancingPolicySettingName, $this.InheritLoadBalancingPolicy)
+        $this.PopulateEnumPolicySetting($teamingPolicyParams, $this.NetworkFailoverDetectionPolicySettingName, $this.NetworkFailoverDetectionPolicy.ToString(), $this.InheritNetworkFailoverDetectionPolicySettingName, $this.InheritNetworkFailoverDetectionPolicy)
+
+        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicActiveSettingName, $this.ActiveNic, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
+        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicStandbySettingName, $this.StandbyNic, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
+        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicUnusedSettingName, $this.UnusedNic, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
+
+        try {
+            Set-NicTeamingPolicy @teamingPolicyParams
+        }
+        catch {
+            throw "Cannot update Teaming Policy of Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method with the values of the Teaming Policy of the specified Virtual Port Group from the server.
+    #>
+    [void] PopulateResult($virtualPortGroupTeamingPolicy, $result) {
+        $result.FailbackEnabled = $virtualPortGroupTeamingPolicy.FailbackEnabled
+        $result.NotifySwitches = $virtualPortGroupTeamingPolicy.NotifySwitches
+        $result.LoadBalancingPolicy = $virtualPortGroupTeamingPolicy.LoadBalancingPolicy.ToString()
+        $result.NetworkFailoverDetectionPolicy = $virtualPortGroupTeamingPolicy.NetworkFailoverDetectionPolicy.ToString()
+        $result.ActiveNic = $virtualPortGroupTeamingPolicy.ActiveNic
+        $result.StandbyNic = $virtualPortGroupTeamingPolicy.StandbyNic
+        $result.UnusedNic = $virtualPortGroupTeamingPolicy.UnusedNic
+        $result.InheritFailback = $virtualPortGroupTeamingPolicy.IsFailbackInherited
+        $result.InheritNotifySwitches = $virtualPortGroupTeamingPolicy.IsNotifySwitchesInherited
+        $result.InheritLoadBalancingPolicy = $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited
+        $result.InheritNetworkFailoverDetectionPolicy = $virtualPortGroupTeamingPolicy.IsNetworkFailoverDetectionInherited
+        $result.InheritFailoverOrder = $virtualPortGroupTeamingPolicy.IsFailoverOrderInherited
+    }
+}
+
+[DscResource()]
 class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
@@ -6752,944 +7690,6 @@ class VMHostVssNic : VMHostNicBaseDSC {
                 throw "Could not retrieve Virtual Switch $($this.VssName) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
             }
         }
-    }
-}
-
-[DscResource()]
-class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Specifies the Name of the Virtual Switch associated with the Port Group.
-    The Virtual Switch must be a Standard Virtual Switch.
-    #>
-    [DscProperty(Mandatory)]
-    [string] $VssName
-
-    <#
-    .DESCRIPTION
-
-    Specifies the VLAN ID for ports using this Port Group. The following values are valid:
-    0 - specifies that you do not want to associate the Port Group with a VLAN.
-    1 to 4094 - specifies a VLAN ID for the Port Group.
-    4095 - specifies that the Port Group should use trunk mode, which allows the guest operating system to manage its own VLAN tags.
-    #>
-    [DscProperty()]
-    [nullable[int]] $VLanId
-
-    hidden [int] $VLanIdMaxValue = 4095
-
-    [void] Set() {
-        try {
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $virtualSwitch = $this.GetVirtualSwitch()
-            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
-
-            if ($this.Ensure -eq [Ensure]::Present) {
-                if ($null -eq $portGroup) {
-                    $this.AddVirtualPortGroup($virtualSwitch)
-                }
-                else {
-                    $this.UpdateVirtualPortGroup($portGroup)
-                }
-            }
-            else {
-                if ($null -ne $portGroup) {
-                    $this.RemoveVirtualPortGroup($portGroup)
-                }
-            }
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [bool] Test() {
-        try {
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $virtualSwitch = $this.GetVirtualSwitch()
-            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
-
-            if ($this.Ensure -eq [Ensure]::Present) {
-                if ($null -eq $portGroup) {
-                    return $false
-                }
-
-                return !$this.ShouldUpdateVirtualPortGroup($portGroup)
-            }
-            else {
-                return ($null -eq $portGroup)
-            }
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [VMHostVssPortGroup] Get() {
-        try {
-            $result = [VMHostVssPortGroup]::new()
-            $result.Server = $this.Server
-
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $virtualSwitch = $this.GetVirtualSwitch()
-            $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
-
-            $result.VMHostName = $this.VMHost.Name
-            $this.PopulateResult($portGroup, $result)
-
-            return $result
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Virtual Switch with the specified name from the server if it exists.
-    The Virtual Switch must be a Standard Virtual Switch. If the Virtual Switch does not exist and Ensure is set to 'Absent', $null is returned.
-    Otherwise it throws an exception.
-    #>
-    [PSObject] GetVirtualSwitch() {
-        if ($this.Ensure -eq [Ensure]::Absent) {
-            return Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction SilentlyContinue
-        }
-        else {
-            try {
-                $virtualSwitch = Get-VirtualSwitch -Server $this.Connection -Name $this.VssName -VMHost $this.VMHost -Standard -ErrorAction Stop
-                return $virtualSwitch
-            }
-            catch {
-                throw "Could not retrieve Virtual Switch $($this.VssName) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
-            }
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Virtual Port Group with the specified Name, available on the specified Virtual Switch and VMHost from the server if it exists,
-    otherwise returns $null.
-    #>
-    [PSObject] GetVirtualPortGroup($virtualSwitch) {
-        if ($null -eq $virtualSwitch) {
-            <#
-            If the Virtual Switch is $null, it means that Ensure was set to 'Absent' and
-            the Port Group does not exist for the specified Virtual Switch.
-            #>
-            return $null
-        }
-
-        return Get-VirtualPortGroup -Server $this.Connection -Name $this.Name -VirtualSwitch $virtualSwitch -VMHost $this.VMHost -ErrorAction SilentlyContinue
-    }
-
-    <#
-    .DESCRIPTION
-
-    Ensures that the passed VLanId value is in the range [0, 4095].
-    #>
-    [void] EnsureVLanIdValueIsValid() {
-        if ($this.VLanId -lt 0 -or $this.VLanId -gt $this.VLanIdMaxValue) {
-            throw "The passed VLanId value $($this.VLanId) is not valid. The valid values are in the following range: [0, $($this.VLanIdMaxValue)]."
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the VLanId is specified and needs to be updated.
-    #>
-    [bool] ShouldUpdateVirtualPortGroup($portGroup) {
-        if ($null -eq $this.VLanId) {
-            return $false
-        }
-
-        return ($this.VLanId -ne $portGroup.VLanId)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns the populated Port Group parameters.
-    #>
-    [hashtable] GetPortGroupParams() {
-        $portGroupParams = @{}
-
-        $portGroupParams.Confirm = $false
-        $portGroupParams.ErrorAction = 'Stop'
-
-        if ($null -ne $this.VLanId) {
-            $this.EnsureVLanIdValueIsValid()
-            $portGroupParams.VLanId = $this.VLanId
-        }
-
-        return $portGroupParams
-    }
-
-    <#
-    .DESCRIPTION
-
-    Creates a new Port Group available on the specified Virtual Switch.
-    #>
-    [void] AddVirtualPortGroup($virtualSwitch) {
-        $portGroupParams = $this.GetPortGroupParams()
-
-        $portGroupParams.Server = $this.Connection
-        $portGroupParams.Name = $this.Name
-        $portGroupParams.VirtualSwitch = $virtualSwitch
-
-        try {
-            New-VirtualPortGroup @portGroupParams
-        }
-        catch {
-            throw "Cannot create Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Updates the Port Group by changing its VLanId value.
-    #>
-    [void] UpdateVirtualPortGroup($portGroup) {
-        $portGroupParams = $this.GetPortGroupParams()
-
-        try {
-            $portGroup | Set-VirtualPortGroup @portGroupParams
-        }
-        catch {
-            throw "Cannot update Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Removes the specified Port Group available on the Virtual Switch. All VMs connected to the Port Group must be PoweredOff to successfully remove the Port Group.
-    If one or more of the VMs are PoweredOn, the removal would not be successful because the Port Group is used by the VMs.
-    #>
-    [void] RemoveVirtualPortGroup($portGroup) {
-        try {
-            $portGroup | Remove-VirtualPortGroup -Confirm:$false -ErrorAction Stop
-        }
-        catch {
-            throw "Cannot remove Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the result returned from the Get() method with the values of the Port Group from the server.
-    #>
-    [void] PopulateResult($portGroup, $result) {
-        if ($null -ne $portGroup) {
-            $result.Name = $portGroup.Name
-            $result.VssName = $portGroup.VirtualSwitchName
-            $result.Ensure = [Ensure]::Present
-            $result.VLanId = $portGroup.VLanId
-        }
-        else {
-            $result.Name = $this.Name
-            $result.VssName = $this.VssName
-            $result.Ensure = [Ensure]::Absent
-            $result.VLanId = $this.VLanId
-        }
-    }
-}
-
-[DscResource()]
-class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Specifies whether promiscuous mode is enabled for the corresponding Virtual Port Group.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $AllowPromiscuous
-
-    <#
-    .DESCRIPTION
-
-    Specifies whether the AllowPromiscuous setting is inherited from the parent Standard Virtual Switch.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $AllowPromiscuousInherited
-
-    <#
-    .DESCRIPTION
-
-    Specifies whether forged transmits are enabled for the corresponding Virtual Port Group.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $ForgedTransmits
-
-    <#
-    .DESCRIPTION
-
-    Specifies whether the ForgedTransmits setting is inherited from the parent Standard Virtual Switch.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $ForgedTransmitsInherited
-
-    <#
-    .DESCRIPTION
-
-    Specifies whether MAC address changes are enabled for the corresponding Virtual Port Group.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $MacChanges
-
-    <#
-    .DESCRIPTION
-
-    Specifies whether the MacChanges setting is inherited from the parent Standard Virtual Switch.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $MacChangesInherited
-
-    hidden [string] $AllowPromiscuousSettingName = 'AllowPromiscuous'
-    hidden [string] $AllowPromiscuousInheritedSettingName = 'AllowPromiscuousInherited'
-    hidden [string] $ForgedTransmitsSettingName = 'ForgedTransmits'
-    hidden [string] $ForgedTransmitsInheritedSettingName = 'ForgedTransmitsInherited'
-    hidden [string] $MacChangesSettingName = 'MacChanges'
-    hidden [string] $MacChangesInheritedSettingName = 'MacChangesInherited'
-
-    [void] Set() {
-        try {
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $virtualPortGroup = $this.GetVirtualPortGroup()
-            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
-
-            $this.UpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [bool] Test() {
-        try {
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $virtualPortGroup = $this.GetVirtualPortGroup()
-            if ($null -eq $virtualPortGroup) {
-                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                return $true
-            }
-
-            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
-
-            return !$this.ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [VMHostVssPortGroupSecurity] Get() {
-        try {
-            $result = [VMHostVssPortGroupSecurity]::new()
-            $result.Server = $this.Server
-            $result.Ensure = $this.Ensure
-
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $result.VMHostName = $this.VMHost.Name
-
-            $virtualPortGroup = $this.GetVirtualPortGroup()
-            if ($null -eq $virtualPortGroup) {
-                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                $result.Name = $this.Name
-                return $result
-            }
-
-            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
-            $result.Name = $virtualPortGroup.Name
-
-            $this.PopulateResult($virtualPortGroupSecurityPolicy, $result)
-
-            return $result
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Virtual Port Group Security Policy from the server.
-    #>
-    [PSObject] GetVirtualPortGroupSecurityPolicy($virtualPortGroup) {
-        try {
-            $virtualPortGroupSecurityPolicy = Get-SecurityPolicy -Server $this.Connection -VirtualPortGroup $virtualPortGroup -ErrorAction Stop
-            return $virtualPortGroupSecurityPolicy
-        }
-        catch {
-            throw "Could not retrieve Virtual Port Group $($this.PortGroup) Security Policy. For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the Security Policy of the specified Virtual Port Group should be updated.
-    #>
-    [bool] ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy) {
-        $shouldUpdateVirtualPortGroupSecurityPolicy = @()
-
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuous -and $this.AllowPromiscuous -ne $virtualPortGroupSecurityPolicy.AllowPromiscuous)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuousInherited -and $this.AllowPromiscuousInherited -ne $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmits -and $this.ForgedTransmits -ne $virtualPortGroupSecurityPolicy.ForgedTransmits)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmitsInherited -and $this.ForgedTransmitsInherited -ne $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChanges -and $this.MacChanges -ne $virtualPortGroupSecurityPolicy.MacChanges)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChangesInherited -and $this.MacChangesInherited -ne $virtualPortGroupSecurityPolicy.MacChangesInherited)
-
-        return ($shouldUpdateVirtualPortGroupSecurityPolicy -Contains $true)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Performs an update on the Security Policy of the specified Virtual Port Group.
-    #>
-    [void] UpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy) {
-        $securityPolicyParams = @{}
-        $securityPolicyParams.VirtualPortGroupPolicy = $virtualPortGroupSecurityPolicy
-
-        $this.PopulatePolicySetting($securityPolicyParams, $this.AllowPromiscuousSettingName, $this.AllowPromiscuous, $this.AllowPromiscuousInheritedSettingName, $this.AllowPromiscuousInherited)
-        $this.PopulatePolicySetting($securityPolicyParams, $this.ForgedTransmitsSettingName, $this.ForgedTransmits, $this.ForgedTransmitsInheritedSettingName, $this.ForgedTransmitsInherited)
-        $this.PopulatePolicySetting($securityPolicyParams, $this.MacChangesSettingName, $this.MacChanges, $this.MacChangesInheritedSettingName, $this.MacChangesInherited)
-
-        try {
-            Set-SecurityPolicy @securityPolicyParams
-        }
-        catch {
-            throw "Cannot update Security Policy of Virtual Port Group $($this.PortGroup). For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the result returned from the Get() method with the values of the Security Policy of the specified Virtual Port Group from the server.
-    #>
-    [void] PopulateResult($virtualPortGroupSecurityPolicy, $result) {
-        $result.AllowPromiscuous = $virtualPortGroupSecurityPolicy.AllowPromiscuous
-        $result.AllowPromiscuousInherited = $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited
-        $result.ForgedTransmits = $virtualPortGroupSecurityPolicy.ForgedTransmits
-        $result.ForgedTransmitsInherited = $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited
-        $result.MacChanges = $virtualPortGroupSecurityPolicy.MacChanges
-        $result.MacChangesInherited = $virtualPortGroupSecurityPolicy.MacChangesInherited
-    }
-}
-
-[DscResource()]
-class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
-    <#
-    .DESCRIPTION
-
-    The flag to indicate whether or not traffic shaper is enabled on the port.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $Enabled
-
-    <#
-    .DESCRIPTION
-
-    The average bandwidth in bits per second if shaping is enabled on the port.
-    #>
-    [DscProperty()]
-    [nullable[long]] $AverageBandwidth
-
-    <#
-    .DESCRIPTION
-
-    The peak bandwidth during bursts in bits per second if traffic shaping is enabled on the port.
-    #>
-    [DscProperty()]
-    [nullable[long]] $PeakBandwidth
-
-    <#
-    .DESCRIPTION
-
-    The maximum burst size allowed in bytes if shaping is enabled on the port.
-    #>
-    [DscProperty()]
-    [nullable[long]] $BurstSize
-
-    [void] Set() {
-        try {
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $this.GetVMHostNetworkSystem()
-            $virtualPortGroup = $this.GetVirtualPortGroup()
-
-            $this.UpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [bool] Test() {
-        try {
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $virtualPortGroup = $this.GetVirtualPortGroup()
-            if ($null -eq $virtualPortGroup) {
-                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                return $true
-            }
-
-            return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [VMHostVssPortGroupShaping] Get() {
-        try {
-            $result = [VMHostVssPortGroupShaping]::new()
-            $result.Server = $this.Server
-            $result.Ensure = $this.Ensure
-
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $result.VMHostName = $this.VMHost.Name
-
-            $virtualPortGroup = $this.GetVirtualPortGroup()
-            if ($null -eq $virtualPortGroup) {
-                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                $result.Name = $this.Name
-                return $result
-            }
-
-            $result.Name = $virtualPortGroup.Name
-            $this.PopulateResult($virtualPortGroup, $result)
-
-            return $result
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the Shaping Policy of the specified Virtual Port Group should be updated.
-    #>
-    [bool] ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup) {
-        $shouldUpdateVirtualPortGroupShapingPolicy = @()
-
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.Enabled -and $this.Enabled -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.Enabled)
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.AverageBandwidth -and $this.AverageBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.AverageBandwidth)
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.PeakBandwidth -and $this.PeakBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.PeakBandwidth)
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.BurstSize -and $this.BurstSize -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.BurstSize)
-
-        return ($shouldUpdateVirtualPortGroupShapingPolicy -Contains $true)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Performs an update on the Shaping Policy of the specified Virtual Port Group.
-    #>
-    [void] UpdateVirtualPortGroupShapingPolicy($virtualPortGroup) {
-        $virtualPortGroupSpec = New-Object VMware.Vim.HostPortGroupSpec
-
-        $virtualPortGroupSpec.Name = $virtualPortGroup.Name
-        $virtualPortGroupSpec.VswitchName = $virtualPortGroup.VirtualSwitchName
-        $virtualPortGroupSpec.VlanId = $virtualPortGroup.VLanId
-
-        $virtualPortGroupSpec.Policy = New-Object VMware.Vim.HostNetworkPolicy
-        $virtualPortGroupSpec.Policy.ShapingPolicy = New-Object VMware.Vim.HostNetworkTrafficShapingPolicy
-
-        if ($null -ne $this.Enabled) { $virtualPortGroupSpec.Policy.ShapingPolicy.Enabled = $this.Enabled }
-        if ($null -ne $this.AverageBandwidth) { $virtualPortGroupSpec.Policy.ShapingPolicy.AverageBandwidth = $this.AverageBandwidth }
-        if ($null -ne $this.PeakBandwidth) { $virtualPortGroupSpec.Policy.ShapingPolicy.PeakBandwidth = $this.PeakBandwidth }
-        if ($null -ne $this.BurstSize) { $virtualPortGroupSpec.Policy.ShapingPolicy.BurstSize = $this.BurstSize }
-
-        try {
-            Update-VirtualPortGroup -VMHostNetworkSystem $this.VMHostNetworkSystem -VirtualPortGroupName $virtualPortGroup.Name -Spec $virtualPortGroupSpec
-        }
-        catch {
-            throw "Cannot update Shaping Policy of Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the result returned from the Get() method with the values of the Shaping Policy of the specified Virtual Port Group from the server.
-    #>
-    [void] PopulateResult($virtualPortGroup, $result) {
-        $result.Enabled = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.Enabled
-        $result.AverageBandwidth = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.AverageBandwidth
-        $result.PeakBandwidth = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.PeakBandwidth
-        $result.BurstSize = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.BurstSize
-    }
-}
-
-[DscResource()]
-class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Specifies how a physical adapter is returned to active duty after recovering from a failure.
-    If the value is $true, the adapter is returned to active duty immediately on recovery, displacing the standby adapter that took over its slot, if any.
-    If the value is $false, a failed adapter is left inactive even after recovery until another active adapter fails, requiring its replacement.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $FailbackEnabled
-
-    <#
-    .DESCRIPTION
-
-    Determines how network traffic is distributed between the network adapters assigned to a switch. The following values are valid:
-    LoadBalanceIP - Route based on IP hash. Choose an uplink based on a hash of the source and destination IP addresses of each packet.
-    For non-IP packets, whatever is at those offsets is used to compute the hash.
-    LoadBalanceSrcMac - Route based on source MAC hash. Choose an uplink based on a hash of the source Ethernet.
-    LoadBalanceSrcId - Route based on the originating port ID. Choose an uplink based on the virtual port where the traffic entered the virtual switch.
-    ExplicitFailover - Always use the highest order uplink from the list of Active adapters that passes failover detection criteria.
-    #>
-    [DscProperty()]
-    [LoadBalancingPolicy] $LoadBalancingPolicy = [LoadBalancingPolicy]::Unset
-
-    <#
-    .DESCRIPTION
-
-    Specifies the adapters you want to continue to use when the network adapter connectivity is available and active.
-    #>
-    [DscProperty()]
-    [string[]] $MakeNicActive
-
-    <#
-    .DESCRIPTION
-
-    Specifies the adapters you want to use if one of the active adapter's connectivity is unavailable.
-    #>
-    [DscProperty()]
-    [string[]] $MakeNicStandby
-
-    <#
-    .DESCRIPTION
-
-    Specifies the adapters you do not want to use.
-    #>
-    [DscProperty()]
-    [string[]] $MakeNicUnused
-
-    <#
-    .DESCRIPTION
-
-    Specifies how to reroute traffic in the event of an adapter failure. The following values are valid:
-    LinkStatus - Relies solely on the link status that the network adapter provides. This option detects failures, such as cable pulls and physical switch power failures,
-    but not configuration errors, such as a physical switch port being blocked by spanning tree or misconfigured to the wrong VLAN or cable pulls on the other side of a physical switch.
-    BeaconProbing - Sends out and listens for beacon probes on all NICs in the team and uses this information, in addition to link status, to determine link failure.
-    This option detects many of the failures mentioned above that are not detected by link status alone.
-    #>
-    [DscProperty()]
-    [NetworkFailoverDetectionPolicy] $NetworkFailoverDetectionPolicy = [NetworkFailoverDetectionPolicy]::Unset
-
-    <#
-    .DESCRIPTION
-
-    Indicates that whenever a virtual NIC is connected to the virtual switch or whenever that virtual NIC's traffic is routed over a different physical NIC in the team because of a
-    failover event, a notification is sent over the network to update the lookup tables on the physical switches.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $NotifySwitches
-
-    <#
-    .DESCRIPTION
-
-    Indicates that the value of the FailbackEnabled parameter is inherited from the virtual switch.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $InheritFailback
-
-    <#
-    .DESCRIPTION
-
-    Indicates that the value of the MakeNicActive, MakeNicStandBy, and MakeNicUnused parameters are inherited from the virtual switch.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $InheritFailoverOrder
-
-    <#
-    .DESCRIPTION
-
-    Indicates that the value of the LoadBalancingPolicy parameter is inherited from the virtual switch.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $InheritLoadBalancingPolicy
-
-    <#
-    .DESCRIPTION
-
-    Indicates that the value of the NetworkFailoverDetectionPolicy parameter is inherited from the virtual switch.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $InheritNetworkFailoverDetectionPolicy
-
-    <#
-    .DESCRIPTION
-
-    Indicates that the value of the NotifySwitches parameter is inherited from the virtual switch.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $InheritNotifySwitches
-
-    hidden [string] $FailbackEnabledSettingName = 'FailbackEnabled'
-    hidden [string] $InheritFailbackSettingName = 'InheritFailback'
-    hidden [string] $LoadBalancingPolicySettingName = 'LoadBalancingPolicy'
-    hidden [string] $InheritLoadBalancingPolicySettingName = 'InheritLoadBalancingPolicy'
-    hidden [string] $NetworkFailoverDetectionPolicySettingName = 'NetworkFailoverDetectionPolicy'
-    hidden [string] $InheritNetworkFailoverDetectionPolicySettingName = 'InheritNetworkFailoverDetectionPolicy'
-    hidden [string] $NotifySwitchesSettingName = 'NotifySwitches'
-    hidden [string] $InheritNotifySwitchesSettingName = 'InheritNotifySwitches'
-    hidden [string] $MakeNicActiveSettingName = 'MakeNicActive'
-    hidden [string] $MakeNicStandbySettingName = 'MakeNicStandby'
-    hidden [string] $MakeNicUnusedSettingName = 'MakeNicUnused'
-    hidden [string] $InheritFailoverOrderSettingName = 'InheritFailoverOrder'
-
-    [void] Set() {
-        try {
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $virtualPortGroup = $this.GetVirtualPortGroup()
-            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
-
-            $this.UpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [bool] Test() {
-        try {
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $virtualPortGroup = $this.GetVirtualPortGroup()
-            if ($null -eq $virtualPortGroup) {
-                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                return $true
-            }
-
-            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
-
-            return !$this.ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [VMHostVssPortGroupTeaming] Get() {
-        try {
-            $result = [VMHostVssPortGroupTeaming]::new()
-            $result.Server = $this.Server
-            $result.Ensure = $this.Ensure
-
-            $this.ConnectVIServer()
-            $this.RetrieveVMHost()
-
-            $result.VMHostName = $this.VMHost.Name
-
-            $virtualPortGroup = $this.GetVirtualPortGroup()
-            if ($null -eq $virtualPortGroup) {
-                # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                $result.Name = $this.Name
-                return $result
-            }
-
-            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
-            $result.Name = $virtualPortGroup.Name
-
-            $this.PopulateResult($virtualPortGroupTeamingPolicy, $result)
-
-            return $result
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Virtual Port Group Teaming Policy from the server.
-    #>
-    [PSObject] GetVirtualPortGroupTeamingPolicy($virtualPortGroup) {
-        try {
-            $virtualPortGroupTeamingPolicy = Get-NicTeamingPolicy -Server $this.Connection -VirtualPortGroup $virtualPortGroup -ErrorAction Stop
-            return $virtualPortGroupTeamingPolicy
-        }
-        catch {
-            throw "Could not retrieve Virtual Port Group $($this.Name) Teaming Policy. For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the passed Nic array is in the desired state and if an update should be performed.
-    #>
-    [bool] ShouldUpdateNicArray($currentNicArray, $desiredNicArray) {
-        if ($null -eq $desiredNicArray -or $desiredNicArray.Length -eq 0) {
-            # The property is not specified or an empty Nic array is passed.
-            return $false
-        }
-        else {
-            $nicsToAdd = $desiredNicArray | Where-Object { $currentNicArray -NotContains $_ }
-            $nicsToRemove = $currentNicArray | Where-Object { $desiredNicArray -NotContains $_ }
-
-            if ($null -ne $nicsToAdd -or $null -ne $nicsToRemove) {
-                <#
-                The current Nic array does not contain at least one Nic from desired Nic array or
-                the desired Nic array is a subset of the current Nic array. In both cases
-                we should perform an update operation.
-                #>
-                return $true
-            }
-
-            # No need to perform an update operation.
-            return $false
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the Teaming Policy of the specified Virtual Port Group should be updated.
-    #>
-    [bool] ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy) {
-        $shouldUpdateVirtualPortGroupTeamingPolicy = @()
-
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.ActiveNic, $this.MakeNicActive)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.StandbyNic, $this.MakeNicStandBy)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.UnusedNic, $this.MakeNicUnused)
-
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.FailbackEnabled -and $this.FailbackEnabled -ne $virtualPortGroupTeamingPolicy.FailbackEnabled)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.NotifySwitches -and $this.NotifySwitches -ne $virtualPortGroupTeamingPolicy.NotifySwitches)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritFailback -and $this.InheritFailback -ne $virtualPortGroupTeamingPolicy.IsFailbackInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritFailoverOrder -and $this.InheritFailoverOrder -ne $virtualPortGroupTeamingPolicy.IsFailoverOrderInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritLoadBalancingPolicy -and $this.InheritLoadBalancingPolicy -ne $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritNetworkFailoverDetectionPolicy -and $this.InheritNetworkFailoverDetectionPolicy -ne $virtualPortGroupTeamingPolicy.IsNetworkFailoverDetectionInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritNotifySwitches -and $this.InheritNotifySwitches -ne $virtualPortGroupTeamingPolicy.IsNotifySwitchesInherited)
-
-        if ($this.LoadBalancingPolicy -ne [LoadBalancingPolicy]::Unset) {
-            $shouldUpdateVirtualPortGroupTeamingPolicy += ($this.LoadBalancingPolicy.ToString() -ne $virtualPortGroupTeamingPolicy.LoadBalancingPolicy.ToString())
-        }
-
-        if ($this.NetworkFailoverDetectionPolicy -ne [NetworkFailoverDetectionPolicy]::Unset) {
-            $shouldUpdateVirtualPortGroupTeamingPolicy += ($this.NetworkFailoverDetectionPolicy.ToString() -ne $virtualPortGroupTeamingPolicy.NetworkFailoverDetectionPolicy.ToString())
-        }
-
-        return ($shouldUpdateVirtualPortGroupTeamingPolicy -Contains $true)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the specified Enum Policy Setting. If the Inherited Setting is passed and set to $true,
-    the Policy Setting should not be populated because "Parameters of the form "XXX" and "InheritXXX" are mutually exclusive."
-    If the Inherited Setting is set to $false, both parameters can be populated.
-    #>
-    [void] PopulateEnumPolicySetting($policyParams, $policySettingName, $policySetting, $policySettingInheritedName, $policySettingInherited) {
-        if ($policySetting -ne 'Unset') {
-            if ($null -eq $policySettingInherited -or !$policySettingInherited) {
-                $policyParams.$policySettingName = $policySetting
-            }
-        }
-
-        if ($null -ne $policySettingInherited) { $policyParams.$policySettingInheritedName = $policySettingInherited }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the specified Array Policy Setting. If the Inherited Setting is passed and set to $true,
-    the Policy Setting should not be populated because "Parameters of the form "XXX" and "InheritXXX" are mutually exclusive."
-    If the Inherited Setting is set to $false, both parameters can be populated.
-    #>
-    [void] PopulateArrayPolicySetting($policyParams, $policySettingName, $policySetting, $policySettingInheritedName, $policySettingInherited) {
-        if ($null -ne $policySetting -and $policySetting.Length -gt 0) {
-            if ($null -eq $policySettingInherited -or !$policySettingInherited) {
-                $policyParams.$policySettingName = $policySetting
-            }
-        }
-
-        if ($null -ne $policySettingInherited) { $policyParams.$policySettingInheritedName = $policySettingInherited }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Performs an update on the Teaming Policy of the specified Virtual Port Group.
-    #>
-    [void] UpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy) {
-        $teamingPolicyParams = @{}
-        $teamingPolicyParams.VirtualPortGroupPolicy = $virtualPortGroupTeamingPolicy
-
-        $this.PopulatePolicySetting($teamingPolicyParams, $this.FailbackEnabledSettingName, $this.FailbackEnabled, $this.InheritFailbackSettingName, $this.InheritFailback)
-        $this.PopulatePolicySetting($teamingPolicyParams, $this.NotifySwitchesSettingName, $this.NotifySwitches, $this.InheritNotifySwitchesSettingName, $this.InheritNotifySwitches)
-
-        $this.PopulateEnumPolicySetting($teamingPolicyParams, $this.LoadBalancingPolicySettingName, $this.LoadBalancingPolicy.ToString(), $this.InheritLoadBalancingPolicySettingName, $this.InheritLoadBalancingPolicy)
-        $this.PopulateEnumPolicySetting($teamingPolicyParams, $this.NetworkFailoverDetectionPolicySettingName, $this.NetworkFailoverDetectionPolicy.ToString(), $this.InheritNetworkFailoverDetectionPolicySettingName, $this.InheritNetworkFailoverDetectionPolicy)
-
-        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicActiveSettingName, $this.MakeNicActive, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
-        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicStandbySettingName, $this.MakeNicStandBy, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
-        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicUnusedSettingName, $this.MakeNicUnused, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
-
-        try {
-            Set-NicTeamingPolicy @teamingPolicyParams
-        }
-        catch {
-            throw "Cannot update Teaming Policy of Virtual Port Group $($this.Name). For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the result returned from the Get() method with the values of the Teaming Policy of the specified Virtual Port Group from the server.
-    #>
-    [void] PopulateResult($virtualPortGroupTeamingPolicy, $result) {
-        $result.FailbackEnabled = $virtualPortGroupTeamingPolicy.FailbackEnabled
-        $result.NotifySwitches = $virtualPortGroupTeamingPolicy.NotifySwitches
-        $result.LoadBalancingPolicy = $virtualPortGroupTeamingPolicy.LoadBalancingPolicy.ToString()
-        $result.NetworkFailoverDetectionPolicy = $virtualPortGroupTeamingPolicy.NetworkFailoverDetectionPolicy.ToString()
-        $result.MakeNicActive = $virtualPortGroupTeamingPolicy.ActiveNic
-        $result.MakeNicStandBy = $virtualPortGroupTeamingPolicy.StandbyNic
-        $result.MakeNicUnused = $virtualPortGroupTeamingPolicy.UnusedNic
-        $result.InheritFailback = $virtualPortGroupTeamingPolicy.IsFailbackInherited
-        $result.InheritNotifySwitches = $virtualPortGroupTeamingPolicy.IsNotifySwitchesInherited
-        $result.InheritLoadBalancingPolicy = $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited
-        $result.InheritNetworkFailoverDetectionPolicy = $virtualPortGroupTeamingPolicy.IsNetworkFailoverDetectionInherited
-        $result.InheritFailoverOrder = $virtualPortGroupTeamingPolicy.IsFailoverOrderInherited
     }
 }
 

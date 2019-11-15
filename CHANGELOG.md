@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.32 - 2019-11-15
+### Added
+- Added VMware.vSphereDSC.CompositeResourcesHelper script with utility functions for Composite DSC Resources.
+- Added StandardPortGroup Composite DSC Resource.
+- Added Documentation and example Configuration for StandardPortGroup Composite DSC Resource.
+
+### Changed
+- Refactored Cluster Composite DSC Resource to use the utility functions from VMware.vSphereDSC.CompositeResourcesHelper script.
+- Rename MakeNicActive, MakeNicStandby and MakeNicUnused properties of VMHostVssPortGroupTeaming DSC Resource to ActiveNic, StandbyNic and UnusedNic.
+
 ## 2.0.0.31 - 2019-11-15
 ### Added
 - Added VMHostVDSwitchMigration DSC Resource.
