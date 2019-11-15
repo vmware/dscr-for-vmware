@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.33 - 2019-11-15
+### Added
+- Added VMHostAuthentication DSC Resource.
+- Added Unit Tests for VMHostAuthentication DSC Resource.
+- Added Integration Tests for VMHostAuthentication DSC Resource.
+- Added Documentation and example Configurations for VMHostAuthentication DSC Resource.
+
 ## 2.0.0.32 - 2019-11-15
 ### Added
 - Added VMware.vSphereDSC.CompositeResourcesHelper script with utility functions for Composite DSC Resources.

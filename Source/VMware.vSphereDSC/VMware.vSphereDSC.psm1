@@ -17,6 +17,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 Using module '.\VMware.vSphereDSC.Helper.psm1'
 Using module '.\VMware.vSphereDSC.Logging.psm1'
 
+enum DomainAction {
+    Join
+    Leave
+}
+
 enum Duplex {
     Full
     Half
@@ -4084,6 +4089,168 @@ class VMHostAgentVM : VMHostBaseDSC {
     [void] PopulateResult($esxAgentHostManager, $result) {
         $result.AgentVmDatastore = $this.PopulateAgentVmSetting($esxAgentHostManager, $this.AgentVmDatastoreName, $this.GetAgentVmDatastoreAsViewObjectMethodName)
         $result.AgentVmNetwork = $this.PopulateAgentVmSetting($esxAgentHostManager, $this.AgentVmNetworkName, $this.GetAgentVmNetworkAsViewObjectMethodName)
+    }
+}
+
+[DscResource()]
+class VMHostAuthentication : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the domain to join/leave. The name should be the fully qualified domain name (FQDN).
+    #>
+    [DscProperty(Mandatory)]
+    [string] $DomainName
+
+    <#
+    .DESCRIPTION
+
+    Value indicating if the specified VMHost should join/leave the specified domain.
+    #>
+    [DscProperty(Mandatory)]
+    [DomainAction] $DomainAction
+
+    <#
+    .DESCRIPTION
+
+    The credentials needed for joining the specified domain.
+    #>
+    [DscProperty()]
+    [PSCredential] $DomainCredential
+
+    [void] Set() {
+        try {
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostAuthenticationInfo = $this.GetVMHostAuthenticationInfo($vmHost)
+
+            if ($this.DomainAction -eq [DomainAction]::Join) {
+                $this.JoinDomain($vmHostAuthenticationInfo, $vmHost)
+            }
+            else {
+                $this.LeaveDomain($vmHostAuthenticationInfo, $vmHost)
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [bool] Test() {
+        try {
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostAuthenticationInfo = $this.GetVMHostAuthenticationInfo($vmHost)
+
+            if ($this.DomainAction -eq [DomainAction]::Join) {
+                return ($this.DomainName -eq $vmHostAuthenticationInfo.Domain)
+            }
+            else {
+                return ($null -eq $vmHostAuthenticationInfo.Domain)
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [VMHostAuthentication] Get() {
+        try {
+            $result = [VMHostAuthentication]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostAuthenticationInfo = $this.GetVMHostAuthenticationInfo($vmHost)
+
+            $this.PopulateResult($vmHostAuthenticationInfo, $vmHost, $result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Authentication information for the specified VMHost.
+    #>
+    [PSObject] GetVMHostAuthenticationInfo($vmHost) {
+        try {
+            $vmHostAuthenticationInfo = Get-VMHostAuthentication -Server $this.Connection -VMHost $vmHost -ErrorAction Stop
+            return $vmHostAuthenticationInfo
+        }
+        catch {
+            throw "Could not retrieve Authentication information for VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Includes the specified VMHost in the specified domain.
+    #>
+    [void] JoinDomain($vmHostAuthenticationInfo, $vmHost) {
+        $setVMHostAuthenticationParams = @{
+            VMHostAuthentication = $vmHostAuthenticationInfo
+            Domain = $this.DomainName
+            Credential = $this.DomainCredential
+            JoinDomain = $true
+            Confirm = $false
+            ErrorAction = 'Stop'
+        }
+
+        try {
+            Set-VMHostAuthentication @setVMHostAuthenticationParams
+        }
+        catch {
+            throw "Could not include VMHost $($vmHost.Name) in domain $($this.DomainName). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Excludes the specified VMHost from the specified domain.
+    #>
+    [void] LeaveDomain($vmHostAuthenticationInfo, $vmHost) {
+        $setVMHostAuthenticationParams = @{
+            VMHostAuthentication = $vmHostAuthenticationInfo
+            LeaveDomain = $true
+            Force = $true
+            Confirm = $false
+            ErrorAction = 'Stop'
+        }
+
+        try {
+            Set-VMHostAuthentication @setVMHostAuthenticationParams
+        }
+        catch {
+            throw "Could not exclude VMHost $($vmHost.Name) from domain $($this.DomainName). For more information: $($_.Exception.Message)"
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get() method.
+    #>
+    [void] PopulateResult($vmHostAuthenticationInfo, $vmHost, $result) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+
+        if ($null -ne $vmHostAuthenticationInfo.Domain) {
+            $result.DomainName = $vmHostAuthenticationInfo.Domain
+            $result.DomainAction = [DomainAction]::Join
+        }
+        else {
+            $result.DomainName = $this.DomainName
+            $result.DomainAction = [DomainAction]::Leave
+        }
     }
 }
 
