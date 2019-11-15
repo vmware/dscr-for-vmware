@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.31 - 2019-11-15
+### Added
+- Added VMHostVDSwitchMigration DSC Resource.
+- Added Unit Tests for VMHostVDSwitchMigration DSC Resource.
+- Added Integration Tests for VMHostVDSwitchMigration DSC Resource.
+- Added Documentation and example Configurations for VMHostVDSwitchMigration DSC Resource.
+
+### Changed
+- Modified description of properties in VMHostVssNic DSC Resource Documentation.
+
 ## 2.0.0.30 - 2019-10-30
 ### Added
 - Added VDSwitchVMHost DSC Resource.
