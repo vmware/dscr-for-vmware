@@ -45,7 +45,7 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
     Specifies the adapters you want to continue to use when the network adapter connectivity is available and active.
     #>
     [DscProperty()]
-    [string[]] $MakeNicActive
+    [string[]] $ActiveNic
 
     <#
     .DESCRIPTION
@@ -53,7 +53,7 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
     Specifies the adapters you want to use if one of the active adapter's connectivity is unavailable.
     #>
     [DscProperty()]
-    [string[]] $MakeNicStandby
+    [string[]] $StandbyNic
 
     <#
     .DESCRIPTION
@@ -61,7 +61,7 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
     Specifies the adapters you do not want to use.
     #>
     [DscProperty()]
-    [string[]] $MakeNicUnused
+    [string[]] $UnusedNic
 
     <#
     .DESCRIPTION
@@ -95,7 +95,7 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
     <#
     .DESCRIPTION
 
-    Indicates that the value of the MakeNicActive, MakeNicStandBy, and MakeNicUnused parameters are inherited from the virtual switch.
+    Indicates that the values of the ActiveNic, StandbyNic, and UnusedNic parameters are inherited from the virtual switch.
     #>
     [DscProperty()]
     [nullable[bool]] $InheritFailoverOrder
@@ -253,9 +253,9 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
     [bool] ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy) {
         $shouldUpdateVirtualPortGroupTeamingPolicy = @()
 
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.ActiveNic, $this.MakeNicActive)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.StandbyNic, $this.MakeNicStandBy)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.UnusedNic, $this.MakeNicUnused)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.ActiveNic, $this.ActiveNic)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.StandbyNic, $this.StandbyNic)
+        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.UnusedNic, $this.UnusedNic)
 
         $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.FailbackEnabled -and $this.FailbackEnabled -ne $virtualPortGroupTeamingPolicy.FailbackEnabled)
         $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.NotifySwitches -and $this.NotifySwitches -ne $virtualPortGroupTeamingPolicy.NotifySwitches)
@@ -325,9 +325,9 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
         $this.PopulateEnumPolicySetting($teamingPolicyParams, $this.LoadBalancingPolicySettingName, $this.LoadBalancingPolicy.ToString(), $this.InheritLoadBalancingPolicySettingName, $this.InheritLoadBalancingPolicy)
         $this.PopulateEnumPolicySetting($teamingPolicyParams, $this.NetworkFailoverDetectionPolicySettingName, $this.NetworkFailoverDetectionPolicy.ToString(), $this.InheritNetworkFailoverDetectionPolicySettingName, $this.InheritNetworkFailoverDetectionPolicy)
 
-        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicActiveSettingName, $this.MakeNicActive, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
-        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicStandbySettingName, $this.MakeNicStandBy, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
-        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicUnusedSettingName, $this.MakeNicUnused, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
+        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicActiveSettingName, $this.ActiveNic, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
+        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicStandbySettingName, $this.StandbyNic, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
+        $this.PopulateArrayPolicySetting($teamingPolicyParams, $this.MakeNicUnusedSettingName, $this.UnusedNic, $this.InheritFailoverOrderSettingName, $this.InheritFailoverOrder)
 
         try {
             Set-NicTeamingPolicy @teamingPolicyParams
@@ -347,9 +347,9 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
         $result.NotifySwitches = $virtualPortGroupTeamingPolicy.NotifySwitches
         $result.LoadBalancingPolicy = $virtualPortGroupTeamingPolicy.LoadBalancingPolicy.ToString()
         $result.NetworkFailoverDetectionPolicy = $virtualPortGroupTeamingPolicy.NetworkFailoverDetectionPolicy.ToString()
-        $result.MakeNicActive = $virtualPortGroupTeamingPolicy.ActiveNic
-        $result.MakeNicStandBy = $virtualPortGroupTeamingPolicy.StandbyNic
-        $result.MakeNicUnused = $virtualPortGroupTeamingPolicy.UnusedNic
+        $result.ActiveNic = $virtualPortGroupTeamingPolicy.ActiveNic
+        $result.StandbyNic = $virtualPortGroupTeamingPolicy.StandbyNic
+        $result.UnusedNic = $virtualPortGroupTeamingPolicy.UnusedNic
         $result.InheritFailback = $virtualPortGroupTeamingPolicy.IsFailbackInherited
         $result.InheritNotifySwitches = $virtualPortGroupTeamingPolicy.IsNotifySwitchesInherited
         $result.InheritLoadBalancingPolicy = $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited

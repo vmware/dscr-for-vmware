@@ -64,9 +64,9 @@ InModuleScope -ModuleName $script:moduleName {
                                             $LoadBalancingPolicy -eq $script:constants.LoadBalancingPolicyIP -and `
                                             $NetworkFailoverDetectionPolicy -eq $script:constants.NetworkFailoverDetectionPolicy -and `
                                             $NotifySwitches -eq $script:constants.NotifySwitches -and `
-                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicActive, [string[]] $script:constants.MakeNicActive) -and `
-                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicStandby, [string[]] $script:constants.MakeNicStandby) -and `
-                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicUnused, [string[]] $script:constants.MakeNicUnused) }
+                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicActive, [string[]] $script:constants.ActiveNic) -and `
+                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicStandby, [string[]] $script:constants.StandbyNic) -and `
+                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicUnused, [string[]] $script:constants.UnusedNic) }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'
@@ -102,9 +102,9 @@ InModuleScope -ModuleName $script:moduleName {
                                             $LoadBalancingPolicy -eq $script:constants.LoadBalancingPolicyIP -and `
                                             $NetworkFailoverDetectionPolicy -eq $script:constants.NetworkFailoverDetectionPolicy -and `
                                             $NotifySwitches -eq $script:constants.NotifySwitches -and `
-                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicActive, [string[]] $script:constants.MakeNicActive) -and `
-                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicStandby, [string[]] $script:constants.MakeNicStandby) -and `
-                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicUnused, [string[]] $script:constants.MakeNicUnused) -and `
+                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicActive, [string[]] $script:constants.ActiveNic) -and `
+                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicStandby, [string[]] $script:constants.StandbyNic) -and `
+                                            [System.Linq.Enumerable]::SequenceEqual($MakeNicUnused, [string[]] $script:constants.UnusedNic) -and `
                                             $InheritFailback -eq $script:constants.InheritFailback -and `
                                             $InheritFailoverOrder -eq $script:constants.InheritFailoverOrder -and `
                                             $InheritLoadBalancingPolicy -eq $script:constants.InheritLoadBalancingPolicy -and `
@@ -233,9 +233,9 @@ InModuleScope -ModuleName $script:moduleName {
                 $result.LoadBalancingPolicy | Should -Be $script:constants.LoadBalancingPolicyIP
                 $result.NetworkFailoverDetectionPolicy | Should -Be $script:constants.NetworkFailoverDetectionPolicy
                 $result.NotifySwitches | Should -Be $script:constants.NotifySwitches
-                $result.MakeNicActive | Should -Be $script:constants.MakeNicActive
-                $result.MakeNicStandby | Should -Be $script:constants.MakeNicStandby
-                $result.MakeNicUnused | Should -Be $script:constants.MakeNicUnused
+                $result.ActiveNic | Should -Be $script:constants.ActiveNic
+                $result.StandbyNic | Should -Be $script:constants.StandbyNic
+                $result.UnusedNic | Should -Be $script:constants.UnusedNic
                 $result.InheritFailback | Should -Be $script:constants.InheritFailback
                 $result.InheritFailoverOrder | Should -Be $script:constants.InheritFailoverOrder
                 $result.InheritLoadBalancingPolicy | Should -Be $script:constants.InheritLoadBalancingPolicy

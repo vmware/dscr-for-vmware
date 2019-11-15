@@ -33,7 +33,7 @@ Param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]
-    $Name
+    $VMHostName
 )
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
@@ -45,74 +45,48 @@ $script:configurationData = @{
             PSDscAllowPlainTextPassword = $true
             Server = $Server
             Credential = $Credential
-            Name = $Name
+            VMHostName = $VMHostName
         }
     )
 }
 
-Configuration VMHostVssPortGroupTeaming_Config {
+<#
+.DESCRIPTION
+
+The Configuration does the following:
+1. Creates/Updates Port Group 'MyStandardPortGroup' which belongs to Standard Switch 'MyStandardSwitch' with VLanId set to '1'.
+2. Enables the Shaping Policy and sets the 'BurstSize', 'Average' and 'Peak bandwidth' values.
+3. Enables 'Promiscuous mode', 'Forged Transmits' and 'Mac Changes'. The Security Policy settings are not inherited from the parent Standard Switch 'MyStandardSwitch'.
+4. Sets the active Nics to be 'vmnic2' and 'vmnnic3', the LoadBalancing Policy to 'LoadBalanceIP' and the NetworkFailover Policy to 'LinkStatus'.
+   The Teaming Policy settings are not inherited from the parent Standard Switch 'MyStandardSwitch'.
+#>
+Configuration StandardPortGroup_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostVss VMHostStandardSwitch {
+        StandardPortGroup StandardPortGroup {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VssName = 'MyVirtualSwitch'
-            Ensure = 'Present'
-            Mtu = 1500
-        }
-
-        VMHostVssBridge VMHostVssBridge {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VssName = 'MyVirtualSwitch'
-            Ensure = 'Present'
-            BeaconInterval = 1
-            LinkDiscoveryProtocolOperation = 'Listen'
-            LinkDiscoveryProtocolProtocol = 'CDP'
-            NicDevice = @('vmnic2', 'vmnic3')
-            DependsOn = "[VMHostVss]VMHostStandardSwitch"
-        }
-
-        VMHostVssTeaming VMHostVssTeaming {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            Name = $AllNodes.Name
-            VssName = 'MyVirtualSwitch'
-            Ensure = 'Present'
-            CheckBeacon = $true
-            ActiveNic = @('vmnic2', 'vmnic3')
-            StandbyNic = @()
-            NotifySwitches = $false
-            Policy = 'Loadbalance_ip'
-            RollingOrder = $true
-            DependsOn = "[VMHostVssBridge]VMHostVssBridge"
-        }
-
-        VMHostVssPortGroup VMHostVssPortGroup {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Name
-            Name = 'MyVirtualPortGroup'
-            VssName = 'MyVirtualSwitch'
+            VMHostName = $AllNodes.VMHostName
+            Name = 'MyStandardPortGroup'
+            VssName = 'MyStandardSwitch'
             Ensure = 'Present'
             VLanId = 0
-            DependsOn = "[VMHostVssTeaming]VMHostVssTeaming"
-        }
-
-        VMHostVssPortGroupTeaming VMHostVssPortGroupTeaming {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Name
-            Name = 'MyVirtualPortGroup'
-            Ensure = 'Present'
+            Enabled = $true
+            AverageBandwidth = 104857600000
+            PeakBandwidth = 104857600000
+            BurstSize = 107374182400
+            AllowPromiscuous = $true
+            AllowPromiscuousInherited = $false
+            ForgedTransmits = $true
+            ForgedTransmitsInherited = $false
+            MacChanges = $true
+            MacChangesInherited = $false
             FailbackEnabled = $false
             LoadBalancingPolicy = 'LoadBalanceIP'
-            MakeNicActive = @('vmnic2', 'vmnic3')
-            MakeNicStandby = @()
-            MakeNicUnused = @()
+            ActiveNic = @('vmnic2', 'vmnic3')
+            StandbyNic = @()
+            UnusedNic = @()
             NetworkFailoverDetectionPolicy = 'LinkStatus'
             NotifySwitches = $false
             InheritFailback = $false
@@ -120,9 +94,8 @@ Configuration VMHostVssPortGroupTeaming_Config {
             InheritLoadBalancingPolicy = $false
             InheritNetworkFailoverDetectionPolicy = $false
             InheritNotifySwitches = $false
-            DependsOn = "[VMHostVssPortGroup]VMHostVssPortGroup"
         }
     }
 }
 
-VMHostVssPortGroupTeaming_Config -ConfigurationData $script:configurationData
+StandardPortGroup_Config -ConfigurationData $script:configurationData
