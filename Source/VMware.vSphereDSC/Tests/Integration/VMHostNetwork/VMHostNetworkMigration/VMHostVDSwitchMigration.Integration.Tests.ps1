@@ -36,191 +36,7 @@ Param(
     $Name
 )
 
-<#
-Retrieves the name and the location of the Datacenter where the specified VMHost is located.
-Retrieves one connected Physical Network Adapter and two disconnected Physical Network Adapters from the specified VMHost.
-The connected Physical Network Adapter should not be part of a Standard Switch which has VMKernel Network Adapter that has
-Management Traffic enabled.
-If the criteria is not met, it throws an exception.
-#>
-function Invoke-TestSetup {
-    # Data that is going to be passed as Configuration Data in the Integration Tests.
-    $script:datacenterName = $null
-    $script:datacenterLocation = $null
-    $script:physicalNetworkAdapters = @()
-    $script:virtualSwitchesWithPhysicalNics = @{}
-
-    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password -ErrorAction Stop
-    $vmHost = Get-VMHost -Server $viServer -Name $Name -ErrorAction Stop
-    $networkSystem = Get-View -Server $viServer -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
-    $datacenter = Get-Datacenter -Server $viServer -VMHost $vmHost -ErrorAction Stop
-
-    $script:datacenterName = $datacenter.Name
-
-    # If the Parent of the Parent Folder is $null, the Datacenter is located in the Root Folder of the Inventory.
-    if ($null -eq $datacenter.ParentFolder.Parent) {
-        $script:datacenterLocation = [string]::Empty
-    }
-    else {
-        $locationItems = @()
-        $child = $datacenter.ParentFolder
-        $parent = $datacenter.ParentFolder.Parent
-
-        while ($true) {
-            if ($null -eq $parent) {
-                break
-            }
-
-            $locationItems += $child.Name
-            $child = $parent
-            $parent = $parent.Parent
-        }
-
-        # The Parent Folder of the Datacenter should be the last item in the array.
-        [array]::Reverse($locationItems)
-
-        # Folder names for Datacenter Location should be separated by '/'.
-        $script:datacenterLocation = [string]::Join('/', $locationItems)
-    }
-
-    $disconnectedPhysicalNetworkAdapters = Get-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -Physical -ErrorAction Stop |
-                                           Where-Object -FilterScript { $_.BitRatePerSec -eq 0 } |
-                                           Select-Object -First 2
-    if ($disconnectedPhysicalNetworkAdapters.Length -lt 2) {
-        throw 'The Integration Tests require at least two disconnected Physical Network Adapters to be available on the ESXi node.'
-    }
-
-    $script:physicalNetworkAdapters += $disconnectedPhysicalNetworkAdapters[0].Name
-    $script:physicalNetworkAdapters += $disconnectedPhysicalNetworkAdapters[1].Name
-
-    <#
-    Store the initial Standard Switches for every Physical Network Adapter in the Virtual Switches hashtable, so
-    a migration can be performed after the Tests have executed. The Physical Network Adapter will be added again to
-    their initial Standard Switches.
-    #>
-    foreach ($physicalNetworkAdapter in $disconnectedPhysicalNetworkAdapters) {
-        $virtualSwitch = Get-VirtualSwitch -Server $viServer -VMHost $vmHost -ErrorAction Stop | Where-Object { $null -ne $_.Nic -and $_.Nic.Contains($physicalNetworkAdapter.Name) }
-        if ($null -eq $virtualSwitch) {
-            continue
-        }
-
-        $virtualSwitchName = $virtualSwitch.Name
-        $virtualSwitchNicTeamingPolicy = $networkSystem.NetworkConfig.Vswitch |
-                                         Where-Object { $_.Name -eq $virtualSwitch.Name } |
-                                         Select-Object -ExpandProperty Spec |
-                                         Select-Object -ExpandProperty Policy |
-                                         Select-Object -ExpandProperty NicTeaming
-
-        $script:virtualSwitchesWithPhysicalNics.$virtualSwitchName = @{
-            Nic = $virtualSwitch.Nic
-            ActiveNic = $virtualSwitchNicTeamingPolicy.NicOrder.ActiveNic
-            StandbyNic = $virtualSwitchNicTeamingPolicy.NicOrder.StandbyNic
-            CheckBeacon = $virtualSwitchNicTeamingPolicy.FailureCriteria.CheckBeacon
-            NotifySwitches = $virtualSwitchNicTeamingPolicy.NotifySwitches
-            Policy = $virtualSwitchNicTeamingPolicy.Policy
-            RollingOrder = $virtualSwitchNicTeamingPolicy.RollingOrder
-        }
-    }
-
-    $connectedPhysicalNetworkAdapters = Get-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -Physical -ErrorAction Stop |
-                                        Where-Object -FilterScript { $_.BitRatePerSec -ne 0 }
-    if ($connectedPhysicalNetworkAdapters.Length -lt 1) {
-        throw 'The Integration Tests require at least one connected Physical Network Adapter to be available on the ESXi node.'
-    }
-
-    <#
-    Here we retrieve the names of the Port Groups to which VMKernel Network Adapters with Management Traffic enabled are connected.
-    #>
-    $portGroupNamesOfVMKernelsWithManagementTrafficEnabled = Get-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -VMKernel -ErrorAction Stop |
-                                                             Where-Object { $_.ManagementTrafficEnabled } |
-                                                             Select-Object -ExpandProperty PortGroupName
-
-    <#
-    For connected Physical Network Adapters, we need to retrieve only one of them that meets the following criteria:
-    The Physical Network Adapter should not be part of a Standard Switch or the Physical Network Adapter is part of a Standard Switch
-    that does not have a VMKernel Network Adapter that has Management Traffic enabled.
-    #>
-    foreach ($physicalNetworkAdapter in $connectedPhysicalNetworkAdapters) {
-        $virtualSwitch = Get-VirtualSwitch -Server $viServer -VMHost $vmHost -ErrorAction Stop | Where-Object { $null -ne $_.Nic -and $_.Nic.Contains($physicalNetworkAdapter.Name) }
-        if ($null -eq $virtualSwitch) {
-            $script:physicalNetworkAdapters += $physicalNetworkAdapter.Name
-            break
-        }
-
-        $virtualPortGroups = Get-VirtualPortGroup -Server $viServer -VMHost $vmHost -VirtualSwitch $virtualSwitch -ErrorAction Stop |
-                             Where-Object { $_.VirtualSwitchName -eq $virtualSwitch.Name -and $portGroupNamesOfVMKernelsWithManagementTrafficEnabled.Contains($_.Name) }
-        if ($virtualPortGroups.Length -gt 0) {
-            continue
-        }
-        else {
-            $script:physicalNetworkAdapters += $physicalNetworkAdapter.Name
-            $virtualSwitchName = $virtualSwitch.Name
-            $virtualSwitchNicTeamingPolicy = $networkSystem.NetworkConfig.Vswitch |
-                                         Where-Object { $_.Name -eq $virtualSwitch.Name } |
-                                         Select-Object -ExpandProperty Spec |
-                                         Select-Object -ExpandProperty Policy |
-                                         Select-Object -ExpandProperty NicTeaming
-
-            $script:virtualSwitchesWithPhysicalNics.$virtualSwitchName = @{
-                Nic = $virtualSwitch.Nic
-                ActiveNic = $virtualSwitchNicTeamingPolicy.NicOrder.ActiveNic
-                StandbyNic = $virtualSwitchNicTeamingPolicy.NicOrder.StandbyNic
-                CheckBeacon = $virtualSwitchNicTeamingPolicy.FailureCriteria.CheckBeacon
-                NotifySwitches = $virtualSwitchNicTeamingPolicy.NotifySwitches
-                Policy = $virtualSwitchNicTeamingPolicy.Policy
-                RollingOrder = $virtualSwitchNicTeamingPolicy.RollingOrder
-            }
-
-            break
-        }
-    }
-
-    Disconnect-VIServer -Server $Server -Confirm:$false
-}
-
-function Add-PhysicalNetworkAdaptersToStandardSwitch {
-    [CmdletBinding()]
-
-    $standardSwitchName = $script:configurationData.AllNodes.StandardSwitchName
-    $physicalNetworkAdapterNames = $script:configurationData.AllNodes.PhysicalNetworkAdapterNames
-
-    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password -ErrorAction Stop
-    $vmHost = Get-VMHost -Server $viServer -Name $Name -ErrorAction Stop
-    $standardSwitch = Get-VirtualSwitch -Server $viServer -VMHost $vmHost -Name $standardSwitchName -ErrorAction Stop
-
-    $physicalNetworkAdapters = @()
-    foreach ($physicalNetworkAdapterName in $physicalNetworkAdapterNames) {
-        $physicalNetworkAdapter = Get-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -Name $physicalNetworkAdapterName -Physical -ErrorAction Stop
-        $physicalNetworkAdapters += $physicalNetworkAdapter
-    }
-
-    Add-VirtualSwitchPhysicalNetworkAdapter -Server $viServer -VirtualSwitch $standardSwitch -VMHostPhysicalNic $physicalNetworkAdapters -Confirm:$false -ErrorAction Stop
-
-    Disconnect-VIServer -Server $Server -Confirm:$false
-}
-
-function Get-VMKernelNetworkAdapterNames {
-    [CmdletBinding()]
-
-    $standardSwitchName = $script:configurationData.AllNodes.StandardSwitchName
-    $managementPortGroupName = $script:configurationData.AllNodes.ManagementPortGroupName
-    $vMotionPortGroupName = $script:configurationData.AllNodes.VMotionPortGroupName
-
-    $viServer = Connect-VIServer -Server $Server -User $User -Password $Password -ErrorAction Stop
-    $vmHost = Get-VMHost -Server $viServer -Name $Name -ErrorAction Stop
-    $standardSwitch = Get-VirtualSwitch -Server $viServer -VMHost $vmHost -Name $standardSwitchName -ErrorAction Stop
-    $managementPortGroup = Get-VirtualPortGroup -Server $viServer -VMHost $vmHost -Name $managementPortGroupName -ErrorAction Stop
-    $vMotionPortGroup = Get-VirtualPortGroup -Server $viServer -VMHost $vmHost -Name $vMotionPortGroupName -ErrorAction Stop
-
-    $vmKernelNetworkAdapterWithManagementTrafficEnabled = Get-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -VirtualSwitch $standardSwitch -PortGroup $managementPortGroup -VMKernel -ErrorAction Stop
-    $vmKernelNetworkAdapterWithvMotionEnabled = Get-VMHostNetworkAdapter -Server $viServer -VMHost $vmHost -VirtualSwitch $standardSwitch -PortGroup $vMotionPortGroup -VMKernel -ErrorAction Stop
-
-    # Here we need to modify the Configuration Data passed to each Configuration to include the retrieved VMKernel Network Adapter names.
-    $script:configurationData.AllNodes[0].VMKernelNetworkAdapterNames = @($vmKernelNetworkAdapterWithManagementTrafficEnabled.Name, $vmKernelNetworkAdapterWithvMotionEnabled.Name)
-
-    Disconnect-VIServer -Server $Server -Confirm:$false
-}
-
+. "$PSScriptRoot\VMHostNetworkMigration.Integration.Tests.Helpers.ps1"
 Invoke-TestSetup
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
@@ -245,14 +61,12 @@ $script:configurationData = @{
             VDSwitchResourceName = 'VDSwitch'
             VDSwitchResourceId = '[VDSwitch]VDSwitch'
             VDSwitchVMHostResourceName = 'VDSwitchVMHost'
+            VMHostVssMigrationResourceName = 'VMHostVssMigration'
             VMHostVDSwitchMigrationResourceName = 'VMHostVDSwitchMigration'
             VMHostVssBridgeResourceName = 'VMHostVssBridge'
             VMHostVssTeamingResourceName = 'VMHostVssTeaming'
             VMHostVssManagementNicResourceName = 'VMHostVssManagementNic'
             VMHostVssvMotionNicResourceName = 'VMHostVssvMotionNic'
-            VMHostVdsNicResourceName = 'VMHostVdsNic'
-            VMHostVdsManagementNicResourceName = 'VMHostVdsManagementNic'
-            VMHostVdsvMotionNicResourceName = 'VMHostVdsvMotionNic'
             StandardSwitchName = 'MyTestStandardSwitch'
             VDSwitchName = 'MyTestVDSwitch'
             VDSwitchLocation = [string]::Empty
@@ -273,6 +87,7 @@ $script:configurationData = @{
 
 $script:configCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch = "$($script:dscResourceName)_CreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch_Config"
 $script:configCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter = "$($script:dscResourceName)_CreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter_Config"
+$script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch = "$($script:dscResourceName)_MigrateThreePhysicalNetworkAdaptersToStandardSwitch_Config"
 $script:configMigrateOneDisconnectedPhysicalNetworkAdapter = "$($script:dscResourceName)_MigrateOneDisconnectedPhysicalNetworkAdapter_Config"
 $script:configMigrateTwoDisconnectedPhysicalNetworkAdapters = "$($script:dscResourceName)_MigrateTwoDisconnectedPhysicalNetworkAdapters_Config"
 $script:configMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdapters = "$($script:dscResourceName)_MigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdapters_Config"
@@ -282,8 +97,6 @@ $script:configMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAda
 $script:configMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroups = "$($script:dscResourceName)_MigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroups_Config"
 $script:configMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroup = "$($script:dscResourceName)_MigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroup_Config"
 $script:configMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroups = "$($script:dscResourceName)_MigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroups_Config"
-$script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup = "$($script:dscResourceName)_RemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup_Config"
-$script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups = "$($script:dscResourceName)_RemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups_Config"
 $script:configRemoveVDSwitchStandardSwitchAndStandardPortGroup = "$($script:dscResourceName)_RemoveVDSwitchStandardSwitchAndStandardPortGroup_Config"
 $script:configMigratePhysicalNetworkAdaptersToInitialVirtualSwitches = "$($script:dscResourceName)_MigratePhysicalNetworkAdaptersToInitialVirtualSwitches_Config"
 
@@ -291,6 +104,7 @@ $script:configMigratePhysicalNetworkAdaptersToInitialVirtualSwitches = "$($scrip
 
 $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath = "$script:integrationTestsFolderPath\$script:configCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch\"
 $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath = "$script:integrationTestsFolderPath\$script:configCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter\"
+$script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath = "$script:integrationTestsFolderPath\$script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch\"
 $script:mofFileMigrateOneDisconnectedPhysicalNetworkAdapterPath = "$script:integrationTestsFolderPath\$script:configMigrateOneDisconnectedPhysicalNetworkAdapter\"
 $script:mofFileMigrateTwoDisconnectedPhysicalNetworkAdaptersPath = "$script:integrationTestsFolderPath\$script:configMigrateTwoDisconnectedPhysicalNetworkAdapters\"
 $script:mofFileMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersPath = "$script:integrationTestsFolderPath\$script:configMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdapters\"
@@ -300,8 +114,6 @@ $script:mofFileMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAd
 $script:mofFileMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroupsPath = "$script:integrationTestsFolderPath\$script:configMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroups\"
 $script:mofFileMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroupPath = "$script:integrationTestsFolderPath\$script:configMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroup\"
 $script:mofFileMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroupsPath = "$script:integrationTestsFolderPath\$script:configMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroups\"
-$script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath = "$script:integrationTestsFolderPath\$script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup\"
-$script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath = "$script:integrationTestsFolderPath\$script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups\"
 $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath = "$script:integrationTestsFolderPath\$script:configRemoveVDSwitchStandardSwitchAndStandardPortGroup\"
 $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath = "$script:integrationTestsFolderPath\$script:configMigratePhysicalNetworkAdaptersToInitialVirtualSwitches\"
 
@@ -314,6 +126,11 @@ Describe "$($script:dscResourceName)_Integration" {
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
+            & $script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch `
+                -OutputPath $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
             & $script:configMigrateOneDisconnectedPhysicalNetworkAdapter `
                 -OutputPath $script:mofFileMigrateOneDisconnectedPhysicalNetworkAdapterPath `
                 -ConfigurationData $script:configurationData `
@@ -321,6 +138,15 @@ Describe "$($script:dscResourceName)_Integration" {
 
             $startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch = @{
                 Path = $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
+            $startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch = @{
+                Path = $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath
                 ComputerName = $script:configurationData.AllNodes.NodeName
                 Wait = $true
                 Force = $true
@@ -339,10 +165,7 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Act
             Start-DscConfiguration @startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch
-
-            # TODO: Replace with DSC Resource that migrates Physical Network Adapters to the specified Standard Switch.
-            Add-PhysicalNetworkAdaptersToStandardSwitch
-
+            Start-DscConfiguration @startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch
             Start-DscConfiguration @startDscConfigurationParametersMigrateOneDisconnectedPhysicalNetworkAdapter
         }
 
@@ -441,6 +264,11 @@ Describe "$($script:dscResourceName)_Integration" {
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
+            & $script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch `
+                -OutputPath $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
             & $script:configMigrateTwoDisconnectedPhysicalNetworkAdapters `
                 -OutputPath $script:mofFileMigrateTwoDisconnectedPhysicalNetworkAdaptersPath `
                 -ConfigurationData $script:configurationData `
@@ -448,6 +276,15 @@ Describe "$($script:dscResourceName)_Integration" {
 
             $startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch = @{
                 Path = $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
+            $startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch = @{
+                Path = $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath
                 ComputerName = $script:configurationData.AllNodes.NodeName
                 Wait = $true
                 Force = $true
@@ -466,10 +303,7 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Act
             Start-DscConfiguration @startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch
-
-            # TODO: Replace with DSC Resource that migrates Physical Network Adapters to the specified Standard Switch.
-            Add-PhysicalNetworkAdaptersToStandardSwitch
-
+            Start-DscConfiguration @startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch
             Start-DscConfiguration @startDscConfigurationParametersMigrateTwoDisconnectedPhysicalNetworkAdapters
         }
 
@@ -574,6 +408,11 @@ Describe "$($script:dscResourceName)_Integration" {
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
+            & $script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch `
+                -OutputPath $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
             & $script:configMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdapters `
                 -OutputPath $script:mofFileMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersPath `
                 -ConfigurationData $script:configurationData `
@@ -581,6 +420,15 @@ Describe "$($script:dscResourceName)_Integration" {
 
             $startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch = @{
                 Path = $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
+            $startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch = @{
+                Path = $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath
                 ComputerName = $script:configurationData.AllNodes.NodeName
                 Wait = $true
                 Force = $true
@@ -599,10 +447,7 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Act
             Start-DscConfiguration @startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch
-
-            # TODO: Replace with DSC Resource that migrates Physical Network Adapters to the specified Standard Switch.
-            Add-PhysicalNetworkAdaptersToStandardSwitch
-
+            Start-DscConfiguration @startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch
             Start-DscConfiguration @startDscConfigurationParametersMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdapters
         }
 
@@ -709,6 +554,11 @@ Describe "$($script:dscResourceName)_Integration" {
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
+            & $script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch `
+                -OutputPath $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
             $startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch = @{
                 Path = $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath
                 ComputerName = $script:configurationData.AllNodes.NodeName
@@ -727,14 +577,21 @@ Describe "$($script:dscResourceName)_Integration" {
                 ErrorAction = 'Stop'
             }
 
+            $startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch = @{
+                Path = $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
             # Act
             Start-DscConfiguration @startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch
             Start-DscConfiguration @startDscConfigurationParametersCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter
+            Start-DscConfiguration @startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch
 
-            # TODO: Replace with DSC Resource that migrates Physical Network Adapters to the specified Standard Switch.
-            Add-PhysicalNetworkAdaptersToStandardSwitch
-
-            Get-VMKernelNetworkAdapterNames
+            Get-VMKernelNetworkAdapterNamesConnectedToStandardSwitch
 
             & $script:configMigrateOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAdaptersAndOnePortGroup `
                 -OutputPath $script:mofFileMigrateOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAdaptersAndOnePortGroupPath `
@@ -801,11 +658,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
         AfterAll {
             # Arrange
-            & $script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup `
-                -OutputPath $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath `
-                -ConfigurationData $script:configurationData `
-                -ErrorAction Stop
-
             & $script:configRemoveVDSwitchStandardSwitchAndStandardPortGroup `
                 -OutputPath $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath `
                 -ConfigurationData $script:configurationData `
@@ -815,15 +667,6 @@ Describe "$($script:dscResourceName)_Integration" {
                 -OutputPath $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
-
-            $startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup = @{
-                Path = $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
 
             $startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup = @{
                 Path = $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath
@@ -844,14 +687,14 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            Start-DscConfiguration @startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup
+            Remove-ManagementAndvMotionVMKernelNetworkAdaptersConnectedToTheSamePortGroup
+
             Start-DscConfiguration @startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup
             Start-DscConfiguration @startDscConfigurationParametersMigratePhysicalNetworkAdaptersToInitialVirtualSwitches
 
             Remove-Item -Path $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigrateOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAdaptersAndOnePortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
-            Remove-Item -Path $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath -Recurse -Confirm:$false -ErrorAction Stop
         }
@@ -867,6 +710,11 @@ Describe "$($script:dscResourceName)_Integration" {
 
             & $script:configCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter `
                 -OutputPath $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
+            & $script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch `
+                -OutputPath $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
@@ -888,14 +736,21 @@ Describe "$($script:dscResourceName)_Integration" {
                 ErrorAction = 'Stop'
             }
 
+            $startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch = @{
+                Path = $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
             # Act
             Start-DscConfiguration @startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch
             Start-DscConfiguration @startDscConfigurationParametersCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter
+            Start-DscConfiguration @startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch
 
-            # TODO: Replace with DSC Resource that migrates Physical Network Adapters to the specified Standard Switch.
-            Add-PhysicalNetworkAdaptersToStandardSwitch
-
-            Get-VMKernelNetworkAdapterNames
+            Get-VMKernelNetworkAdapterNamesConnectedToStandardSwitch
 
             & $script:configMigrateOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAdaptersAndTwoPortGroups `
                 -OutputPath $script:mofFileMigrateOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAdaptersAndTwoPortGroupsPath `
@@ -962,11 +817,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
         AfterAll {
             # Arrange
-            & $script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups `
-                -OutputPath $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath `
-                -ConfigurationData $script:configurationData `
-                -ErrorAction Stop
-
             & $script:configRemoveVDSwitchStandardSwitchAndStandardPortGroup `
                 -OutputPath $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath `
                 -ConfigurationData $script:configurationData `
@@ -976,15 +826,6 @@ Describe "$($script:dscResourceName)_Integration" {
                 -OutputPath $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
-
-            $startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups = @{
-                Path = $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
 
             $startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup = @{
                 Path = $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath
@@ -1005,14 +846,14 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            Start-DscConfiguration @startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups
+            Remove-ManagementAndvMotionVMKernelNetworkAdaptersConnectedToDifferentPortGroups
+
             Start-DscConfiguration @startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup
             Start-DscConfiguration @startDscConfigurationParametersMigratePhysicalNetworkAdaptersToInitialVirtualSwitches
 
             Remove-Item -Path $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigrateOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAdaptersAndTwoPortGroupsPath -Recurse -Confirm:$false -ErrorAction Stop
-            Remove-Item -Path $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath -Recurse -Confirm:$false -ErrorAction Stop
         }
@@ -1028,6 +869,11 @@ Describe "$($script:dscResourceName)_Integration" {
 
             & $script:configCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter `
                 -OutputPath $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
+            & $script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch `
+                -OutputPath $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
@@ -1049,14 +895,21 @@ Describe "$($script:dscResourceName)_Integration" {
                 ErrorAction = 'Stop'
             }
 
+            $startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch = @{
+                Path = $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
             # Act
             Start-DscConfiguration @startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch
             Start-DscConfiguration @startDscConfigurationParametersCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter
+            Start-DscConfiguration @startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch
 
-            # TODO: Replace with DSC Resource that migrates Physical Network Adapters to the specified Standard Switch.
-            Add-PhysicalNetworkAdaptersToStandardSwitch
-
-            Get-VMKernelNetworkAdapterNames
+            Get-VMKernelNetworkAdapterNamesConnectedToStandardSwitch
 
             & $script:configMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroup `
                 -OutputPath $script:mofFileMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroupPath `
@@ -1129,11 +982,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
         AfterAll {
             # Arrange
-            & $script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup `
-                -OutputPath $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath `
-                -ConfigurationData $script:configurationData `
-                -ErrorAction Stop
-
             & $script:configRemoveVDSwitchStandardSwitchAndStandardPortGroup `
                 -OutputPath $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath `
                 -ConfigurationData $script:configurationData `
@@ -1143,15 +991,6 @@ Describe "$($script:dscResourceName)_Integration" {
                 -OutputPath $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
-
-            $startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup = @{
-                Path = $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
 
             $startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup = @{
                 Path = $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath
@@ -1172,14 +1011,14 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            Start-DscConfiguration @startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup
+            Remove-ManagementAndvMotionVMKernelNetworkAdaptersConnectedToTheSamePortGroup
+
             Start-DscConfiguration @startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup
             Start-DscConfiguration @startDscConfigurationParametersMigratePhysicalNetworkAdaptersToInitialVirtualSwitches
 
             Remove-Item -Path $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
-            Remove-Item -Path $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath -Recurse -Confirm:$false -ErrorAction Stop
         }
@@ -1195,6 +1034,11 @@ Describe "$($script:dscResourceName)_Integration" {
 
             & $script:configCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter `
                 -OutputPath $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
+            & $script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch `
+                -OutputPath $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
@@ -1216,14 +1060,21 @@ Describe "$($script:dscResourceName)_Integration" {
                 ErrorAction = 'Stop'
             }
 
+            $startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch = @{
+                Path = $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
             # Act
             Start-DscConfiguration @startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch
             Start-DscConfiguration @startDscConfigurationParametersCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter
+            Start-DscConfiguration @startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch
 
-            # TODO: Replace with DSC Resource that migrates Physical Network Adapters to the specified Standard Switch.
-            Add-PhysicalNetworkAdaptersToStandardSwitch
-
-            Get-VMKernelNetworkAdapterNames
+            Get-VMKernelNetworkAdapterNamesConnectedToStandardSwitch
 
             & $script:configMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroups `
                 -OutputPath $script:mofFileMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroupsPath `
@@ -1296,11 +1147,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
         AfterAll {
             # Arrange
-            & $script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups `
-                -OutputPath $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath `
-                -ConfigurationData $script:configurationData `
-                -ErrorAction Stop
-
             & $script:configRemoveVDSwitchStandardSwitchAndStandardPortGroup `
                 -OutputPath $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath `
                 -ConfigurationData $script:configurationData `
@@ -1310,15 +1156,6 @@ Describe "$($script:dscResourceName)_Integration" {
                 -OutputPath $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
-
-            $startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups = @{
-                Path = $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
 
             $startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup = @{
                 Path = $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath
@@ -1339,14 +1176,14 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            Start-DscConfiguration @startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups
+            Remove-ManagementAndvMotionVMKernelNetworkAdaptersConnectedToDifferentPortGroups
+
             Start-DscConfiguration @startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup
             Start-DscConfiguration @startDscConfigurationParametersMigratePhysicalNetworkAdaptersToInitialVirtualSwitches
 
             Remove-Item -Path $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigrateTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroupsPath -Recurse -Confirm:$false -ErrorAction Stop
-            Remove-Item -Path $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath -Recurse -Confirm:$false -ErrorAction Stop
         }
@@ -1362,6 +1199,11 @@ Describe "$($script:dscResourceName)_Integration" {
 
             & $script:configCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter `
                 -OutputPath $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
+            & $script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch `
+                -OutputPath $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
@@ -1383,14 +1225,21 @@ Describe "$($script:dscResourceName)_Integration" {
                 ErrorAction = 'Stop'
             }
 
+            $startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch = @{
+                Path = $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
             # Act
             Start-DscConfiguration @startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch
             Start-DscConfiguration @startDscConfigurationParametersCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter
+            Start-DscConfiguration @startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch
 
-            # TODO: Replace with DSC Resource that migrates Physical Network Adapters to the specified Standard Switch.
-            Add-PhysicalNetworkAdaptersToStandardSwitch
-
-            Get-VMKernelNetworkAdapterNames
+            Get-VMKernelNetworkAdapterNamesConnectedToStandardSwitch
 
             & $script:configMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroup `
                 -OutputPath $script:mofFileMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroupPath `
@@ -1460,11 +1309,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
         AfterAll {
             # Arrange
-            & $script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup `
-                -OutputPath $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath `
-                -ConfigurationData $script:configurationData `
-                -ErrorAction Stop
-
             & $script:configRemoveVDSwitchStandardSwitchAndStandardPortGroup `
                 -OutputPath $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath `
                 -ConfigurationData $script:configurationData `
@@ -1474,15 +1318,6 @@ Describe "$($script:dscResourceName)_Integration" {
                 -OutputPath $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
-
-            $startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup = @{
-                Path = $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
 
             $startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup = @{
                 Path = $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath
@@ -1503,14 +1338,14 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            Start-DscConfiguration @startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroup
+            Remove-ManagementAndvMotionVMKernelNetworkAdaptersConnectedToTheSamePortGroup
+
             Start-DscConfiguration @startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup
             Start-DscConfiguration @startDscConfigurationParametersMigratePhysicalNetworkAdaptersToInitialVirtualSwitches
 
             Remove-Item -Path $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndOnePortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
-            Remove-Item -Path $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToTheSamePortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath -Recurse -Confirm:$false -ErrorAction Stop
         }
@@ -1526,6 +1361,11 @@ Describe "$($script:dscResourceName)_Integration" {
 
             & $script:configCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter `
                 -OutputPath $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
+            & $script:configMigrateThreePhysicalNetworkAdaptersToStandardSwitch `
+                -OutputPath $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
@@ -1547,14 +1387,21 @@ Describe "$($script:dscResourceName)_Integration" {
                 ErrorAction = 'Stop'
             }
 
+            $startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch = @{
+                Path = $script:mofFileMigrateThreePhysicalNetworkAdaptersToStandardSwitchPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
             # Act
             Start-DscConfiguration @startDscConfigurationParametersCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitch
             Start-DscConfiguration @startDscConfigurationParametersCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapter
+            Start-DscConfiguration @startDscConfigurationParametersMigrateThreePhysicalNetworkAdaptersToStandardSwitch
 
-            # TODO: Replace with DSC Resource that migrates Physical Network Adapters to the specified Standard Switch.
-            Add-PhysicalNetworkAdaptersToStandardSwitch
-
-            Get-VMKernelNetworkAdapterNames
+            Get-VMKernelNetworkAdapterNamesConnectedToStandardSwitch
 
             & $script:configMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroups `
                 -OutputPath $script:mofFileMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroupsPath `
@@ -1624,11 +1471,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
         AfterAll {
             # Arrange
-            & $script:configRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups `
-                -OutputPath $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath `
-                -ConfigurationData $script:configurationData `
-                -ErrorAction Stop
-
             & $script:configRemoveVDSwitchStandardSwitchAndStandardPortGroup `
                 -OutputPath $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath `
                 -ConfigurationData $script:configurationData `
@@ -1638,15 +1480,6 @@ Describe "$($script:dscResourceName)_Integration" {
                 -OutputPath $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
-
-            $startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups = @{
-                Path = $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
 
             $startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup = @{
                 Path = $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath
@@ -1667,14 +1500,14 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            Start-DscConfiguration @startDscConfigurationParametersRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroups
+            Remove-ManagementAndvMotionVMKernelNetworkAdaptersConnectedToDifferentPortGroups
+
             Start-DscConfiguration @startDscConfigurationParametersRemoveVDSwitchStandardSwitchAndStandardPortGroup
             Start-DscConfiguration @startDscConfigurationParametersMigratePhysicalNetworkAdaptersToInitialVirtualSwitches
 
             Remove-Item -Path $script:mofFileCreateStandardSwitchStandardPortGroupVDSwitchAndAddVMHostToVDSwitchPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileCreateManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigrateTwoDisconnectedAndOneConnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAdaptersAndTwoPortGroupsPath -Recurse -Confirm:$false -ErrorAction Stop
-            Remove-Item -Path $script:mofFileRemoveManagementVMKernelNetworkAdapterAndvMotionVMKernelNetworkAdapterConnectedToDifferentPortGroupsPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileRemoveVDSwitchStandardSwitchAndStandardPortGroupPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileMigratePhysicalNetworkAdaptersToInitialVirtualSwitchesPath -Recurse -Confirm:$false -ErrorAction Stop
         }

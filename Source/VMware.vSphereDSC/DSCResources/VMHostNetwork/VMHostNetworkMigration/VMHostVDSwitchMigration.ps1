@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
+class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     <#
     .DESCRIPTION
 
@@ -24,22 +24,6 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
     #>
     [DscProperty(Key)]
     [string] $VdsName
-
-    <#
-    .DESCRIPTION
-
-    Specifies the names of the Physical Network Adapters that should be part of the vSphere Distributed Switch.
-    #>
-    [DscProperty(Mandatory)]
-    [string[]] $PhysicalNicNames
-
-    <#
-    .DESCRIPTION
-
-    Specifies the names of the VMKernel Network Adapters that should be part of the vSphere Distributed Switch.
-    #>
-    [DscProperty()]
-    [string[]] $VMKernelNicNames
 
     <#
     .DESCRIPTION
@@ -65,20 +49,14 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
             }
 
             $physicalNetworkAdapters = $this.GetPhysicalNetworkAdapters()
-            $filteredPhysicalNetworkAdapters = $this.GetPhysicalNetworkAdaptersNotAddedToDistributedSwitch($physicalNetworkAdapters, $distributedSwitch)
-
-            if ($filteredPhysicalNetworkAdapters.Length -eq 0) {
-                throw "At least one Physical Network Adapter that is not added to Distributed Switch $($distributedSwitch.Name) needs to be specified."
-            }
-
             if ($this.VMkernelNicNames.Length -eq 0) {
-                $this.AddPhysicalNetworkAdaptersToDistributedSwitch($filteredPhysicalNetworkAdapters, $distributedSwitch)
+                $this.AddPhysicalNetworkAdaptersToDistributedSwitch($physicalNetworkAdapters, $distributedSwitch)
             }
             else {
                 $vmKernelNetworkAdapters = $this.GetVMKernelNetworkAdapters()
                 $this.EnsureVMKernelNetworkAdapterAndPortGroupNamesCountIsCorrect()
 
-                $this.AddPhysicalNetworkAdaptersAndVMKernelNetworkAdaptersToDistributedSwitch($filteredPhysicalNetworkAdapters, $vmKernelNetworkAdapters, $distributedSwitch)
+                $this.AddPhysicalNetworkAdaptersAndVMKernelNetworkAdaptersToDistributedSwitch($physicalNetworkAdapters, $vmKernelNetworkAdapters, $distributedSwitch)
             }
         }
         finally {
@@ -157,87 +135,6 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
         finally {
             $global:VerbosePreference = $savedVerbosePreference
         }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Physical Network Adapters with the specified names from the server if they exist.
-    For every Physical Network Adapter that does not exist, a warning message is shown to the user without throwing an exception.
-    #>
-    [array] GetPhysicalNetworkAdapters() {
-        $physicalNetworkAdapters = @()
-
-        foreach ($physicalNetworkAdapterName in $this.PhysicalNicNames) {
-            $physicalNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $physicalNetworkAdapterName -VMHost $this.VMHost -Physical -ErrorAction SilentlyContinue
-            if ($null -eq $physicalNetworkAdapter) {
-                Write-WarningLog -Message "The passed Physical Network Adapter {0} was not found and it will be ignored." -Arguments @($physicalNetworkAdapterName)
-            }
-            else {
-                $physicalNetworkAdapters += $physicalNetworkAdapter
-            }
-        }
-
-        return $physicalNetworkAdapters
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the VMKernel Network Adapters with the specified names from the server if they exist.
-    If one of the passed VMKernel Network Adapters does not exist, an exception is thrown.
-    #>
-    [array] GetVMKernelNetworkAdapters() {
-        $vmKernelNetworkAdapters = @()
-
-        foreach ($vmKernelNetworkAdapterName in $this.VMKernelNicNames) {
-            $getVMHostNetworkAdapterParams = @{
-                Server = $this.Connection
-                Name = $vmKernelNetworkAdapterName
-                VMHost = $this.VMHost
-                VMKernel = $true
-                ErrorAction = 'Stop'
-            }
-
-            try {
-                $vmKernelNetworkAdapter = Get-VMHostNetworkAdapter @getVMHostNetworkAdapterParams
-                $vmKernelNetworkAdapters += $vmKernelNetworkAdapter
-            }
-            catch {
-                <#
-                Here 'throw' should be used instead of 'Write-WarningLog' because if we ignore one VMKernel Network Adapter that is invalid, the mapping between VMKernel
-                Network Adapters and Port Groups will not work: The first Adapter should be attached to the first Port Group,
-                the second Adapter should be attached to the second Port Group, and so on.
-                #>
-                throw "The passed VMKernel Network Adapter $($vmKernelNetworkAdapterName) was not found."
-            }
-        }
-
-        return $vmKernelNetworkAdapters
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Physical Network Adapters that are not added to the specified Distributed Switch.
-    #>
-    [array] GetPhysicalNetworkAdaptersNotAddedToDistributedSwitch($physicalNetworkAdapters, $distributedSwitch) {
-        $filteredPhysicalNetworkAdapters = @()
-
-        if ($null -eq $distributedSwitch.ExtensionData.Config.Host.Config.Backing.PnicSpec) {
-            # No Physical Network Adapters are added to the Distributed Switch.
-            return $physicalNetworkAdapters
-        }
-
-        foreach ($physicalNetworkAdapter in $physicalNetworkAdapters) {
-            $addedPhysicalNetworkAdapter = $distributedSwitch.ExtensionData.Config.Host.Config.Backing.PnicSpec | Where-Object -FilterScript { $_.PNicDevice -eq $physicalNetworkAdapter.Name }
-
-            if ($null -eq $addedPhysicalNetworkAdapter) {
-                $filteredPhysicalNetworkAdapters += $physicalNetworkAdapter
-            }
-        }
-
-        return $filteredPhysicalNetworkAdapters
     }
 
     <#
@@ -595,7 +492,13 @@ class VMHostVDSwitchMigration : VMHostEntityBaseDSC {
         $result.VMkernelNicNames = @()
         $result.PortGroupNames = @()
 
-        $vmKernelNetworkAdapters = Get-VMHostNetworkAdapter -Server $this.Connection -VMHost $this.VMHost -VirtualSwitch $distributedSwitch -VMKernel -ErrorAction SilentlyContinue
+        if ($this.VMKernelNicNames.Length -eq 0) {
+            return
+        }
+
+        $vmKernelNetworkAdapters = Get-VMHostNetworkAdapter -Server $this.Connection -VMHost $this.VMHost -VirtualSwitch $distributedSwitch -VMKernel -ErrorAction SilentlyContinue |
+                                   Where-Object -FilterScript { $this.VMKernelNicNames.Contains($_.Name) }
+
         foreach ($vmKernelNetworkAdapter in $vmKernelNetworkAdapters) {
             $result.VMkernelNicNames += $vmKernelNetworkAdapter.Name
             $result.PortGroupNames += $vmKernelNetworkAdapter.PortGroupName

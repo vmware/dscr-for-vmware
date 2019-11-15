@@ -79,10 +79,7 @@ function New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersArePassedAndServerEr
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
-    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
-        $script:constants.DisconnectedPhysicalNetworkAdapterOneName,
-        $script:constants.DisconnectedPhysicalNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName, $script:constants.DisconnectedPhysicalNetworkAdapterTwoName)
 
     $physicalNetworkAdapterOneMock = $script:disconnectedPhysicalNetworkAdapterOne
     $physicalNetworkAdapterTwoMock = $script:disconnectedPhysicalNetworkAdapterTwo
@@ -100,10 +97,7 @@ function New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersArePassed {
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
-    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
-        $script:constants.DisconnectedPhysicalNetworkAdapterOneName,
-        $script:constants.DisconnectedPhysicalNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName, $script:constants.DisconnectedPhysicalNetworkAdapterTwoName)
 
     $physicalNetworkAdapterOneMock = $script:disconnectedPhysicalNetworkAdapterOne
     $physicalNetworkAdapterTwoMock = $script:disconnectedPhysicalNetworkAdapterTwo
@@ -171,10 +165,7 @@ function New-MocksWhenOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAda
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
     $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName)
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
 
     $physicalNetworkAdapterMock = $script:disconnectedPhysicalNetworkAdapterOne
@@ -198,10 +189,7 @@ function New-MocksWhenOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAda
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
     $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName)
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
 
     $physicalNetworkAdapterMock = $script:disconnectedPhysicalNetworkAdapterOne
@@ -225,10 +213,7 @@ function New-MocksWhenOneDisconnectedPhysicalNetworkAdapterTwoVMKernelNetworkAda
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
     $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName)
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
     $physicalNetworkAdapterMock = $script:disconnectedPhysicalNetworkAdapterOne
@@ -253,14 +238,8 @@ function New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAd
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
-    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
-        $script:constants.DisconnectedPhysicalNetworkAdapterOneName,
-        $script:constants.DisconnectedPhysicalNetworkAdapterTwoName
-    )
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName, $script:constants.DisconnectedPhysicalNetworkAdapterTwoName)
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
 
     $physicalNetworkAdapterOneMock = $script:disconnectedPhysicalNetworkAdapterOne
@@ -285,14 +264,8 @@ function New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAd
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
-    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
-        $script:constants.DisconnectedPhysicalNetworkAdapterOneName,
-        $script:constants.DisconnectedPhysicalNetworkAdapterTwoName
-    )
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName, $script:constants.DisconnectedPhysicalNetworkAdapterTwoName)
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
 
     $physicalNetworkAdapterOneMock = $script:disconnectedPhysicalNetworkAdapterOne
@@ -317,14 +290,8 @@ function New-MocksWhenTwoDisconnectedPhysicalNetworkAdaptersTwoVMKernelNetworkAd
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
-    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
-        $script:constants.DisconnectedPhysicalNetworkAdapterOneName,
-        $script:constants.DisconnectedPhysicalNetworkAdapterTwoName
-    )
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.DisconnectedPhysicalNetworkAdapterOneName, $script:constants.DisconnectedPhysicalNetworkAdapterTwoName)
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
     $physicalNetworkAdapterOneMock = $script:disconnectedPhysicalNetworkAdapterOne
@@ -356,10 +323,7 @@ function New-MocksWhenTwoConnectedAndOneDisconnectedPhysicalNetworkAdaptersTwoVM
         $script:constants.ConnectedPhysicalNetworkAdapterTwoName,
         $script:constants.DisconnectedPhysicalNetworkAdapterOneName
     )
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
 
     $physicalNetworkAdapterOneMock = $script:connectedPhysicalNetworkAdapterOne
@@ -391,10 +355,7 @@ function New-MocksWhenTwoConnectedAndOneDisconnectedPhysicalNetworkAdaptersTwoVM
         $script:constants.ConnectedPhysicalNetworkAdapterTwoName,
         $script:constants.DisconnectedPhysicalNetworkAdapterOneName
     )
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
     $physicalNetworkAdapterOneMock = $script:connectedPhysicalNetworkAdapterOne
@@ -456,10 +417,7 @@ function New-MocksWhenTwoPhysicalNetworkAdaptersArePassedAndTheSecondIsNotAddedT
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
-    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @(
-        $script:constants.ConnectedPhysicalNetworkAdapterOneName,
-        $script:constants.ConnectedPhysicalNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.ConnectedPhysicalNetworkAdapterOneName, $script:constants.ConnectedPhysicalNetworkAdapterTwoName)
 
     $distributedSwitchMock = $script:distributedSwitchWithAddedPhysicalNetworkAdapters
     $physicalNetworkAdapterOneMock = $script:connectedPhysicalNetworkAdapterOne
@@ -538,10 +496,7 @@ function New-MocksWhenTwoVMKernelNetworkAdaptersAndOnePortGroupArePassedAndTheSe
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
     $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.ConnectedPhysicalNetworkAdapterOneName)
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName)
 
     $distributedSwitchMock = $script:distributedSwitchWithAddedPhysicalNetworkAdapters
@@ -564,10 +519,7 @@ function New-MocksWhenTwoVMKernelNetworkAdaptersAndTwoPortGroupsArePassedAndTheS
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
     $vmHostVDSwitchMigrationProperties.PhysicalNicNames = @($script:constants.ConnectedPhysicalNetworkAdapterOneName)
-    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @(
-        $script:constants.VMKernelNetworkAdapterOneName,
-        $script:constants.VMKernelNetworkAdapterTwoName
-    )
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
     $vmHostVDSwitchMigrationProperties.PortGroupNames = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
     $distributedSwitchMock = $script:distributedSwitchWithAddedPhysicalNetworkAdapters
@@ -589,11 +541,10 @@ function New-MocksInGet {
 
     $vmHostVDSwitchMigrationProperties = New-VMHostVDSwitchMigrationProperties
 
+    $vmHostVDSwitchMigrationProperties.VMKernelNicNames = @($script:constants.VMKernelNetworkAdapterOneName, $script:constants.VMKernelNetworkAdapterTwoName)
+
     $distributedSwitchMock = $script:distributedSwitchWithAddedPhysicalNetworkAdapters
-    $vmKernelNetworkAdaptersMock = @(
-        $script:vmKernelNetworkAdapterOne,
-        $script:vmKernelNetworkAdapterTwo
-    )
+    $vmKernelNetworkAdaptersMock = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
 
     # We need to mock Get-VDSwitch again here to change the Distributed Switch we use in all the other tests.
     Mock -CommandName Get-VDSwitch -MockWith { return $distributedSwitchMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedSwitchName } -Verifiable

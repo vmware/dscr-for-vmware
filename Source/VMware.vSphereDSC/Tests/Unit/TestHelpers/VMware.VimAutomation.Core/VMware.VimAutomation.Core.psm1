@@ -618,7 +618,6 @@ function Add-VirtualSwitchPhysicalNetworkAdapter {
         $VirtualSwitch,
 
         [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]
-        [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.VirtualPortGroup[]]
         $VirtualNicPortgroup,
 
         [Parameter(Mandatory = $false, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $false)]

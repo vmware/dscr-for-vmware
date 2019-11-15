@@ -122,10 +122,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should throw the correct error when two disconnected Physical Network Adapters are passed and Server error occurs during migration' {
                     # Act && Assert
-                    $vmHostPhysicalNetworkAdaptersToMigrate = @(
-                        $script:disconnectedPhysicalNetworkAdapterOne,
-                        $script:disconnectedPhysicalNetworkAdapterTwo
-                    )
+                    $vmHostPhysicalNetworkAdaptersToMigrate = @($script:disconnectedPhysicalNetworkAdapterOne, $script:disconnectedPhysicalNetworkAdapterTwo)
 
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
                     { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $vmHostPhysicalNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
@@ -152,10 +149,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $resource.Set()
 
                     # Assert
-                    $expectedVMHostPhysicalNic = @(
-                        $script:disconnectedPhysicalNetworkAdapterOne,
-                        $script:disconnectedPhysicalNetworkAdapterTwo
-                    )
+                    $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne, $script:disconnectedPhysicalNetworkAdapterTwo)
 
                     $assertMockCalledParams = @{
                         CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
@@ -194,10 +188,7 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should throw the correct error when two connected and one disconnected Physical Network Adapters are passed and Server error occurs during migration' {
                     # Act && Assert
-                    $vmHostPhysicalNetworkAdaptersToMigrate = @(
-                        $script:connectedPhysicalNetworkAdapterTwo,
-                        $script:disconnectedPhysicalNetworkAdapterOne
-                    )
+                    $vmHostPhysicalNetworkAdaptersToMigrate = @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
 
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
                     { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $vmHostPhysicalNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
@@ -247,10 +238,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $resource.Set()
 
                     # Assert
-                    $expectedVMHostPhysicalNic = @(
-                        $script:connectedPhysicalNetworkAdapterTwo,
-                        $script:disconnectedPhysicalNetworkAdapterOne
-                    )
+                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
 
                     $assertMockCalledParams = @{
                         CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
