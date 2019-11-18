@@ -198,6 +198,10 @@ $script:constants = @{
     DomainPassword = 'MyDomainPassword' | ConvertTo-SecureString -AsPlainText -Force
     DomainActionJoin = 'Join'
     DomainActionLeave = 'Leave'
+    RoleName = 'MyRole'
+    PrivilegeIds = @('System.Anonymous', 'System.View', 'System.Read')
+    PrivilegeToAddIds = @('System.Anonymous', 'System.View', 'VirtualMachine.Inventory.Create')
+    PrivilegeToRemoveIds = @('System.Read')
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -215,6 +219,12 @@ $script:viServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
         }
     }
     ProductLine = $script:constants.vCenterProductId
+}
+
+$script:esxiServer = [VMware.VimAutomation.ViCore.Impl.V1.VIServerImpl] @{
+    Name = $script:constants.VIServerName
+    User = $script:constants.VIServerUser
+    ProductLine = $script:constants.ESXiProductId
 }
 
 $script:rootFolderViewBaseObject = [VMware.Vim.Folder] @{
@@ -1020,4 +1030,34 @@ $script:portGroupWithAttachedVMKernelNetworkAdapter = [VMware.VimAutomation.ViCo
     Name = $script:constants.PortGroupOneName
     VirtualSwitch = $script:standardSwitchWithOnePhysicalNetworkAdapter
     VirtualSwitchName = $script:constants.VirtualSwitchName
+}
+
+$script:anonymousPrivilege = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement.PrivilegeImpl] @{
+    Server = $script:esxiServer
+    Id = $script:constants.PrivilegeIds[0]
+    Name = 'Anonymous'
+}
+
+$script:viewPrivilege = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement.PrivilegeImpl] @{
+    Server = $script:esxiServer
+    Id = $script:constants.PrivilegeIds[1]
+    Name = 'View'
+}
+
+$script:readPrivilege = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement.PrivilegeImpl] @{
+    Server = $script:esxiServer
+    Id = $script:constants.PrivilegeIds[2]
+    Name = 'Read'
+}
+
+$script:createPrivilege = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement.PrivilegeImpl] @{
+    Server = $script:esxiServer
+    Id = $script:constants.PrivilegeToAddIds[2]
+    Name = 'Create'
+}
+
+$script:vmHostRole = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement.RoleImpl] @{
+    Server = $script:esxiServer
+    Name = $script:constants.RoleName
+    PrivilegeList = $script:constants.PrivilegeIds
 }

@@ -73,7 +73,7 @@ class VMHostRole : BaseDSC {
                     }
                 }
                 else {
-                    $currentPrivileges = $this.GetRolePrivileges($vmHostRole)
+                    $currentPrivileges = $this.GetRolePrivileges($vmHostRole, $desiredPrivileges)
                     $this.ModifyPrivilegesOfVMHostRole($vmHostRole, $currentPrivileges, $desiredPrivileges)
                 }
             }
@@ -178,16 +178,25 @@ class VMHostRole : BaseDSC {
 
     Retrieves the Privileges of the Role on the VMHost.
     #>
-    [array] GetRolePrivileges($vmHostRole) {
+    [array] GetRolePrivileges($vmHostRole, $desiredPrivileges) {
         $rolePrivileges = @()
 
         foreach ($privilegeId in $vmHostRole.PrivilegeList) {
-            try {
-                $rolePrivilige = Get-VIPrivilege -Server $this.Connection -Id $privilegeId -ErrorAction Stop -Verbose:$false
-                $rolePrivileges += $rolePrivilige
+            <#
+            Here we can check if the desired Privilege list already contains the Role Privilege and this way
+            we can skip the server call because the Privilege object is already available in the array of Privileges.
+            #>
+            if ($desiredPrivileges.Length -gt 0 -and $desiredPrivileges.Id.Contains($privilegeId)) {
+                $rolePrivileges += ($desiredPrivileges | Where-Object -FilterScript { $_.Id -eq $privilegeId })
             }
-            catch {
-                throw ($this.CouldNotRetrieveRolePrivilegesMessage -f $privilegeId, $vmHostRole.Name, $_.Exception.Message)
+            else {
+                try {
+                    $rolePrivilige = Get-VIPrivilege -Server $this.Connection -Id $privilegeId -ErrorAction Stop -Verbose:$false
+                    $rolePrivileges += $rolePrivilige
+                }
+                catch {
+                    throw ($this.CouldNotRetrieveRolePrivilegesMessage -f $privilegeId, $vmHostRole.Name, $_.Exception.Message)
+                }
             }
         }
 
