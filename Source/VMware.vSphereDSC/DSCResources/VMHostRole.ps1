@@ -224,12 +224,14 @@ class VMHostRole : BaseDSC {
     Creates a new Role with the specified name on the VMHost and applies the provided Privileges.
     #>
     [void] NewVMHostRole($desiredPrivileges) {
+        $desiredPrivilegeIds = [string]::Join(', ', $desiredPrivileges.Id)
+
         try {
-            Write-VerboseLog -Message $this.CreateRoleWithPrivilegesMessage -Arguments @($this.Name, $desiredPrivileges.Id, $this.Connection.Name)
+            Write-VerboseLog -Message $this.CreateRoleWithPrivilegesMessage -Arguments @($this.Name, $desiredPrivilegeIds, $this.Connection.Name)
             New-VIRole -Server $this.Connection -Name $this.Name -Privilege $desiredPrivileges -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
-            throw ($this.CouldNotCreateRoleWithPrivilegesMessage -f $this.Name, $desiredPrivileges.Id, $this.Connection.Name, $_.Exception.Message)
+            throw ($this.CouldNotCreateRoleWithPrivilegesMessage -f $this.Name, $desiredPrivilegeIds, $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -271,7 +273,7 @@ class VMHostRole : BaseDSC {
         and 'RemovePrivilege' parameters of 'Set-VIRole' cmdlet are in different parameter sets, so two cmdlet invocations need to be made.
         #>
         try {
-            Write-VerboseLog -Message $this.ModifyPrivilegesOfVMHostRole -Arguments @($vmHostRole.Name, $this.Connection.Name)
+            Write-VerboseLog -Message $this.ModifyPrivilegesOfRoleMessage -Arguments @($vmHostRole.Name, $this.Connection.Name)
 
             if ($privilegesToAdd.Length -eq 0) {
                 $setVIRoleParams.RemovePrivilege = $privilegesToRemove
