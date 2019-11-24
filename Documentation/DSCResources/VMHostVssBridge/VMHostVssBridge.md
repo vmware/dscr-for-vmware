@@ -11,7 +11,7 @@
 | **VssName** | Key | string | The name of the VSS. ||
 | **NicDevice** | Optional | string[] | The list of keys of the physical network adapters to be bridged. ||
 | **BeaconInterval** | Optional | int | Determines how often, in seconds, a beacon should be sent. ||
-| **LinkDiscoveryProtocolType** | Optional | string | The discovery protocol type. VSS only supports CDP. | CDP |
+| **LinkDiscoveryProtocolProtocol** | Optional | string | The discovery protocol type. VSS only supports CDP. | CDP |
 | **LinkDiscoveryProtocolOperation** | Optional | string | Whether to advertise or listen. | Advertise, Both, Listen, None |
 
 ## Description
@@ -76,7 +76,7 @@ Configuration VMHostVssBridge_Config {
             Ensure = 'Present'
             NicDevice = @('vmnic1','vmnic2')
             BeaconInterval = 1
-            LinkDiscoveryProtocolType = [LinkDiscoveryProtocolProtocol]::CDP
+            LinkDiscoveryProtocolProtocol = [LinkDiscoveryProtocolProtocol]::CDP
             LinkDiscoveryProtocolOperation = [LinkDiscoveryProtocolOperation]::Listen
             DependsOn = "[VMHostVss]vmHostVssSettings"
         }
