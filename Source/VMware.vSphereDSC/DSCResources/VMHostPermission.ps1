@@ -189,7 +189,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
     #>
     [PSObject] GetRootResourcePool() {
         try {
-            $resourcePoolsType = (Get-ResourcePool -Server $this.Connection | Select-Object -First 1).GetType()
+            $resourcePoolsType = (Get-ResourcePool -Server $this.Connection -ErrorAction Stop -Verbose:$false | Select-Object -First 1).GetType()
             $rootResourcePool = Get-Inventory -Server $this.Connection -ErrorAction Stop -Verbose:$false |
                                 Where-Object -FilterScript { $_.ParentId -eq $this.VMHost.Id -and $_.GetType() -eq $resourcePoolsType }
 
@@ -265,10 +265,10 @@ class VMHostPermission : VMHostEntityBaseDSC {
                     }
                 }
             }
-        }
 
-        $exceptionMessage = $this.InvalidEntityLocationMessage -f $this.EntityLocation, $this.EntityName, $this.VMHost.Name
-        $this.EnsureCorrectBehaviourIfTheEntityIsNotFound($foundEntityLocation, $exceptionMessage)
+            $exceptionMessage = $this.InvalidEntityLocationMessage -f $this.EntityLocation, $this.EntityName, $this.VMHost.Name
+            $this.EnsureCorrectBehaviourIfTheEntityIsNotFound($foundEntityLocation, $exceptionMessage)
+        }
 
         return $foundEntityLocation
     }
@@ -341,8 +341,8 @@ class VMHostPermission : VMHostEntityBaseDSC {
         }
 
         # If the Principal is a Domain User, we should extact the Domain and User names from the Principal name.
-        if ($this.PrincipalName -Match '\') {
-            $principalNameParts = $this.PrincipalName -Split '\'
+        if ($this.PrincipalName -Match '\\') {
+            $principalNameParts = $this.PrincipalName -Split '\\'
             $domainName = $principalNameParts[0]
             $username = $principalNameParts[1]
 

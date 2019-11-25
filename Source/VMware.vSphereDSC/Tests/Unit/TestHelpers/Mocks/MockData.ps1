@@ -24,6 +24,7 @@ $script:constants = @{
     FolderType = 'Folder'
     DatacenterType = 'Datacenter'
     ResourcePoolType = 'Resource Pool'
+    ResourcePoolValue = 'my-resource-pool-id'
     RootFolderValue = 'group-d1'
     InventoryRootFolderId = 'Folder-group-d1'
     InventoryRootFolderName = 'Datacenters'
@@ -76,6 +77,7 @@ $script:constants = @{
     VpxVpxaConfigWorkingDirAdvancedSettingValue = '/var/log/vmware'
     EsxAgentHostManagerType = 'HostEsxAgentHostManager'
     EsxAgentHostManagerValue = 'esxAgentHostManager-1'
+    DatastoreId = 'datastore-1'
     DatastoreName = 'MyDatastore'
     DatastoreType = 'Datastore'
     DatastoreValue = 'datastore-1'
@@ -202,6 +204,16 @@ $script:constants = @{
     PrivilegeIds = @('System.Anonymous', 'System.View', 'System.Read')
     PrivilegeToAddIds = @('System.Anonymous', 'System.View', 'VirtualMachine.Inventory.Create')
     PrivilegeToRemoveIds = @('System.Read')
+    RootResourcePoolId = 'rootResourcePool-1'
+    RootResourcePoolName = 'MyRootResourcePool'
+    RootResourcePoolType = 'Resource Pool'
+    RootResourcePoolValue = 'rootResourcePool-1'
+    VAppId = 'vapp-1'
+    VAppName = 'MyVApp'
+    VMId = 'virtualMachine-1'
+    VMName = 'MyVirtualMachine'
+    PrincipalName = 'MyPrincipalName'
+    PropagatePermission = $true
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1060,4 +1072,75 @@ $script:vmHostRole = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement.R
     Server = $script:esxiServer
     Name = $script:constants.RoleName
     PrivilegeList = $script:constants.PrivilegeIds
+}
+
+$script:rootResourcePool = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ResourcePoolImpl] @{
+    Id = $script:constants.RootResourcePoolId
+    Name = $script:constants.RootResourcePoolName
+    ParentId = $script:vmHost.Id
+    Parent = $script:vmHost
+}
+
+$script:datacenterEntity = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.DatacenterImpl] @{
+    Id = $script:constants.DatacenterId
+    Name = $script:constants.DatacenterName
+}
+
+$script:folderEntity = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
+    Id = $script:constants.DatacenterHostFolderId
+    Name = $script:constants.DatacenterHostFolderName
+}
+
+$script:datastoreEntity = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.VmfsDatastoreImpl] @{
+    Id = $script:constants.DatastoreId
+    Name = $script:constants.DatastoreName
+    Datacenter = $script:datacenterEntity
+}
+
+$script:resourcePoolEntity = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ResourcePoolImpl] @{
+    Id = $script:constants.ResourcePoolId
+    Name = $script:constants.ResourcePoolName
+    ParentId = $script:rootResourcePool.Id
+    Parent = $script:rootResourcePool
+}
+
+$script:vAppEntity = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ResourcePoolImpl] @{
+    Id = $script:constants.VAppId
+    Name = $script:constants.VAppName
+    ParentId = $script:resourcePoolEntity.Id
+    Parent = $script:resourcePoolEntity
+}
+
+$script:vmEntity = [VMware.VimAutomation.ViCore.Impl.V1.VM.UniversalVirtualMachineImpl] @{
+    Id = $script:constants.VMId
+    Name = $script:constants.VMName
+    VMHost = $script:vmHost
+    ResourcePool = $script:rootResourcePool
+}
+
+$script:resourcePoolViewBaseObject = [VMware.Vim.ResourcePool] @{
+    Name = $script:constants.ResourcePoolName
+    Parent = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.RootResourcePoolType
+        Value = $script:constants.RootResourcePoolValue
+    }
+}
+
+$script:vAppViewBaseObject = [VMware.Vim.ResourcePool] @{
+    Parent = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.ResourcePoolType
+        Value = $script:constants.ResourcePoolValue
+    }
+}
+
+$script:principal = [VMware.VimAutomation.ViCore.Impl.V1.Host.Account.HostUserAccountImpl] @{
+    Server = $script:esxiServer
+    Name = $script:constants.PrincipalName
+}
+
+$script:vmHostPermission = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement.PermissionImpl] @{
+    Entity = $script:folderEntity
+    Principal = $script:constants.PrincipalName
+    Role = $script:constants.RoleName
+    Propagate = $script:constants.PropagatePermission
 }
