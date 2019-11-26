@@ -77,45 +77,6 @@ InModuleScope -ModuleName $script:moduleName {
                 }
             }
 
-            Context 'When Ensure is Present, the Permission is not created and the Entity is a Folder' {
-                BeforeAll {
-                    # Arrange
-                    $resourceProperties = New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedAndTheEntityIsAFolder
-                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
-                }
-
-                It 'Should invoke all defined mocks with the correct parameters' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    Assert-VerifiableMock
-                }
-
-                It 'Should invoke the New-VIPermission mock with the specified Folder Entity, Principal and Role once' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    $assertMockCalledParams = @{
-                        CommandName = 'New-VIPermission'
-                        ParameterFilter = {
-                            $Server -eq $script:esxiServer -and
-                            $Entity -eq $script:folderEntity -and
-                            $Principal -eq $script:principal -and
-                            $Role -eq $script:vmHostRole -and
-                            $Propagate -eq $script:constants.PropagatePermission -and
-                            !$Confirm
-                        }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-            }
-
             Context 'When Ensure is Present, the Permission is not created and the Entity is a VMHost' {
                 BeforeAll {
                     # Arrange

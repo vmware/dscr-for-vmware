@@ -28,7 +28,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
     .DESCRIPTION
 
     Specifies the location of the Entity with name specified in 'EntityName' key property. Location consists of 0 or more Inventory Items.
-    When the Entity is a Datacenter, a Folder, a VMHost or a Datastore, the property is ignored. If the Entity is a Virtual Machine, a Resource Pool or a vApp and empty location
+    When the Entity is a Datacenter, a VMHost or a Datastore, the property is ignored. If the Entity is a Virtual Machine, a Resource Pool or a vApp and empty location
     is passed, the Entity should be located in the Root Resource Pool of the VMHost. Inventory Item names in the location are separated by '/'.
     Example location for a Datastore Inventory Item: ''. Example location for a Virtual Machine Inventory Item: 'MyResourcePoolOne/MyResourcePoolTwo/MyvApp'.
     #>
@@ -38,7 +38,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the type of the Entity of the Permission. Valid Entity types are: 'Datacenter', 'Folder', 'VMHost', 'Datastore', 'VM', 'ResourcePool' and 'VApp'.
+    Specifies the type of the Entity of the Permission. Valid Entity types are: 'Datacenter', 'VMHost', 'Datastore', 'VM', 'ResourcePool' and 'VApp'.
     #>
     [DscProperty(Key)]
     [EntityType] $EntityType
@@ -75,6 +75,10 @@ class VMHostPermission : VMHostEntityBaseDSC {
     #>
     [DscProperty()]
     [nullable[bool]] $Propagate
+
+    hidden [string] $CreatePermissionMessage = "Creating Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}."
+    hidden [string] $ModifyPermissionMessage = "Modifying Permission for Entity {0} and Principal {1} on VMHost {2}."
+    hidden [string] $RemovePermissionMessage = "Removing Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}."
 
     hidden [string] $CouldNotRetrieveRootResourcePoolMessage = "Could not retrieve Root Resource Pool from VMHost {0}. For more information: {1}"
     hidden [string] $InvalidEntityLocationMessage = "Location {0} for Entity {1} on VMHost {2} is not valid."
@@ -211,11 +215,10 @@ class VMHostPermission : VMHostEntityBaseDSC {
 
         if (
             $this.EntityType -eq [EntityType]::Datacenter -or
-            $this.EntityType -eq [EntityType]::Folder -or
             $this.EntityType -eq [EntityType]::VMHost -or
             $this.EntityType -eq [EntityType]::Datastore
         ) {
-            # The location is not needed to identify the Entity when it is a Datacenter, Folder, VMHost or a Datastore.
+            # The location is not needed to identify the Entity when it is a Datacenter, VMHost or a Datastore.
             $foundEntityLocation = $null
         }
         else {
@@ -285,10 +288,6 @@ class VMHostPermission : VMHostEntityBaseDSC {
         if ($this.EntityType -eq [EntityType]::Datacenter) {
             # Each VMHost has only one Datacenter, so the name is not needed to retrieve it.
             $entity = Get-Datacenter -Server $this.Connection -ErrorAction SilentlyContinue -Verbose:$false
-        }
-        elseif ($this.EntityType -eq [EntityType]::Folder) {
-            # Each VMHost has only four Folders - host, network, datastore and vm. So the name is needed to retrieve the correct Folder.
-            $entity = Get-Folder -Server $this.Connection -Name $this.EntityName -ErrorAction SilentlyContinue -Verbose:$false
         }
         elseif ($this.EntityType -eq [EntityType]::VMHost) {
             # If the Entity is a VMHost, the Entity location is ignored because the name uniquely identifies the VMHost.
@@ -452,6 +451,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
         }
 
         try {
+            Write-VerboseLog -Message $this.CreatePermissionMessage -Arguments @($entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.VMHost.Name)
             New-VIPermission @newVIPermissionParams
         }
         catch {
@@ -484,6 +484,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
         }
 
         try {
+            Write-VerboseLog -Message $this.ModifyPermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $this.VMHost.Name)
             Set-VIPermission @setVIPermissionParams
         }
         catch {
@@ -498,6 +499,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
     #>
     [void] RemoveVMHostPermission($vmHostPermission) {
         try {
+            Write-VerboseLog -Message $this.RemovePermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.VMHost.Name)
             $vmHostPermission | Remove-VIPermission -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {

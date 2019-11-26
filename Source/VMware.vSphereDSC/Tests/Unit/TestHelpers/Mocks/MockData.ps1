@@ -1086,11 +1086,6 @@ $script:datacenterEntity = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.Datace
     Name = $script:constants.DatacenterName
 }
 
-$script:folderEntity = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
-    Id = $script:constants.DatacenterHostFolderId
-    Name = $script:constants.DatacenterHostFolderName
-}
-
 $script:datastoreEntity = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.VmfsDatastoreImpl] @{
     Id = $script:constants.DatastoreId
     Name = $script:constants.DatastoreName
@@ -1139,7 +1134,7 @@ $script:principal = [VMware.VimAutomation.ViCore.Impl.V1.Host.Account.HostUserAc
 }
 
 $script:vmHostPermission = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement.PermissionImpl] @{
-    Entity = $script:folderEntity
+    Entity = $script:datacenterEntity
     Principal = $script:constants.PrincipalName
     Role = $script:constants.RoleName
     Propagate = $script:constants.PropagatePermission

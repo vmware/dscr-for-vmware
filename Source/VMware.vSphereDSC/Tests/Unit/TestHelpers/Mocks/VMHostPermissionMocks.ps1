@@ -65,33 +65,6 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedAndTheEntityIsADat
     $vmHostPermissionProperties
 }
 
-function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedAndTheEntityIsAFolder {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostPermissionProperties = New-VMHostPermissionProperties
-
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
-    $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
-    $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
-    $vmHostPermissionProperties.RoleName = $script:constants.RoleName
-    $vmHostPermissionProperties.Ensure = 'Present'
-    $vmHostPermissionProperties.Propagate = $script:constants.PropagatePermission
-
-    $entityMock = $script:folderEntity
-    $principalMock = $script:principal
-    $roleMock = $script:vmHostRole
-
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
-    Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
-    Mock -CommandName Get-VIRole -MockWith { return $roleMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.RoleName } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
-    Mock -CommandName New-VIPermission -MockWith { return $null }.GetNewClosure() -Verifiable
-
-    $vmHostPermissionProperties
-}
-
 function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedAndTheEntityIsAVMHost {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
@@ -280,23 +253,23 @@ function New-MocksInSetWhenEnsureIsPresentAndThePermissionIsAlreadyCreated {
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName + $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Present'
     $vmHostPermissionProperties.Propagate = $script:constants.PropagatePermission
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
     $roleMock = $script:vmHostRole
     $permissionMock = $script:vmHostPermission
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
     Mock -CommandName Get-VIRole -MockWith { return $roleMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq ($script:constants.RoleName + $script:constants.RoleName) } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
+    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:datacenterEntity -and $Principal -eq $script:principal } -Verifiable
     Mock -CommandName Set-VIPermission -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vmHostPermissionProperties
@@ -308,19 +281,19 @@ function New-MocksInSetWhenEnsureIsAbsentAndThePermissionIsAlreadyRemoved {
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Absent'
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
+    Mock -CommandName Get-VIPermission -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:datacenterEntity -and $Principal -eq $script:principal } -Verifiable
     Mock -CommandName Remove-VIPermission -MockWith { return $null }.GetNewClosure()
 
     $vmHostPermissionProperties
@@ -332,20 +305,20 @@ function New-MocksInSetWhenEnsureIsAbsentAndThePermissionIsNotRemoved {
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Absent'
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
     $permissionMock = $script:vmHostPermission
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
+    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:datacenterEntity -and $Principal -eq $script:principal } -Verifiable
     Mock -CommandName Remove-VIPermission -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vmHostPermissionProperties
@@ -357,17 +330,17 @@ function New-MocksWhenThePrincipalIsPartOfADomain {
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.DomainName + '\' + $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Present'
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -Verifiable
 
     $vmHostPermissionProperties
@@ -379,19 +352,19 @@ function New-MocksWhenEnsureIsPresentAndThePermissionIsNotCreated {
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Present'
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
+    Mock -CommandName Get-VIPermission -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:datacenterEntity -and $Principal -eq $script:principal } -Verifiable
 
     $vmHostPermissionProperties
 }
@@ -402,20 +375,20 @@ function New-MocksWhenEnsureIsPresentAndThePermissionIsAlreadyCreated {
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Present'
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
     $permissionMock = $script:vmHostPermission
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
+    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:datacenterEntity -and $Principal -eq $script:principal } -Verifiable
 
     $vmHostPermissionProperties
 }
@@ -426,21 +399,21 @@ function New-MocksWhenEnsureIsPresentThePermissionIsAlreadyCreatedAndTheDesiredR
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName + $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Present'
     $vmHostPermissionProperties.Propagate = !$script:constants.PropagatePermission
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
     $permissionMock = $script:vmHostPermission
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
+    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:datacenterEntity -and $Principal -eq $script:principal } -Verifiable
 
     $vmHostPermissionProperties
 }
@@ -451,21 +424,21 @@ function New-MocksWhenEnsureIsPresentThePermissionIsAlreadyCreatedAndTheDesiredR
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Present'
     $vmHostPermissionProperties.Propagate = $script:constants.PropagatePermission
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
     $permissionMock = $script:vmHostPermission
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
+    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:datacenterEntity -and $Principal -eq $script:principal } -Verifiable
 
     $vmHostPermissionProperties
 }
@@ -476,19 +449,19 @@ function New-MocksWhenEnsureIsAbsentAndThePermissionIsAlreadyRemoved {
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Absent'
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
+    Mock -CommandName Get-VIPermission -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:datacenterEntity -and $Principal -eq $script:principal } -Verifiable
 
     $vmHostPermissionProperties
 }
@@ -499,20 +472,20 @@ function New-MocksWhenEnsureIsAbsentAndThePermissionIsNotRemoved {
 
     $vmHostPermissionProperties = New-VMHostPermissionProperties
 
-    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterHostFolderName
+    $vmHostPermissionProperties.EntityName = $script:constants.DatacenterName
     $vmHostPermissionProperties.EntityLocation = [string]::Empty
-    $vmHostPermissionProperties.EntityType = 'Folder'
+    $vmHostPermissionProperties.EntityType = 'Datacenter'
     $vmHostPermissionProperties.PrincipalName = $script:constants.PrincipalName
     $vmHostPermissionProperties.RoleName = $script:constants.RoleName
     $vmHostPermissionProperties.Ensure = 'Absent'
 
-    $entityMock = $script:folderEntity
+    $entityMock = $script:datacenterEntity
     $principalMock = $script:principal
     $permissionMock = $script:vmHostPermission
 
-    Mock -CommandName Get-Folder -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.DatacenterHostFolderName } -Verifiable
+    Mock -CommandName Get-Datacenter -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
-    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:folderEntity -and $Principal -eq $script:principal } -Verifiable
+    Mock -CommandName Get-VIPermission -MockWith { return $permissionMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:datacenterEntity -and $Principal -eq $script:principal } -Verifiable
 
     $vmHostPermissionProperties
 }
