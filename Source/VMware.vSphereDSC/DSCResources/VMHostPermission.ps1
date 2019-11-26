@@ -290,8 +290,8 @@ class VMHostPermission : VMHostEntityBaseDSC {
             $entity = Get-Datacenter -Server $this.Connection -ErrorAction SilentlyContinue -Verbose:$false
         }
         elseif ($this.EntityType -eq [EntityType]::VMHost) {
-            # If the Entity is a VMHost, the Entity location is ignored because the name uniquely identifies the VMHost.
-            $entity = Get-VMHost -Server $this.Connection -Name $this.EntityName -ErrorAction SilentlyContinue -Verbose:$false
+            # If the Entity is a VMHost, the Entity name and location are ignored because the Connection is directly to an ESXi host.
+            $entity = Get-VMHost -Server $this.Connection -ErrorAction SilentlyContinue -Verbose:$false
         }
         elseif ($this.EntityType -eq [EntityType]::Datastore) {
             # If the Entity is a Datastore, the Entity location is ignored because the name uniquely identifies the Datastore.

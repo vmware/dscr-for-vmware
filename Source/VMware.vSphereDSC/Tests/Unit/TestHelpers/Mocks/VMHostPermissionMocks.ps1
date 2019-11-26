@@ -83,7 +83,7 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedAndTheEntityIsAVMH
     $principalMock = $script:principal
     $roleMock = $script:vmHostRole
 
-    Mock -CommandName Get-VMHost -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.VMHostName } -Verifiable
+    Mock -CommandName Get-VMHost -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
     Mock -CommandName Get-VIRole -MockWith { return $roleMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.RoleName } -Verifiable
     Mock -CommandName Get-VIPermission -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Entity -eq $script:vmHost -and $Principal -eq $script:principal } -Verifiable
