@@ -41,7 +41,6 @@ Configuration VMHostPermission_CreateVMHostPermissionForDatacenterEntity_Config 
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.DatacenterEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'Datacenter'
@@ -60,7 +59,6 @@ Configuration VMHostPermission_CreateVMHostPermissionForVMHostEntity_Config {
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.VMHostEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'VMHost'
@@ -79,7 +77,6 @@ Configuration VMHostPermission_CreateVMHostPermissionForDatastoreEntity_Config {
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.DatastoreEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'Datastore'
@@ -98,7 +95,6 @@ Configuration VMHostPermission_CreateVMHostPermissionForResourcePoolEntity_Confi
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.ResourcePoolEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'ResourcePool'
@@ -117,7 +113,6 @@ Configuration VMHostPermission_CreateVMHostPermissionForVMEntityWithEmptyEntityL
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.VMEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'VM'
@@ -136,7 +131,6 @@ Configuration VMHostPermission_CreateVMHostPermissionForVMEntityWithOneResourceP
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.VMEntityName
             EntityLocation = $AllNodes.OneResourcePoolEntityLocation
             EntityType = 'VM'
@@ -155,7 +149,6 @@ Configuration VMHostPermission_CreateVMHostPermissionForVMEntityWithOneResourceP
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.VMEntityName
             EntityLocation = $AllNodes.OneResourcePoolAndOneVAppEntityLocation
             EntityType = 'VM'
@@ -174,7 +167,6 @@ Configuration VMHostPermission_ModifyVMHostPermissionRoleAndPropagateBehaviour_C
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.VMEntityName
             EntityLocation = $AllNodes.OneResourcePoolAndOneVAppEntityLocation
             EntityType = 'VM'
@@ -193,7 +185,6 @@ Configuration VMHostPermission_RemoveVMHostPermissionForDatacenterEntity_Config 
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.DatacenterEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'Datacenter'
@@ -211,7 +202,6 @@ Configuration VMHostPermission_RemoveVMHostPermissionForVMHostEntity_Config {
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.VMHostEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'VMHost'
@@ -229,7 +219,6 @@ Configuration VMHostPermission_RemoveVMHostPermissionForDatastoreEntity_Config {
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.DatastoreEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'Datastore'
@@ -247,7 +236,6 @@ Configuration VMHostPermission_RemoveVMHostPermissionForResourcePoolEntity_Confi
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.ResourcePoolEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'ResourcePool'
@@ -265,7 +253,6 @@ Configuration VMHostPermission_RemoveVMHostPermissionForVMEntityWithEmptyEntityL
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.VMEntityName
             EntityLocation = $AllNodes.EmptyEntityLocation
             EntityType = 'VM'
@@ -283,7 +270,6 @@ Configuration VMHostPermission_RemoveVMHostPermissionForVMEntityWithOneResourceP
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.VMEntityName
             EntityLocation = $AllNodes.OneResourcePoolEntityLocation
             EntityType = 'VM'
@@ -301,7 +287,6 @@ Configuration VMHostPermission_RemoveVMHostPermissionForVMEntityWithOneResourceP
         VMHostPermission $AllNodes.VMHostPermissionResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            VMHostName = $AllNodes.Server
             EntityName = $AllNodes.VMEntityName
             EntityLocation = $AllNodes.OneResourcePoolAndOneVAppEntityLocation
             EntityType = 'VM'

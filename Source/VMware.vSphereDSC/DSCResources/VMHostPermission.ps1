@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostPermission : VMHostEntityBaseDSC {
+class VMHostPermission : BaseDSC {
     <#
     .DESCRIPTION
 
@@ -96,8 +96,6 @@ class VMHostPermission : VMHostEntityBaseDSC {
             $this.ConnectVIServer()
             $this.EnsureConnectionIsESXi()
 
-            $this.RetrieveVMHost()
-
             $foundEntityLocation = $this.GetEntityLocation()
             $entity = $this.GetEntity($foundEntityLocation)
             $vmHostPrincipal = $this.GetVMHostPrincipal()
@@ -129,8 +127,6 @@ class VMHostPermission : VMHostEntityBaseDSC {
             Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $this.EnsureConnectionIsESXi()
-
-            $this.RetrieveVMHost()
 
             $foundEntityLocation = $this.GetEntityLocation()
             $entity = $this.GetEntity($foundEntityLocation)
@@ -169,8 +165,6 @@ class VMHostPermission : VMHostEntityBaseDSC {
             $this.ConnectVIServer()
             $this.EnsureConnectionIsESXi()
 
-            $this.RetrieveVMHost()
-
             $foundEntityLocation = $this.GetEntityLocation()
             $entity = $this.GetEntity($foundEntityLocation)
             $vmHostPrincipal = $this.GetVMHostPrincipal()
@@ -193,14 +187,15 @@ class VMHostPermission : VMHostEntityBaseDSC {
     #>
     [PSObject] GetRootResourcePool() {
         try {
+            $vmHost = Get-VMHost -Server $this.Connection -ErrorAction Stop -Verbose:$false
             $resourcePoolsType = (Get-ResourcePool -Server $this.Connection -ErrorAction Stop -Verbose:$false | Select-Object -First 1).GetType()
             $rootResourcePool = Get-Inventory -Server $this.Connection -ErrorAction Stop -Verbose:$false |
-                                Where-Object -FilterScript { $_.ParentId -eq $this.VMHost.Id -and $_.GetType() -eq $resourcePoolsType }
+                                Where-Object -FilterScript { $_.ParentId -eq $vmHost.Id -and $_.GetType() -eq $resourcePoolsType }
 
             return $rootResourcePool
         }
         catch {
-            throw ($this.CouldNotRetrieveRootResourcePoolMessage -f $this.VMHost.Name, $_.Exception.Message)
+            throw ($this.CouldNotRetrieveRootResourcePoolMessage -f $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -269,7 +264,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
                 }
             }
 
-            $exceptionMessage = $this.InvalidEntityLocationMessage -f $this.EntityLocation, $this.EntityName, $this.VMHost.Name
+            $exceptionMessage = $this.InvalidEntityLocationMessage -f $this.EntityLocation, $this.EntityName, $this.Connection.Name
             $this.EnsureCorrectBehaviourIfTheEntityIsNotFound($foundEntityLocation, $exceptionMessage)
         }
 
@@ -307,7 +302,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
 
             # Only throw an exception if Ensure is 'Present', otherwise ignore that multiple VMs were found.
             if ($entity.Length -gt 1 -and $this.Ensure -eq [Ensure]::Present) {
-                throw ($this.CouldNotIdentifyVMMessage -f $this.EntityName, $this.VMHost.Name, $entity.Length)
+                throw ($this.CouldNotIdentifyVMMessage -f $this.EntityName, $this.Connection.Name, $entity.Length)
             }
         }
         else {
@@ -320,7 +315,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
                       Where-Object -FilterScript { $_.ParentId -eq $entityLocation.Id }
         }
 
-        $exceptionMessage = $this.CouldNotFindEntityMessage -f $this.EntityName, $this.EntityType.ToString(), $this.VMHost.Name
+        $exceptionMessage = $this.CouldNotFindEntityMessage -f $this.EntityName, $this.EntityType.ToString(), $this.Connection.Name
         $this.EnsureCorrectBehaviourIfTheEntityIsNotFound($entity, $exceptionMessage)
 
         return $entity
@@ -365,7 +360,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
                 return $vmHostPrincipal
             }
             catch {
-                throw ($this.CouldNotRetrievePrincipalMessage -f $this.PrincipalName, $this.VMHost.Name, $_.Exception.Message)
+                throw ($this.CouldNotRetrievePrincipalMessage -f $this.PrincipalName, $this.Connection.Name, $_.Exception.Message)
             }
         }
     }
@@ -396,7 +391,7 @@ class VMHostPermission : VMHostEntityBaseDSC {
             return $vmHostRole
         }
         catch {
-            throw ($this.CouldNotRetrieveRoleMessage -f $this.RoleName, $this.VMHost.Name, $_.Exception.Message)
+            throw ($this.CouldNotRetrieveRoleMessage -f $this.RoleName, $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -451,11 +446,11 @@ class VMHostPermission : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.CreatePermissionMessage -Arguments @($entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.VMHost.Name)
+            Write-VerboseLog -Message $this.CreatePermissionMessage -Arguments @($entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.Connection.Name)
             New-VIPermission @newVIPermissionParams
         }
         catch {
-            throw ($this.CouldNotCreatePermission -f $entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.VMHost.Name, $_.Exception.Message)
+            throw ($this.CouldNotCreatePermission -f $entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -484,11 +479,11 @@ class VMHostPermission : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.ModifyPermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $this.VMHost.Name)
+            Write-VerboseLog -Message $this.ModifyPermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $this.Connection.Name)
             Set-VIPermission @setVIPermissionParams
         }
         catch {
-            throw ($this.CouldNotModifyPermission -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.VMHost.Name, $_.Exception.Message)
+            throw ($this.CouldNotModifyPermission -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -499,11 +494,11 @@ class VMHostPermission : VMHostEntityBaseDSC {
     #>
     [void] RemoveVMHostPermission($vmHostPermission) {
         try {
-            Write-VerboseLog -Message $this.RemovePermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.VMHost.Name)
+            Write-VerboseLog -Message $this.RemovePermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name)
             $vmHostPermission | Remove-VIPermission -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
-            throw ($this.CouldNotRemovePermission -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.VMHost.Name, $_.Exception.Message)
+            throw ($this.CouldNotRemovePermission -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -514,7 +509,6 @@ class VMHostPermission : VMHostEntityBaseDSC {
     #>
     [void] PopulateResult($result, $vmHostPermission) {
         $result.Server = $this.Connection.Name
-        $result.VMHostName = $this.VMHost.Name
         $result.EntityLocation = $this.EntityLocation
         $result.EntityType = $this.EntityType
 

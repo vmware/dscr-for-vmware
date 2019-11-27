@@ -21,7 +21,6 @@ function New-VMHostPermissionProperties {
     $vmHostPermissionProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
-        VMHostName = $script:constants.VMHostName
     }
 
     $vmHostPermissionProperties
@@ -31,10 +30,8 @@ function New-MocksForVMHostPermission {
     [CmdletBinding()]
 
     $viServerMock = $script:esxiServer
-    $vmHostMock = $script:vmHost
 
     Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure() -Verifiable
-    Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -Verifiable
     Mock -CommandName Disconnect-VIServer -MockWith { return $null }.GetNewClosure() -Verifiable
 }
 
@@ -133,11 +130,13 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedAndTheEntityIsARes
     $vmHostPermissionProperties.Ensure = 'Present'
     $vmHostPermissionProperties.Propagate = $script:constants.PropagatePermission
 
+    $vmHostMock = $script:vmHost
     $rootResourcePoolMock = $script:rootResourcePool
     $entityMock = $script:resourcePoolEntity
     $principalMock = $script:principal
     $roleMock = $script:vmHostRole
 
+    Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-Inventory -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.ResourcePoolName -and $Location -eq $script:rootResourcePool } -Verifiable
@@ -163,11 +162,13 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedTheEntityIsAVMAndE
     $vmHostPermissionProperties.Ensure = 'Present'
     $vmHostPermissionProperties.Propagate = $script:constants.PropagatePermission
 
+    $vmHostMock = $script:vmHost
     $rootResourcePoolMock = $script:rootResourcePool
     $entityMock = $script:vmEntity
     $principalMock = $script:principal
     $roleMock = $script:vmHostRole
 
+    Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-Inventory -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VM -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.VMName -and $Location -eq $script:rootResourcePool } -Verifiable
@@ -193,12 +194,14 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedTheEntityIsAVMAndE
     $vmHostPermissionProperties.Ensure = 'Present'
     $vmHostPermissionProperties.Propagate = $script:constants.PropagatePermission
 
+    $vmHostMock = $script:vmHost
     $rootResourcePoolMock = $script:rootResourcePool
     $resourcePoolMock = $script:resourcePoolEntity
     $entityMock = $script:vmEntity
     $principalMock = $script:principal
     $roleMock = $script:vmHostRole
 
+    Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-Inventory -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $resourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.ResourcePoolName -and $Location -eq $script:rootResourcePool } -Verifiable
@@ -225,6 +228,7 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedTheEntityIsAVMAndE
     $vmHostPermissionProperties.Ensure = 'Present'
     $vmHostPermissionProperties.Propagate = $script:constants.PropagatePermission
 
+    $vmHostMock = $script:vmHost
     $rootResourcePoolMock = $script:rootResourcePool
     $vAppMock = $script:vAppEntity
     $vAppViewBaseObjectMock = $script:vAppViewBaseObject
@@ -233,6 +237,7 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedTheEntityIsAVMAndE
     $principalMock = $script:principal
     $roleMock = $script:vmHostRole
 
+    Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-Inventory -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-Inventory -MockWith { return $vAppMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.VAppName -and $Location -eq $script:rootResourcePool } -Verifiable

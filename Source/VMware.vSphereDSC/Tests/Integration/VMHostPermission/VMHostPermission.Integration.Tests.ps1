@@ -187,7 +187,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Server
             $configuration.EntityName | Should -Be $script:configurationData.AllNodes.DatacenterEntityName
             $configuration.EntityLocation | Should -Be $script:configurationData.AllNodes.EmptyEntityLocation
             $configuration.EntityType | Should -Be 'Datacenter'
@@ -317,7 +316,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Server
             $configuration.EntityName | Should -Be $script:configurationData.AllNodes.VMHostEntityName
             $configuration.EntityLocation | Should -Be $script:configurationData.AllNodes.EmptyEntityLocation
             $configuration.EntityType | Should -Be 'VMHost'
@@ -448,7 +446,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Server
             $configuration.EntityName | Should -Be $script:configurationData.AllNodes.DatastoreEntityName
             $configuration.EntityLocation | Should -Be $script:configurationData.AllNodes.EmptyEntityLocation
             $configuration.EntityType | Should -Be 'Datastore'
@@ -582,7 +579,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Server
             $configuration.EntityName | Should -Be $script:configurationData.AllNodes.ResourcePoolEntityName
             $configuration.EntityLocation | Should -Be $script:configurationData.AllNodes.EmptyEntityLocation
             $configuration.EntityType | Should -Be 'ResourcePool'
@@ -714,7 +710,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Server
             $configuration.EntityName | Should -Be $script:configurationData.AllNodes.VMEntityName
             $configuration.EntityLocation | Should -Be $script:configurationData.AllNodes.EmptyEntityLocation
             $configuration.EntityType | Should -Be 'VM'
@@ -850,7 +845,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Server
             $configuration.EntityName | Should -Be $script:configurationData.AllNodes.VMEntityName
             $configuration.EntityLocation | Should -Be $script:configurationData.AllNodes.OneResourcePoolEntityLocation
             $configuration.EntityType | Should -Be 'VM'
@@ -990,7 +984,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Server
             $configuration.EntityName | Should -Be $script:configurationData.AllNodes.VMEntityName
             $configuration.EntityLocation | Should -Be $script:configurationData.AllNodes.OneResourcePoolAndOneVAppEntityLocation
             $configuration.EntityType | Should -Be 'VM'
@@ -1146,7 +1139,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Server
             $configuration.EntityName | Should -Be $script:configurationData.AllNodes.VMEntityName
             $configuration.EntityLocation | Should -Be $script:configurationData.AllNodes.OneResourcePoolAndOneVAppEntityLocation
             $configuration.EntityType | Should -Be 'VM'
@@ -1303,7 +1295,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.Server
             $configuration.EntityName | Should -Be $script:configurationData.AllNodes.VMEntityName
             $configuration.EntityLocation | Should -Be $script:configurationData.AllNodes.OneResourcePoolAndOneVAppEntityLocation
             $configuration.EntityType | Should -Be 'VM'

@@ -611,7 +611,6 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $script:esxiServer.Name
-                    $result.VMHostName | Should -Be $script:vmHost.Name
                     $result.EntityName | Should -Be $resourceProperties.EntityName
                     $result.EntityLocation | Should -Be $resourceProperties.EntityLocation
                     $result.EntityType | Should -Be $resourceProperties.EntityType
@@ -643,7 +642,6 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $script:esxiServer.Name
-                    $result.VMHostName | Should -Be $script:vmHost.Name
                     $result.EntityName | Should -Be $script:vmHostPermission.Entity.Name
                     $result.EntityLocation | Should -Be $resourceProperties.EntityLocation
                     $result.EntityType | Should -Be $resourceProperties.EntityType
@@ -675,7 +673,6 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $script:esxiServer.Name
-                    $result.VMHostName | Should -Be $script:vmHost.Name
                     $result.EntityName | Should -Be $resourceProperties.EntityName
                     $result.EntityLocation | Should -Be $resourceProperties.EntityLocation
                     $result.EntityType | Should -Be $resourceProperties.EntityType
@@ -707,7 +704,6 @@ InModuleScope -ModuleName $script:moduleName {
 
                     # Assert
                     $result.Server | Should -Be $script:esxiServer.Name
-                    $result.VMHostName | Should -Be $script:vmHost.Name
                     $result.EntityName | Should -Be $script:vmHostPermission.Entity.Name
                     $result.EntityLocation | Should -Be $resourceProperties.EntityLocation
                     $result.EntityType | Should -Be $resourceProperties.EntityType
