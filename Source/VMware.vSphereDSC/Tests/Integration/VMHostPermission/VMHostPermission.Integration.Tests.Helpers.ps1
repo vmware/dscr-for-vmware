@@ -67,8 +67,8 @@ function New-VmfsDatastore {
 
     $viServer = Connect-VIServer -Server $VCenterServer -User $VCenterUser -Password $VCenterPassword -ErrorAction Stop -Verbose:$false
     $vmHost = Get-VMHost -Server $viServer -Name $ESXiServer -ErrorAction Stop -Verbose:$false
-    $storageManager = Get-View -Server $viServer -Id $vmHost.ExtensionData.ConfigManager.DatastoreSystem -ErrorAction Stop -Verbose:$false
-    $scsiLun = $storageManager.QueryAvailableDisksForVmfs($null) | Select-Object -First 1
+    $datastoreSystem = Get-View -Server $viServer -Id $vmHost.ExtensionData.ConfigManager.DatastoreSystem -ErrorAction Stop -Verbose:$false
+    $scsiLun = $datastoreSystem.QueryAvailableDisksForVmfs($null) | Select-Object -First 1
 
     New-Datastore -Server $viServer -Name $datastoreName -VMHost $vmHost -Vmfs -Path $scsiLun.CanonicalName -Confirm:$false -ErrorAction Stop -Verbose:$false
 

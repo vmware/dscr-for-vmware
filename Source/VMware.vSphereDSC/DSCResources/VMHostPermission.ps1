@@ -86,9 +86,9 @@ class VMHostPermission : BaseDSC {
     hidden [string] $CouldNotFindEntityMessage = "Entity {0} of type {1} was not found on VMHost {2}."
     hidden [string] $CouldNotRetrievePrincipalMessage = "Could not retrieve Principal {0} from VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotRetrieveRoleMessage = "Could not retrieve Role from VMHost {1}. For more information: {2}"
-    hidden [string] $CouldNotCreatePermission = "Could not create Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
-    hidden [string] $CouldNotModifyPermission = "Could not modify Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
-    hidden [string] $CouldNotRemovePermission = "Could not remove Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
+    hidden [string] $CouldNotCreatePermissionMessage = "Could not create Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
+    hidden [string] $CouldNotModifyPermissionMessage = "Could not modify Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
+    hidden [string] $CouldNotRemovePermissionMessage = "Could not remove Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
 
     [void] Set() {
         try {
@@ -450,7 +450,7 @@ class VMHostPermission : BaseDSC {
             New-VIPermission @newVIPermissionParams
         }
         catch {
-            throw ($this.CouldNotCreatePermission -f $entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.Connection.Name, $_.Exception.Message)
+            throw ($this.CouldNotCreatePermissionMessage -f $entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -483,7 +483,7 @@ class VMHostPermission : BaseDSC {
             Set-VIPermission @setVIPermissionParams
         }
         catch {
-            throw ($this.CouldNotModifyPermission -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name, $_.Exception.Message)
+            throw ($this.CouldNotModifyPermissionMessage -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -498,7 +498,7 @@ class VMHostPermission : BaseDSC {
             $vmHostPermission | Remove-VIPermission -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
-            throw ($this.CouldNotRemovePermission -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name, $_.Exception.Message)
+            throw ($this.CouldNotRemovePermissionMessage -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name, $_.Exception.Message)
         }
     }
 
