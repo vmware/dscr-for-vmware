@@ -27,7 +27,7 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     .DESCRIPTION
 
     For Nfs Datastore, specifies the remote path of the Nfs mount point.
-    For Vmfs Datastore, specifies the canonical name of the SCSI logical unit that contains the Vmfs Datastore.
+    For Vmfs Datastore, specifies the canonical name of the Scsi logical unit that contains the Vmfs Datastore.
     #>
     [DscProperty(Mandatory)]
     [string] $Path

@@ -27,7 +27,7 @@ class NfsDatastore : DatastoreBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the access mode for the Datastore. Valid access modes are 'ReadWrite' and 'ReadOnly'.
+    Specifies the access mode for the Nfs Datastore. Valid access modes are 'ReadWrite' and 'ReadOnly'.
     The default access mode is 'ReadWrite'.
     #>
     [DscProperty()]
@@ -36,7 +36,7 @@ class NfsDatastore : DatastoreBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the authentication method for the Datastore. Valid authentication methods are 'AUTH_SYS' and 'Kerberos'.
+    Specifies the authentication method for the Nfs Datastore. Valid authentication methods are 'AUTH_SYS' and 'Kerberos'.
     The default authentication method is 'AUTH_SYS'.
     #>
     [DscProperty()]
@@ -85,7 +85,6 @@ class NfsDatastore : DatastoreBaseDSC {
                     $result = $false
                 }
                 else {
-
                     $result = !$this.ShouldModifyDatastore($datastore)
                 }
             }

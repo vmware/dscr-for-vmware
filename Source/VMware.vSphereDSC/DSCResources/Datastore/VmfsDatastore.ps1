@@ -67,7 +67,6 @@ class VmfsDatastore : DatastoreBaseDSC {
                     $result = $false
                 }
                 else {
-
                     $result = !$this.ShouldModifyDatastore($datastore)
                 }
             }
