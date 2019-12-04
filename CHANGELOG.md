@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.35 - 2019-12-04
+### Added
+- Added VMHostRole DSC Resource.
+- Added Unit Tests for VMHostRole DSC Resource.
+- Added Integration Tests for VMHostRole DSC Resource.
+- Added Documentation and example Configurations for VMHostRole DSC Resource.
+
+### Changed
+- Moved EnsureConnectionIsESXi method from VMHostAccount DSC Resource to BaseDSC class and added WriteDscResourceState method to BaseDSC class.
+
 ## 2.0.0.34 - 2019-11-15
 ### Added
 - Introduced VMHostNetworkMigrationBaseDSC class.
