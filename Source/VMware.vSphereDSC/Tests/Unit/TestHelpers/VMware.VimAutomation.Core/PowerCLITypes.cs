@@ -90817,7 +90817,7 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.PermissionManagement
     using VMware.VimAutomation.ViCore.Types.V1;
     using VMware.VimAutomation.ViCore.Types.V1.PermissionManagement;
 
-    public class PermissionImpl : IEquatable<PermissionImpl>
+    public class PermissionImpl : Permission, IEquatable<PermissionImpl>
     {
         public string EntityId { get; set; }
 
