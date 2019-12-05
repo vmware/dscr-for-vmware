@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.37 - 2019-12-05
+### Added
+- Introduced DatastoreBaseDSC class.
+- Added VmfsDatastore and NfsDatastore DSC Resources.
+- Added Unit Tests for DatastoreBaseDSC class, VmfsDatastore and NfsDatastore DSC Resources.
+- Added Integration Tests for VmfsDatastore and NfsDatastore DSC Resources.
+- Added Documentation and example Configurations for VmfsDatastore and NfsDatastore DSC Resources.
+
 ## 2.0.0.36 - 2019-12-05
 ### Added
 - Added VMHostPermission DSC Resource.

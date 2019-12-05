@@ -129,6 +129,16 @@ enum SharedPassthruAssignmentPolicy {
     Consolidation
 }
 
+enum AccessMode {
+    ReadWrite
+    ReadOnly
+}
+
+enum AuthenticationMethod {
+    AUTH_SYS
+    Kerberos
+}
+
 enum NicTeamingPolicy {
     Loadbalance_ip
     Loadbalance_srcmac
@@ -575,6 +585,222 @@ class DatacenterInventoryBaseDSC : BaseDSC {
     }
 }
 
+class VMHostEntityBaseDSC : BaseDSC {
+    <#
+    .DESCRIPTION
+
+    Name of the VMHost which is going to be used.
+    #>
+    [DscProperty(Key)]
+    [string] $VMHostName
+
+    <#
+    .DESCRIPTION
+
+    The VMHost which is going to be used.
+    #>
+    hidden [PSObject] $VMHost
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the VMHost with the specified name from the server.
+    If the VMHost is not found, it throws an exception.
+    #>
+    [void] RetrieveVMHost() {
+        try {
+            $this.VMHost = Get-VMHost -Server $this.Connection -Name $this.VMHostName -ErrorAction Stop
+        }
+        catch {
+            throw "VMHost with name $($this.VMHostName) was not found. For more information: $($_.Exception.Message)"
+        }
+    }
+}
+
+class DatastoreBaseDSC : VMHostEntityBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the Datastore.
+    #>
+    [DscProperty(Key)]
+    [string] $Name
+
+    <#
+    .DESCRIPTION
+
+    For Nfs Datastore, specifies the remote path of the Nfs mount point.
+    For Vmfs Datastore, specifies the canonical name of the Scsi logical unit that contains the Vmfs Datastore.
+    #>
+    [DscProperty(Mandatory)]
+    [string] $Path
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the Datastore should be present or absent.
+    #>
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Specifies the file system that is used on the Datastore.
+    #>
+    [DscProperty()]
+    [string] $FileSystemVersion
+
+    <#
+    .DESCRIPTION
+
+    Specifies the latency period beyond which the storage array is considered congested. The range of this value is between 10 to 100 milliseconds.
+    #>
+    [DscProperty()]
+    [nullable[int]] $CongestionThresholdMillisecond
+
+    <#
+    .DESCRIPTION
+
+    Indicates whether the IO control is enabled.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $StorageIOControlEnabled
+
+    hidden [string] $CreateDatastoreMessage = "Creating Datastore {0} on VMHost {1}."
+    hidden [string] $ModifyDatastoreMessage = "Modifying Datastore {0} on VMHost {1}."
+    hidden [string] $RemoveDatastoreMessage = "Removing Datastore {0} from VMHost {1}."
+
+    hidden [string] $CouldNotCreateDatastoreMessage = "Could not create Datastore {0} on VMHost {1}. For more information: {2}"
+    hidden [string] $CouldNotModifyDatastoreMessage = "Could not modify Datastore {0} on VMHost {1}. For more information: {2}"
+    hidden [string] $CouldNotRemoveDatastoreMessage = "Could not remove Datastore {0} from VMHost {1}. For more information: {2}"
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Datastore with the specified name from the VMHost if it exists.
+    #>
+    [PSObject] GetDatastore() {
+        return Get-Datastore -Server $this.Connection -Name $this.Name -VMHost $this.VMHost -ErrorAction SilentlyContinue -Verbose:$false
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the specified Datastore should be modified.
+    #>
+    [bool] ShouldModifyDatastore($datastore) {
+        $shouldModifyDatastore = @()
+
+        $shouldModifyDatastore += ($null -ne $this.CongestionThresholdMillisecond -and $this.CongestionThresholdMillisecond -ne $datastore.CongestionThresholdMillisecond)
+        $shouldModifyDatastore += ($null -ne $this.StorageIOControlEnabled -and $this.StorageIOControlEnabled -ne $datastore.StorageIOControlEnabled)
+
+        return ($shouldModifyDatastore -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Datastore with the specified name on the VMHost.
+    #>
+    [PSObject] NewDatastore($newDatastoreParams) {
+        $newDatastoreParams.Server = $this.Connection
+        $newDatastoreParams.Name = $this.Name
+        $newDatastoreParams.VMHost = $this.VMHost
+        $newDatastoreParams.Path = $this.Path
+        $newDatastoreParams.Confirm = $false
+        $newDatastoreParams.ErrorAction = 'Stop'
+        $newDatastoreParams.Verbose = $false
+
+        if (![string]::IsNullOrEmpty($this.FileSystemVersion)) { $newDatastoreParams.FileSystemVersion = $this.FileSystemVersion }
+
+        try {
+            Write-VerboseLog -Message $this.CreateDatastoreMessage -Arguments @($this.Name, $this.VMHost.Name)
+            $datastore = New-Datastore @newDatastoreParams
+
+            return $datastore
+        }
+        catch {
+            throw ($this.CouldNotCreateDatastoreMessage -f $this.Name, $this.VMHost.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Modifies the properties of the specified Datastore.
+    #>
+    [void] ModifyDatastore($datastore) {
+        $setDatastoreParams = @{
+            Server = $this.Connection
+            Datastore = $datastore
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        if ($null -ne $this.StorageIOControlEnabled) { $setDatastoreParams.StorageIOControlEnabled = $this.StorageIOControlEnabled }
+        if ($null -ne $this.CongestionThresholdMillisecond) { $setDatastoreParams.CongestionThresholdMillisecond = $this.CongestionThresholdMillisecond }
+
+        try {
+            Write-VerboseLog -Message $this.ModifyDatastoreMessage -Arguments @($datastore.Name, $this.VMHost.Name)
+            Set-Datastore @setDatastoreParams
+        }
+        catch {
+            throw ($this.CouldNotModifyDatastoreMessage -f $datastore.Name, $this.VMHost.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the specified Datastore from the VMHost.
+    #>
+    [void] RemoveDatastore($datastore) {
+        $removeDatastoreParams = @{
+            Server = $this.Connection
+            Datastore = $datastore
+            VMHost = $thiS.VMHost
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            Write-VerboseLog -Message $this.RemoveDatastoreMessage -Arguments @($datastore.Name, $this.VMHost.Name)
+            Remove-Datastore @removeDatastoreParams
+        }
+        catch {
+            throw ($this.CouldNotRemoveDatastoreMessage -f $datastore.Name, $this.VMHost.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $datastore) {
+        $result.Server = $this.Connection.Name
+        $result.VMHostName = $this.VMHost.Name
+
+        if ($null -ne $datastore) {
+            $result.Name = $datastore.Name
+            $result.Ensure = [Ensure]::Present
+            $result.FileSystemVersion = $datastore.FileSystemVersion
+            $result.CongestionThresholdMillisecond = $datastore.CongestionThresholdMillisecond
+            $result.StorageIOControlEnabled = $datastore.StorageIOControlEnabled
+        }
+        else {
+            $result.Name = $this.Name
+            $result.Ensure = [Ensure]::Absent
+            $result.FileSystemVersion = $this.FileSystemVersion
+            $result.CongestionThresholdMillisecond = $this.CongestionThresholdMillisecond
+            $result.StorageIOControlEnabled = $this.StorageIOControlEnabled
+        }
+    }
+}
+
 class InventoryBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
@@ -809,38 +1035,6 @@ class VMHostBaseDSC : BaseDSC {
         else {
             $this.Connection = $null
             $this.EnsureVMHostIsInDesiredState($true, $this.MaintenanceState)
-        }
-    }
-}
-
-class VMHostEntityBaseDSC : BaseDSC {
-    <#
-    .DESCRIPTION
-
-    Name of the VMHost which is going to be used.
-    #>
-    [DscProperty(Key)]
-    [string] $VMHostName
-
-    <#
-    .DESCRIPTION
-
-    The VMHost which is going to be used.
-    #>
-    hidden [PSObject] $VMHost
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the VMHost with the specified name from the server.
-    If the VMHost is not found, it throws an exception.
-    #>
-    [void] RetrieveVMHost() {
-        try {
-            $this.VMHost = Get-VMHost -Server $this.Connection -Name $this.VMHostName -ErrorAction Stop
-        }
-        catch {
-            throw "VMHost with name $($this.VMHostName) was not found. For more information: $($_.Exception.Message)"
         }
     }
 }
@@ -6985,6 +7179,276 @@ class VMHostTpsSettings : VMHostBaseDSC {
 
             Set-AdvancedSetting -AdvancedSetting $tpsSetting -Value $this.$tpsSettingName -Confirm:$false
         }
+    }
+}
+
+[DscResource()]
+class NfsDatastore : DatastoreBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Nfs Host for the Datastore.
+    #>
+    [DscProperty(Mandatory)]
+    [string[]] $NfsHost
+
+    <#
+    .DESCRIPTION
+
+    Specifies the access mode for the Nfs Datastore. Valid access modes are 'ReadWrite' and 'ReadOnly'.
+    The default access mode is 'ReadWrite'.
+    #>
+    [DscProperty()]
+    [AccessMode] $AccessMode = [AccessMode]::ReadWrite
+
+    <#
+    .DESCRIPTION
+
+    Specifies the authentication method for the Nfs Datastore. Valid authentication methods are 'AUTH_SYS' and 'Kerberos'.
+    The default authentication method is 'AUTH_SYS'.
+    #>
+    [DscProperty()]
+    [AuthenticationMethod] $AuthenticationMethod = [AuthenticationMethod]::AUTH_SYS
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $datastore = $this.GetDatastore()
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $datastore) {
+                    $datastore = $this.NewNfsDatastore()
+                }
+
+                if ($this.ShouldModifyDatastore($datastore)) {
+                    $this.ModifyDatastore($datastore)
+                }
+            }
+            else {
+                if ($null -ne $datastore) {
+                    $this.RemoveDatastore($datastore)
+                }
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $datastore = $this.GetDatastore()
+            $result = $null
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $datastore) {
+                    $result = $false
+                }
+                else {
+                    $result = !$this.ShouldModifyDatastore($datastore)
+                }
+            }
+            else {
+                $result = ($null -eq $datastore)
+            }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [NfsDatastore] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [NfsDatastore]::new()
+
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $datastore = $this.GetDatastore()
+            $this.PopulateResultForNfsDatastore($result, $datastore)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Nfs Datastore with the specified name on the VMHost.
+    #>
+    [PSObject] NewNfsDatastore() {
+        $newDatastoreParams = @{
+            Nfs = $true
+            NfsHost = $this.NfsHost
+        }
+
+        if ($this.AccessMode -eq [AccessMode]::ReadOnly) { $newDatastoreParams.ReadOnly = $true }
+        if ($this.AuthenticationMethod -eq [AuthenticationMethod]::Kerberos) { $newDatastoreParams.Kerberos = $true }
+
+        return $this.NewDatastore($newDatastoreParams)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResultForNfsDatastore($result, $datastore) {
+        if ($null -ne $datastore) {
+            $result.NfsHost = $datastore.RemoteHost
+            $result.Path = $datastore.RemotePath
+            $result.AccessMode = [AccessMode] $datastore.ExtensionData.Host.MountInfo.AccessMode
+            $result.AuthenticationMethod = $datastore.AuthenticationMethod.ToString()
+        }
+        else {
+            $result.NfsHost = $this.NfsHost
+            $result.Path = $this.Path
+            $result.AccessMode = $this.AccessMode
+            $result.AuthenticationMethod = $this.AuthenticationMethod
+        }
+
+        $this.PopulateResult($result, $datastore)
+    }
+}
+
+[DscResource()]
+class VmfsDatastore : DatastoreBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the maximum file size of Vmfs in megabytes (MB). If no value is specified, the maximum file size for the current system platform is used.
+    #>
+    [DscProperty()]
+    [nullable[int]] $BlockSizeMB
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $datastore = $this.GetDatastore()
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $datastore) {
+                    $datastore = $this.NewVmfsDatastore()
+                }
+
+                if ($this.ShouldModifyDatastore($datastore)) {
+                    $this.ModifyDatastore($datastore)
+                }
+            }
+            else {
+                if ($null -ne $datastore) {
+                    $this.RemoveDatastore($datastore)
+                }
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $datastore = $this.GetDatastore()
+            $result = $null
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $datastore) {
+                    $result = $false
+                }
+                else {
+                    $result = !$this.ShouldModifyDatastore($datastore)
+                }
+            }
+            else {
+                $result = ($null -eq $datastore)
+            }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VmfsDatastore] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VmfsDatastore]::new()
+
+            $this.ConnectVIServer()
+            $this.RetrieveVMHost()
+
+            $datastore = $this.GetDatastore()
+            $this.PopulateResultForVmfsDatastore($result, $datastore)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Vmfs Datastore with the specified name on the VMHost.
+    #>
+    [PSObject] NewVmfsDatastore() {
+        $newDatastoreParams = @{
+            Vmfs = $true
+        }
+
+        if ($null -ne $this.BlockSizeMB) { $newDatastoreParams.BlockSizeMB = $this.BlockSizeMB }
+
+        return $this.NewDatastore($newDatastoreParams)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResultForVmfsDatastore($result, $datastore) {
+        if ($null -ne $datastore) {
+            $result.BlockSizeMB = $datastore.ExtensionData.Info.Vmfs.BlockSizeMB
+            $result.Path = $datastore.ExtensionData.Info.Vmfs.Extent | Where-Object -FilterScript { $_.DiskName -eq $this.Path } | Select-Object -ExpandProperty DiskName
+        }
+        else {
+            $result.BlockSizeMB = $this.BlockSizeMB
+            $result.Path = $this.Path
+        }
+
+        $this.PopulateResult($result, $datastore)
     }
 }
 
