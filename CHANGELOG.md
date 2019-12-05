@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.36 - 2019-12-05
+### Added
+- Added VMHostPermission DSC Resource.
+- Added Unit Tests for VMHostPermission DSC Resource.
+- Added Integration Tests for VMHostPermission DSC Resource.
+- Added Documentation and example Configurations for VMHostPermission DSC Resource.
+
 ## 2.0.0.35 - 2019-12-04
 ### Added
 - Added VMHostRole DSC Resource.
