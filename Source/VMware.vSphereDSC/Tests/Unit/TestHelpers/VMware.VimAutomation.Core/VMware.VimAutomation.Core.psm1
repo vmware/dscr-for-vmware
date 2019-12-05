@@ -1390,6 +1390,7 @@ function Get-Datastore {
 
         [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
         [VMware.VimAutomation.ViCore.Types.V1.RelatedObject.DatastoreRelatedObjectBase[]]
+        [Alias('VMHost')]
         $RelatedObject,
 
         [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]

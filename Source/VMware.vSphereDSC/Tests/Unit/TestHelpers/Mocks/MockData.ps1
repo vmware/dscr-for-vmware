@@ -81,6 +81,16 @@ $script:constants = @{
     DatastoreName = 'MyDatastore'
     DatastoreType = 'Datastore'
     DatastoreValue = 'datastore-1'
+    ScsiLunCanonicalName = 'mpx.vmhba0:C0:T0:L0'
+    FileSystemVersion = 3
+    NfsHost = 'MyNfsHost'
+    NfsPath = 'MyNfsPath'
+    AuthenticationMethod = 'Kerberos'
+    AccessMode = 'ReadOnly'
+    BlockSizeMB = 1
+    MaxCongestionThresholdMillisecond = 100
+    CongestionThresholdMillisecond = 50
+    StorageIOControlEnabled = $true
     NetworkName = 'MyNetwork'
     NetworkType = 'Network'
     NetworkValue = 'network-1'
@@ -656,14 +666,46 @@ $script:esxAgentHostManagerWithNullAgentVmSettings = [VMware.Vim.HostEsxAgentHos
 
 $script:datastore = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.VmfsDatastoreImpl] @{
     Name = $script:constants.DatastoreName
+    FreeSpaceGB = $script:constants.SwapSizeGB * 8
+    FileSystemVersion = $script:constants.FileSystemVersion
+    StorageIOControlEnabled = $script:constants.StorageIOControlEnabled
+    CongestionThresholdMillisecond = $script:constants.MaxCongestionThresholdMillisecond
     ExtensionData = [VMware.Vim.Datastore] @{
         Name = $script:constants.DatastoreName
         MoRef = [VMware.Vim.ManagedObjectReference] @{
             Type = $script:constants.DatastoreType
             Value = $script:constants.DatastoreValue
         }
+        Info = [VMware.Vim.VmfsDatastoreInfo] @{
+            Vmfs = [VMware.Vim.HostVmfsVolume] @{
+                BlockSizeMB = $script:constants.BlockSizeMB
+                Extent = @(
+                    [VMware.Vim.HostScsiDiskPartition] @{
+                        DiskName = $script:constants.ScsiLunCanonicalName
+                    }
+                )
+            }
+        }
     }
-    FreeSpaceGB = $script:constants.SwapSizeGB * 8
+}
+
+$script:nfsDatastore = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.NasDatastoreImpl] @{
+    Name = $script:constants.DatastoreName
+    RemoteHost = $script:constants.NfsHost
+    RemotePath = $script:constants.NfsPath
+    AuthenticationMethod = $script:constants.AuthenticationMethod
+    FileSystemVersion = $script:constants.FileSystemVersion
+    StorageIOControlEnabled = $script:constants.StorageIOControlEnabled
+    CongestionThresholdMillisecond = $script:constants.MaxCongestionThresholdMillisecond
+    ExtensionData = [VMware.Vim.Datastore] @{
+        Host = @(
+            [VMware.Vim.DatastoreHostMount] @{
+                MountInfo = [VMware.Vim.HostMountInfo] @{
+                    AccessMode = $script:constants.AccessMode
+                }
+            }
+        )
+    }
 }
 
 $script:network = [VMware.Vim.Network] @{
