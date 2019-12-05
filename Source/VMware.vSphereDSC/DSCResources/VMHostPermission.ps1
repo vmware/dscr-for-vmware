@@ -46,8 +46,8 @@ class VMHostPermission : BaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the name of the User to which the Permission applies. If the User is a Domain User, the Principal name should be in the
-    following format: '<Domain Name>/<User name>'. Example Principal name for Domain User: 'MyDomain/MyDomainUser'.
+    Specifies the name of the User to which the Permission applies. If the User is a Domain User, the Principal name should be in one of the
+    following formats: '<Domain Name>/<User name>' or '<User name>@<Domain Name>'. Example Principal name for Domain User: 'MyDomain/MyDomainUser' or 'MyDomainUser@MyDomain'.
     #>
     [DscProperty(Key)]
     [string] $PrincipalName
@@ -188,9 +188,8 @@ class VMHostPermission : BaseDSC {
     [PSObject] GetRootResourcePool() {
         try {
             $vmHost = Get-VMHost -Server $this.Connection -ErrorAction Stop -Verbose:$false
-            $resourcePoolsType = (Get-ResourcePool -Server $this.Connection -ErrorAction Stop -Verbose:$false | Select-Object -First 1).GetType()
-            $rootResourcePool = Get-Inventory -Server $this.Connection -ErrorAction Stop -Verbose:$false |
-                                Where-Object -FilterScript { $_.ParentId -eq $vmHost.Id -and $_.GetType() -eq $resourcePoolsType }
+            $rootResourcePool = Get-ResourcePool -Server $this.Connection -ErrorAction Stop -Verbose:$false |
+                                Where-Object -FilterScript { $_.ParentId -eq $vmHost.Id }
 
             return $rootResourcePool
         }
@@ -325,7 +324,7 @@ class VMHostPermission : BaseDSC {
     .DESCRIPTION
 
     Retrieves the Principal with the specified name from the VMHost if it exists.
-    If the name contains the '\' sign, it means that the Principal is part of a Domain, so the search for the Principal should be done by filtering by Domain.
+    If the name contains '\' or '@', it means that the Principal is part of a Domain, so the search for the Principal should be done by filtering by Domain.
     If Ensure is 'Present' and the Principal is not found, an exception is thrown. If Ensure is 'Absent' and the Principal is not found, $null is returned.
     #>
     [PSObject] GetVMHostPrincipal() {
@@ -339,6 +338,15 @@ class VMHostPermission : BaseDSC {
             $principalNameParts = $this.PrincipalName -Split '\\'
             $domainName = $principalNameParts[0]
             $username = $principalNameParts[1]
+
+            $getVIAccountParams.Domain = $domainName
+            $getVIAccountParams.User = $true
+            $getVIAccountParams.Id = $username
+        }
+        elseif ($this.PrincipalName -Match '@') {
+            $principalNameParts = $this.PrincipalName -Split '@'
+            $username = $principalNameParts[0]
+            $domainName = $principalNameParts[1]
 
             $getVIAccountParams.Domain = $domainName
             $getVIAccountParams.User = $true

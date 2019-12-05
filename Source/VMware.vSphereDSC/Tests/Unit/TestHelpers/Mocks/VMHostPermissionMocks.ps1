@@ -138,7 +138,6 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedAndTheEntityIsARes
 
     Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
-    Mock -CommandName Get-Inventory -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.ResourcePoolName -and $Location -eq $script:rootResourcePool } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
     Mock -CommandName Get-VIRole -MockWith { return $roleMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.RoleName } -Verifiable
@@ -170,7 +169,6 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedTheEntityIsAVMAndE
 
     Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
-    Mock -CommandName Get-Inventory -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-VM -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.VMName -and $Location -eq $script:rootResourcePool } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
     Mock -CommandName Get-VIRole -MockWith { return $roleMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.RoleName } -Verifiable
@@ -203,7 +201,6 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedTheEntityIsAVMAndE
 
     Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
-    Mock -CommandName Get-Inventory -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $resourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.ResourcePoolName -and $Location -eq $script:rootResourcePool } -Verifiable
     Mock -CommandName Get-VM -MockWith { return $entityMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.VMName -and $Location -eq $script:resourcePoolEntity } -Verifiable
     Mock -CommandName Get-VIAccount -MockWith { return $principalMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:constants.PrincipalName } -Verifiable
@@ -239,7 +236,6 @@ function New-MocksWhenEnsureIsPresentThePermissionIsNotCreatedTheEntityIsAVMAndE
 
     Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-ResourcePool -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
-    Mock -CommandName Get-Inventory -MockWith { return $rootResourcePoolMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer } -Verifiable
     Mock -CommandName Get-Inventory -MockWith { return $vAppMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Name -eq $script:constants.VAppName -and $Location -eq $script:rootResourcePool } -Verifiable
     Mock -CommandName Get-View -MockWith { return $vAppViewBaseObjectMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:vAppEntity.Id } -Verifiable
     Mock -CommandName Get-View -MockWith { return $resourcePoolViewBaseObjectMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:esxiServer -and $Id -eq $script:vAppViewBaseObject.Parent } -Verifiable
