@@ -1911,6 +1911,25 @@ function Get-NetworkAdapter {
     return $null
 }
 
+function Get-NfsUser {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string[]]
+        $Username,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]
+        $VMHost,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server
+    )
+
+    return $null
+}
+
 function Get-NicTeamingPolicy {
     [CmdletBinding(DefaultParameterSetName = "")]
     param(
@@ -5187,6 +5206,45 @@ function New-NetworkAdapter {
     return $null
 }
 
+function New-NfsUser {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Username,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Password,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]
+        $VMHost,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $Force,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [pscredential]
+        $Credential,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm
+    )
+
+    return $null
+}
+
 function New-OSCustomizationNicMapping {
     [CmdletBinding(DefaultParameterSetName = "Default")]
     param(
@@ -7022,6 +7080,25 @@ function Remove-NetworkAdapter {
     return $null
 }
 
+function Remove-NfsUser {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Storage.Types.V1.Nfs.NfsUser[]]
+        $NfsUser,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm
+    )
+
+    return $null
+}
+
 function Remove-OSCustomizationNicMapping {
     [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
     param(
@@ -8599,6 +8676,33 @@ function Set-NetworkAdapter {
         [Parameter(Mandatory = $true, ParameterSetName = "ConnectToPortgroup", ValueFromPipeline = $false)]
         [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.VirtualPortGroupBase]
         $Portgroup
+    )
+
+    return $null
+}
+
+function Set-NfsUser {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Storage.Types.V1.Nfs.NfsUser[]]
+        $NfsUser,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string]
+        $Password,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $WhatIf,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm
     )
 
     return $null
