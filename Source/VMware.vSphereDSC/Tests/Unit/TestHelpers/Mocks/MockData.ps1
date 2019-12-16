@@ -65,6 +65,7 @@ $script:constants = @{
     VMHostId = 'HostSystem-host-1'
     VMHostName = 'MyVMHost'
     VMHostConnectionState = 'Maintenance'
+    VMHostPort = 443
     OptionManagerType = 'OptionManager'
     OptionManagerValue = 'EsxHostAdvSettings-1'
     BufferCacheFlushIntervalAdvancedSettingName = 'BufferCache.FlushInterval'
@@ -1188,4 +1189,23 @@ $script:vmHostPermission = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManage
 $script:nfsUser = [VMware.VimAutomation.Storage.Impl.V1.Nfs.NfsUserImpl] @{
     Username = $script:constants.NfsUsername
     VMHost = $script:vmHost
+}
+
+$script:vmHostWithDatacenterHostFolderAsParent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Id = $script:constants.VMHostId
+    Name = $script:constants.VMHostName
+    ParentId = $script:constants.DatacenterHostFolderId
+    ExtensionData = [VMware.Vim.HostSystem] @{
+        Summary = [VMware.Vim.HostListSummary] @{
+            Config = [VMware.Vim.HostConfigSummary] @{
+                Port = $script:constants.VMHostPort
+            }
+        }
+    }
+}
+
+$script:vmHostWithInventoryItemLocationItemOneAsParent = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Id = $script:constants.VMHostId
+    Name = $script:constants.VMHostName
+    ParentId = $script:constants.InventoryItemLocationItemOneId
 }
