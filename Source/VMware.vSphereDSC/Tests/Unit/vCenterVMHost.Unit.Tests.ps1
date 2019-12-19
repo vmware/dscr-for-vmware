@@ -461,6 +461,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.Ensure | Should -Be 'Absent'
                     $result.Port | Should -Be $resourceProperties.Port
                     $result.Force | Should -Be $resourceProperties.Force
+                    $result.ResourcePoolLocation | Should -BeNullOrEmpty
                 }
             }
 
@@ -492,6 +493,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.Ensure | Should -Be 'Present'
                     $result.Port | Should -Be $script:vmHostWithDatacenterHostFolderAsParent.ExtensionData.Summary.Config.Port
                     $result.Force | Should -Be $resourceProperties.Force
+                    $result.ResourcePoolLocation | Should -BeNullOrEmpty
                 }
             }
 
@@ -523,6 +525,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.Ensure | Should -Be 'Absent'
                     $result.Port | Should -Be $resourceProperties.Port
                     $result.Force | Should -Be $resourceProperties.Force
+                    $result.ResourcePoolLocation | Should -BeNullOrEmpty
                 }
             }
 
@@ -554,6 +557,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.Ensure | Should -Be 'Present'
                     $result.Port | Should -Be $script:vmHostWithDatacenterHostFolderAsParent.ExtensionData.Summary.Config.Port
                     $result.Force | Should -Be $resourceProperties.Force
+                    $result.ResourcePoolLocation | Should -BeNullOrEmpty
                 }
             }
         }

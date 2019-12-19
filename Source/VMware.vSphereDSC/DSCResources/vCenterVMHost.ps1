@@ -44,10 +44,26 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
     [DscProperty()]
     [nullable[bool]] $Force
 
+    <#
+    .DESCRIPTION
+
+    Specifies the location of the Resource Pool in the Cluster. Location consists of 0 or more Resource Pools. The Root Resource Pool of the Cluster is not part of the location.
+    If '/' location is passed, the Resource Pool is the Root Resource Pool of the Cluster. Resource Pools names in the location are separated by '/'.
+    The VMHost's Root Resource Pool becomes the last Resource Pool specified in the location and the VMHost Resource Pool hierarchy is imported into the new nested Resource Pool.
+    Example location for a Resource Pool: 'MyResourcePoolOne/MyResourcePoolTwo'.
+    #>
+    [DscProperty()]
+    [string] $ResourcePoolLocation
+
+    hidden [string] $ClusterType = 'VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster'
+
     hidden [string] $AddVMHostTovCenterMessage = "Adding VMHost {0} to vCenter {1} and location {2}."
     hidden [string] $MoveVMHostToDestinationMessage = "Moving VMHost {0} to location {1} on vCenter {2}."
     hidden [string] $RemoveVMHostFromvCenterMessage = "Removing VMHost {0} from vCenter {1}."
 
+    hidden [string] $FoundLocationIsNotAClusterMessage = "Resource Pool location {0} is specified but the found location {1} for VMHost {2} is not a Cluster."
+    hidden [string] $CouldNotRetrieveRootResourcePoolOfClusterMessage = "Could not retrieve Root Resource Pool of Cluster {0}. For more information: {1}"
+    hidden [string] $InvalidResourcePoolLocationInClusterMessage = "Resource Pool location {0} is not valid in Cluster {2}."
     hidden [string] $CouldNotAddVMHostTovCenterMessage = "Could not add VMHost {0} to vCenter {1} and location {2}. For more information: {3}"
     hidden [string] $CouldNotMoveVMHostToDestinationMessage = "Could not move VMHost {0} to location {1} on vCenter {2}. For more information: {3}"
     hidden [string] $CouldNotRemoveVMHostFromvCenterMessage = "Could not remove VMHost {0} from vCenter {1}. For more information: {2}"
@@ -64,6 +80,18 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
                 $datacenter = $this.GetDatacenter()
                 $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
                 $vmHostLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
+
+                if (![string]::IsNullOrEmpty($this.ResourcePoolLocation)) {
+                    <#
+                    If the Resource Pool location is specified it means that the desired VMHost location should be a Cluster and the Resource Pool needs to be passed to the cmdlets
+                    as VMHost location instead of the Cluster.
+                    #>
+                    if (!$this.IsVIObjectOfTheCorrectType($vmHostLocation, $this.ClusterType)) {
+                        throw ($this.FoundLocationIsNotAClusterMessage -f $this.ResourcePoolLocation, $vmHostLocation.Name, $this.Name)
+                    }
+                    $rootResourcePool = $this.GetRootResourcePoolOfCluster($vmHostLocation)
+                    $vmHostLocation = $this.GetClusterResourcePool($rootResourcePool, $vmHostLocation.Name)
+                }
 
                 if ($null -eq $vmHost) {
                     $this.AddVMHost($vmHostLocation)
@@ -152,6 +180,82 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
     <#
     .DESCRIPTION
 
+    Retrieves the Root Resource Pool of the specified Cluster.
+    #>
+    [PSObject] GetRootResourcePoolOfCluster($cluster) {
+        try {
+            $rootResourcePool = Get-ResourcePool -Server $this.Connection -Location $cluster -ErrorAction Stop -Verbose:$false |
+                                Where-Object -FilterScript { $_.ParentId -eq $cluster.Id }
+            return $rootResourcePool
+        }
+        catch {
+            throw ($this.CouldNotRetrieveRootResourcePoolOfClusterMessage -f $cluster.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Resource Pool with the specified name from the specified Cluster.
+    #>
+    [PSObject] GetClusterResourcePool($rootResourcePool, $clusterName) {
+        $clusterResourcePool = $null
+
+        if ($this.ResourcePoolLocation -eq '/') {
+            # Special case where the Resource Pool location does not contain any Resource Pools. So the Root Resource Pool is the searched Resource Pool from the Cluster.
+            $clusterResourcePool = $rootResourcePool
+        }
+        elseif ($this.ResourcePoolLocation -NotMatch '/') {
+            # Special case where the Resource Pool location is just one Resource Pool.
+            $clusterResourcePool = Get-Inventory -Server $this.Connection -Name $this.ResourcePoolLocation -Location $rootResourcePool -ErrorAction SilentlyContinue -Verbose:$false |
+                                           Where-Object -FilterScript { $_.ParentId -eq $rootResourcePool.Id }
+        }
+        else {
+            $resourcePoolLocationItems = $this.ResourcePoolLocation -Split '/'
+
+            # Reverse the Resource Pool location items so that we can start from the bottom and go to the Root Resource Pool.
+            [array]::Reverse($resourcePoolLocationItems)
+
+            $resourcePoolName = $resourcePoolLocationItems[0]
+            $foundResourcePools = Get-Inventory -Server $this.Connection -Name $resourcePoolName -Location $rootResourcePool -ErrorAction SilentlyContinue -Verbose:$false
+
+            # Remove the name of the Resource Pool from the Resource Pool location items array as we already retrieved it.
+            $resourcePoolLocationItems = $resourcePoolLocationItems[1..($resourcePoolLocationItems.Length - 1)]
+
+            <#
+            For every found Resource Pool in the Cluster with the specified name we start to go up through the parents to check if the Resource Pool location is valid.
+            If one of the Parents does not meet the criteria of the Resource Pool location, we continue with the next found Resource Pool.
+            If we find a valid Resource Pool location we stop iterating through the Resource Pools and mark it as the searched Resource Pool from the Cluster.
+            #>
+            foreach ($foundResourcePool in $foundResourcePools) {
+                $foundResourcePoolAsViewObject = Get-View -Server $this.Connection -Id $foundResourcePool.Id -Property Parent -Verbose:$false
+                $validResourcePoolLocation = $true
+
+                foreach ($resourcePoolLocationItem in $resourcePoolLocationItems) {
+                    $foundResourcePoolAsViewObject = Get-View -Server $this.Connection -Id $foundResourcePoolAsViewObject.Parent -Property Name, Parent -Verbose:$false
+                    if ($foundResourcePoolAsViewObject.Name -ne $resourcePoolLocationItem) {
+                        $validResourcePoolLocation = $false
+                        break
+                    }
+                }
+
+                if ($validResourcePoolLocation) {
+                    $clusterResourcePool = $foundResourcePool
+                    break
+                }
+            }
+        }
+
+        if ($null -eq $clusterResourcePool) {
+            throw ($this.InvalidResourcePoolLocationInClusterMessage -f $this.ResourcePoolLocation, $clusterName)
+        }
+
+        return $clusterResourcePool
+    }
+
+    <#
+    .DESCRIPTION
+
     Adds the VMHost to the specified location and to be managed by the vCenter Server system.
     #>
     [void] AddVMHost($vmHostLocation) {
@@ -235,6 +339,7 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         $result.DatacenterName = $this.DatacenterName
         $result.DatacenterLocation = $this.DatacenterLocation
         $result.Force = $this.Force
+        $result.ResourcePoolLocation = $this.ResourcePoolLocation
 
         if ($null -ne $vmHost) {
             $result.Name = $vmHost.Name
