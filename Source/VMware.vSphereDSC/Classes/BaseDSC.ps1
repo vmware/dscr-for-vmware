@@ -188,6 +188,15 @@ class BaseDSC {
     <#
     .DESCRIPTION
 
+    Checks if the specified VIObject is of the specified type.
+    #>
+    [bool] IsVIObjectOfTheCorrectType($viObject, $typeAsString) {
+        return ($viObject.GetType().FullName -Match $typeAsString -or ($viObject.GetType().GetInterfaces().FullName -Match $typeAsString).Length -gt 0)
+    }
+
+    <#
+    .DESCRIPTION
+
     Closes the last open connection to the specified Server.
     #>
     [void] DisconnectVIServer() {
