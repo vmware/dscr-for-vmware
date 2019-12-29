@@ -1820,6 +1820,26 @@ function Get-IScsiHbaTarget {
     return $null
 }
 
+function Get-KmsCluster {
+    [CmdletBinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [string[]]
+        $Name,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = "GetById", ValueFromPipeline = $false)]
+        [VMware.VimAutomation.ViCore.Types.V1.VIServer[]]
+        $Server,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "GetById", ValueFromPipeline = $false)]
+        [string[]]
+        $Id
+    )
+
+    return $null
+}
+
 function Get-Log {
     [CmdletBinding(DefaultParameterSetName = "")]
     param(
@@ -3864,6 +3884,7 @@ function Install-VMHostPatch {
 
 function Invoke-DrsRecommendation {
     [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
+    [Alias('Apply-DrsRecommendation')]
     param(
         [Parameter(Mandatory = $true, ParameterSetName = "__AllParameterSets", ValueFromPipeline = $true)]
         [VMware.VimAutomation.ViCore.Types.V1.Cluster.DrsRecommendation[]]

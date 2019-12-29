@@ -82990,17 +82990,55 @@ namespace VMware.VimAutomation.Sdk.Types.V1
     }
 }
 
+namespace VMware.VimAutomation.Storage.Impl.V1.Encryption
+{
+    using System;
+    using VMware.VimAutomation.ViCore.Types.V1.Security;
+
+    public class KmsClusterImpl : KmsCluster, IEquatable<KmsClusterImpl>
+    {
+        public string Uid { get; set; }
+
+        public string Id { get; set; }
+
+        public string Name { get; set; }
+
+        public bool UseAsDefaultKeyProvider { get; set; }
+
+        public string ClientCertificate { get; set; }
+
+        public DateTime? ClientCertificateExpiryDate { get; set; }
+
+        public KmipCertificateInfo ClientCertificateInfo { get; set; }
+
+        public bool Equals(KmsClusterImpl kmsClusterImpl)
+        {
+            return (kmsClusterImpl != null && this.Uid == kmsClusterImpl.Uid && this.Id == kmsClusterImpl.Id && this.Name == kmsClusterImpl.Name && this.UseAsDefaultKeyProvider == kmsClusterImpl.UseAsDefaultKeyProvider && this.ClientCertificate == kmsClusterImpl.ClientCertificate && this.ClientCertificateExpiryDate == kmsClusterImpl.ClientCertificateExpiryDate && ((this.ClientCertificateInfo == null && kmsClusterImpl.ClientCertificateInfo == null) || (this.ClientCertificateInfo != null && this.ClientCertificateInfo.Equals(kmsClusterImpl.ClientCertificateInfo))));
+        }
+
+        public override bool Equals(object kmsClusterImpl)
+        {
+            return this.Equals(kmsClusterImpl as KmsClusterImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Username + "_" + VMHost).GetHashCode();
+        }
+    }
+}
+
 namespace VMware.VimAutomation.Storage.Impl.V1.Nfs
 {
-	using System;
-	using VMware.VimAutomation.Storage.Types.V1.Nfs;
-	using VMware.VimAutomation.ViCore.Types.V1.Inventory;
-	
-	public class NfsUserImpl : NfsUser, IEquatable<NfsUserImpl>
-	{
-		public string Username { get; set; }
-		
-		public VMHost VMHost { get; set; }
+    using System;
+    using VMware.VimAutomation.Storage.Types.V1.Nfs;
+    using VMware.VimAutomation.ViCore.Types.V1.Inventory;
+
+    public class NfsUserImpl : NfsUser, IEquatable<NfsUserImpl>
+    {
+        public string Username { get; set; }
+
+        public VMHost VMHost { get; set; }
 
         public bool Equals(NfsUserImpl nfsUserImpl)
         {
@@ -83011,12 +83049,7 @@ namespace VMware.VimAutomation.Storage.Impl.V1.Nfs
         {
             return Equals(nfsUserImpl as NfsUserImpl);
         }
-
-        public override int GetHashCode()
-        {
-            return (Username + "_" + VMHost).GetHashCode();
-        }
-	}
+    }
 }
 
 namespace VMware.VimAutomation.Storage.Types.V1.Nfs 
@@ -83025,9 +83058,9 @@ namespace VMware.VimAutomation.Storage.Types.V1.Nfs
 	
 	public interface NfsUser
 	{
-		string Username { get; set; }
+	    string Username { get; set; }
 		
-		VMHost VMHost { get; set; }
+	    VMHost VMHost { get; set; }
 	}
 }
 
