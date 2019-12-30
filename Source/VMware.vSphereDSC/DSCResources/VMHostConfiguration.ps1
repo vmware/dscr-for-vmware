@@ -20,7 +20,7 @@ class VMHostConfiguration : VMHostBaseDSC {
     .DESCRIPTION
 
     Specifies the state of the VMHost. If there are powered on VMs on the VMHost, the VMHost can be set into Maintenance mode, only if it is a part of a Drs-enabled Cluster.
-    Before entering Maintenance mode, if the VMHost is fully automated, all powered on VMs are relocated. If the VMHost is not automated or partially automated,
+    Before entering Maintenance mode, if the VMHost is fully automated, all powered on VMs are relocated. If the VMHost is not fully automated,
     a Drs recommendation is generated and all powered on VMs are relocated or powered off.
     Valid values are Connected, Disconnected and Maintenance.
     #>
@@ -30,7 +30,7 @@ class VMHostConfiguration : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the license key to be used by the VMHost. You can set the VMHost to evaluation mode by passing the 00000-00000-00000-00000-00000 evaluation key.
+    Specifies the license key to be used by the VMHost. You can set the VMHost to evaluation mode by passing the '00000-00000-00000-00000-00000' evaluation key.
     #>
     [DscProperty()]
     [string] $LicenseKey
@@ -64,7 +64,7 @@ class VMHostConfiguration : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the name of the host profile associated with the VMHost. If the value is empty string, the current profile association should not exist.
+    Specifies the name of the host profile associated with the VMHost. If the value is an empty string, the current profile association should not exist.
     #>
     [DscProperty()]
     [string] $HostProfileName
@@ -408,7 +408,7 @@ class VMHostConfiguration : VMHostBaseDSC {
     Checks if a Drs recommendation should be generated and applied. A Drs recommendation is generated when the following criteria is met:
     1. State property is specified with 'Maintenance' value.
     2. The current State of the VMHost is not 'Maintenance'.
-    3. The VMHost is part of a Drs Cluster and the Cluster is not 'Fully Automated' or 'Partially Automated'.
+    3. The VMHost is part of a Drs Cluster and the Cluster is not 'Fully Automated'.
     #>
     [bool] ShouldApplyDrsRecommendation($vmHost) {
         $result = $false
@@ -423,8 +423,7 @@ class VMHostConfiguration : VMHostBaseDSC {
             $clusterAutomationLevel = $vmHostParent.DrsAutomationLevel.ToString()
             $result = (
                 $vmHostParent.DrsEnabled -and
-                $clusterAutomationLevel -ne ([DrsAutomationLevel]::FullyAutomated).ToString() -and
-                $clusterAutomationLevel -ne ([DrsAutomationLevel]::PartiallyAutomated).ToString()
+                $clusterAutomationLevel -ne ([DrsAutomationLevel]::FullyAutomated).ToString()
             )
         }
 
