@@ -258,7 +258,7 @@ class VMHostConfiguration : VMHostBaseDSC {
         $getVMHostProfileParams = @{
             Server = $this.Connection
             Entity = $vmHost
-            ErrorAction = 'Stop'
+            ErrorAction = 'SilentlyContinue'
             Verbose = $false
         }
 
@@ -326,7 +326,11 @@ class VMHostConfiguration : VMHostBaseDSC {
 
         if ($null -ne $this.HostProfileName) {
             if ($this.HostProfileName -eq [string]::Empty) {
-                $setVMHostParams.Profile = $null
+                # Profile value '$null' cannot be passed if the specified VMHost does not have a Host Profile associated with it.
+                $hostProfileAssociatedWithVMHost = $this.GetHostProfileAssociatedWithVMHost($vmHost)
+                if ($null -ne $hostProfileAssociatedWithVMHost) {
+                    $setVMHostParams.Profile = $null
+                }
             }
             else {
                 $setVMHostParams.Profile = $this.GetHostProfile()
