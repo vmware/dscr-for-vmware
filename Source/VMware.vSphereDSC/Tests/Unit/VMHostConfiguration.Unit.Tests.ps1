@@ -96,14 +96,11 @@ InModuleScope -ModuleName $script:moduleName {
                 }
 
                 It 'Should invoke all defined mocks with the correct parameters' {
-                    try {
-                        # Act
-                        $resource.Set()
-                    }
-                    catch {
-                        # Assert
-                        Assert-VerifiableMock
-                    }
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
                 }
 
                 It 'Should invoke the Set-VMHost mock with the specified VMHost and configuration parameters to modify once' {
@@ -144,14 +141,11 @@ InModuleScope -ModuleName $script:moduleName {
                 }
 
                 It 'Should invoke all defined mocks with the correct parameters' {
-                    try {
-                        # Act
-                        $resource.Set()
-                    }
-                    catch {
-                        # Assert
-                        Assert-VerifiableMock
-                    }
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
                 }
 
                 It 'Should invoke the Set-VMHost mock with the specified VMHost and configuration parameters to modify once' {
@@ -191,14 +185,11 @@ InModuleScope -ModuleName $script:moduleName {
                 }
 
                 It 'Should invoke all defined mocks with the correct parameters' {
-                    try {
-                        # Act
-                        $resource.Set()
-                    }
-                    catch {
-                        # Assert
-                        Assert-VerifiableMock
-                    }
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
                 }
 
                 It 'Should invoke the Set-VMHost mock with the specified VMHost and Kms Cluster once' {
@@ -238,14 +229,11 @@ InModuleScope -ModuleName $script:moduleName {
                 }
 
                 It 'Should invoke all defined mocks with the correct parameters' {
-                    try {
-                        # Act
-                        $resource.Test()
-                    }
-                    catch {
-                        # Assert
-                        Assert-VerifiableMock
-                    }
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
                 }
 
                 It 'Should return $true when the VMHost configuration does not need to be modified' {
@@ -265,14 +253,11 @@ InModuleScope -ModuleName $script:moduleName {
                 }
 
                 It 'Should invoke all defined mocks with the correct parameters' {
-                    try {
-                        # Act
-                        $resource.Test()
-                    }
-                    catch {
-                        # Assert
-                        Assert-VerifiableMock
-                    }
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
                 }
 
                 It 'Should return $false when the VMHost configuration needs to be modified' {
@@ -299,14 +284,11 @@ InModuleScope -ModuleName $script:moduleName {
                 }
 
                 It 'Should invoke all defined mocks with the correct parameters' {
-                    try {
-                        # Act
-                        $resource.Get()
-                    }
-                    catch {
-                        # Assert
-                        Assert-VerifiableMock
-                    }
+                    # Act
+                    $resource.Get()
+
+                    # Assert
+                    Assert-VerifiableMock
                 }
 
                 It 'Should retrieve and return the correct values' {

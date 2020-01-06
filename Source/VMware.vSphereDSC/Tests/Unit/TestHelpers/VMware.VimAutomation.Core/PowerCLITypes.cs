@@ -83023,7 +83023,7 @@ namespace VMware.VimAutomation.Storage.Impl.V1.Encryption
 
         public override int GetHashCode()
         {
-            return (Username + "_" + VMHost).GetHashCode();
+            return (Uid + "_" + Id + "_" + Name + "_" + UseAsDefaultKeyProvider + "_" + ClientCertificate + "_" + ClientCertificateExpiryDate + "_" + ClientCertificateInfo).GetHashCode();
         }
     }
 }
@@ -83048,6 +83048,11 @@ namespace VMware.VimAutomation.Storage.Impl.V1.Nfs
         public override bool Equals(object nfsUserImpl)
         {
             return Equals(nfsUserImpl as NfsUserImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Username + "_" + VMHost).GetHashCode();
         }
     }
 }

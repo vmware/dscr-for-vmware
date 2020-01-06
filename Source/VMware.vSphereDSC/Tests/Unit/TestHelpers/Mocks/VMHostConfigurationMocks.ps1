@@ -98,7 +98,7 @@ function New-MocksWhenTheVMHostConfigurationNeedsToBeModifiedAndDrsRecommendatio
     Mock -CommandName Get-DrsRecommendation -MockWith { return $clusterDrsRecommendationMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Cluster -eq $script:clusterWithManualDrsAutomationLevel -and $Refresh } -Verifiable
     Mock -CommandName Apply-DrsRecommendation -MockWith { return $applyDrsRecommendationTaskMock }.GetNewClosure() -ParameterFilter { $DrsRecommendation -eq $script:clusterDrsRecommendation -and $RunAsync -and !$Confirm } -Verifiable
     Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Task -eq $script:applyDrsRecommendationSuccessTask } -Verifiable
-    Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Task -eq $script:enterMaintenanceModeTask } -Verifiable
+    Mock -CommandName Wait-Task -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Task -eq $script:enterMaintenanceModeSuccessTask } -Verifiable
 
     $vmHostConfigurationProperties
 }
