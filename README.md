@@ -103,7 +103,7 @@ Examples with Chef, Puppet and Ansible can be found [here](https://github.com/vm
 ### master
 
 [![Build Status](https://travis-ci.org/vmware/dscr-for-vmware.svg?branch=master)](https://travis-ci.org/vmware/dscr-for-vmware)
-![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg?maxAge=60)
+![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen.svg?maxAge=60)
 
 This is the branch to which contributions should be proposed by contributors as pull requests. The content of the module releases will be from the master branch.
 

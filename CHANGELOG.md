@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.39 - 2020-01-08
+### Added
+- Added vCenterVMHost DSC Resource.
+- Added Unit Tests for vCenterVMHost DSC Resource.
+- Added Integration Tests for vCenterVMHost DSC Resource.
+- Added Documentation and example Configurations for vCenterVMHost DSC Resource.
+
 ## 2.0.0.38 - 2020-01-08
 ### Added
 - Added NfsUser DSC Resource.
