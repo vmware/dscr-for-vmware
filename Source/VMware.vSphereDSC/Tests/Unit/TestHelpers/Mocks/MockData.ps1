@@ -228,6 +228,24 @@ $script:constants = @{
     NfsUsername = 'MyNfsUsername'
     NfsUserPasswordOne = 'MyNfsUserPasswordOne'
     NfsUserPasswordTwo = 'MyNfsUserPasswordTwo'
+    VMHostConnectedState = 'Connected'
+    VMHostMaintenanceState = 'Maintenance'
+    EvacuateVMs = $true
+    VsanDataMigrationMode = 'Full'
+    VMHostLicenseKeyOne = '00000-00000-00000-00000-00000'
+    VMHostLicenseKeyTwo = '11111-11111-11111-11111-11111'
+    InHostDatastoreVMSwapfilePolicy = 'InHostDatastore'
+    WithVMDatastoreVMSwapfilePolicy = 'WithVM'
+    VMHostUTCTimeZoneName = 'UTC'
+    VMHostGMTTimeZoneName = 'GMT'
+    VMSwapfileDatastoreOneName = 'MyDatastoreOne'
+    VMSwapfileDatastoreTwoName = 'MyDatastoreTwo'
+    HostProfileName = 'MyHostProfile'
+    ClusterManualAutomationLevel = 'Manual'
+    EnterMaintenanceModeTaskName = 'EnterMaintenanceMode_Task'
+    ApplyDrsRecommendationTaskName = 'ApplyDrsRecommendation_Task'
+    KmsClusterId = 'kmsCluster-1'
+    KmsClusterName = 'MyKmsCluster'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1208,4 +1226,107 @@ $script:vmHostWithInventoryItemLocationItemOneAsParent = [VMware.VimAutomation.V
     Id = $script:constants.VMHostId
     Name = $script:constants.VMHostName
     ParentId = $script:constants.InventoryItemLocationItemOneId
+}
+
+$script:vmHostUTCTimeZone = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHostTimeZoneImpl] @{
+    Name = $script:constants.VMHostUTCTimeZoneName
+    Key = $script:constants.VMHostUTCTimeZoneName
+    VMHost = $script:vmHostWithSettingsToModify
+}
+
+$script:vmHostGMTTimeZone = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHostTimeZoneImpl] @{
+    Name = $script:constants.VMHostGMTTimeZoneName
+    Key = $script:constants.VMHostGMTTimeZoneName
+    VMHost = $script:vmHostWithSettingsToModify
+}
+
+$script:vmSwapfileDatastoreOne = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.VmfsDatastoreImpl] @{
+    Id = $script:constants.DatastoreId
+    Name = $script:constants.VMSwapfileDatastoreOneName
+}
+
+$script:vmSwapfileDatastoreTwo = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.VmfsDatastoreImpl] @{
+    Id = $script:constants.DatastoreId
+    Name = $script:constants.VMSwapfileDatastoreTwoName
+}
+
+$script:hostProfile = [VMware.VimAutomation.ViCore.Impl.V1.Host.Profile.VMHostProfileImpl] @{
+    Name = $script:constants.HostProfileName
+    Server = $script:viServer
+    ReferenceHost = $script:vmHostWithSettingsToModify
+}
+
+$script:clusterWithManualDrsAutomationLevel = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
+    Id = $script:constants.ClusterId
+    Name = $script:constants.ClusterName
+    DrsEnabled = $script:constants.DrsEnabled
+    DrsAutomationLevel = $script:constants.ClusterManualAutomationLevel
+}
+
+$script:clusterWithFullyAutomatedDrsAutomationLevel = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl] @{
+    Id = $script:constants.ClusterId
+    Name = $script:constants.ClusterName
+    DrsEnabled = $script:constants.DrsEnabled
+    DrsAutomationLevel = $script:constants.DrsAutomationLevel
+}
+
+$script:kmsCluster = [VMware.VimAutomation.Storage.Impl.V1.Encryption.KmsClusterImpl] @{
+    Id = $script:constants.KmsClusterId
+    Name = $script:constants.KmsClusterName
+}
+
+$script:vmHostWithClusterWithManualDrsAutomationLevelAsParentAndSettingsToModify = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Id = $script:constants.VMHostId
+    Name = $script:constants.VMHostName
+    Parent = $script:clusterWithManualDrsAutomationLevel
+    ConnectionState = $script:constants.VMHostConnectedState
+    LicenseKey = $script:constants.VMHostLicenseKeyOne
+    TimeZone = $script:vmHostGMTTimeZone
+    VMSwapfileDatastore = $script:vmSwapfileDatastoreOne
+    VMSwapfilePolicy = $script:constants.InHostDatastoreVMSwapfilePolicy
+}
+
+$script:vmHostWithClusterWithFullyAutomatedDrsAutomationLevelAsParentAndSettingsToModify = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Id = $script:constants.VMHostId
+    Name = $script:constants.VMHostName
+    Parent = $script:clusterWithFullyAutomatedDrsAutomationLevel
+    ConnectionState = $script:constants.VMHostConnectedState
+    LicenseKey = $script:constants.VMHostLicenseKeyOne
+    TimeZone = $script:vmHostGMTTimeZone
+    VMSwapfileDatastore = $script:vmSwapfileDatastoreOne
+    VMSwapfilePolicy = $script:constants.InHostDatastoreVMSwapfilePolicy
+    ExtensionData = [VMware.Vim.HostSystem] @{
+        Runtime = [VMware.Vim.HostRuntimeInfo] @{
+            CryptoKeyId = [VMware.Vim.CryptoKeyId] @{
+                ProviderId = [VMware.Vim.KeyProviderId] @{
+                    Id = $script:constants.KmsClusterId + $script:constants.KmsClusterName
+                }
+            }
+        }
+    }
+}
+
+$script:vmHostWithoutSettingsToModify = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
+    Id = $script:constants.VMHostId
+    Name = $script:constants.VMHostName
+    ConnectionState = $script:constants.VMHostMaintenanceState
+    LicenseKey = $script:constants.VMHostLicenseKeyTwo
+    TimeZone = $script:vmHostUTCTimeZone
+    VMSwapfileDatastore = $script:vmSwapfileDatastoreTwo
+    VMSwapfilePolicy = $script:constants.WithVMDatastoreVMSwapfilePolicy
+}
+
+$script:clusterDrsRecommendation = [VMware.VimAutomation.ViCore.Impl.V1.Cluster.DrsRecommendationImpl] @{
+    ClusterId = $script:constants.ClusterId
+    Cluster = $script:clusterWithManualDrsAutomationLevel
+}
+
+$script:enterMaintenanceModeSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
+    Name = $script:constants.EnterMaintenanceModeTaskName
+    State = $script:constants.TaskSuccessState
+}
+
+$script:applyDrsRecommendationSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
+    Name = $script:constants.ApplyDrsRecommendationTaskName
+    State = $script:constants.TaskSuccessState
 }
