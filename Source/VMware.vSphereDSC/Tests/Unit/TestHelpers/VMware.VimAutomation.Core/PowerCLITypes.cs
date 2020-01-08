@@ -82990,6 +82990,47 @@ namespace VMware.VimAutomation.Sdk.Types.V1
     }
 }
 
+namespace VMware.VimAutomation.Storage.Impl.V1.Nfs
+{
+	using System;
+	using VMware.VimAutomation.Storage.Types.V1.Nfs;
+	using VMware.VimAutomation.ViCore.Types.V1.Inventory;
+	
+	public class NfsUserImpl : NfsUser, IEquatable<NfsUserImpl>
+	{
+		public string Username { get; set; }
+		
+		public VMHost VMHost { get; set; }
+
+        public bool Equals(NfsUserImpl nfsUserImpl)
+        {
+            return (nfsUserImpl != null && this.Username == nfsUserImpl.Username && ((this.VMHost == null && nfsUserImpl.VMHost == null) || (this.VMHost != null && this.VMHost.Equals(nfsUserImpl.VMHost))));
+        }
+
+        public override bool Equals(object nfsUserImpl)
+        {
+            return Equals(nfsUserImpl as NfsUserImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Username + "_" + VMHost).GetHashCode();
+        }
+	}
+}
+
+namespace VMware.VimAutomation.Storage.Types.V1.Nfs 
+{
+	using VMware.VimAutomation.ViCore.Types.V1.Inventory;
+	
+	public interface NfsUser
+	{
+		string Username { get; set; }
+		
+		VMHost VMHost { get; set; }
+	}
+}
+
 namespace VMware.VimAutomation.ViCore.Types.V1
 {
     using System;

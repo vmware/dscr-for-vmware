@@ -224,6 +224,9 @@ $script:constants = @{
     VMName = 'MyVirtualMachine'
     PrincipalName = 'MyPrincipalName'
     PropagatePermission = $true
+    NfsUsername = 'MyNfsUsername'
+    NfsUserPasswordOne = 'MyNfsUserPasswordOne'
+    NfsUserPasswordTwo = 'MyNfsUserPasswordTwo'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1180,4 +1183,9 @@ $script:vmHostPermission = [VMware.VimAutomation.ViCore.Impl.V1.PermissionManage
     Principal = $script:constants.PrincipalName
     Role = $script:constants.RoleName
     Propagate = $script:constants.PropagatePermission
+}
+
+$script:nfsUser = [VMware.VimAutomation.Storage.Impl.V1.Nfs.NfsUserImpl] @{
+    Username = $script:constants.NfsUsername
+    VMHost = $script:vmHost
 }
