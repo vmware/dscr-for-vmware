@@ -262,7 +262,7 @@ $script:constants = @{
         size = 100000
         parameterkeys = [int[]] @(1, 2, 3, 4, 5)
     }
-    EsxCliSetMethodInvoke = '$this.EsxCli.system.settings.keyboard.layout.set.Invoke({0})'
+    EsxCliSetMethodInvoke = 'system.settings.keyboard.layout.set.Invoke({0})'
     EsxCliGetMethodInvoke = '$this.EsxCli.system.settings.keyboard.layout.get.Invoke()'
 }
 

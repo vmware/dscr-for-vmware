@@ -67,11 +67,11 @@ class EsxCliBaseDSC : VMHostBaseDSC {
     Executes the specified method for modification - 'set', 'add' or 'remove' of the specified EsxCli command.
     #>
     [void] ExecuteEsxCliModifyMethod($methodName) {
-        $esxCliCommandMethod = '$this.EsxCli.' + "$($this.EsxCliCommand).$methodName."
+        $esxCliCommandMethod = "$($this.EsxCliCommand).$methodName."
         $esxCliMethodArgs = $null
 
         try {
-            $esxCliMethodArgs = Invoke-Expression -Command ($esxCliCommandMethod + 'CreateArgs()') -ErrorAction Stop -Verbose:$false
+            $esxCliMethodArgs = Invoke-Expression -Command ("`$this.EsxCli." + $esxCliCommandMethod + 'CreateArgs()') -ErrorAction Stop -Verbose:$false
         }
         catch {
             throw ($this.CouldNotCreateMethodArgumentsMessage -f $methodName, $_.Exception.Message)
@@ -104,7 +104,7 @@ class EsxCliBaseDSC : VMHostBaseDSC {
         }
 
         try {
-            Invoke-EsxCliCommandMethod -EsxCliCommandMethod ($esxCliCommandMethod + 'Invoke({0})') -EsxCliCommandMethodArguments $esxCliMethodArgs
+            Invoke-EsxCliCommandMethod -EsxCli $this.EsxCli -EsxCliCommandMethod ($esxCliCommandMethod + 'Invoke({0})') -EsxCliCommandMethodArguments $esxCliMethodArgs
         }
         catch {
             throw ($this.EsxCliCommandFailedMessage -f ('esxcli.' + $this.EsxCliCommand), $_.Exception.Message)

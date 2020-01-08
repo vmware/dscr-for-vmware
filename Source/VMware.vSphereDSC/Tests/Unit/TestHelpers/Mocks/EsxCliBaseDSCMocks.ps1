@@ -86,7 +86,7 @@ function New-MocksWhenErrorOccursWhileInvokingTheEsxCliCommandMethod {
 
     Mock -CommandName Get-EsxCli -MockWith { return $esxCliMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VMHost -eq $script:vmHost -and $V2 } -Verifiable
     Mock -CommandName Invoke-Expression -MockWith { return $esxCliSetMethodArgsMock }.GetNewClosure() -ParameterFilter { $Command -eq $script:constants.EsxCliSetMethodCreateArgs } -Verifiable
-    Mock -CommandName Invoke-EsxCliCommandMethod -MockWith { throw }.GetNewClosure() -ParameterFilter { $EsxCliCommandMethod -eq $script:constants.EsxCliSetMethodInvoke -and $null -eq (Compare-Object -ReferenceObject $EsxCliCommandMethodArguments.Values -DifferenceObject $script:constants.EsxCliSetMethodArgs.Values) } -Verifiable
+    Mock -CommandName Invoke-EsxCliCommandMethod -MockWith { throw }.GetNewClosure() -ParameterFilter { $EsxCli -eq $script:esxCli -and $EsxCliCommandMethod -eq $script:constants.EsxCliSetMethodInvoke -and $null -eq (Compare-Object -ReferenceObject $EsxCliCommandMethodArguments.Values -DifferenceObject $script:constants.EsxCliSetMethodArgs.Values) } -Verifiable
 
     $esxCliBaseDSCProperties
 }

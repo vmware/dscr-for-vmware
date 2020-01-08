@@ -537,6 +537,11 @@ function Invoke-EsxCliCommandMethod {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [VMware.VimAutomation.ViCore.Impl.V1.EsxCli.EsxCliImpl]
+        $EsxCli,
+
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullorEmpty()]
         [string]
         $EsxCliCommandMethod,
@@ -546,5 +551,5 @@ function Invoke-EsxCliCommandMethod {
         $EsxCliCommandMethodArguments
     )
 
-    Invoke-Expression -Command ($EsxCliCommandMethod -f $EsxCliCommandMethodArguments) -ErrorAction Stop -Verbose:$false
+    Invoke-Expression -Command ("`$EsxCli." + ($EsxCliCommandMethod -f "`$EsxCliCommandMethodArguments")) -ErrorAction Stop -Verbose:$false
 }

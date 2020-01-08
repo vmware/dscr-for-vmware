@@ -208,6 +208,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $assertMockCalledParams = @{
                         CommandName = 'Invoke-EsxCliCommandMethod'
                         ParameterFilter = {
+                            $EsxCli -eq $script:esxCli -and
                             $EsxCliCommandMethod -eq $script:constants.EsxCliSetMethodInvoke -and
                             $null -eq (Compare-Object -ReferenceObject $EsxCliCommandMethodArguments.Values -DifferenceObject $expectedEsxCliSetMethodArgs.Values)
                         }
