@@ -29,7 +29,7 @@ class NfsUser : VMHostEntityBaseDSC {
 
     Specifies the Nfs User password used for Kerberos authentication.
     #>
-    [DscProperty(Mandatory)]
+    [DscProperty()]
     [string] $Password
 
     <#
@@ -142,8 +142,8 @@ class NfsUser : VMHostEntityBaseDSC {
     #>
     [PSObject] GetNfsUser() {
         <#
-        The Verbose logic here is needed to suppress the Exporting and Importing of the
-        cmdlets from the VMware.VimAutomation.Storage Module.
+        The Verbose logic here is needed to suppress the Verbose output of the Import-Module cmdlet
+        when importing the 'VMware.VimAutomation.Storage' Module.
         #>
         $savedVerbosePreference = $global:VerbosePreference
         $global:VerbosePreference = 'SilentlyContinue'

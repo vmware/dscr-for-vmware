@@ -8,7 +8,7 @@
 | **Credential** | Mandatory | PSCredential | The credentials needed for connection to the specified Server. ||
 | **VMHostName** | Key | string | The name of the VMHost which is going to be used. ||
 | **Name** | Key | string | The Nfs User name used for Kerberos authentication. ||
-| **Password** | Mandatory | string | The Nfs User password used for Kerberos authentication. ||
+| **Password** | Optional | string | The Nfs User password used for Kerberos authentication. ||
 | **Ensure** | Mandatory | Ensure | Specifies whether the Nfs User should be present or absent. | Present, Absent |
 | **Force** | Optional | bool | Specifies whether to change the password of the Nfs User. When the property is not specified or is $false, it is ignored. If the property is $true and the Nfs User exists, the password of the Nfs User is changed. ||
 
@@ -126,7 +126,6 @@ Configuration NfsUser_RemoveNfsUser_Config {
             Credential = $Credential
             VMHostName = $VMHostName
             Name = 'MyNfsUser'
-            Password = 'MyNfsUserPassword1!'
             Ensure = 'Absent'
         }
     }

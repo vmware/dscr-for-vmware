@@ -69,7 +69,6 @@ Configuration NfsUser_RemoveNfsUser_Config {
             Credential = $AllNodes.Credential
             VMHostName = $AllNodes.VMHostName
             Name = $AllNodes.NfsUsername
-            Password = $AllNodes.NfsUserPasswordOne
             Ensure = 'Absent'
         }
     }
