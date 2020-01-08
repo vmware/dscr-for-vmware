@@ -246,6 +246,24 @@ $script:constants = @{
     ApplyDrsRecommendationTaskName = 'ApplyDrsRecommendation_Task'
     KmsClusterId = 'kmsCluster-1'
     KmsClusterName = 'MyKmsCluster'
+    EsxCliCommandSetMethodName = 'set'
+    EsxCliCommandGetMethodName = 'get'
+    EsxCliDCUIKeyboardCommand = 'system.settings.keyboard.layout'
+    EsxCliSetMethodCreateArgs = '$this.EsxCli.system.settings.keyboard.layout.set.CreateArgs()'
+    EsxCliSetMethodArgs = @{
+        layout = 'Unset'
+        enable = 'Unset'
+        size = 'Unset'
+        parameterkeys = 'Unset'
+    }
+    EsxCliSetMethodPopulatedArgs = @{
+        layout = 'United Kingdom'
+        enable = $false
+        size = 100000
+        parameterkeys = [int[]] @(1, 2, 3, 4, 5)
+    }
+    EsxCliSetMethodInvoke = 'system.settings.keyboard.layout.set.Invoke({0})'
+    EsxCliGetMethodInvoke = '$this.EsxCli.system.settings.keyboard.layout.get.Invoke()'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1329,4 +1347,8 @@ $script:enterMaintenanceModeSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.T
 $script:applyDrsRecommendationSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1.Task.TaskImpl] @{
     Name = $script:constants.ApplyDrsRecommendationTaskName
     State = $script:constants.TaskSuccessState
+}
+
+$script:esxCli = [VMware.VimAutomation.ViCore.Impl.V1.EsxCli.EsxCliImpl] @{
+    VMHost = $script:vmHost
 }

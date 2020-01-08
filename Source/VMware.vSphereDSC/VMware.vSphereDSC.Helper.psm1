@@ -532,3 +532,24 @@ function Update-VirtualPortGroup {
 
     $VMHostNetworkSystem.UpdatePortGroup($VirtualPortGroupName, $Spec)
 }
+
+function Invoke-EsxCliCommandMethod {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [VMware.VimAutomation.ViCore.Impl.V1.EsxCli.EsxCliImpl]
+        $EsxCli,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullorEmpty()]
+        [string]
+        $EsxCliCommandMethod,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable]
+        $EsxCliCommandMethodArguments
+    )
+
+    Invoke-Expression -Command ("`$EsxCli." + ($EsxCliCommandMethod -f "`$EsxCliCommandMethodArguments")) -ErrorAction Stop -Verbose:$false
+}
