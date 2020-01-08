@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.38 - 2020-01-08
+### Added
+- Added NfsUser DSC Resource.
+- Added Unit Tests for NfsUser DSC Resource.
+- Added Integration Tests for NfsUser DSC Resource.
+- Added Documentation and example Configurations for NfsUser DSC Resource.
+
 ## 2.0.0.37 - 2019-12-05
 ### Added
 - Introduced DatastoreBaseDSC class.

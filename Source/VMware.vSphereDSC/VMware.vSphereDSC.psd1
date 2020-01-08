@@ -20,7 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 RootModule = 'VMware.vSphereDSC.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.0.0.37'
+ModuleVersion = '2.0.0.38'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -56,6 +56,6 @@ VariablesToExport = '*'
 AliasesToExport = @()
 
 # DSC resources to export from this module
-DscResourcesToExport = @('Datacenter', 'DatacenterFolder', 'Folder', 'PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'VDPortGroup', 'VDSwitch', 'VDSwitchVMHost', 'VMHostAccount', 'VMHostAdvancedSettings', 'VMHostAgentVM', 'VMHostAuthentication', 'VMHostCache', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostPciPassthrough', 'VMHostPermission', 'VMHostPowerPolicy', 'VMHostRole', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'NfsDatastore', 'VmfsDatastore', 'VMHostVssPortGroup', 'VMHostVssPortGroupSecurity', 'VMHostVssPortGroupShaping', 'VMHostVssPortGroupTeaming', 'VMHostVDSwitchMigration', 'VMHostVssMigration', 'VMHostPhysicalNic', 'VMHostVssNic', 'VMHostVss', 'VMHostVssBridge', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'VMHostGraphics', 'VMHostGraphicsDevice', 'DrsCluster', 'HACluster')
+DscResourcesToExport = @('Datacenter', 'DatacenterFolder', 'Folder', 'NfsUser', 'PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'VDPortGroup', 'VDSwitch', 'VDSwitchVMHost', 'VMHostAccount', 'VMHostAdvancedSettings', 'VMHostAgentVM', 'VMHostAuthentication', 'VMHostCache', 'VMHostDnsSettings', 'VMHostNtpSettings', 'VMHostPciPassthrough', 'VMHostPermission', 'VMHostPowerPolicy', 'VMHostRole', 'VMHostSatpClaimRule', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'NfsDatastore', 'VmfsDatastore', 'VMHostVssPortGroup', 'VMHostVssPortGroupSecurity', 'VMHostVssPortGroupShaping', 'VMHostVssPortGroupTeaming', 'VMHostVDSwitchMigration', 'VMHostVssMigration', 'VMHostPhysicalNic', 'VMHostVssNic', 'VMHostVss', 'VMHostVssBridge', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'VMHostGraphics', 'VMHostGraphicsDevice', 'DrsCluster', 'HACluster')
 
 }
