@@ -24,7 +24,7 @@ The resource is used to add, move to another location or remove VMHosts on the s
 
 ### Example 1
 
-Creates Datacenter **MyDatacenter** in the Root Folder of the specified Inventory. Creates Folder **MyFolder** in the Host Folder of Datacenter **MyDatacenter**. Creates Cluster **MyCluster** located in Folder **MyFolder** in Datacenter **MyDatacenter**. Adds the specified VMHost to Cluster **MyCluster** with VMHost Port **443** used for connection and runs even if the authenticity of the VMHost SSL certificate cannot be verified.
+Creates Datacenter **MyDatacenter** in the Root Folder of the specified Inventory. Creates Folder **MyFolder** in the Host Folder of Datacenter **MyDatacenter**. Creates Cluster **MyCluster** located in Folder **MyFolder** in Datacenter **MyDatacenter**. Adds the specified VMHost to Cluster **MyCluster**. The port for connecting to the VMHost is specified to be **443**. **Force** is used to ignore the invalid SSL certificate of the VMHost.
 
 ```powershell
 Configuration vCenterVMHost_AddVMHostTovCenter_Config {
@@ -103,7 +103,7 @@ Configuration vCenterVMHost_AddVMHostTovCenter_Config {
 
 ### Example 2
 
-Creates Datacenter **MyDatacenter** in the Root Folder of the specified Inventory. Creates Folder **MyFolder** in the Host Folder of Datacenter **MyDatacenter**. Creates Cluster **MyCluster** located in Folder **MyFolder** in Datacenter **MyDatacenter** and enables Drs. Adds the specified VMHost to Cluster **MyCluster** with VMHost Port **443** used for connection and runs even if the authenticity of the VMHost SSL certificate cannot be verified. The VMHost's Root Resource Pool becomes the Resource Pool **Resources** that is the Root Resource Pool of Cluster **MyCluster** and the VMHost Resource Pool hierarchy is imported into the new nested Resource Pool.
+Creates Datacenter **MyDatacenter** in the Root Folder of the specified Inventory. Creates Folder **MyFolder** in the Host Folder of Datacenter **MyDatacenter**. Creates Cluster **MyCluster** located in Folder **MyFolder** in Datacenter **MyDatacenter** and enables Drs. Adds the specified VMHost to Cluster **MyCluster**. The port for connecting to the VMHost is specified to be **443**. **Force** is used to ignore the invalid SSL certificate of the VMHost. The VMHost's Root Resource Pool becomes the Resource Pool **Resources** that is the Root Resource Pool of Cluster **MyCluster** and the VMHost Resource Pool hierarchy is imported into the new nested Resource Pool.
 
 ```powershell
 Configuration vCenterVMHost_AddVMHostTovCenterAndImportResourcePoolHierarchy_Config {

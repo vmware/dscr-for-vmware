@@ -160,7 +160,29 @@ class BaseDSC {
     Checks if the specified VIObject is of the specified type.
     #>
     [bool] IsVIObjectOfTheCorrectType($viObject, $typeAsString) {
-        return ($viObject.GetType().FullName -Match $typeAsString -or ($viObject.GetType().GetInterfaces().FullName -Match $typeAsString).Length -gt 0)
+        $result = $false
+        $viObjectType = $viObject.GetType()
+
+        if ($viObjectType.FullName -eq $typeAsString) {
+            $result = $true
+        }
+        elseif (($viObjectType.GetInterfaces().FullName -eq $typeAsString).Length -gt 0) {
+            $result = $true
+        }
+        else {
+            $baseType = $viObjectType.BaseType
+
+            while ($null -ne $baseType) {
+                if ($baseType.FullName -eq $typeAsString) {
+                    $result = $true
+                    break
+                }
+
+                $baseType = $baseType.BaseType
+            }
+        }
+
+        return $result
     }
 
     <#
