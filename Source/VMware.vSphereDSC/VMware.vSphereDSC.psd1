@@ -20,7 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 RootModule = 'VMware.vSphereDSC.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.0.0.40'
+ModuleVersion = '2.0.0.41'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()

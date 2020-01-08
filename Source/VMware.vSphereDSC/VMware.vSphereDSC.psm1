@@ -852,112 +852,6 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     }
 }
 
-class InventoryBaseDSC : BaseDSC {
-    <#
-    .DESCRIPTION
-
-    Name of the Inventory Item (Folder or Datacenter) located in the Folder specified in 'Location' key property.
-    #>
-    [DscProperty(Key)]
-    [string] $Name
-
-    <#
-    .DESCRIPTION
-
-    Location of the Inventory Item (Folder or Datacenter) we will use from the Inventory.
-    Root Folder of the Inventory is not part of the Location.
-    Empty Location means that the Inventory Item (Folder or Datacenter) is in the Root Folder of the Inventory.
-    Folder names in Location are separated by "/".
-    Example Location: "MyDatacenters".
-    #>
-    [DscProperty(Key)]
-    [string] $Location
-
-    <#
-    .DESCRIPTION
-
-    Value indicating if the Inventory Item (Folder or Datacenter) should be Present or Absent.
-    #>
-    [DscProperty(Mandatory)]
-    [Ensure] $Ensure
-
-    <#
-    .DESCRIPTION
-
-    Ensures the correct behaviour when the Location is not valid based on the passed Ensure value.
-    If Ensure is set to 'Present' and the Location is not valid, the method should throw with the passed error message.
-    Otherwise Ensure is set to 'Absent' and $null result is returned because with invalid Location, the Inventory Item is 'Absent'
-    from that Location and no error should be thrown.
-    #>
-    [PSObject] EnsureCorrectBehaviourForInvalidLocation($expression) {
-        if ($this.Ensure -eq [Ensure]::Present) {
-            throw $expression
-        }
-
-        return $null
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns the Location of the Inventory Item (Folder or Datacenter) from the specified Inventory.
-    #>
-    [PSObject] GetInventoryItemLocation() {
-        $rootFolderAsViewObject = Get-View -Server $this.Connection -Id $this.Connection.ExtensionData.Content.RootFolder
-        $rootFolder = Get-Inventory -Server $this.Connection -Id $rootFolderAsViewObject.MoRef
-
-        # Special case where the Location does not contain any folders.
-        if ($this.Location -eq [string]::Empty) {
-            return $rootFolder
-        }
-
-        # Special case where the Location is just one folder.
-        if ($this.Location -NotMatch '/') {
-            $foundLocation = Get-Inventory -Server $this.Connection -Name $this.Location -Location $rootFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $rootFolder.Id }
-            if ($null -eq $foundLocation) {
-                return $this.EnsureCorrectBehaviourForInvalidLocation("Folder $($this.Location) was not found at $($rootFolder.Name).")
-            }
-
-            return $foundLocation
-        }
-
-        $locationItems = $this.Location -Split '/'
-        $childEntities = Get-View -Server $this.Connection -Id $rootFolder.ExtensionData.ChildEntity
-        $foundLocationItem = $null
-
-        for ($i = 0; $i -lt $locationItems.Length; $i++) {
-            $locationItem = $locationItems[$i]
-            $foundLocationItem = $childEntities | Where-Object -Property Name -eq $locationItem
-
-            if ($null -eq $foundLocationItem) {
-                return $this.EnsureCorrectBehaviourForInvalidLocation("Inventory Item $($this.Name) with Location $($this.Location) was not found because $locationItem folder cannot be found below $($rootFolder.Name).")
-            }
-
-            # If the found location item does not have 'ChildEntity' member, the item is a Datacenter.
-            $childEntityMember = $foundLocationItem | Get-Member -Name 'ChildEntity'
-            if ($null -eq $childEntityMember) {
-                return $this.EnsureCorrectBehaviourForInvalidLocation("The Location $($this.Location) contains Datacenter $locationItem which is not valid.")
-            }
-
-            <#
-            If the found location item is a Folder we check how many Child Entities the folder has:
-            If the Folder has zero Child Entities and the Folder is not the last location item, the Location is not valid.
-            Otherwise we start looking in the items of this Folder.
-            #>
-            if ($foundLocationItem.ChildEntity.Length -eq 0) {
-                if ($i -ne $locationItems.Length - 1) {
-                    return $this.EnsureCorrectBehaviourForInvalidLocation("The Location $($this.Location) is not valid because Folder $locationItem does not have Child Entities and the Location $($this.Location) contains other Inventory Items.")
-                }
-            }
-            else {
-                $childEntities = Get-View -Server $this.Connection -Id $foundLocationItem.ChildEntity
-            }
-        }
-
-        return Get-Inventory -Server $this.Connection -Id $foundLocationItem.MoRef
-    }
-}
-
 class VMHostBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
@@ -1087,6 +981,227 @@ class VMHostBaseDSC : BaseDSC {
             $this.Connection = $null
             $this.EnsureVMHostIsInDesiredState($true, $this.MaintenanceState)
         }
+    }
+}
+
+class EsxCliBaseDSC : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    The PowerCLI EsxCli version 2 interface to ESXCLI.
+    #>
+    hidden [PSObject] $EsxCli
+
+    <#
+    .DESCRIPTION
+
+    The EsxCli command for the DSC Resource that inherits the base class.
+    For the DCUI Keyboard DSC Resource the command is the following: 'system.settings.keyboard.layout'.
+    #>
+    hidden [string] $EsxCliCommand
+
+    <#
+    .DESCRIPTION
+
+    The name of the DSC Resource that inherits the base class.
+    #>
+    hidden [string] $DscResourceName = $this.GetType().Name
+
+    hidden [string] $EsxCliAddMethodName = 'add'
+    hidden [string] $EsxCliSetMethodName = 'set'
+    hidden [string] $EsxCliRemoveMethodName = 'remove'
+    hidden [string] $EsxCliGetMethodName = 'get'
+    hidden [string] $EsxCliListMethodName = 'list'
+
+    hidden [string] $CouldNotRetrieveEsxCliInterfaceMessage = "Could not retrieve EsxCli interface for VMHost {0}. For more information: {1}"
+    hidden [string] $CouldNotCreateMethodArgumentsMessage = "Could not create arguments for {0} method. For more information: {1}"
+    hidden [string] $EsxCliCommandFailedMessage = "EsxCli command {0} failed to execute successfully. For more information: {1}"
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the EsxCli version 2 interface to ESXCLI for the specified VMHost.
+    #>
+    [void] GetEsxCli($vmHost) {
+        try {
+            $this.EsxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2 -ErrorAction Stop -Verbose:$false
+        }
+        catch {
+            throw ($this.CouldNotRetrieveEsxCliInterfaceMessage -f $vmHost.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Executes the specified method for modification - 'set', 'add' or 'remove' of the specified EsxCli command.
+    #>
+    [void] ExecuteEsxCliModifyMethod($methodName) {
+        $esxCliCommandMethod = "$($this.EsxCliCommand).$methodName."
+        $esxCliMethodArgs = $null
+
+        try {
+            $esxCliMethodArgs = Invoke-Expression -Command ("`$this.EsxCli." + $esxCliCommandMethod + 'CreateArgs()') -ErrorAction Stop -Verbose:$false
+        }
+        catch {
+            throw ($this.CouldNotCreateMethodArgumentsMessage -f $methodName, $_.Exception.Message)
+        }
+
+        # Skips the properties that are defined in the base classes of the Dsc Resource because they are not arguments of the EsxCli command.
+        $dscResourceNamesOfProperties = $this.GetType().GetProperties() |
+                                        Where-Object -FilterScript { $_.DeclaringType.Name -eq $this.DscResourceName } |
+                                        Select-Object -ExpandProperty Name
+
+        # A separate array of keys is needed because collections cannot be modified while being enumerated.
+        $commandArgs = @()
+        $commandArgs = $commandArgs + $esxCliMethodArgs.Keys
+        foreach ($key in $commandArgs) {
+            # The name of the property of the Dsc Resource starts with a capital letter whereas the key of the argument contains only lower case letters.
+            $dscResourcePropertyName = $dscResourceNamesOfProperties | Where-Object -FilterScript { $_.ToLower() -eq $key.ToLower() }
+
+            # Not all properties of the Dsc Resource are part of the arguments hashtable.
+            if ($null -ne $dscResourcePropertyName) {
+                if ($this.$dscResourcePropertyName -is [string]) {
+                    if (![string]::IsNullOrEmpty($this.$dscResourcePropertyName)) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                }
+                elseif ($this.$dscResourcePropertyName -is [array]) {
+                    if ($null -ne $this.$dscResourcePropertyName -and $this.$dscResourcePropertyName.Length -gt 0) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                }
+                else {
+                    if ($null -ne $this.$dscResourcePropertyName) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                }
+            }
+        }
+
+        try {
+            Invoke-EsxCliCommandMethod -EsxCli $this.EsxCli -EsxCliCommandMethod ($esxCliCommandMethod + 'Invoke({0})') -EsxCliCommandMethodArguments $esxCliMethodArgs
+        }
+        catch {
+            throw ($this.EsxCliCommandFailedMessage -f ('esxcli.' + $this.EsxCliCommand), $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Executes the specified retrieval method - 'get' or 'list' of the specified EsxCli command.
+    #>
+    [PSObject] ExecuteEsxCliRetrievalMethod($methodName) {
+        $esxCliCommandMethod = '$this.EsxCli.' + "$($this.EsxCliCommand).$methodName."
+
+        try {
+            $esxCliCommandMethodResult = Invoke-Expression -Command ($esxCliCommandMethod + 'Invoke()') -ErrorAction Stop -Verbose:$false
+            return $esxCliCommandMethodResult
+        }
+        catch {
+            throw ($this.EsxCliCommandFailedMessage -f ('esxcli.' + $this.EsxCliCommand), $_.Exception.Message)
+        }
+    }
+}
+
+class InventoryBaseDSC : BaseDSC {
+    <#
+    .DESCRIPTION
+
+    Name of the Inventory Item (Folder or Datacenter) located in the Folder specified in 'Location' key property.
+    #>
+    [DscProperty(Key)]
+    [string] $Name
+
+    <#
+    .DESCRIPTION
+
+    Location of the Inventory Item (Folder or Datacenter) we will use from the Inventory.
+    Root Folder of the Inventory is not part of the Location.
+    Empty Location means that the Inventory Item (Folder or Datacenter) is in the Root Folder of the Inventory.
+    Folder names in Location are separated by "/".
+    Example Location: "MyDatacenters".
+    #>
+    [DscProperty(Key)]
+    [string] $Location
+
+    <#
+    .DESCRIPTION
+
+    Value indicating if the Inventory Item (Folder or Datacenter) should be Present or Absent.
+    #>
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Ensures the correct behaviour when the Location is not valid based on the passed Ensure value.
+    If Ensure is set to 'Present' and the Location is not valid, the method should throw with the passed error message.
+    Otherwise Ensure is set to 'Absent' and $null result is returned because with invalid Location, the Inventory Item is 'Absent'
+    from that Location and no error should be thrown.
+    #>
+    [PSObject] EnsureCorrectBehaviourForInvalidLocation($expression) {
+        if ($this.Ensure -eq [Ensure]::Present) {
+            throw $expression
+        }
+
+        return $null
+    }
+
+    <#
+    .DESCRIPTION
+
+    Returns the Location of the Inventory Item (Folder or Datacenter) from the specified Inventory.
+    #>
+    [PSObject] GetInventoryItemLocation() {
+        $rootFolderAsViewObject = Get-View -Server $this.Connection -Id $this.Connection.ExtensionData.Content.RootFolder
+        $rootFolder = Get-Inventory -Server $this.Connection -Id $rootFolderAsViewObject.MoRef
+
+        # Special case where the Location does not contain any folders.
+        if ($this.Location -eq [string]::Empty) {
+            return $rootFolder
+        }
+
+        # Special case where the Location is just one folder.
+        if ($this.Location -NotMatch '/') {
+            $foundLocation = Get-Inventory -Server $this.Connection -Name $this.Location -Location $rootFolder -ErrorAction SilentlyContinue | Where-Object { $_.ParentId -eq $rootFolder.Id }
+            if ($null -eq $foundLocation) {
+                return $this.EnsureCorrectBehaviourForInvalidLocation("Folder $($this.Location) was not found at $($rootFolder.Name).")
+            }
+
+            return $foundLocation
+        }
+
+        $locationItems = $this.Location -Split '/'
+        $childEntities = Get-View -Server $this.Connection -Id $rootFolder.ExtensionData.ChildEntity
+        $foundLocationItem = $null
+
+        for ($i = 0; $i -lt $locationItems.Length; $i++) {
+            $locationItem = $locationItems[$i]
+            $foundLocationItem = $childEntities | Where-Object -Property Name -eq $locationItem
+
+            if ($null -eq $foundLocationItem) {
+                return $this.EnsureCorrectBehaviourForInvalidLocation("Inventory Item $($this.Name) with Location $($this.Location) was not found because $locationItem folder cannot be found below $($rootFolder.Name).")
+            }
+
+            # If the found location item does not have 'ChildEntity' member, the item is a Datacenter.
+            $childEntityMember = $foundLocationItem | Get-Member -Name 'ChildEntity'
+            if ($null -eq $childEntityMember) {
+                return $this.EnsureCorrectBehaviourForInvalidLocation("The Location $($this.Location) contains Datacenter $locationItem which is not valid.")
+            }
+
+            <#
+            If the found location item is a Folder we check how many Child Entities the folder has:
+            If the Folder has zero Child Entities and the Folder is not the last location item, the Location is not valid.
+            Otherwise we start looking in the items of this Folder.
+            #>
+            if ($foundLocationItem.ChildEntity.Length -eq 0) {
+                if ($i -ne $locationItems.Length - 1) {
+                    return $this.EnsureCorrectBehaviourForInvalidLocation("The Location $($this.Location) is not valid because Folder $locationItem does not have Child Entities and the Location $($this.Location) contains other Inventory Items.")
+                }
+            }
+            else {
+                $childEntities = Get-View -Server $this.Connection -Id $foundLocationItem.ChildEntity
+            }
+        }
+
+        return Get-Inventory -Server $this.Connection -Id $foundLocationItem.MoRef
     }
 }
 

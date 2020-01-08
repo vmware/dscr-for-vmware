@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.41 - 2020-01-08
+### Added
+- Introduced EsxCliBaseDSC class.
+- Added Unit Tests for EsxCliBaseDSC class.
+
 ## 2.0.0.40 - 2020-01-08
 ### Added
 - Added VMHostConfiguration DSC Resource.
