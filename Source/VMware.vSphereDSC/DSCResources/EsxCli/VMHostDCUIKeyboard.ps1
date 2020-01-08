@@ -59,7 +59,7 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
-			$esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+            $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
 
             $result = ($this.Layout -eq $esxCliGetMethodResult)
 
@@ -94,11 +94,11 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
     }
 
     <#
-	.DESCRIPTION
+    .DESCRIPTION
 
-	Populates the result returned from the Get method.
-	#>
-	[void] PopulateResult($result, $vmHost) {
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
         $result.Server = $this.Connection.Name
         $result.Name = $vmHost.Name
         $result.NoPersist = $this.NoPersist
