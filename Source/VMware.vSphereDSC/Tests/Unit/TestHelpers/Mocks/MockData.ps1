@@ -264,6 +264,8 @@ $script:constants = @{
     }
     EsxCliSetMethodInvoke = 'system.settings.keyboard.layout.set.Invoke({0})'
     EsxCliGetMethodInvoke = '$this.EsxCli.system.settings.keyboard.layout.get.Invoke()'
+    DCUIKeyboardUSDefaultLayout = 'US Default'
+    DCUIKeyboardUnitedKingdomLayout = 'United Kingdom'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
