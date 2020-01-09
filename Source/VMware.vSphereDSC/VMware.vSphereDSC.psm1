@@ -9669,6 +9669,100 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
 }
 
 [DscResource()]
+class VMHostDCUIKeyboard : EsxCliBaseDSC {
+    VMHostDCUIKeyboard() {
+        $this.EsxCliCommand = 'system.settings.keyboard.layout'
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the Direct Console User Interface Keyboard Layout.
+    #>
+    [DscProperty(Mandatory)]
+    [string] $Layout
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the layout is applied only for the current boot.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $NoPersist
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.ExecuteEsxCliModifyMethod($this.EsxCliSetMethodName)
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+            $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+
+            $result = ($this.Layout -eq $esxCliGetMethodResult)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostDCUIKeyboard] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostDCUIKeyboard]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.PopulateResult($result, $vmHost)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+        $result.NoPersist = $this.NoPersist
+
+        $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+        $result.Layout = $esxCliGetMethodResult
+    }
+}
+
+[DscResource()]
 class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     <#
     .DESCRIPTION

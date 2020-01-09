@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.42 - 2020-01-09
+### Added
+- Added VMHostDCUIKeyboard DSC Resource.
+- Added Unit Tests for VMHostDCUIKeyboard DSC Resource.
+- Added Integration Tests for VMHostDCUIKeyboard DSC Resource.
+- Added Documentation and example Configuration for VMHostDCUIKeyboard DSC Resource.
+
 ## 2.0.0.41 - 2020-01-08
 ### Added
 - Introduced EsxCliBaseDSC class.
