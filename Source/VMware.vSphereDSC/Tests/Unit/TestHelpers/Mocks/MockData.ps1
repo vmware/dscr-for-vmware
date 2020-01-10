@@ -269,6 +269,13 @@ $script:constants = @{
     Gateway = '192.168.0.1'
     Destination = '192.168.100.0'
     PrefixLength = 32
+    EnableVMKernelDumpPartition = $true
+    UseSmartAlgorithmForVMKernelDumpPartition = $true
+    UnconfigureVMKernelDumpPartition = $true
+    VMKernelDumpPartition = @{
+        Active = 'mpx.vmhba32:C0:T0:L0:7'
+        Configured = 'mpx.vmhba32:C0:T0:L0:7'
+    }
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)

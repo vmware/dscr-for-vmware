@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostDCUIKeyboard'
+        $resourceName = 'VMHostVMKernelDumpPartition'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostDCUIKeyboardMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVMKernelDumpPartitionMocks.ps1"
 
-        Describe 'VMHostDCUIKeyboard\Set' -Tag 'Set' {
+        Describe 'VMHostVMKernelDumpPartition\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                $resourceProperties = New-MocksInSetForVMHostDCUIKeyboard
+                $resourceProperties = New-MocksInSetForVMHostVMKernelDumpPartition
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
             }
 
@@ -48,16 +48,16 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostDCUIKeyboard\Test' -Tag 'Test' {
+        Describe 'VMHostVMKernelDumpPartition\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostDCUIKeyboard
+                New-MocksForVMHostVMKernelDumpPartition
             }
 
-            Context 'When the VMHost DCUI Keyboard Layout does not need to be modified' {
+            Context 'When the VMHost VMKernel dump partition is Active and Configured and Enable is $true' {
                 BeforeAll {
                     # Arrange
-                    $resourceProperties = New-MocksWhenTheVMHostDCUIKeyboardLayoutDoesNotNeedToBeModified
+                    $resourceProperties = New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndEnableIsTrue
                     $resource = New-Object -TypeName $resourceName -Property $resourceProperties
                 }
 
@@ -69,7 +69,7 @@ InModuleScope -ModuleName $script:moduleName {
                     Assert-VerifiableMock
                 }
 
-                It 'Should return $true when the VMHost DCUI Keyboard Layout does not need to be modified' {
+                It 'Should return $true when the VMHost VMKernel dump partition is Active and Configured and Enable is $true' {
                     # Act
                     $result = $resource.Test()
 
@@ -78,10 +78,10 @@ InModuleScope -ModuleName $script:moduleName {
                 }
             }
 
-            Context 'When the VMHost DCUI Keyboard Layout needs to be modified' {
+            Context 'When the VMHost VMKernel dump partition is Active and Configured and Enable is $false' {
                 BeforeAll {
                     # Arrange
-                    $resourceProperties = New-MocksWhenTheVMHostDCUIKeyboardLayoutNeedsToBeModified
+                    $resourceProperties = New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndEnableIsFalse
                     $resource = New-Object -TypeName $resourceName -Property $resourceProperties
                 }
 
@@ -93,7 +93,7 @@ InModuleScope -ModuleName $script:moduleName {
                     Assert-VerifiableMock
                 }
 
-                It 'Should return $false when the VMHost DCUI Keyboard Layout needs to be modified' {
+                It 'Should return $false when the VMHost VMKernel dump partition is Active and Configured and Enable is $false' {
                     # Act
                     $result = $resource.Test()
 
@@ -101,12 +101,84 @@ InModuleScope -ModuleName $script:moduleName {
                     $result | Should -Be $false
                 }
             }
+
+            Context 'When the VMHost VMKernel dump partition is Active and Configured and Unconfigure is $true' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndUnconfigureIsTrue
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should invoke all defined mocks with the correct parameters' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $false when the VMHost VMKernel dump partition is Active and Configured and Unconfigure is $true' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -Be $false
+                }
+            }
+
+            Context 'When the VMHost VMKernel dump partition is Active and Configured and Unconfigure is $false' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndUnconfigureIsFalse
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should invoke all defined mocks with the correct parameters' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $true when the VMHost VMKernel dump partition is Active and Configured and Unconfigure is $false' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -Be $true
+                }
+            }
+
+            Context 'When Enable and Unconfigure are not passed' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenEnableAndUnconfigureAreNotPassed
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should invoke all defined mocks with the correct parameters' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $true when Enable and Unconfigure are not passed' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -Be $true
+                }
+            }
         }
 
-        Describe 'VMHostDCUIKeyboard\Get' -Tag 'Get' {
+        Describe 'VMHostVMKernelDumpPartition\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                $resourceProperties = New-MocksForVMHostDCUIKeyboard
+                $resourceProperties = New-MocksForVMHostVMKernelDumpPartition
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
             }
 
@@ -125,8 +197,9 @@ InModuleScope -ModuleName $script:moduleName {
                 # Assert
                 $result.Server | Should -Be $script:viServer.Name
                 $result.Name | Should -Be $script:vmHost.Name
-                $result.Layout | Should -Be $script:constants.DCUIKeyboardUSDefaultLayout
-                $result.NoPersist | Should -BeNullOrEmpty
+                $result.Enable | Should -BeTrue
+                $result.Smart | Should -BeTrue
+                $result.Unconfigure | Should -BeFalse
             }
         }
     }
