@@ -53,19 +53,19 @@ $script:configurationData = @{
 <#
 .DESCRIPTION
 
-Modifies the Direct Console User Interface Keyboard Layout to be 'US Default'.
+The VMKernel dump partition of the specified VMHost goes into an unconfigured state. Removes the current configured dump partition for the next boot.
 #>
-Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config {
+Configuration VMHostVMKernelDumpPartition_UnconfigureVMKernelDumpPartition_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostDCUIKeyboard VMHostDCUIKeyboard {
+        VMHostVMKernelDumpPartition VMHostVMKernelDumpPartition {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.Name
-            Layout = 'US Default'
+            Unconfigure = $true
         }
     }
 }
 
-VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config -ConfigurationData $script:configurationData
+VMHostVMKernelDumpPartition_UnconfigureVMKernelDumpPartition_Config -ConfigurationData $script:configurationData

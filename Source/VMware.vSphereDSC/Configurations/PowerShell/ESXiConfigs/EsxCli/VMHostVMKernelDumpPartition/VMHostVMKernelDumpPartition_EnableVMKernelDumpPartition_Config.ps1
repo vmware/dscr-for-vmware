@@ -53,19 +53,20 @@ $script:configurationData = @{
 <#
 .DESCRIPTION
 
-Modifies the Direct Console User Interface Keyboard Layout to be 'US Default'.
+Enables the VMKernel dump partition on the specified VMHost by selecting the best available partition using the smart selection algorithm.
 #>
-Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config {
+Configuration VMHostVMKernelDumpPartition_EnableVMKernelDumpPartition_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostDCUIKeyboard VMHostDCUIKeyboard {
+        VMHostVMKernelDumpPartition VMHostVMKernelDumpPartition {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.Name
-            Layout = 'US Default'
+            Enable = $true
+            Smart = $true
         }
     }
 }
 
-VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config -ConfigurationData $script:configurationData
+VMHostVMKernelDumpPartition_EnableVMKernelDumpPartition_Config -ConfigurationData $script:configurationData

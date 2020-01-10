@@ -36,7 +36,7 @@ Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $VMHostName
+        $Name
     )
 
     Import-DscResource -ModuleName VMware.vSphereDSC
@@ -45,7 +45,7 @@ Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config {
         VMHostDCUIKeyboard VMHostDCUIKeyboard {
             Server = $Server
             Credential = $Credential
-            Name = $VMHostName
+            Name = $Name
             Layout = 'US Default'
         }
     }
