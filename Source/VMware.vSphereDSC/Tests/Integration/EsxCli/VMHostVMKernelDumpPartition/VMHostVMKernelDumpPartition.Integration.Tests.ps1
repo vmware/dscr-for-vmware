@@ -59,20 +59,17 @@ $script:configurationData = @{
             EnableVMKernelDumpPartition = $true
             DisableVMKernelDumpPartition = $false
             UseSmartAlgorithmForVMKernelDumpPartition = $true
-            UnconfigureVMKernelDumpPartition = $true
         }
     )
 }
 
 $script:configEnableVMKernelDumpPartition = "$($script:dscResourceName)_EnableVMKernelDumpPartition_Config"
 $script:configDisableVMKernelDumpPartition = "$($script:dscResourceName)_DisableVMKernelDumpPartition_Config"
-$script:configUnconfigureVMKernelDumpPartition = "$($script:dscResourceName)_UnconfigureVMKernelDumpPartition_Config"
 
 . $script:configurationFile -ErrorAction Stop
 
 $script:mofFileEnableVMKernelDumpPartitionPath = "$script:integrationTestsFolderPath\$script:configEnableVMKernelDumpPartition\"
 $script:mofFileDisableVMKernelDumpPartitionPath = "$script:integrationTestsFolderPath\$script:configDisableVMKernelDumpPartition\"
-$script:mofFileUnconfigureVMKernelDumpPartitionPath = "$script:integrationTestsFolderPath\$script:configUnconfigureVMKernelDumpPartition\"
 
 Describe "$($script:dscResourceName)_Integration" {
     Context "When using configuration $script:configEnableVMKernelDumpPartition" {
@@ -140,7 +137,6 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.Name | Should -Be $script:configurationData.AllNodes.VMHostName
             $configuration.Enable | Should -Be $script:configurationData.AllNodes.EnableVMKernelDumpPartition
             $configuration.Smart | Should -Be $script:configurationData.AllNodes.UseSmartAlgorithmForVMKernelDumpPartition
-            $configuration.Unconfigure | Should -BeFalse
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {
@@ -162,96 +158,6 @@ Describe "$($script:dscResourceName)_Integration" {
 
             Remove-Item -Path $script:mofFileDisableVMKernelDumpPartitionPath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileEnableVMKernelDumpPartitionPath -Recurse -Confirm:$false -ErrorAction Stop
-        }
-    }
-
-    Context "When using configuration $script:configUnconfigureVMKernelDumpPartition" {
-        BeforeAll {
-            # Arrange
-            & $script:configEnableVMKernelDumpPartition `
-                -OutputPath $script:mofFileEnableVMKernelDumpPartitionPath `
-                -ConfigurationData $script:configurationData `
-                -ErrorAction Stop
-
-            & $script:configUnconfigureVMKernelDumpPartition `
-                -OutputPath $script:mofFileUnconfigureVMKernelDumpPartitionPath `
-                -ConfigurationData $script:configurationData `
-                -ErrorAction Stop
-
-            $startDscConfigurationParametersEnableVMKernelDumpPartition = @{
-                Path = $script:mofFileEnableVMKernelDumpPartitionPath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
-
-            $startDscConfigurationParametersUnconfigureVMKernelDumpPartition = @{
-                Path = $script:mofFileUnconfigureVMKernelDumpPartitionPath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
-
-            # Act
-            Start-DscConfiguration @startDscConfigurationParametersEnableVMKernelDumpPartition
-            Start-DscConfiguration @startDscConfigurationParametersUnconfigureVMKernelDumpPartition
-        }
-
-        It 'Should apply the MOF without throwing' {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileUnconfigureVMKernelDumpPartitionPath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
-
-            # Act && Assert
-            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration without throwing' {
-            # Arrange && Act && Assert
-            { Get-DscConfiguration -Verbose -ErrorAction Stop } | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
-            # Arrange && Act
-            $configuration = Get-DscConfiguration -Verbose -ErrorAction Stop | Where-Object -FilterScript { $_.ConfigurationName -eq $script:configUnconfigureVMKernelDumpPartition }
-
-            # Assert
-            $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
-            $configuration.Name | Should -Be $script:configurationData.AllNodes.VMHostName
-            $configuration.Enable | Should -BeFalse
-            $configuration.Smart | Should -BeNullOrEmpty
-            $configuration.Unconfigure | Should -Be $script:configurationData.AllNodes.UnconfigureVMKernelDumpPartition
-        }
-
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange
-            $testDscConfigurationParameters = @{
-                ReferenceConfiguration = "$script:mofFileUnconfigureVMKernelDumpPartitionPath\$($script:configurationData.AllNodes.NodeName).mof"
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
-
-            # Act && Assert
-            (Test-DscConfiguration @testDscConfigurationParameters).InDesiredState | Should -Be $true
-        }
-
-        AfterAll {
-            # Arrange && Act
-            Restore-VMHostVMKernelDumpPartitionToInitialState
-
-            Remove-Item -Path $script:mofFileEnableVMKernelDumpPartitionPath -Recurse -Confirm:$false -ErrorAction Stop
-            Remove-Item -Path $script:mofFileUnconfigureVMKernelDumpPartitionPath -Recurse -Confirm:$false -ErrorAction Stop
         }
     }
 }

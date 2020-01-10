@@ -40,16 +40,3 @@ Configuration VMHostVMKernelDumpPartition_DisableVMKernelDumpPartition_Config {
         }
     }
 }
-
-Configuration VMHostVMKernelDumpPartition_UnconfigureVMKernelDumpPartition_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostVMKernelDumpPartition $AllNodes.VMHostVMKernelDumpPartitionResourceName {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            Name = $AllNodes.VMHostName
-            Unconfigure = $AllNodes.UnconfigureVMKernelDumpPartition
-        }
-    }
-}

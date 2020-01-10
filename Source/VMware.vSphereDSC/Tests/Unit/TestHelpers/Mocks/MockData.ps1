@@ -271,7 +271,6 @@ $script:constants = @{
     PrefixLength = 32
     EnableVMKernelDumpPartition = $true
     UseSmartAlgorithmForVMKernelDumpPartition = $true
-    UnconfigureVMKernelDumpPartition = $true
     VMKernelDumpPartition = @{
         Active = 'mpx.vmhba32:C0:T0:L0:7'
         Configured = 'mpx.vmhba32:C0:T0:L0:7'

@@ -94,29 +94,7 @@ function New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndEnab
     $vmHostVMKernelDumpPartitionProperties
 }
 
-function New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndUnconfigureIsTrue {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostVMKernelDumpPartitionProperties = New-VMHostVMKernelDumpPartitionProperties
-
-    $vmHostVMKernelDumpPartitionProperties.Unconfigure = $script:constants.UnconfigureVMKernelDumpPartition
-
-    $vmHostVMKernelDumpPartitionProperties
-}
-
-function New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndUnconfigureIsFalse {
-    [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-
-    $vmHostVMKernelDumpPartitionProperties = New-VMHostVMKernelDumpPartitionProperties
-
-    $vmHostVMKernelDumpPartitionProperties.Unconfigure = !$script:constants.UnconfigureVMKernelDumpPartition
-
-    $vmHostVMKernelDumpPartitionProperties
-}
-
-function New-MocksWhenEnableAndUnconfigureAreNotPassed {
+function New-MocksWhenEnableIsNotPassed {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 

@@ -36,14 +36,6 @@ class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
     [DscProperty()]
     [nullable[bool]] $Smart
 
-    <#
-    .DESCRIPTION
-
-    Specifies whether the dump partition should go into an unconfigured state. It will remove the current configured dump partition for the next boot. It will result in the smart activate algorithm being used at the next boot.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $Unconfigure
-
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
@@ -113,10 +105,6 @@ class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
             if ($this.Enable) { $result = [string]::IsNullOrEmpty($esxCliGetMethodResult.Active) }
             else { $result = ![string]::IsNullOrEmpty($esxCliGetMethodResult.Active) }
         }
-        elseif ($null -ne $this.Unconfigure) {
-            if ($this.Unconfigure) { $result = (![string]::IsNullOrEmpty($esxCliGetMethodResult.Active) -and ![string]::IsNullOrEmpty($esxCliGetMethodResult.Configured)) }
-            else { $result = ([string]::IsNullOrEmpty($esxCliGetMethodResult.Active) -and [string]::IsNullOrEmpty($esxCliGetMethodResult.Configured)) }
-        }
         else {
             $result = $false
         }
@@ -135,8 +123,6 @@ class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
         $result.Smart = $this.Smart
 
         $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
-
         $result.Enable = ![string]::IsNullOrEmpty($esxCliGetMethodResult.Active)
-        $result.Unconfigure = ([string]::IsNullOrEmpty($esxCliGetMethodResult.Active) -and [string]::IsNullOrEmpty($esxCliGetMethodResult.Configured))
     }
 }

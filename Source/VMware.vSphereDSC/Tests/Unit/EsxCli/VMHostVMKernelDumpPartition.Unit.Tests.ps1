@@ -102,10 +102,10 @@ InModuleScope -ModuleName $script:moduleName {
                 }
             }
 
-            Context 'When the VMHost VMKernel dump partition is Active and Configured and Unconfigure is $true' {
+            Context 'When Enable is not passed' {
                 BeforeAll {
                     # Arrange
-                    $resourceProperties = New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndUnconfigureIsTrue
+                    $resourceProperties = New-MocksWhenEnableIsNotPassed
                     $resource = New-Object -TypeName $resourceName -Property $resourceProperties
                 }
 
@@ -117,55 +117,7 @@ InModuleScope -ModuleName $script:moduleName {
                     Assert-VerifiableMock
                 }
 
-                It 'Should return $false when the VMHost VMKernel dump partition is Active and Configured and Unconfigure is $true' {
-                    # Act
-                    $result = $resource.Test()
-
-                    # Assert
-                    $result | Should -Be $false
-                }
-            }
-
-            Context 'When the VMHost VMKernel dump partition is Active and Configured and Unconfigure is $false' {
-                BeforeAll {
-                    # Arrange
-                    $resourceProperties = New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndUnconfigureIsFalse
-                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
-                }
-
-                It 'Should invoke all defined mocks with the correct parameters' {
-                    # Act
-                    $resource.Test()
-
-                    # Assert
-                    Assert-VerifiableMock
-                }
-
-                It 'Should return $true when the VMHost VMKernel dump partition is Active and Configured and Unconfigure is $false' {
-                    # Act
-                    $result = $resource.Test()
-
-                    # Assert
-                    $result | Should -Be $true
-                }
-            }
-
-            Context 'When Enable and Unconfigure are not passed' {
-                BeforeAll {
-                    # Arrange
-                    $resourceProperties = New-MocksWhenEnableAndUnconfigureAreNotPassed
-                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
-                }
-
-                It 'Should invoke all defined mocks with the correct parameters' {
-                    # Act
-                    $resource.Test()
-
-                    # Assert
-                    Assert-VerifiableMock
-                }
-
-                It 'Should return $true when Enable and Unconfigure are not passed' {
+                It 'Should return $true when Enable is not passed' {
                     # Act
                     $result = $resource.Test()
 
@@ -199,7 +151,6 @@ InModuleScope -ModuleName $script:moduleName {
                 $result.Name | Should -Be $script:vmHost.Name
                 $result.Enable | Should -BeTrue
                 $result.Smart | Should -BeTrue
-                $result.Unconfigure | Should -BeFalse
             }
         }
     }
