@@ -23,7 +23,6 @@ Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config {
             Credential = $AllNodes.Credential
             Name = $AllNodes.VMHostName
             Layout = $AllNodes.VMHostDCUIKeyboardLayout
-            NoPersist = $AllNodes.NoPersist
         }
     }
 }

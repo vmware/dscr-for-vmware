@@ -126,7 +126,6 @@ InModuleScope -ModuleName $script:moduleName {
                 $result.Server | Should -Be $script:viServer.Name
                 $result.Name | Should -Be $script:vmHost.Name
                 $result.Layout | Should -Be $script:constants.DCUIKeyboardUSDefaultLayout
-                $result.NoPersist | Should -BeNullOrEmpty
             }
         }
     }

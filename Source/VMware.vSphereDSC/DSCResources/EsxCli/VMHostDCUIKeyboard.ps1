@@ -28,14 +28,6 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
     [DscProperty(Mandatory)]
     [string] $Layout
 
-    <#
-    .DESCRIPTION
-
-    Specifies whether the layout is applied only for the current boot.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $NoPersist
-
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
@@ -101,7 +93,6 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
     [void] PopulateResult($result, $vmHost) {
         $result.Server = $this.Connection.Name
         $result.Name = $vmHost.Name
-        $result.NoPersist = $this.NoPersist
 
         $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
         $result.Layout = $esxCliGetMethodResult

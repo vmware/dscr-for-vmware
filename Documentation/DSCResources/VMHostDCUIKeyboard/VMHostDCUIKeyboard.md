@@ -8,7 +8,6 @@
 | **Credential** | Mandatory | PSCredential | The credentials needed for connection to the specified Server. ||
 | **Name** | Key | string | The name of the VMHost. ||
 | **Layout** | Mandatory | string | The name of the Direct Console User Interface Keyboard Layout. ||
-| **NoPersist** | Optional | bool | Specifies whether the layout is applied only for the current boot. ||
 
 ## Description
 

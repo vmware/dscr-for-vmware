@@ -57,7 +57,6 @@ $script:configurationData = @{
             VMHostDCUIKeyboardResourceName = 'VMHostDCUIKeyboard'
             InitialVMHostDCUIKeyboardLayout = $script:initialVMHostDCUIKeyboardLayout
             VMHostDCUIKeyboardLayout = 'United Kingdom'
-            NoPersist = $false
         }
     )
 }
@@ -120,7 +119,6 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
             $configuration.Name | Should -Be $script:configurationData.AllNodes.VMHostName
             $configuration.Layout | Should -Be $script:configurationData.AllNodes.VMHostDCUIKeyboardLayout
-            $configuration.NoPersist | Should -Be $script:configurationData.AllNodes.NoPersist
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {
