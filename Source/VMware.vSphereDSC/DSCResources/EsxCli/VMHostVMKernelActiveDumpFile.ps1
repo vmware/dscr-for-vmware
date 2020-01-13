@@ -15,15 +15,15 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
-    VMHostVMKernelDumpPartition() {
-        $this.EsxCliCommand = 'system.coredump.partition'
+class VMHostVMKernelActiveDumpFile : EsxCliBaseDSC {
+    VMHostVMKernelActiveDumpFile() {
+        $this.EsxCliCommand = 'system.coredump.file'
     }
 
     <#
     .DESCRIPTION
 
-    Specifies whether the VMKernel dump partition should be enabled or disabled.
+    Specifies whether the VMKernel dump file should be enabled or disabled.
     #>
     [DscProperty()]
     [nullable[bool]] $Enable
@@ -31,7 +31,7 @@ class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies whether to select the best available partition using the smart selection algorithm. Can only be used when 'Enabled' property is specified with '$true' value.
+    Specifies whether to select the best available file using the smart selection algorithm. Can only be used when 'Enabled' property is specified with '$true' value.
     #>
     [DscProperty()]
     [nullable[bool]] $Smart
@@ -61,7 +61,7 @@ class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
             $this.GetEsxCli($vmHost)
             $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
 
-            $result = !$this.ShouldModifyVMKernelDumpPartition($esxCliGetMethodResult)
+            $result = !$this.ShouldModifyVMKernelDumpFile($esxCliGetMethodResult)
 
             $this.WriteDscResourceState($result)
 
@@ -73,10 +73,10 @@ class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
         }
     }
 
-    [VMHostVMKernelDumpPartition] Get() {
+    [VMHostVMKernelActiveDumpFile] Get() {
         try {
             Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostVMKernelDumpPartition]::new()
+            $result = [VMHostVMKernelActiveDumpFile]::new()
 
             $this.ConnectVIServer()
 
@@ -96,9 +96,9 @@ class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
     <#
     .DESCRIPTION
 
-    Checks if the VMKernel dump partition should be modified.
+    Checks if the VMKernel dump file should be modified.
     #>
-    [bool] ShouldModifyVMKernelDumpPartition($esxCliGetMethodResult) {
+    [bool] ShouldModifyVMKernelDumpFile($esxCliGetMethodResult) {
         $result = $null
 
         if ($null -ne $this.Enable) {
