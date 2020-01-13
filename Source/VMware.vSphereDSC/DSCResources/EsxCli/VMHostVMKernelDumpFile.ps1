@@ -71,16 +71,16 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
             $this.GetEsxCli($vmHost)
 
             if ($this.Ensure -eq [Ensure]::Present) {
-				$this.ExecuteEsxCliModifyMethod($this.EsxCliAddMethodName)
-			}
-			else {
+                $this.ExecuteEsxCliModifyMethod($this.EsxCliAddMethodName)
+            }
+            else {
                 $esxCliListMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliListMethodName)
                 $vmKernelDumpFile = $this.GetVMKernelDumpFile($esxCliListMethodResult)
                 $removeVMKernelDumpFileMethodArguments = @{
                     file = $vmKernelDumpFile.Path
                 }
 
-				$this.ExecuteEsxCliModifyMethod($this.EsxCliRemoveMethodName, $removeVMKernelDumpFileMethodArguments)
+                $this.ExecuteEsxCliModifyMethod($this.EsxCliRemoveMethodName, $removeVMKernelDumpFileMethodArguments)
             }
         }
         finally {
