@@ -14,27 +14,27 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-VMHostVMKernelDumpPartitionProperties {
+function New-VMHostVMKernelActiveDumpFileProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVMKernelDumpPartitionProperties = @{
+    $vmHostVMKernelActiveDumpFileProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
         Name = $script:constants.VMHostName
     }
 
-    $vmHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties
 }
 
-function New-MocksInSetForVMHostVMKernelDumpPartition {
+function New-MocksInSetForVMHostVMKernelActiveDumpFile {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVMKernelDumpPartitionProperties = New-VMHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties = New-VMHostVMKernelActiveDumpFileProperties
 
-    $vmHostVMKernelDumpPartitionProperties.Enable = $script:constants.EnableVMKernelDumpPartition
-    $vmHostVMKernelDumpPartitionProperties.Smart = $script:constants.UseSmartAlgorithmForVMKernelDumpPartition
+    $vmHostVMKernelActiveDumpFileProperties.Enable = $script:constants.EnableVMKernelDumpFile
+    $vmHostVMKernelActiveDumpFileProperties.Smart = $script:constants.UseSmartAlgorithmForVMKernelDumpFile
 
     $viServerMock = $script:viServer
     $vmHostMock = $script:vmHost
@@ -48,20 +48,20 @@ function New-MocksInSetForVMHostVMKernelDumpPartition {
     Mock -CommandName Invoke-EsxCliCommandMethod -MockWith { return $null }.GetNewClosure() -Verifiable
     Mock -CommandName Disconnect-VIServer -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties
 }
 
-function New-MocksForVMHostVMKernelDumpPartition {
+function New-MocksForVMHostVMKernelActiveDumpFile {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVMKernelDumpPartitionProperties = New-VMHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties = New-VMHostVMKernelActiveDumpFileProperties
 
-    $vmHostVMKernelDumpPartitionProperties.Smart = $script:constants.UseSmartAlgorithmForVMKernelDumpPartition
+    $vmHostVMKernelActiveDumpFileProperties.Smart = $script:constants.UseSmartAlgorithmForVMKernelDumpFile
 
     $viServerMock = $script:viServer
     $vmHostMock = $script:vmHost
-    $esxCliGetMethodMock = $script:vmKernelDumpPartition
+    $esxCliGetMethodMock = $script:vmKernelDumpFile
 
     Mock -CommandName Connect-VIServer -MockWith { return $viServerMock }.GetNewClosure() -Verifiable
     Mock -CommandName Get-VMHost -MockWith { return $vmHostMock }.GetNewClosure() -Verifiable
@@ -69,35 +69,35 @@ function New-MocksForVMHostVMKernelDumpPartition {
     Mock -CommandName Invoke-Expression -MockWith { return $esxCliGetMethodMock }.GetNewClosure() -Verifiable
     Mock -CommandName Disconnect-VIServer -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $vmHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties
 }
 
-function New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndEnableIsTrue {
+function New-MocksWhenTheVMHostVMKernelDumpFileIsActiveAndConfiguredAndEnableIsTrue {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVMKernelDumpPartitionProperties = New-VMHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties = New-VMHostVMKernelActiveDumpFileProperties
 
-    $vmHostVMKernelDumpPartitionProperties.Enable = $script:constants.EnableVMKernelDumpPartition
+    $vmHostVMKernelActiveDumpFileProperties.Enable = $script:constants.EnableVMKernelDumpFile
 
-    $vmHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties
 }
 
-function New-MocksWhenTheVMHostVMKernelDumpPartitionIsActiveAndConfiguredAndEnableIsFalse {
+function New-MocksWhenTheVMHostVMKernelDumpFileIsActiveAndConfiguredAndEnableIsFalse {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVMKernelDumpPartitionProperties = New-VMHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties = New-VMHostVMKernelActiveDumpFileProperties
 
-    $vmHostVMKernelDumpPartitionProperties.Enable = !$script:constants.EnableVMKernelDumpPartition
+    $vmHostVMKernelActiveDumpFileProperties.Enable = !$script:constants.EnableVMKernelDumpFile
 
-    $vmHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties
 }
 
 function New-MocksWhenEnableIsNotPassed {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $vmHostVMKernelDumpPartitionProperties = New-VMHostVMKernelDumpPartitionProperties
-    $vmHostVMKernelDumpPartitionProperties
+    $vmHostVMKernelActiveDumpFileProperties = New-VMHostVMKernelActiveDumpFileProperties
+    $vmHostVMKernelActiveDumpFileProperties
 }

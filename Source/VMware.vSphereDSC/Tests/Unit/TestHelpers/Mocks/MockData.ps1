@@ -271,13 +271,11 @@ $script:constants = @{
     PrefixLength = 32
     EnableVMKernelDumpPartition = $true
     UseSmartAlgorithmForVMKernelDumpPartition = $true
-    VMKernelDumpPartition = @{
-        Active = 'mpx.vmhba32:C0:T0:L0:7'
-        Configured = 'mpx.vmhba32:C0:T0:L0:7'
-    }
     DumpFileName = 'MyTestDumpFile'
     DumpFileSizeInMB = 1181
     DumpFileSizeInBytes = 1238368256
+    EnableVMKernelDumpFile = $true
+    UseSmartAlgorithmForVMKernelDumpFile = $true
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1374,7 +1372,14 @@ $script:vmHostIPRouteOne = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHostRoute
     PrefixLength = $script:constants.PrefixLength
 }
 
+$script:vmKernelDumpPartition = @{
+    Active = 'mpx.vmhba32:C0:T0:L0:7'
+    Configured = 'mpx.vmhba32:C0:T0:L0:7'
+}
+
 $script:vmKernelDumpFile = @{
+    Active = 'mpx.vmhba32:C0:T0:L0:7'
+    Configured = 'mpx.vmhba32:C0:T0:L0:7'
     Path = '/vmfs/volumes/{0}/vmkdump/{1}.dumpfile' -f $script:constants.DatastoreName, $script:constants.DumpFileName
     Size = $script:constants.DumpFileSizeInBytes
 }
