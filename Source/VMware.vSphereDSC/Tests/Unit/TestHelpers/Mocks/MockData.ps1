@@ -275,6 +275,9 @@ $script:constants = @{
         Active = 'mpx.vmhba32:C0:T0:L0:7'
         Configured = 'mpx.vmhba32:C0:T0:L0:7'
     }
+    DumpFileName = 'MyTestDumpFile'
+    DumpFileSizeInMB = 1181
+    DumpFileSizeInBytes = 1238368256
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1369,4 +1372,14 @@ $script:vmHostIPRouteOne = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHostRoute
     Gateway = $script:constants.Gateway
     Destination = $script:constants.Destination
     PrefixLength = $script:constants.PrefixLength
+}
+
+$script:vmKernelDumpFile = @{
+    Path = '/vmfs/volumes/{0}/vmkdump/{1}.dumpfile' -f $script:constants.DatastoreName, $script:constants.DumpFileName
+    Size = $script:constants.DumpFileSizeInBytes
+}
+
+$script:fileSystem = @{
+    UUID = [Guid]::NewGuid()
+    VolumeName = $script:constants.DatastoreName
 }
