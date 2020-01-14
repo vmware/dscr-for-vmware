@@ -276,6 +276,8 @@ $script:constants = @{
     DumpFileSizeInBytes = 1238368256
     EnableVMKernelDumpFile = $true
     UseSmartAlgorithmForVMKernelDumpFile = $true
+    VMKernelModuleName = 's2io'
+    VMKernelModuleEnabled = $true
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1387,4 +1389,9 @@ $script:vmKernelDumpFile = @{
 $script:fileSystem = @{
     UUID = [Guid]::NewGuid()
     VolumeName = $script:constants.DatastoreName
+}
+
+$script:vmKernelModule = @{
+    Name = $script:constants.VMKernelModuleName
+    IsEnabled = $script:constants.VMKernelModuleEnabled
 }
