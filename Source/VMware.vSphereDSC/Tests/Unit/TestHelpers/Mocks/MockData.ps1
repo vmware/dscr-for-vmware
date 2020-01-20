@@ -278,6 +278,23 @@ $script:constants = @{
     UseSmartAlgorithmForVMKernelDumpFile = $true
     VMKernelModuleName = 's2io'
     VMKernelModuleEnabled = $true
+    SNMPAgentAuthenticationProtocol = 'SHA1'
+    SNMPAgentCommunities = 'community1'
+    EnableSNMPAgent = $true
+    SNMPAgentEngineId = '0x0-9a-f'
+    SNMPAgentHwsrc = 'indications'
+    SNMPAgentLargeStorage = $true
+    SNMPAgentLogLevel = 'info'
+    SNMPAgentNoTraps = 'reset'
+    SNMPAgentPort = 161
+    SNMPAgentPrivacyProtocol = 'AES128'
+    SNMPAgentRemoteUsers = '0x0-9a-f/SHA1/AES128'
+    SNMPAgentSysContact = 'System contact'
+    SNMPAgentSystemLocation = 'System location'
+    SNMPAgentTargets = 'MyTestVMHost udp/162'
+    SNMPAgentUsers = 'localUser'
+    SNMPAgentV3Targets = 'MyTestVMHost udp/162'
+    ResetSNMPAgent = $true
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1394,4 +1411,23 @@ $script:fileSystem = @{
 $script:vmKernelModule = @{
     Name = $script:constants.VMKernelModuleName
     IsEnabled = $script:constants.VMKernelModuleEnabled
+}
+
+$script:vmHostSNMPAgent = @{
+    authentication = $script:constants.SNMPAgentAuthenticationProtocol
+    communities = $script:constants.SNMPAgentCommunities
+    enable = $script:constants.EnableSNMPAgent
+    engineid = $script:constants.SNMPAgentEngineId
+    hwsrc = $script:constants.SNMPAgentHwsrc
+    largestorage = $script:constants.SNMPAgentLargeStorage
+    loglevel = $script:constants.SNMPAgentLogLevel
+    notraps = $script:constants.SNMPAgentNoTraps
+    port = $script:constants.SNMPAgentPort
+    privacy = $script:constants.SNMPAgentPrivacyProtocol
+    remoteusers = $script:constants.SNMPAgentRemoteUsers
+    syscontact = $script:constants.SNMPAgentSysContact
+    syslocation = $script:constants.SNMPAgentSystemLocation
+    targets = $script:constants.SNMPAgentTargets
+    users = $script:constants.SNMPAgentUsers
+    v3targets = $script:constants.SNMPAgentV3Targets
 }
