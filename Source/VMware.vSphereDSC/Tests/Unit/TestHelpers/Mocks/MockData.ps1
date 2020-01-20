@@ -295,6 +295,9 @@ $script:constants = @{
     SNMPAgentUsers = 'localUser'
     SNMPAgentV3Targets = 'MyTestVMHost udp/162'
     ResetSNMPAgent = $true
+    SoftwareDeviceId = 'com.vmware.iscsi_vmk'
+    SoftwareDeviceDefaultInstanceAddress = 0
+    SoftwareDeviceInstanceAddress = 1
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1431,3 +1434,10 @@ $script:vmHostSNMPAgent = @{
     users = $script:constants.SNMPAgentUsers
     v3targets = $script:constants.SNMPAgentV3Targets
 }
+
+$script:vmHostSoftwareDevices = @(
+    @{
+        DeviceID = $script:constants.SoftwareDeviceId
+        Instance = $script:constants.SoftwareDeviceInstanceAddress
+    }
+)
