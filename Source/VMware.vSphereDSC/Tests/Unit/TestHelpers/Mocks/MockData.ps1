@@ -298,6 +298,12 @@ $script:constants = @{
     SoftwareDeviceId = 'com.vmware.iscsi_vmk'
     SoftwareDeviceDefaultInstanceAddress = 0
     SoftwareDeviceInstanceAddress = 1
+    DatastoreEnabled = $true
+    DatastoreOrder = 0
+    HostCacheEnabled = $true
+    HostCacheOrder = 1
+    HostLocalSwapEnabled = $true
+    HostLocalSwapOrder = 2
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1441,3 +1447,13 @@ $script:vmHostSoftwareDevices = @(
         Instance = $script:constants.SoftwareDeviceInstanceAddress
     }
 )
+
+$script:vmHostSharedSwapSpaceConfiguration = @{
+    DatastoreEnabled = $script:constants.DatastoreEnabled
+    DatastoreName = $script:constants.DatastoreName
+    DatastoreOrder = $script:constants.DatastoreOrder
+    HostcacheEnabled = $script:constants.HostCacheEnabled
+    HostcacheOrder = $script:constants.HostCacheOrder
+    HostlocalswapEnabled = $script:constants.HostLocalSwapEnabled
+    HostlocalswapOrder = $script:constants.HostLocalSwapOrder
+}
