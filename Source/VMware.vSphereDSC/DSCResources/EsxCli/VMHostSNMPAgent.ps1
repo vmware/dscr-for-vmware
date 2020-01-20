@@ -55,7 +55,7 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies where to source hardware events from IPMI sensors or CIM Indications. Valid values are indications and sensors.
+    Specifies where to source hardware events - IPMI sensors or CIM Indications. Valid values are indications and sensors.
     #>
     [DscProperty()]
     [string] $Hwsrc

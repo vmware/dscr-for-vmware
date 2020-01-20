@@ -39,7 +39,7 @@ class VMHostSharedSwapSpace : EsxCliBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the order of the Datastore option in the preference of the options.
+    Specifies the order of the Datastore option in the preference of the options of the system-wide shared swap space.
     #>
     [DscProperty()]
     [nullable[long]] $DatastoreOrder
@@ -55,7 +55,7 @@ class VMHostSharedSwapSpace : EsxCliBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the order of the host cache option in the preference of the options.
+    Specifies the order of the host cache option in the preference of the options of the system-wide shared swap space.
     #>
     [DscProperty()]
     [nullable[long]] $HostCacheOrder
@@ -71,7 +71,7 @@ class VMHostSharedSwapSpace : EsxCliBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the order of the host local swap option in the preference of the options.
+    Specifies the order of the host local swap option in the preference of the options of the system-wide shared swap space.
     #>
     [DscProperty()]
     [nullable[long]] $HostLocalSwapOrder
