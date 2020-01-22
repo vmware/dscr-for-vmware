@@ -304,6 +304,10 @@ $script:constants = @{
     HostCacheOrder = 1
     HostLocalSwapEnabled = $true
     HostLocalSwapOrder = 2
+    NetworkCoreDumpEnabled = $true
+    NetworkCoreDumpInterfaceName = 'vmk0'
+    NetworkCoreDumpServerIP = '10.11.12.13'
+    NetworkCoreDumpServerPort = 6500
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1456,4 +1460,11 @@ $script:vmHostSharedSwapSpaceConfiguration = @{
     HostcacheOrder = $script:constants.HostCacheOrder
     HostlocalswapEnabled = $script:constants.HostLocalSwapEnabled
     HostlocalswapOrder = $script:constants.HostLocalSwapOrder
+}
+
+$script:vmHostNetworkCoreDumpConfiguration = @{
+    Enabled = $script:constants.NetworkCoreDumpEnabled
+    HostVNic = $script:constants.NetworkCoreDumpInterfaceName
+    NetworkServerIP = $script:constants.NetworkCoreDumpServerIP
+    NetworkServerPort = $script:constants.NetworkCoreDumpServerPort
 }
