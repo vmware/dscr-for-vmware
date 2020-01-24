@@ -310,6 +310,17 @@ $script:constants = @{
     NetworkCoreDumpServerPort = 6500
     VMwareCertifiedAcceptanceLevel = 'VMwareCertified'
     VMwareAcceptedAcceptanceLevel = 'VMwareAccepted'
+    VMHostvSanNetworkConfigurationInterfaceOneName = 'vmk0'
+    VMHostvSanNetworkConfigurationInterfaceTwoName = 'vmk1'
+    VMHostvSanNetworkConfigurationAgentGroupIPv6MulticastAddress = 'ff19::2:3:4'
+    VMHostvSanNetworkConfigurationAgentGroupMulticastAddress = '224.2.3.4'
+    VMHostvSanNetworkConfigurationAgentGroupMulticastPort = 23451
+    VMHostvSanNetworkConfigurationHostUnicastChannelBoundPort = 12321
+    VMHostvSanNetworkConfigurationMasterGroupIPv6MulticastAddress = 'ff19::1:2:3'
+    VMHostvSanNetworkConfigurationMasterGroupMulticastAddress = '224.1.2.3'
+    VMHostvSanNetworkConfigurationMasterGroupMulticastPort = 12345
+    VMHostvSanNetworkConfigurationMulticastTTL = 5
+    VMHostvSanNetworkConfigurationTrafficType = 'vsan'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1469,4 +1480,17 @@ $script:vmHostNetworkCoreDumpConfiguration = @{
     HostVNic = $script:constants.NetworkCoreDumpInterfaceName
     NetworkServerIP = $script:constants.NetworkCoreDumpServerIP
     NetworkServerPort = $script:constants.NetworkCoreDumpServerPort
+}
+
+$script:vmHostvSanNetworkConfigurationIPInterface = @{
+    VmkNicName = $script:constants.VMHostvSanNetworkConfigurationInterfaceOneName
+    AgentGroupIPv6MulticastAddress = $script:constants.VMHostvSanNetworkConfigurationAgentGroupIPv6MulticastAddress
+    AgentGroupMulticastAddress = $script:constants.VMHostvSanNetworkConfigurationAgentGroupMulticastAddress
+    AgentGroupMulticastPort = $script:constants.VMHostvSanNetworkConfigurationAgentGroupMulticastPort
+    HostUnicastChannelBoundPort = $script:constants.VMHostvSanNetworkConfigurationHostUnicastChannelBoundPort
+    MasterGroupIPv6MulticastAddress = $script:constants.VMHostvSanNetworkConfigurationMasterGroupIPv6MulticastAddress
+    MasterGroupMulticastAddress = $script:constants.VMHostvSanNetworkConfigurationMasterGroupMulticastAddress
+    MasterGroupMulticastPort = $script:constants.VMHostvSanNetworkConfigurationMasterGroupMulticastPort
+    MulticastTTL = $script:constants.VMHostvSanNetworkConfigurationMulticastTTL
+    TrafficType = $script:constants.VMHostvSanNetworkConfigurationTrafficType
 }
