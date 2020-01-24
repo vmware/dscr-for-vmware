@@ -51,7 +51,6 @@ class VMHostIPRoute : VMHostBaseDSC {
     hidden [string] $CreateVMHostIPRouteMessage = "Creating IP Route with Gateway address {0} and Destination address {1} on VMHost {2}."
     hidden [string] $RemoveVMHostIPRouteMessage = "Removing IP Route with Gateway address {0} and Destination address {1} on VMHost {2}."
 
-    hidden [string] $CouldNotRetrieveVMHostIPRouteMessage = "Could not retrieve IP route with Gateway address {0} and Destination address {1} on VMHost {2}. For more information: {3}"
     hidden [string] $CouldNotCreateVMHostIPRouteMessage = "Could not create IP Route with Gateway address {0} and Destination address {1} on VMHost {2}. For more information: {3}"
     hidden [string] $CouldNotRemoveVMHostIPRouteMessage = "Could not remove IP Route with Gateway address {0} and Destination address {1} on VMHost {2}. For more information: {3}"
 
@@ -132,14 +131,8 @@ class VMHostIPRoute : VMHostBaseDSC {
     Retrieves the configured IPv4/IPv6 route with the specified Gateway and Destination addresses if it exists.
     #>
     [PSObject] GetVMHostIPRoute($vmHost) {
-        try {
-            $vmHostIPRoute = Get-VMHostRoute -Server $this.Connection -VMHost $vmHost -ErrorAction SilentlyContinue -Verbose:$false |
-                             Where-Object -FilterScript { $_.Gateway -eq $this.Gateway -and $_.Destination -eq $this.Destination -and $_.PrefixLength -eq $this.PrefixLength }
-            return $vmHostIPRoute
-        }
-        catch {
-            throw ($this.CouldNotRetrieveVMHostIPRouteMessage -f $this.Gateway, $this.Destination, $vmHost.Name, $_.Exception.Message)
-        }
+        return (Get-VMHostRoute -Server $this.Connection -VMHost $vmHost -ErrorAction SilentlyContinue -Verbose:$false |
+                Where-Object -FilterScript { $_.Gateway -eq $this.Gateway -and $_.Destination -eq $this.Destination -and $_.PrefixLength -eq $this.PrefixLength })
     }
 
     <#
