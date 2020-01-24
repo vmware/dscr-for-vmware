@@ -105,7 +105,7 @@ class VMHostvSANNetworkConfiguration : EsxCliBaseDSC {
 
     Specifies the network transmission type of the vSAN traffic through a virtual network adapter. Supported values are vsan and witness. Type 'vsan' means general vSAN transmission, which is used for both
     data and witness transmission, if there is no virtual adapter configured with 'witness' traffic type; Type 'witness' indicates that, vSAN vmknic is used for vSAN witness transmission.
-    Once a virtual adapter is configured with 'witness' traffic type, vSAN witness data transmission will stop using virtual adpater with 'vsan' traffic type, and use first dicovered virtual adapter with 'witness' traffic type.
+    Once a virtual adapter is configured with 'witness' traffic type, vSAN witness data transmission will stop using virtual adapter with 'vsan' traffic type, and use first dicovered virtual adapter with 'witness' traffic type.
     Multiple traffic types can be provided in format -T type1 -T type2. Default value is 'vsan', if the property is not specified.
     #>
     [DscProperty()]
