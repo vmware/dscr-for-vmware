@@ -18,7 +18,7 @@ function New-VMHostScsiLunPathProperties {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $VMHostScsiLunPathProperties = @{
+    $vmHostScsiLunPathProperties = @{
         Server = $script:constants.VIServerName
         Credential = $script:credential
         VMHostName = $script:constants.VMHostName
@@ -26,7 +26,7 @@ function New-VMHostScsiLunPathProperties {
         ScsiLunCanonicalName = $script:constants.VMHostScsiLunCanonicalName
     }
 
-    $VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties
 }
 
 function New-MocksForVMHostScsiLunPath {
@@ -63,7 +63,7 @@ function New-MocksWhenNoErrorOccursWhileConfiguringTheScsiLunPath {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $VMHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
 
     $vmHostScsiLunPathProperties.Active = $script:constants.VMHostActiveScsiLunPath
     $vmHostScsiLunPathProperties.Preferred = $script:constants.VMHostPreferredScsiLunPath
@@ -75,39 +75,39 @@ function New-MocksWhenNoErrorOccursWhileConfiguringTheScsiLunPath {
     Mock -CommandName Get-ScsiLunPath -MockWith { return $vmHostScsiLunPathMock }.GetNewClosure() -ParameterFilter { $Name -eq $script:constants.VMHostScsiLunPathName -and $ScsiLun -eq $script:vmHostScsiLun } -Verifiable
     Mock -CommandName Set-ScsiLunPath -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties
 }
 
 function New-MocksWhenTheScsiLunIsNotFound {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $VMHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
 
     Mock -CommandName Get-ScsiLun -MockWith { throw }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VmHost -eq $script:vmHost -and $CanonicalName -eq $script:constants.VMHostScsiLunCanonicalName } -Verifiable
 
-    $VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties
 }
 
 function New-MocksWhenTheScsiLunPathIsNotFound {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $VMHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
 
     $vmHostScsiLunMock = $script:vmHostScsiLun
 
     Mock -CommandName Get-ScsiLun -MockWith { return $vmHostScsiLunMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VmHost -eq $script:vmHost -and $CanonicalName -eq $script:constants.VMHostScsiLunCanonicalName } -Verifiable
     Mock -CommandName Get-ScsiLunPath -MockWith { throw }.GetNewClosure() -ParameterFilter { $Name -eq $script:constants.VMHostScsiLunPathName -and $ScsiLun -eq $script:vmHostScsiLun } -Verifiable
 
-    $VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties
 }
 
 function New-MocksWhenTheScsiLunPathStateIsActiveAndTheActivePropertyIsTrue {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $VMHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
 
     $vmHostScsiLunPathProperties.Active = $script:constants.VMHostActiveScsiLunPath
 
@@ -117,14 +117,14 @@ function New-MocksWhenTheScsiLunPathStateIsActiveAndTheActivePropertyIsTrue {
     Mock -CommandName Get-ScsiLun -MockWith { return $vmHostScsiLunMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VmHost -eq $script:vmHost -and $CanonicalName -eq $script:constants.VMHostScsiLunCanonicalName } -Verifiable
     Mock -CommandName Get-ScsiLunPath -MockWith { return $vmHostScsiLunPathMock }.GetNewClosure() -ParameterFilter { $Name -eq $script:constants.VMHostScsiLunPathName -and $ScsiLun -eq $script:vmHostScsiLun } -Verifiable
 
-    $VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties
 }
 
 function New-MocksWhenTheScsiLunPathStateIsActiveAndTheActivePropertyIsFalse {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $VMHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
 
     $vmHostScsiLunPathProperties.Active = !$script:constants.VMHostActiveScsiLunPath
 
@@ -134,14 +134,14 @@ function New-MocksWhenTheScsiLunPathStateIsActiveAndTheActivePropertyIsFalse {
     Mock -CommandName Get-ScsiLun -MockWith { return $vmHostScsiLunMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VmHost -eq $script:vmHost -and $CanonicalName -eq $script:constants.VMHostScsiLunCanonicalName } -Verifiable
     Mock -CommandName Get-ScsiLunPath -MockWith { return $vmHostScsiLunPathMock }.GetNewClosure() -ParameterFilter { $Name -eq $script:constants.VMHostScsiLunPathName -and $ScsiLun -eq $script:vmHostScsiLun } -Verifiable
 
-    $VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties
 }
 
 function New-MocksWhenTheScsiLunPathIsPreferredAndThePreferredPropertyIsTrue {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $VMHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
 
     $vmHostScsiLunPathProperties.Preferred = $script:constants.VMHostPreferredScsiLunPath
 
@@ -151,14 +151,14 @@ function New-MocksWhenTheScsiLunPathIsPreferredAndThePreferredPropertyIsTrue {
     Mock -CommandName Get-ScsiLun -MockWith { return $vmHostScsiLunMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VmHost -eq $script:vmHost -and $CanonicalName -eq $script:constants.VMHostScsiLunCanonicalName } -Verifiable
     Mock -CommandName Get-ScsiLunPath -MockWith { return $vmHostScsiLunPathMock }.GetNewClosure() -ParameterFilter { $Name -eq $script:constants.VMHostScsiLunPathName -and $ScsiLun -eq $script:vmHostScsiLun } -Verifiable
 
-    $VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties
 }
 
 function New-MocksWhenTheScsiLunPathIsPreferredAndThePreferredPropertyIsFalse {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $VMHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
 
     $vmHostScsiLunPathProperties.Preferred = !$script:constants.VMHostPreferredScsiLunPath
 
@@ -168,14 +168,14 @@ function New-MocksWhenTheScsiLunPathIsPreferredAndThePreferredPropertyIsFalse {
     Mock -CommandName Get-ScsiLun -MockWith { return $vmHostScsiLunMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VmHost -eq $script:vmHost -and $CanonicalName -eq $script:constants.VMHostScsiLunCanonicalName } -Verifiable
     Mock -CommandName Get-ScsiLunPath -MockWith { return $vmHostScsiLunPathMock }.GetNewClosure() -ParameterFilter { $Name -eq $script:constants.VMHostScsiLunPathName -and $ScsiLun -eq $script:vmHostScsiLun } -Verifiable
 
-    $VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties
 }
 
 function New-MocksInGet {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
 
-    $VMHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties = New-VMHostScsiLunPathProperties
 
     $vmHostScsiLunMock = $script:vmHostScsiLun
     $vmHostScsiLunPathMock = $script:vmHostScsiLunPath
@@ -183,5 +183,5 @@ function New-MocksInGet {
     Mock -CommandName Get-ScsiLun -MockWith { return $vmHostScsiLunMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $VmHost -eq $script:vmHost -and $CanonicalName -eq $script:constants.VMHostScsiLunCanonicalName } -Verifiable
     Mock -CommandName Get-ScsiLunPath -MockWith { return $vmHostScsiLunPathMock }.GetNewClosure() -ParameterFilter { $Name -eq $script:constants.VMHostScsiLunPathName -and $ScsiLun -eq $script:vmHostScsiLun } -Verifiable
 
-    $VMHostScsiLunPathProperties
+    $vmHostScsiLunPathProperties
 }
