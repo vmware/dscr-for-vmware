@@ -132,7 +132,8 @@ class VMHostIScsiHbaBaseDSC : VMHostEntityBaseDSC {
             $cmdletParams.InheritChap = $inheritChap
         }
         else {
-            if ($null -ne $inheritChap) { $cmdletParams.InheritChap = $inheritChap }
+            # When 'InheritChap' is $false, it can be passed to the cmdlet only if CHAP type is not 'Prohibited'.
+            if ($null -ne $inheritChap -and $this.ChapType -ne [ChapType]::Prohibited) { $cmdletParams.InheritChap = $inheritChap }
             if ($this.ChapType -ne [ChapType]::Unset) { $cmdletParams.ChapType = $this.ChapType.ToString() }
 
             if ($this.ChapType -ne [ChapType]::Prohibited) {
@@ -145,7 +146,8 @@ class VMHostIScsiHbaBaseDSC : VMHostEntityBaseDSC {
             $cmdletParams.InheritMutualChap = $inheritMutualChap
         }
         else {
-            if ($null -ne $inheritMutualChap) { $cmdletParams.InheritMutualChap = $inheritMutualChap }
+            # When 'InheritMutualChap' is $false, it can be passed to the cmdlet only if CHAP type is not 'Prohibited'.
+            if ($null -ne $inheritMutualChap -and $this.ChapType -ne [ChapType]::Prohibited) { $cmdletParams.InheritMutualChap = $inheritMutualChap }
 
             if ($this.ChapType -eq [ChapType]::Required) {
                 if ($null -ne $this.MutualChapEnabled) { $cmdletParams.MutualChapEnabled = $this.MutualChapEnabled }

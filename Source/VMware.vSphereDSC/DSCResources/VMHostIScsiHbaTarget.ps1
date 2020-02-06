@@ -291,7 +291,7 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
             $result.Address = $iScsiHbaTarget.Address
             $result.Port = $iScsiHbaTarget.Port
             $result.TargetType = $iScsiHbaTarget.Type.ToString()
-            $result.IScsiName = $iScsiHbaTarget.Name
+            $result.IScsiName = $iScsiHbaTarget.IScsiName
             $result.InheritChap = $iScsiHbaTarget.AuthenticationProperties.ChapInherited
             $result.ChapType = $iScsiHbaTarget.AuthenticationProperties.ChapType.ToString()
             $result.ChapName = [string] $iScsiHbaTarget.AuthenticationProperties.ChapName
