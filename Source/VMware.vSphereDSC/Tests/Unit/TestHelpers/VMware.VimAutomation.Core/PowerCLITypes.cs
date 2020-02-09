@@ -88461,6 +88461,44 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Host
         }
     }
 
+    public class VMHostFirewallExceptionImpl : VMHostFirewallException, IEquatable<VMHostFirewallExceptionImpl>
+    {
+        public string Uid { get; set; }
+
+        public string VMHostId { get; set; }
+
+        public VMHost VMHost { get; set; }
+
+        public string Name { get; set; }
+
+        public bool Enabled { get; set; }
+
+        public string IncomingPorts { get; set; }
+
+        public string OutgoingPorts { get; set; }
+
+        public string Protocols { get; set; }
+
+        public bool? ServiceRunning { get; set; }
+
+        public object ExtensionData { get; set; }
+
+        public bool Equals(VMHostFirewallExceptionImpl vmHostFirewallExceptionImpl)
+        {
+            return (vmHostFirewallExceptionImpl != null && this.Uid == vmHostFirewallExceptionImpl.Uid && this.VMHostId == vmHostFirewallExceptionImpl.VMHostId && ((this.VMHost == null && vmHostFirewallExceptionImpl.VMHost == null) || (this.VMHost != null && this.VMHost.Equals(vmHostFirewallExceptionImpl.VMHost))) && this.Name == vmHostFirewallExceptionImpl.Name && this.Enabled == vmHostFirewallExceptionImpl.Enabled && this.IncomingPorts == vmHostFirewallExceptionImpl.IncomingPorts && this.OutgoingPorts == vmHostFirewallExceptionImpl.OutgoingPorts && this.Protocols == vmHostFirewallExceptionImpl.Protocols && this.ServiceRunning == vmHostFirewallExceptionImpl.ServiceRunning && ((this.ExtensionData == null && vmHostFirewallExceptionImpl.ExtensionData == null) || (this.ExtensionData != null && this.ExtensionData.Equals(vmHostFirewallExceptionImpl.ExtensionData))));
+        }
+
+        public override bool Equals(object vmHostFirewallExceptionImpl)
+        {
+            return Equals(vmHostFirewallExceptionImpl as VMHostFirewallExceptionImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Uid + "_" + VMHostId + "_" + VMHost + "_" + Name + "_" + Enabled + "_" + IncomingPorts + "_" + OutgoingPorts + "_" + Protocols + "_" + ServiceRunning + "_" + ExtensionData).GetHashCode();
+        }
+    }
+
     public class VMHostHardwareImpl : VMHostHardware, IEquatable<VMHostHardwareImpl>
     {
         public VMHost VMHost { get; set; }
