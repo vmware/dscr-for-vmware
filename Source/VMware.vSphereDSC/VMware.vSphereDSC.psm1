@@ -9769,6 +9769,587 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
 }
 
 [DscResource()]
+class VMHostSharedSwapSpace : EsxCliBaseDSC {
+    VMHostSharedSwapSpace() {
+        $this.EsxCliCommand = 'sched.swap.system'
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies if the Datastore option should be enabled or not.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $DatastoreEnabled
+
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the Datastore used by the Datastore option.
+    #>
+    [DscProperty()]
+    [string] $DatastoreName
+
+    <#
+    .DESCRIPTION
+
+    Specifies the order of the Datastore option in the preference of the options of the system-wide shared swap space.
+    #>
+    [DscProperty()]
+    [nullable[long]] $DatastoreOrder
+
+    <#
+    .DESCRIPTION
+
+    Specifies if the host cache option should be enabled or not.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $HostCacheEnabled
+
+    <#
+    .DESCRIPTION
+
+    Specifies the order of the host cache option in the preference of the options of the system-wide shared swap space.
+    #>
+    [DscProperty()]
+    [nullable[long]] $HostCacheOrder
+
+    <#
+    .DESCRIPTION
+
+    Specifies if the host local swap option should be enabled or not.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $HostLocalSwapEnabled
+
+    <#
+    .DESCRIPTION
+
+    Specifies the order of the host local swap option in the preference of the options of the system-wide shared swap space.
+    #>
+    [DscProperty()]
+    [nullable[long]] $HostLocalSwapOrder
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $modifyVMHostSharedSwapSpaceMethodArguments = @{}
+            if ($null -ne $this.DatastoreName) { $modifyVMHostSharedSwapSpaceMethodArguments.datastorename = $this.DatastoreName }
+
+            $this.ExecuteEsxCliModifyMethod($this.EsxCliSetMethodName, $modifyVMHostSharedSwapSpaceMethodArguments)
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+            $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+
+            $result = !$this.ShouldModifySystemWideSharedSwapSpaceConfiguration($esxCliGetMethodResult)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostSharedSwapSpace] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostSharedSwapSpace]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.PopulateResult($result, $vmHost)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the system-wide shared swap space configuration should be modified.
+    #>
+    [bool] ShouldModifySystemWideSharedSwapSpaceConfiguration($esxCliGetMethodResult) {
+        $shouldModifySystemWideSharedSwapSpaceConfiguration = @()
+
+        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.DatastoreEnabled -and $this.DatastoreEnabled -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.DatastoreEnabled))
+        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.DatastoreName -and $this.DatastoreName -ne $esxCliGetMethodResult.DatastoreName)
+        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.DatastoreOrder -and $this.DatastoreOrder -ne [long] $esxCliGetMethodResult.DatastoreOrder)
+        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostCacheEnabled -and $this.HostCacheEnabled -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.HostcacheEnabled))
+        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostCacheOrder -and $this.HostCacheOrder -ne [long] $esxCliGetMethodResult.HostcacheOrder)
+        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostLocalSwapEnabled -and $this.HostLocalSwapEnabled -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.HostlocalswapEnabled))
+        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostLocalSwapOrder -and $this.HostLocalSwapOrder -ne [long] $esxCliGetMethodResult.HostlocalswapOrder)
+
+        return ($shouldModifySystemWideSharedSwapSpaceConfiguration -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+
+        $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+
+        $result.DatastoreEnabled = [System.Convert]::ToBoolean($esxCliGetMethodResult.DatastoreEnabled)
+        $result.DatastoreName = $esxCliGetMethodResult.DatastoreName
+        $result.DatastoreOrder = [long] $esxCliGetMethodResult.DatastoreOrder
+        $result.HostCacheEnabled = [System.Convert]::ToBoolean($esxCliGetMethodResult.HostcacheEnabled)
+        $result.HostCacheOrder = [long] $esxCliGetMethodResult.HostcacheOrder
+        $result.HostLocalSwapEnabled = [System.Convert]::ToBoolean($esxCliGetMethodResult.HostlocalswapEnabled)
+        $result.HostLocalSwapOrder = [long] $esxCliGetMethodResult.HostlocalswapOrder
+    }
+}
+
+[DscResource()]
+class VMHostSNMPAgent : EsxCliBaseDSC {
+    VMHostSNMPAgent() {
+        $this.EsxCliCommand = 'system.snmp'
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies the default authentication protocol. Valid values are none, MD5, SHA1.
+    #>
+    [DscProperty()]
+    [string] $Authentication
+
+    <#
+    .DESCRIPTION
+
+    Specifies up to ten communities each no more than 64 characters. Format is: 'community1[,community2,...]'. This overwrites previous settings.
+    #>
+    [DscProperty()]
+    [string] $Communities
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether to start or stop the SNMP service.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Enable
+
+    <#
+    .DESCRIPTION
+
+    Specifies the SNMPv3 engine id. Must be between 10 and 32 hexadecimal characters. 0x or 0X are stripped if found as well as colons (:).
+    #>
+    [DscProperty()]
+    [string] $EngineId
+
+    <#
+    .DESCRIPTION
+
+    Specifies where to source hardware events - IPMI sensors or CIM Indications. Valid values are indications and sensors.
+    #>
+    [DscProperty()]
+    [string] $Hwsrc
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether to support large storage for 'hrStorageAllocationUnits' * 'hrStorageSize'. Controls how the agent reports 'hrStorageAllocationUnits', 'hrStorageSize' and 'hrStorageUsed' in 'hrStorageTable'.
+    Setting this directive to $true to support large storage with small allocation units, the agent re-calculates these values so they all fit into 'int' and 'hrStorageAllocationUnits' * 'hrStorageSize' gives real size
+    of the storage. Setting this directive to $false turns off this calculation and the agent reports real 'hrStorageAllocationUnits', but it might report wrong 'hrStorageSize' for large storage because the value won't fit
+    into 'int'.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $LargeStorage
+
+    <#
+    .DESCRIPTION
+
+    Specifies the SNMP agent syslog logging level. Valid values are debug, info, warning and error.
+    #>
+    [DscProperty()]
+    [string] $LogLevel
+
+    <#
+    .DESCRIPTION
+
+    Specifies a comma separated list of trap oids for traps not to be sent by the SNMP agent. Use the property 'reset' to clear this setting.
+    #>
+    [DscProperty()]
+    [string] $NoTraps
+
+    <#
+    .DESCRIPTION
+
+    Specifies the UDP port to poll SNMP agent on. The default is 'udp/161'. May not use ports 32768 to 40959.
+    #>
+    [DscProperty()]
+    [nullable[long]] $Port
+
+    <#
+    .DESCRIPTION
+
+    Specifies the default privacy protocol. Valid values are none and AES128.
+    #>
+    [DscProperty()]
+    [string] $Privacy
+
+    <#
+    .DESCRIPTION
+
+    Specifies up to five inform user ids. Format is: 'user/auth-proto/-|auth-hash/priv-proto/-|priv-hash/engine-id[,...]', where user is 32 chars max. 'auth-proto' is 'none', 'MD5' or 'SHA1',
+    'priv-proto' is 'none' or 'AES'. '-' indicates no hash. 'engine-id' is hex string '0x0-9a-f' up to 32 chars max.
+    #>
+    [DscProperty()]
+    [string] $RemoteUsers
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether to return SNMP agent configuration to factory defaults.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Reset
+
+    <#
+    .DESCRIPTION
+
+    Specifies the System contact as presented in 'sysContact.0'. Up to 255 characters.
+    #>
+    [DscProperty()]
+    [string] $SysContact
+
+    <#
+    .DESCRIPTION
+
+    Specifies the System location as presented in 'sysLocation.0'. Up to 255 characters.
+    #>
+    [DscProperty()]
+    [string] $SysLocation
+
+    <#
+    .DESCRIPTION
+
+    Specifies up to three targets to send SNMPv1 traps to. Format is: 'ip-or-hostname[@port]/community[,...]'. The default port is 'udp/162'.
+    #>
+    [DscProperty()]
+    [string] $Targets
+
+    <#
+    .DESCRIPTION
+
+    Specifies up to five local users. Format is: 'user/-|auth-hash/-|priv-hash/model[,...]', where user is 32 chars max. '-' indicates no hash. Model is one of 'none', 'auth' or 'priv'.
+    #>
+    [DscProperty()]
+    [string] $Users
+
+    <#
+    .DESCRIPTION
+
+    Specifies up to three SNMPv3 notification targets. Format is: 'ip-or-hostname[@port]/remote-user/security-level/trap|inform[,...]'.
+    #>
+    [DscProperty()]
+    [string] $V3Targets
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $modifyVMHostSNMPAgentMethodArguments = @{}
+            if ($null -ne $this.NoTraps) { $modifyVMHostSNMPAgentMethodArguments.notraps = $this.NoTraps }
+            if ($null -ne $this.SysContact) { $modifyVMHostSNMPAgentMethodArguments.syscontact = $this.SysContact }
+            if ($null -ne $this.SysLocation) { $modifyVMHostSNMPAgentMethodArguments.syslocation = $this.SysLocation }
+
+            $this.ExecuteEsxCliModifyMethod($this.EsxCliSetMethodName, $modifyVMHostSNMPAgentMethodArguments)
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+            $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+
+            $result = !$this.ShouldModifyVMHostSNMPAgent($esxCliGetMethodResult)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostSNMPAgent] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostSNMPAgent]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.PopulateResult($result, $vmHost)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the VMHost SNMP Agent should be modified.
+    #>
+    [bool] ShouldModifyVMHostSNMPAgent($esxCliGetMethodResult) {
+        $shouldModifyVMHostSNMPAgent = @()
+
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Authentication) -and $this.Authentication -ne $esxCliGetMethodResult.authentication)
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Communities) -and $this.Communities -ne $esxCliGetMethodResult.communities)
+        $shouldModifyVMHostSNMPAgent += ($null -ne $this.Enable -and $this.Enable -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.enable))
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.EngineId) -and $this.EngineId -ne $esxCliGetMethodResult.engineid)
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Hwsrc) -and $this.Hwsrc -ne $esxCliGetMethodResult.hwsrc)
+        $shouldModifyVMHostSNMPAgent += ($null -ne $this.LargeStorage -and $this.LargeStorage -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.largestorage))
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.LogLevel) -and $this.LogLevel -ne $esxCliGetMethodResult.loglevel)
+        $shouldModifyVMHostSNMPAgent += ($null -ne $this.NoTraps -and $this.NoTraps -ne $esxCliGetMethodResult.notraps)
+        $shouldModifyVMHostSNMPAgent += ($null -ne $this.Port -and $this.Port -ne [int] $esxCliGetMethodResult.port)
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Privacy) -and $this.Privacy -ne $esxCliGetMethodResult.privacy)
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.RemoteUsers) -and $this.RemoteUsers -ne $esxCliGetMethodResult.remoteusers)
+        $shouldModifyVMHostSNMPAgent += ($null -ne $this.SysContact -and $this.SysContact -ne $esxCliGetMethodResult.syscontact)
+        $shouldModifyVMHostSNMPAgent += ($null -ne $this.SysLocation -and $this.SysLocation -ne $esxCliGetMethodResult.syslocation)
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Targets) -and $this.Targets -ne $esxCliGetMethodResult.targets)
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Users) -and $this.Users -ne $esxCliGetMethodResult.users)
+        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.V3Targets) -and $this.V3Targets -ne $esxCliGetMethodResult.v3targets)
+        $shouldModifyVMHostSNMPAgent += ($null -ne $this.Reset -and $this.Reset)
+
+        return ($shouldModifyVMHostSNMPAgent -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+        $result.Reset = $this.Reset
+
+        $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+
+        $result.Authentication = $esxCliGetMethodResult.authentication
+        $result.Communities = $esxCliGetMethodResult.communities
+        $result.Enable = [System.Convert]::ToBoolean($esxCliGetMethodResult.enable)
+        $result.EngineId = $esxCliGetMethodResult.engineid
+        $result.Hwsrc = $esxCliGetMethodResult.hwsrc
+        $result.LargeStorage = [System.Convert]::ToBoolean($esxCliGetMethodResult.largestorage)
+        $result.LogLevel = $esxCliGetMethodResult.loglevel
+        $result.NoTraps = $esxCliGetMethodResult.notraps
+        $result.Port = [int] $esxCliGetMethodResult.port
+        $result.Privacy = $esxCliGetMethodResult.privacy
+        $result.RemoteUsers = $esxCliGetMethodResult.remoteusers
+        $result.SysContact = $esxCliGetMethodResult.syscontact
+        $result.SysLocation = $esxCliGetMethodResult.syslocation
+        $result.Targets = $esxCliGetMethodResult.targets
+        $result.Users = $esxCliGetMethodResult.users
+        $result.V3Targets = $esxCliGetMethodResult.v3targets
+    }
+}
+
+[DscResource()]
+class VMHostSoftwareDevice : EsxCliBaseDSC {
+    VMHostSoftwareDevice() {
+        $this.EsxCliCommand = 'device.software'
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies the device identifier from the device specification for the software device driver. Valid input is in reverse domain name format (e.g. com.company.device...).
+    #>
+    [DscProperty(Key)]
+    [string] $DeviceIdentifier
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the software device should be present or absent.
+    #>
+    [DscProperty(Mandatory = $true)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Specifies the unique number to address this instance of the device, if multiple instances of the same device identifier are added. Valid values are integer in the range 0-31. Default is 0.
+    #>
+    [DscProperty()]
+    [nullable[long]] $InstanceAddress
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $softwareDevice = $this.GetVMHostSoftwareDevice()
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $softwareDevice) {
+                    $this.ExecuteEsxCliModifyMethod($this.EsxCliAddMethodName)
+                }
+            }
+            else {
+                if ($null -ne $softwareDevice) {
+                    $this.ExecuteEsxCliModifyMethod($this.EsxCliRemoveMethodName)
+                }
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $result = $this.IsVMHostSoftwareDeviceInDesiredState()
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostSoftwareDevice] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostSoftwareDevice]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.PopulateResult($result, $vmHost)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Software device with the specified id and instance address if it exists.
+    #>
+    [PSObject] GetVMHostSoftwareDevice() {
+        $esxCliListMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliListMethodName)
+        $softwareDeviceInstanceAddress = if ($null -ne $this.InstanceAddress) { $this.InstanceAddress } else { 0 }
+        $softwareDevice = $esxCliListMethodResult | Where-Object -FilterScript { $_.DeviceID -eq $this.DeviceIdentifier -and [long] $_.Instance -eq $softwareDeviceInstanceAddress }
+
+        return $softwareDevice
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Software device is in a Desired State depending on the value of the 'Ensure' property.
+    #>
+    [bool] IsVMHostSoftwareDeviceInDesiredState() {
+        $softwareDevice = $this.GetVMHostSoftwareDevice()
+
+        $result = $false
+        if ($this.Ensure -eq [Ensure]::Present) {
+            $result = ($null -ne $softwareDevice)
+        }
+        else {
+            $result = ($null -eq $softwareDevice)
+        }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+
+        $softwareDevice = $this.GetVMHostSoftwareDevice()
+        if ($null -ne $softwareDevice) {
+            $result.DeviceIdentifier = $softwareDevice.DeviceID
+            $result.InstanceAddress = [long] $softwareDevice.Instance
+            $result.Ensure = [Ensure]::Present
+        }
+        else {
+            $result.DeviceIdentifier = $this.DeviceIdentifier
+            $result.InstanceAddress = $this.InstanceAddress
+            $result.Ensure = [Ensure]::Absent
+        }
+    }
+}
+
+[DscResource()]
 class VMHostVMKernelActiveDumpFile : EsxCliBaseDSC {
     VMHostVMKernelActiveDumpFile() {
         $this.EsxCliCommand = 'system.coredump.file'
@@ -10233,6 +10814,121 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
             $result.Size = $this.Size
             $result.Ensure = [Ensure]::Absent
         }
+    }
+}
+
+[DscResource()]
+class VMHostVMKernelModule : EsxCliBaseDSC {
+    VMHostVMKernelModule() {
+        $this.EsxCliCommand = 'system.module'
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the VMKernel module.
+    #>
+    [DscProperty(Key)]
+    [string] $Module
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the module should be enabled or disabled.
+    #>
+    [DscProperty(Mandatory)]
+    [bool] $Enabled
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether to skip the VMkernel module validity checks.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Force
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.ExecuteEsxCliModifyMethod($this.EsxCliSetMethodName)
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+            $esxCliListMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliListMethodName)
+
+            $result = !$this.ShouldModifyVMKernelModule($esxCliListMethodResult)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostVMKernelModule] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostVMKernelModule]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.PopulateResult($result, $vmHost)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the specified VMKernel module should be modified.
+    #>
+    [bool] ShouldModifyVMKernelModule($esxCliListMethodResult) {
+        $vmKernelModule = $esxCliListMethodResult | Where-Object -FilterScript { $_.Name -eq $this.Module }
+        return ($this.Enabled -ne [System.Convert]::ToBoolean($vmKernelModule.IsEnabled))
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+        $result.Force = $this.Force
+
+        $esxCliListMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliListMethodName)
+        $vmKernelModule = $esxCliListMethodResult | Where-Object -FilterScript { $_.Name -eq $this.Module }
+
+        $result.Module = $vmKernelModule.Name
+        $result.Enabled = [System.Convert]::ToBoolean($vmKernelModule.IsEnabled)
     }
 }
 

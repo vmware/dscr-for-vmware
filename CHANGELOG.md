@@ -1,6 +1,25 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.45 - 2020-02-11
+### Added
+- Added VMHostVMKernelModule DSC Resource.
+- Added VMHostSNMPAgent DSC Resource.
+- Added VMHostSoftwareDevice DSC Resource.
+- Added VMHostSharedSwapSpace DSC Resource.
+- Added Unit Tests for VMHostVMKernelModule DSC Resource.
+- Added Unit Tests for VMHostSNMPAgent DSC Resource.
+- Added Unit Tests for VMHostSoftwareDevice DSC Resource.
+- Added Unit Tests for VMHostSharedSwapSpace DSC Resource.
+- Added Integration Tests for VMHostVMKernelModule DSC Resource.
+- Added Integration Tests for VMHostSNMPAgent DSC Resource.
+- Added Integration Tests for VMHostSoftwareDevice DSC Resource.
+- Added Integration Tests for VMHostSharedSwapSpace DSC Resource.
+- Added Documentation and example Configuration for VMHostVMKernelModule DSC Resource.
+- Added Documentation and example Configurations for VMHostSNMPAgent DSC Resource.
+- Added Documentation and example Configurations for VMHostSoftwareDevice DSC Resource.
+- Added Documentation and example Configuration for VMHostSharedSwapSpace DSC Resource.
+
 ## 2.0.0.44 - 2020-02-11
 ### Added
 - Added VMHostVMKernelActiveDumpPartition DSC Resource.
