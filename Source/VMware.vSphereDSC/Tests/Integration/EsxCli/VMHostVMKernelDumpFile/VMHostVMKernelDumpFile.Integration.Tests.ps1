@@ -141,8 +141,8 @@ Describe "$($script:dscResourceName)_Integration" {
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
             $configuration.Name | Should -Be $script:configurationData.AllNodes.VMHostName
-            $configuration.Datastore | Should -Be $script:configurationData.AllNodes.DatastoreName
-            $configuration.File | Should -Be $script:configurationData.AllNodes.DumpFileName
+            $configuration.DatastoreName | Should -Be $script:configurationData.AllNodes.DatastoreName
+            $configuration.FileName | Should -Be $script:configurationData.AllNodes.DumpFileName
             $configuration.Ensure | Should -Be 'Present'
             $configuration.Size | Should -Be $script:configurationData.AllNodes.DumpFileSize
             $configuration.Force | Should -BeNullOrEmpty
@@ -280,8 +280,8 @@ Describe "$($script:dscResourceName)_Integration" {
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
             $configuration.Name | Should -Be $script:configurationData.AllNodes.VMHostName
-            $configuration.Datastore | Should -Be $script:configurationData.AllNodes.DatastoreName
-            $configuration.File | Should -Be $script:configurationData.AllNodes.DumpFileName
+            $configuration.DatastoreName | Should -Be $script:configurationData.AllNodes.DatastoreName
+            $configuration.FileName | Should -Be $script:configurationData.AllNodes.DumpFileName
             $configuration.Ensure | Should -Be 'Absent'
             $configuration.Size | Should -BeNullOrEmpty
             $configuration.Force | Should -Be $script:configurationData.AllNodes.Force

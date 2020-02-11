@@ -33,8 +33,8 @@ function New-MocksInSetForVMHostVMKernelDumpFile {
 
     $vmHostVMKernelDumpFileProperties = New-VMHostVMKernelDumpFileProperties
 
-    $vmHostVMKernelDumpFileProperties.Datastore = $script:constants.DatastoreName
-    $vmHostVMKernelDumpFileProperties.File = $script:constants.DumpFileName
+    $vmHostVMKernelDumpFileProperties.DatastoreName = $script:constants.DatastoreName
+    $vmHostVMKernelDumpFileProperties.FileName = $script:constants.DumpFileName
     $vmHostVMKernelDumpFileProperties.Ensure = 'Present'
 
     $viServerMock = $script:viServer
@@ -80,8 +80,8 @@ function New-MocksWhenTheVMHostVMKernelDumpFileDoesNotExistAndEnsureIsPresent {
 
     $vmHostVMKernelDumpFileProperties = New-VMHostVMKernelDumpFileProperties
 
-    $vmHostVMKernelDumpFileProperties.Datastore = $script:constants.DatastoreName + $script:constants.DatastoreName
-    $vmHostVMKernelDumpFileProperties.File = $script:constants.DumpFileName + $script:constants.DumpFileName
+    $vmHostVMKernelDumpFileProperties.DatastoreName = $script:constants.DatastoreName + $script:constants.DatastoreName
+    $vmHostVMKernelDumpFileProperties.FileName = $script:constants.DumpFileName + $script:constants.DumpFileName
     $vmHostVMKernelDumpFileProperties.Ensure = 'Present'
     $vmHostVMKernelDumpFileProperties.Size = $script:constants.DumpFileSizeInMB + $script:constants.DumpFileSizeInMB
 
@@ -94,8 +94,8 @@ function New-MocksWhenTheVMHostVMKernelDumpFileExistsAndEnsureIsPresent {
 
     $vmHostVMKernelDumpFileProperties = New-VMHostVMKernelDumpFileProperties
 
-    $vmHostVMKernelDumpFileProperties.Datastore = $script:constants.DatastoreName
-    $vmHostVMKernelDumpFileProperties.File = $script:constants.DumpFileName
+    $vmHostVMKernelDumpFileProperties.DatastoreName = $script:constants.DatastoreName
+    $vmHostVMKernelDumpFileProperties.FileName = $script:constants.DumpFileName
     $vmHostVMKernelDumpFileProperties.Ensure = 'Present'
     $vmHostVMKernelDumpFileProperties.Size = $script:constants.DumpFileSizeInMB
 
@@ -108,8 +108,8 @@ function New-MocksWhenTheVMHostVMKernelDumpFileDoesNotExistAndEnsureIsAbsent {
 
     $vmHostVMKernelDumpFileProperties = New-VMHostVMKernelDumpFileProperties
 
-    $vmHostVMKernelDumpFileProperties.Datastore = $script:constants.DatastoreName + $script:constants.DatastoreName
-    $vmHostVMKernelDumpFileProperties.File = $script:constants.DumpFileName + $script:constants.DumpFileName
+    $vmHostVMKernelDumpFileProperties.DatastoreName = $script:constants.DatastoreName + $script:constants.DatastoreName
+    $vmHostVMKernelDumpFileProperties.FileName = $script:constants.DumpFileName + $script:constants.DumpFileName
     $vmHostVMKernelDumpFileProperties.Ensure = 'Absent'
     $vmHostVMKernelDumpFileProperties.Size = $script:constants.DumpFileSizeInMB + $script:constants.DumpFileSizeInMB
 
@@ -122,8 +122,8 @@ function New-MocksWhenTheVMHostVMKernelDumpFileExistsAndEnsureIsAbsent {
 
     $vmHostVMKernelDumpFileProperties = New-VMHostVMKernelDumpFileProperties
 
-    $vmHostVMKernelDumpFileProperties.Datastore = $script:constants.DatastoreName
-    $vmHostVMKernelDumpFileProperties.File = $script:constants.DumpFileName
+    $vmHostVMKernelDumpFileProperties.DatastoreName = $script:constants.DatastoreName
+    $vmHostVMKernelDumpFileProperties.FileName = $script:constants.DumpFileName
     $vmHostVMKernelDumpFileProperties.Ensure = 'Absent'
     $vmHostVMKernelDumpFileProperties.Size = $script:constants.DumpFileSizeInMB
 

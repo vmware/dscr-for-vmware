@@ -7,8 +7,8 @@
 | **Server** | Key | string | The name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
 | **Credential** | Mandatory | PSCredential | The credentials needed for connection to the specified Server. ||
 | **Name** | Key | string | The name of the VMHost. ||
-| **Datastore** | Mandatory | string | The name of the datastore for the dump file. ||
-| **File** | Mandatory | string | The file name of the dump file. ||
+| **DatastoreName** | Mandatory | string | The name of the datastore for the dump file. ||
+| **FileName** | Mandatory | string | The file name of the dump file. ||
 | **Ensure** | Mandatory | Ensure | Specifies whether the VMKernel dump Vmfs file should be present or absent. ||
 | **Size** | Optional | long | The size in MB of the dump file. If not provided, a default size for the current machine is calculated. ||
 | **Force** | Optional | bool | Specifies whether to deactivate and unconfigure the dump file being removed. This option is required if the file is active. ||
@@ -49,8 +49,8 @@ Configuration VMHostVMKernelDumpFile_CreateVMKernelDumpFile_Config {
             Server = $Server
             Credential = $Credential
             Name = $Name
-            Datastore = 'MyDatastore'
-            File = 'MyDumpFile'
+            DatastoreName = 'MyDatastore'
+            FileName = 'MyDumpFile'
             Size = 1181
             Ensure = 'Present'
         }
@@ -88,8 +88,8 @@ Configuration VMHostVMKernelDumpFile_RemoveVMKernelDumpFile_Config {
             Server = $Server
             Credential = $Credential
             Name = $Name
-            Datastore = 'MyDatastore'
-            File = 'MyDumpFile'
+            DatastoreName = 'MyDatastore'
+            FileName = 'MyDumpFile'
             Ensure = 'Absent'
             Force = $true
         }

@@ -179,8 +179,8 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $result.Server | Should -Be $script:viServer.Name
                     $result.Name | Should -Be $script:vmHost.Name
-                    $result.Datastore | Should -Be $resourceProperties.Datastore
-                    $result.File | Should -Be $resourceProperties.File
+                    $result.DatastoreName | Should -Be $resourceProperties.DatastoreName
+                    $result.FileName | Should -Be $resourceProperties.FileName
                     $result.Size | Should -Be $resourceProperties.Size
                     $result.Ensure | Should -Be 'Absent'
                     $result.Force | Should -Be $resourceProperties.Force
@@ -209,8 +209,8 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $result.Server | Should -Be $script:viServer.Name
                     $result.Name | Should -Be $script:vmHost.Name
-                    $result.Datastore | Should -Be $script:constants.DatastoreName
-                    $result.File | Should -Be $script:constants.DumpFileName
+                    $result.DatastoreName | Should -Be $script:constants.DatastoreName
+                    $result.FileName | Should -Be $script:constants.DumpFileName
                     $result.Size | Should -Be $script:constants.DumpFileSizeInMB
                     $result.Ensure | Should -Be 'Present'
                     $result.Force | Should -Be $resourceProperties.Force
@@ -239,8 +239,8 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $result.Server | Should -Be $script:viServer.Name
                     $result.Name | Should -Be $script:vmHost.Name
-                    $result.Datastore | Should -Be $resourceProperties.Datastore
-                    $result.File | Should -Be $resourceProperties.File
+                    $result.DatastoreName | Should -Be $resourceProperties.DatastoreName
+                    $result.FileName | Should -Be $resourceProperties.FileName
                     $result.Size | Should -Be $resourceProperties.Size
                     $result.Ensure | Should -Be 'Absent'
                     $result.Force | Should -Be $resourceProperties.Force
@@ -269,8 +269,8 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $result.Server | Should -Be $script:viServer.Name
                     $result.Name | Should -Be $script:vmHost.Name
-                    $result.Datastore | Should -Be $script:constants.DatastoreName
-                    $result.File | Should -Be $script:constants.DumpFileName
+                    $result.DatastoreName | Should -Be $script:constants.DatastoreName
+                    $result.FileName | Should -Be $script:constants.DumpFileName
                     $result.Size | Should -Be $script:constants.DumpFileSizeInMB
                     $result.Ensure | Should -Be 'Present'
                     $result.Force | Should -Be $resourceProperties.Force

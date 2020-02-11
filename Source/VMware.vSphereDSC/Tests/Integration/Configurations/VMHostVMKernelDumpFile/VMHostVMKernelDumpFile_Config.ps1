@@ -37,8 +37,8 @@ Configuration VMHostVMKernelDumpFile_CreateVMKernelDumpFile_Config {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.VMHostName
-            Datastore = $AllNodes.DatastoreName
-            File = $AllNodes.DumpFileName
+            DatastoreName = $AllNodes.DatastoreName
+            FileName = $AllNodes.DumpFileName
             Size = $AllNodes.DumpFileSize
             Ensure = 'Present'
         }
@@ -53,8 +53,8 @@ Configuration VMHostVMKernelDumpFile_RemoveVMKernelDumpFile_Config {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.VMHostName
-            Datastore = $AllNodes.DatastoreName
-            File = $AllNodes.DumpFileName
+            DatastoreName = $AllNodes.DatastoreName
+            FileName = $AllNodes.DumpFileName
             Ensure = 'Absent'
             Force = $AllNodes.Force
         }

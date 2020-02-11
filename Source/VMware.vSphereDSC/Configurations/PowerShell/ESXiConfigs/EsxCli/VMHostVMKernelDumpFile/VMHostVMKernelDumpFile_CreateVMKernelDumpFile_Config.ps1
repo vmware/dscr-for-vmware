@@ -63,8 +63,8 @@ Configuration VMHostVMKernelDumpFile_CreateVMKernelDumpFile_Config {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.Name
-            Datastore = 'MyDatastore'
-            File = 'MyDumpFile'
+            DatastoreName = 'MyDatastore'
+            FileName = 'MyDumpFile'
             Size = 1181
             Ensure = 'Present'
         }

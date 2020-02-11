@@ -63,8 +63,8 @@ Configuration VMHostVMKernelDumpFile_RemoveVMKernelDumpFile_Config {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.Name
-            Datastore = 'MyDatastore'
-            File = 'MyDumpFile'
+            DatastoreName = 'MyDatastore'
+            FileName = 'MyDumpFile'
             Ensure = 'Absent'
             Force = $true
         }

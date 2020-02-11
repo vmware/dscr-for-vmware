@@ -26,7 +26,7 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
     Specifies the name of the Datastore for the dump file.
     #>
     [DscProperty(Mandatory)]
-    [string] $Datastore
+    [string] $DatastoreName
 
     <#
     .DESCRIPTION
@@ -34,7 +34,7 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
     Specifies the file name of the dump file.
     #>
     [DscProperty(Mandatory)]
-    [string] $File
+    [string] $FileName
 
     <#
     .DESCRIPTION
@@ -71,7 +71,12 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
             $this.GetEsxCli($vmHost)
 
             if ($this.Ensure -eq [Ensure]::Present) {
-                $this.ExecuteEsxCliModifyMethod($this.EsxCliAddMethodName)
+                $addVMKernelDumpFileMethodArguments = @{
+                    datastore = $this.DatastoreName
+                    file = $this.FileName
+                }
+
+                $this.ExecuteEsxCliModifyMethod($this.EsxCliAddMethodName, $addVMKernelDumpFileMethodArguments)
             }
             else {
                 $esxCliListMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliListMethodName)
@@ -201,8 +206,8 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
             $dumpFileDatastoreName = $this.TranslateDatastoreName($dumpFileParts[3])
             $dumpFileName = $this.GetDumpFileName($dumpFileParts[5])
 
-            $result += ($this.Datastore -eq $dumpFileDatastoreName)
-            $result += ($this.File -eq $dumpFileName)
+            $result += ($this.DatastoreName -eq $dumpFileDatastoreName)
+            $result += ($this.FileName -eq $dumpFileName)
 
             if ($null -ne $this.Size) {
                 $result += ($this.Size -eq $this.ConvertBytesValueToMBValue($dumpFile.Size))
@@ -237,14 +242,14 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
         $vmKernelDumpFile = $this.GetVMKernelDumpFile($esxCliListMethodResult)
 
         if ($vmKernelDumpFile.Count -ne 0) {
-            $result.Datastore = $vmKernelDumpFile.Datastore
-            $result.File = $vmKernelDumpFile.File
+            $result.DatastoreName = $vmKernelDumpFile.Datastore
+            $result.FileName = $vmKernelDumpFile.File
             $result.Size = $vmKernelDumpFile.Size
             $result.Ensure = [Ensure]::Present
         }
         else {
-            $result.Datastore = $this.Datastore
-            $result.File = $this.File
+            $result.DatastoreName = $this.DatastoreName
+            $result.FileName = $this.FileName
             $result.Size = $this.Size
             $result.Ensure = [Ensure]::Absent
         }
