@@ -276,6 +276,34 @@ $script:constants = @{
     DumpFileSizeInBytes = 1238368256
     EnableVMKernelDumpFile = $true
     UseSmartAlgorithmForVMKernelDumpFile = $true
+    VMKernelModuleName = 's2io'
+    VMKernelModuleEnabled = $true
+    SNMPAgentAuthenticationProtocol = 'SHA1'
+    SNMPAgentCommunities = 'community1'
+    EnableSNMPAgent = $true
+    SNMPAgentEngineId = '0x0-9a-f'
+    SNMPAgentHwsrc = 'indications'
+    SNMPAgentLargeStorage = $true
+    SNMPAgentLogLevel = 'info'
+    SNMPAgentNoTraps = 'reset'
+    SNMPAgentPort = 161
+    SNMPAgentPrivacyProtocol = 'AES128'
+    SNMPAgentRemoteUsers = '0x0-9a-f/SHA1/AES128'
+    SNMPAgentSysContact = 'System contact'
+    SNMPAgentSystemLocation = 'System location'
+    SNMPAgentTargets = 'MyTestVMHost udp/162'
+    SNMPAgentUsers = 'localUser'
+    SNMPAgentV3Targets = 'MyTestVMHost udp/162'
+    ResetSNMPAgent = $true
+    SoftwareDeviceId = 'com.vmware.iscsi_vmk'
+    SoftwareDeviceDefaultInstanceAddress = 0
+    SoftwareDeviceInstanceAddress = 1
+    DatastoreEnabled = $true
+    DatastoreOrder = 0
+    HostCacheEnabled = $true
+    HostCacheOrder = 1
+    HostLocalSwapEnabled = $true
+    HostLocalSwapOrder = 2
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1387,4 +1415,45 @@ $script:vmKernelDumpFile = @{
 $script:fileSystem = @{
     UUID = [Guid]::NewGuid()
     VolumeName = $script:constants.DatastoreName
+}
+
+$script:vmKernelModule = @{
+    Name = $script:constants.VMKernelModuleName
+    IsEnabled = $script:constants.VMKernelModuleEnabled
+}
+
+$script:vmHostSNMPAgent = @{
+    authentication = $script:constants.SNMPAgentAuthenticationProtocol
+    communities = $script:constants.SNMPAgentCommunities
+    enable = $script:constants.EnableSNMPAgent
+    engineid = $script:constants.SNMPAgentEngineId
+    hwsrc = $script:constants.SNMPAgentHwsrc
+    largestorage = $script:constants.SNMPAgentLargeStorage
+    loglevel = $script:constants.SNMPAgentLogLevel
+    notraps = $script:constants.SNMPAgentNoTraps
+    port = $script:constants.SNMPAgentPort
+    privacy = $script:constants.SNMPAgentPrivacyProtocol
+    remoteusers = $script:constants.SNMPAgentRemoteUsers
+    syscontact = $script:constants.SNMPAgentSysContact
+    syslocation = $script:constants.SNMPAgentSystemLocation
+    targets = $script:constants.SNMPAgentTargets
+    users = $script:constants.SNMPAgentUsers
+    v3targets = $script:constants.SNMPAgentV3Targets
+}
+
+$script:vmHostSoftwareDevices = @(
+    @{
+        DeviceID = $script:constants.SoftwareDeviceId
+        Instance = $script:constants.SoftwareDeviceInstanceAddress
+    }
+)
+
+$script:vmHostSharedSwapSpaceConfiguration = @{
+    DatastoreEnabled = $script:constants.DatastoreEnabled
+    DatastoreName = $script:constants.DatastoreName
+    DatastoreOrder = $script:constants.DatastoreOrder
+    HostcacheEnabled = $script:constants.HostCacheEnabled
+    HostcacheOrder = $script:constants.HostCacheOrder
+    HostlocalswapEnabled = $script:constants.HostLocalSwapEnabled
+    HostlocalswapOrder = $script:constants.HostLocalSwapOrder
 }
