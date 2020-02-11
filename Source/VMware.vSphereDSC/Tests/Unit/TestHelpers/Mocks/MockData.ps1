@@ -308,6 +308,8 @@ $script:constants = @{
     NetworkCoreDumpInterfaceName = 'vmk0'
     NetworkCoreDumpServerIP = '10.11.12.13'
     NetworkCoreDumpServerPort = 6500
+    VMwareCertifiedAcceptanceLevel = 'VMwareCertified'
+    VMwareAcceptedAcceptanceLevel = 'VMwareAccepted'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
