@@ -1,6 +1,27 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.44 - 2020-02-11
+### Added
+- Added VMHostVMKernelActiveDumpPartition DSC Resource.
+- Added VMHostVMKernelDumpFile DSC Resource.
+- Added VMHostVMKernelActiveDumpFile DSC Resource.
+- Added Unit Tests for VMHostVMKernelActiveDumpPartition DSC Resource.
+- Added Unit Tests for VMHostVMKernelDumpFile DSC Resource.
+- Added Unit Tests for VMHostVMKernelActiveDumpFile DSC Resource.
+- Added Integration Tests for VMHostVMKernelActiveDumpPartition DSC Resource.
+- Added Integration Tests for VMHostVMKernelDumpFile DSC Resource.
+- Added Integration Tests for VMHostVMKernelActiveDumpFile DSC Resource.
+- Added Documentation and example Configuration for VMHostVMKernelActiveDumpPartition DSC Resource.
+- Added Documentation and example Configurations for VMHostVMKernelDumpFile DSC Resource.
+- Added Documentation and example Configuration for VMHostVMKernelActiveDumpFile DSC Resource.
+
+### Changed
+- Extended ExecuteEsxCliModifyMethod() with support for method arguments.
+
+### Removed
+- Removed NoPersist property from VMHostDCUIKeyboard DSC Resource.
+
 ## 2.0.0.43 - 2020-02-11
 ### Added
 - Added VMHostIPRoute DSC Resource.

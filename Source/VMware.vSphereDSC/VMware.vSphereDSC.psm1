@@ -1036,7 +1036,7 @@ class EsxCliBaseDSC : VMHostBaseDSC {
 
     Executes the specified method for modification - 'set', 'add' or 'remove' of the specified EsxCli command.
     #>
-    [void] ExecuteEsxCliModifyMethod($methodName) {
+    [void] ExecuteEsxCliModifyMethod($methodName, $methodArguments) {
         $esxCliCommandMethod = "$($this.EsxCliCommand).$methodName."
         $esxCliMethodArgs = $null
 
@@ -1056,19 +1056,25 @@ class EsxCliBaseDSC : VMHostBaseDSC {
         $commandArgs = @()
         $commandArgs = $commandArgs + $esxCliMethodArgs.Keys
         foreach ($key in $commandArgs) {
-            # The name of the property of the Dsc Resource starts with a capital letter whereas the key of the argument contains only lower case letters.
-            $dscResourcePropertyName = $dscResourceNamesOfProperties | Where-Object -FilterScript { $_.ToLower() -eq $key.ToLower() }
+            # The argument of the method is present in the method arguments hashtable and should be used instead of the property of the Dsc Resource.
+            if ($methodArguments.Count -gt 0 -and $null -ne $methodArguments.$key) {
+                $esxCliMethodArgs.$key = $methodArguments.$key
+            }
+            else {
+                # The name of the property of the Dsc Resource starts with a capital letter whereas the key of the argument contains only lower case letters.
+                $dscResourcePropertyName = $dscResourceNamesOfProperties | Where-Object -FilterScript { $_.ToLower() -eq $key.ToLower() }
 
-            # Not all properties of the Dsc Resource are part of the arguments hashtable.
-            if ($null -ne $dscResourcePropertyName) {
-                if ($this.$dscResourcePropertyName -is [string]) {
-                    if (![string]::IsNullOrEmpty($this.$dscResourcePropertyName)) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
-                }
-                elseif ($this.$dscResourcePropertyName -is [array]) {
-                    if ($null -ne $this.$dscResourcePropertyName -and $this.$dscResourcePropertyName.Length -gt 0) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
-                }
-                else {
-                    if ($null -ne $this.$dscResourcePropertyName) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                # Not all properties of the Dsc Resource are part of the arguments hashtable.
+                if ($null -ne $dscResourcePropertyName) {
+                    if ($this.$dscResourcePropertyName -is [string]) {
+                        if (![string]::IsNullOrEmpty($this.$dscResourcePropertyName)) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                    }
+                    elseif ($this.$dscResourcePropertyName -is [array]) {
+                        if ($null -ne $this.$dscResourcePropertyName -and $this.$dscResourcePropertyName.Length -gt 0) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                    }
+                    else {
+                        if ($null -ne $this.$dscResourcePropertyName) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                    }
                 }
             }
         }
@@ -1079,6 +1085,15 @@ class EsxCliBaseDSC : VMHostBaseDSC {
         catch {
             throw ($this.EsxCliCommandFailedMessage -f ('esxcli.' + $this.EsxCliCommand), $_.Exception.Message)
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Executes the specified method for modification - 'set', 'add' or 'remove' of the specified EsxCli command.
+    #>
+    [void] ExecuteEsxCliModifyMethod($methodName) {
+        $this.ExecuteEsxCliModifyMethod($methodName, @{})
     }
 
     <#
@@ -9682,14 +9697,6 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
     [DscProperty(Mandatory)]
     [string] $Layout
 
-    <#
-    .DESCRIPTION
-
-    Specifies whether the layout is applied only for the current boot.
-    #>
-    [DscProperty()]
-    [nullable[bool]] $NoPersist
-
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
@@ -9755,10 +9762,477 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
     [void] PopulateResult($result, $vmHost) {
         $result.Server = $this.Connection.Name
         $result.Name = $vmHost.Name
-        $result.NoPersist = $this.NoPersist
 
         $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
         $result.Layout = $esxCliGetMethodResult
+    }
+}
+
+[DscResource()]
+class VMHostVMKernelActiveDumpFile : EsxCliBaseDSC {
+    VMHostVMKernelActiveDumpFile() {
+        $this.EsxCliCommand = 'system.coredump.file'
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the VMKernel dump file should be enabled or disabled.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Enable
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether to select the best available file using the smart selection algorithm. Can only be used when 'Enabled' property is specified with '$true' value.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Smart
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.ExecuteEsxCliModifyMethod($this.EsxCliSetMethodName)
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+            $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+
+            $result = !$this.ShouldModifyVMKernelDumpFile($esxCliGetMethodResult)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostVMKernelActiveDumpFile] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostVMKernelActiveDumpFile]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.PopulateResult($result, $vmHost)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the VMKernel dump file should be modified.
+    #>
+    [bool] ShouldModifyVMKernelDumpFile($esxCliGetMethodResult) {
+        $result = $null
+
+        if ($null -ne $this.Enable) {
+            if ($this.Enable) { $result = [string]::IsNullOrEmpty($esxCliGetMethodResult.Active) }
+            else { $result = ![string]::IsNullOrEmpty($esxCliGetMethodResult.Active) }
+        }
+        else {
+            $result = $false
+        }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+        $result.Smart = $this.Smart
+
+        $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+        $result.Enable = ![string]::IsNullOrEmpty($esxCliGetMethodResult.Active)
+    }
+}
+
+[DscResource()]
+class VMHostVMKernelActiveDumpPartition : EsxCliBaseDSC {
+    VMHostVMKernelActiveDumpPartition() {
+        $this.EsxCliCommand = 'system.coredump.partition'
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the VMKernel dump partition should be enabled or disabled.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Enable
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether to select the best available partition using the smart selection algorithm. Can only be used when 'Enabled' property is specified with '$true' value.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Smart
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.ExecuteEsxCliModifyMethod($this.EsxCliSetMethodName)
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+            $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+
+            $result = !$this.ShouldModifyVMKernelDumpPartition($esxCliGetMethodResult)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostVMKernelActiveDumpPartition] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostVMKernelActiveDumpPartition]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.PopulateResult($result, $vmHost)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the VMKernel dump partition should be modified.
+    #>
+    [bool] ShouldModifyVMKernelDumpPartition($esxCliGetMethodResult) {
+        $result = $null
+
+        if ($null -ne $this.Enable) {
+            if ($this.Enable) { $result = [string]::IsNullOrEmpty($esxCliGetMethodResult.Active) }
+            else { $result = ![string]::IsNullOrEmpty($esxCliGetMethodResult.Active) }
+        }
+        else {
+            $result = $false
+        }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+        $result.Smart = $this.Smart
+
+        $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+        $result.Enable = ![string]::IsNullOrEmpty($esxCliGetMethodResult.Active)
+    }
+}
+
+[DscResource()]
+class VMHostVMKernelDumpFile : EsxCliBaseDSC {
+    VMHostVMKernelDumpFile() {
+        $this.EsxCliCommand = 'system.coredump.file'
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the Datastore for the dump file.
+    #>
+    [DscProperty(Mandatory)]
+    [string] $DatastoreName
+
+    <#
+    .DESCRIPTION
+
+    Specifies the file name of the dump file.
+    #>
+    [DscProperty(Mandatory)]
+    [string] $FileName
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the VMKernel dump Vmfs file should be present or absent.
+    #>
+    [DscProperty(Mandatory = $true)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Specifies the size in MB of the dump file. If not provided, a default size for the current machine is calculated.
+    #>
+    [DscProperty()]
+    [nullable[long]] $Size
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether to deactivate and unconfigure the dump file being removed. This option is required if the file is active.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Force
+
+    hidden [string] $CouldNotRetrieveFileSystemsInformationMessage = "Could not retrieve information about File Systems on VMHost {0}. For more information: {1}"
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                $addVMKernelDumpFileMethodArguments = @{
+                    datastore = $this.DatastoreName
+                    file = $this.FileName
+                }
+
+                $this.ExecuteEsxCliModifyMethod($this.EsxCliAddMethodName, $addVMKernelDumpFileMethodArguments)
+            }
+            else {
+                $esxCliListMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliListMethodName)
+                $vmKernelDumpFile = $this.GetVMKernelDumpFile($esxCliListMethodResult)
+                $removeVMKernelDumpFileMethodArguments = @{
+                    file = $vmKernelDumpFile.Path
+                }
+
+                $this.ExecuteEsxCliModifyMethod($this.EsxCliRemoveMethodName, $removeVMKernelDumpFileMethodArguments)
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+            $esxCliListMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliListMethodName)
+            $vmKernelDumpFile = $this.GetVMKernelDumpFile($esxCliListMethodResult)
+
+            $result = $null
+            if ($this.Ensure -eq [Ensure]::Present) {
+                $result = ($vmKernelDumpFile.Count -ne 0)
+            }
+            else {
+                $result = ($vmKernelDumpFile.Count -eq 0)
+            }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostVMKernelDumpFile] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostVMKernelDumpFile]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.PopulateResult($result, $vmHost)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Translates the Datastore name from a volume UUID to volume name, if required.
+    #>
+    [string] TranslateDatastoreName($datastoreName) {
+        $foundDatastoreName = $null
+        $fileSystemsList = $null
+
+        try {
+            $fileSystemsList = Invoke-EsxCliCommandMethod -EsxCli $this.EsxCli -EsxCliCommandMethod 'storage.filesystem.list.Invoke({0})' -EsxCliCommandMethodArguments @{}
+        }
+        catch {
+            throw ($this.CouldNotRetrieveFileSystemsInformationMessage -f $this.Name, $_.Exception.Message)
+        }
+
+        foreach ($fileSystem in $fileSystemsList) {
+            if ($fileSystem.UUID -eq $datastoreName) {
+                $foundDatastoreName = $fileSystem.VolumeName
+                break
+            }
+
+            if ($fileSystem.VolumeName -eq $datastoreName) {
+                $foundDatastoreName = $fileSystem.VolumeName
+                break
+            }
+        }
+
+        return $foundDatastoreName
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the name of the specified dump file.
+    #>
+    [string] GetDumpFileName($dumpFile) {
+        $fileParts = $dumpFile -Split '\.'
+        return $fileParts[0]
+    }
+
+    <#
+    .DESCRIPTION
+
+    Converts the passed bytes value to MB value.
+    #>
+    [double] ConvertBytesValueToMBValue($bytesValue) {
+        return [Math]::Round($bytesValue / 1MB)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the VMKernel dump file if it exists.
+    #>
+    [PSObject] GetVMKernelDumpFile($esxCliListMethodResult) {
+        $foundDumpFile = @{}
+        $result = @()
+
+        foreach ($dumpFile in $esxCliListMethodResult) {
+            $dumpFileParts = $dumpFile.Path -Split '/'
+            $dumpFileDatastoreName = $this.TranslateDatastoreName($dumpFileParts[3])
+            $dumpFileName = $this.GetDumpFileName($dumpFileParts[5])
+
+            $result += ($this.DatastoreName -eq $dumpFileDatastoreName)
+            $result += ($this.FileName -eq $dumpFileName)
+
+            if ($null -ne $this.Size) {
+                $result += ($this.Size -eq $this.ConvertBytesValueToMBValue($dumpFile.Size))
+            }
+
+            if ($result -NotContains $false) {
+                $foundDumpFile.Path = $dumpFile.Path
+                $foundDumpFile.Datastore = $dumpFileDatastoreName
+                $foundDumpFile.File = $dumpFileName
+                $foundDumpFile.Size = $this.ConvertBytesValueToMBValue($dumpFile.Size)
+
+                break
+            }
+
+            $result = @()
+        }
+
+        return $foundDumpFile
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+        $result.Force = $this.Force
+
+        $esxCliListMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliListMethodName)
+        $vmKernelDumpFile = $this.GetVMKernelDumpFile($esxCliListMethodResult)
+
+        if ($vmKernelDumpFile.Count -ne 0) {
+            $result.DatastoreName = $vmKernelDumpFile.Datastore
+            $result.FileName = $vmKernelDumpFile.File
+            $result.Size = $vmKernelDumpFile.Size
+            $result.Ensure = [Ensure]::Present
+        }
+        else {
+            $result.DatastoreName = $this.DatastoreName
+            $result.FileName = $this.FileName
+            $result.Size = $this.Size
+            $result.Ensure = [Ensure]::Absent
+        }
     }
 }
 
