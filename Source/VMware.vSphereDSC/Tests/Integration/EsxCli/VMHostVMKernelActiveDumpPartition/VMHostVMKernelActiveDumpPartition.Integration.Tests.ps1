@@ -38,10 +38,10 @@ Param(
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
-. "$PSScriptRoot\VMHostVMKernelDumpPartition.Integration.Tests.Helpers.ps1"
+. "$PSScriptRoot\VMHostVMKernelActiveDumpPartition.Integration.Tests.Helpers.ps1"
 $script:initialVMHostVMKernelDumpPartitionState = Get-InitialVMHostVMKernelDumpPartitionState
 
-$script:dscResourceName = 'VMHostVMKernelDumpPartition'
+$script:dscResourceName = 'VMHostVMKernelActiveDumpPartition'
 $script:moduleFolderPath = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path -Path (Join-Path -Path $moduleFolderPath -ChildPath 'Tests') -ChildPath 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$script:dscResourceName\$($script:dscResourceName)_Config.ps1"
@@ -54,7 +54,7 @@ $script:configurationData = @{
             Server = $Server
             Credential = $Credential
             VMHostName = $Name
-            VMHostVMKernelDumpPartitionResourceName = 'VMHostVMKernelDumpPartition'
+            VMHostVMKernelActiveDumpPartitionResourceName = 'VMHostVMKernelActiveDumpPartition'
             InitialVMKernelDumpPartitionState = $script:initialVMHostVMKernelDumpPartitionState
             EnableVMKernelDumpPartition = $true
             DisableVMKernelDumpPartition = $false

@@ -1,4 +1,4 @@
-# VMHostVMKernelDumpPartition
+# VMHostVMKernelActiveDumpPartition
 
 ## Parameters
 
@@ -21,7 +21,7 @@ The resource is used to enable and disable the VMKernel dump partition on the sp
 Enables the VMKernel dump partition on the specified VMHost by selecting the best available partition using the smart selection algorithm.
 
 ```powershell
-Configuration VMHostVMKernelDumpPartition_EnableVMKernelDumpPartition_Config {
+Configuration VMHostVMKernelActiveDumpPartition_EnableVMKernelDumpPartition_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -42,7 +42,7 @@ Configuration VMHostVMKernelDumpPartition_EnableVMKernelDumpPartition_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        VMHostVMKernelDumpPartition VMHostVMKernelDumpPartition {
+        VMHostVMKernelActiveDumpPartition VMHostVMKernelActiveDumpPartition {
             Server = $Server
             Credential = $Credential
             Name = $Name

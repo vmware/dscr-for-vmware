@@ -22,7 +22,7 @@ InModuleScope -ModuleName $script:moduleName {
     try {
         $unitTestsFolder = Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Tests') 'Unit'
         $modulePath = $env:PSModulePath
-        $resourceName = 'VMHostVMKernelDumpPartition'
+        $resourceName = 'VMHostVMKernelActiveDumpPartition'
 
         . "$unitTestsFolder\TestHelpers\TestUtils.ps1"
 
@@ -30,12 +30,12 @@ InModuleScope -ModuleName $script:moduleName {
         Invoke-TestSetup
 
         . "$unitTestsFolder\TestHelpers\Mocks\MockData.ps1"
-        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVMKernelDumpPartitionMocks.ps1"
+        . "$unitTestsFolder\TestHelpers\Mocks\VMHostVMKernelActiveDumpPartitionMocks.ps1"
 
-        Describe 'VMHostVMKernelDumpPartition\Set' -Tag 'Set' {
+        Describe 'VMHostVMKernelActiveDumpPartition\Set' -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                $resourceProperties = New-MocksInSetForVMHostVMKernelDumpPartition
+                $resourceProperties = New-MocksInSetForVMHostVMKernelActiveDumpPartition
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
             }
 
@@ -48,10 +48,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVMKernelDumpPartition\Test' -Tag 'Test' {
+        Describe 'VMHostVMKernelActiveDumpPartition\Test' -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForVMHostVMKernelDumpPartition
+                New-MocksForVMHostVMKernelActiveDumpPartition
             }
 
             Context 'When the VMHost VMKernel dump partition is Active and Configured and Enable is $true' {
@@ -127,10 +127,10 @@ InModuleScope -ModuleName $script:moduleName {
             }
         }
 
-        Describe 'VMHostVMKernelDumpPartition\Get' -Tag 'Get' {
+        Describe 'VMHostVMKernelActiveDumpPartition\Get' -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                $resourceProperties = New-MocksForVMHostVMKernelDumpPartition
+                $resourceProperties = New-MocksForVMHostVMKernelActiveDumpPartition
                 $resource = New-Object -TypeName $resourceName -Property $resourceProperties
             }
 

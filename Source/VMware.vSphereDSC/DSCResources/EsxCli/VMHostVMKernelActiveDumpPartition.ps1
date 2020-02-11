@@ -15,8 +15,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
-    VMHostVMKernelDumpPartition() {
+class VMHostVMKernelActiveDumpPartition : EsxCliBaseDSC {
+    VMHostVMKernelActiveDumpPartition() {
         $this.EsxCliCommand = 'system.coredump.partition'
     }
 
@@ -73,10 +73,10 @@ class VMHostVMKernelDumpPartition : EsxCliBaseDSC {
         }
     }
 
-    [VMHostVMKernelDumpPartition] Get() {
+    [VMHostVMKernelActiveDumpPartition] Get() {
         try {
             Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostVMKernelDumpPartition]::new()
+            $result = [VMHostVMKernelActiveDumpPartition]::new()
 
             $this.ConnectVIServer()
 
