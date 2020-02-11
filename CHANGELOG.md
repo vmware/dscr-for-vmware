@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.47 - 2020-02-11
+### Added
+- Added VMHostAcceptanceLevel DSC Resource.
+- Added Unit Tests for VMHostAcceptanceLevel DSC Resource.
+- Added Integration Tests for VMHostAcceptanceLevel DSC Resource.
+- Added Documentation and example Configuration for VMHostAcceptanceLevel DSC Resource.
+
 ## 2.0.0.46 - 2020-02-11
 ### Added
 - Added VMHostNetworkCoreDump DSC Resource.

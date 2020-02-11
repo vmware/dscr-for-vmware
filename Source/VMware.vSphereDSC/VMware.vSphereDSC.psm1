@@ -17,6 +17,13 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 Using module '.\VMware.vSphereDSC.Helper.psm1'
 Using module '.\VMware.vSphereDSC.Logging.psm1'
 
+enum AcceptanceLevel {
+    VMwareCertified
+    VMwareAccepted
+    PartnerSupported
+    CommunitySupported
+}
+
 enum DomainAction {
     Join
     Leave
@@ -9680,6 +9687,97 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
         $result.InheritLoadBalancingPolicy = $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited
         $result.InheritNetworkFailoverDetectionPolicy = $virtualPortGroupTeamingPolicy.IsNetworkFailoverDetectionInherited
         $result.InheritFailoverOrder = $virtualPortGroupTeamingPolicy.IsFailoverOrderInherited
+    }
+}
+
+[DscResource()]
+class VMHostAcceptanceLevel : EsxCliBaseDSC {
+    VMHostAcceptanceLevel() {
+        $this.EsxCliCommand = 'software.acceptance'
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies the acceptance level of the VMHost. Valid values are VMwareCertified, VMwareAccepted, PartnerSupported and CommunitySupported.
+    #>
+    [DscProperty(Mandatory)]
+    [AcceptanceLevel] $Level
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            # The 'Level' value needs to be converted to a string type before being passed to the base class method.
+            $modifyVMHostAcceptanceLevelMethodArguments = @{
+                level = $this.Level.ToString()
+            }
+
+            $this.ExecuteEsxCliModifyMethod($this.EsxCliSetMethodName, $modifyVMHostAcceptanceLevelMethodArguments)
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+            $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+
+            $result = ($this.Level.ToString() -eq $esxCliGetMethodResult)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostAcceptanceLevel] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostAcceptanceLevel]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $this.GetEsxCli($vmHost)
+
+            $this.PopulateResult($result, $vmHost)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHost) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHost.Name
+
+        $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
+
+        $result.Level = $esxCliGetMethodResult
     }
 }
 
