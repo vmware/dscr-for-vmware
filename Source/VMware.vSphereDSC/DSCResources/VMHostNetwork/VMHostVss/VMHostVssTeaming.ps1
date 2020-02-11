@@ -55,7 +55,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Network adapter teaming policy.
     #>
     [DscProperty()]
-    [NicTeamingPolicy] $Policy
+    [NicTeamingPolicy] $Policy = [NicTeamingPolicy]::Unset
 
     <#
     .DESCRIPTION
@@ -171,8 +171,10 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         }
 
         $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
-        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq ($this.Policy).ToString().ToLower())
         $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
+
+        # The Network Adapter teaming policy should determine the Desired State only when it is specified.
+        if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq $this.Policy.ToString().ToLower()) }
 
         return ($vssTeamingTest -notcontains $false)
     }
@@ -191,11 +193,12 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             ActiveNic = $this.ActiveNic
             StandbyNic = $this.StandbyNic
             NotifySwitches = $this.NotifySwitches
-            Policy = ($this.Policy).ToString().ToLower()
             RollingOrder = $this.RollingOrder
         }
-        $vss = $this.GetVss()
 
+        if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingArgs.Policy = $this.Policy.ToString().ToLower() }
+
+        $vss = $this.GetVss()
         if ($this.Ensure -eq 'Present') {
             if ($this.Equals($vss)) {
                 return

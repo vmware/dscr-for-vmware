@@ -19,4 +19,5 @@ enum NicTeamingPolicy {
     Loadbalance_srcmac
     Loadbalance_srcid
     Failover_explicit
+    Unset
 }
