@@ -266,6 +266,9 @@ $script:constants = @{
     EsxCliGetMethodInvoke = '$this.EsxCli.system.settings.keyboard.layout.get.Invoke()'
     DCUIKeyboardUSDefaultLayout = 'US Default'
     DCUIKeyboardUnitedKingdomLayout = 'United Kingdom'
+    Gateway = '192.168.0.1'
+    Destination = '192.168.100.0'
+    PrefixLength = 32
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1353,4 +1356,11 @@ $script:applyDrsRecommendationSuccessTask = [VMware.VimAutomation.ViCore.Impl.V1
 
 $script:esxCli = [VMware.VimAutomation.ViCore.Impl.V1.EsxCli.EsxCliImpl] @{
     VMHost = $script:vmHost
+}
+
+$script:vmHostIPRouteOne = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHostRouteImpl] @{
+    VMHost = $script:vmHost
+    Gateway = $script:constants.Gateway
+    Destination = $script:constants.Destination
+    PrefixLength = $script:constants.PrefixLength
 }
