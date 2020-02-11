@@ -321,6 +321,11 @@ $script:constants = @{
     VMHostvSanNetworkConfigurationMasterGroupMulticastPort = 12345
     VMHostvSanNetworkConfigurationMulticastTTL = 5
     VMHostvSanNetworkConfigurationTrafficType = 'vsan'
+    VMHostScsiLunCanonicalName = 'mpx.vmhba1:C0:T3:L1'
+    VMHostScsiLunPathName = 'vmhba1:C0:T3:L1'
+    VMHostScsiLunPathState = 'Active'
+    VMHostActiveScsiLunPath = $true
+    VMHostPreferredScsiLunPath = $true
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1493,4 +1498,16 @@ $script:vmHostvSanNetworkConfigurationIPInterface = @{
     MasterGroupMulticastPort = $script:constants.VMHostvSanNetworkConfigurationMasterGroupMulticastPort
     MulticastTTL = $script:constants.VMHostvSanNetworkConfigurationMulticastTTL
     TrafficType = $script:constants.VMHostvSanNetworkConfigurationTrafficType
+}
+
+$script:vmHostScsiLun = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.Scsi.ScsiLunImpl] @{
+    CanonicalName = $script:constants.VMHostScsiLunCanonicalName
+    VMHost = $script:vmHost
+}
+
+$script:vmHostScsiLunPath = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.Scsi.ScsiLunPathImpl] @{
+    Name = $script:constants.VMHostScsiLunPathName
+    ScsiLun = $script:vmHostScsiLun
+    State = $script:constants.VMHostScsiLunPathState
+    Preferred = $script:constants.VMHostPreferredScsiLunPath
 }
