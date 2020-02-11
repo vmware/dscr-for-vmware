@@ -14,28 +14,64 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config {
+Configuration VMHostVMKernelDumpFile_CreateVmfsDatastore_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostDCUIKeyboard $AllNodes.VMHostDCUIKeyboardResourceName {
+        VmfsDatastore $AllNodes.VmfsDatastoreResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.VMHostName
-            Layout = $AllNodes.VMHostDCUIKeyboardLayout
+            VMHostName = $AllNodes.VMHostName
+            Name = $AllNodes.DatastoreName
+            Path = $AllNodes.ScsiLunCanonicalName
+            Ensure = 'Present'
         }
     }
 }
 
-Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayoutToInitialState_Config {
+Configuration VMHostVMKernelDumpFile_CreateVMKernelDumpFile_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostDCUIKeyboard $AllNodes.VMHostDCUIKeyboardResourceName {
+        VMHostVMKernelDumpFile $AllNodes.VMHostVMKernelDumpFileResourceName {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             Name = $AllNodes.VMHostName
-            Layout = $AllNodes.InitialVMHostDCUIKeyboardLayout
+            DatastoreName = $AllNodes.DatastoreName
+            FileName = $AllNodes.DumpFileName
+            Size = $AllNodes.DumpFileSize
+            Ensure = 'Present'
+        }
+    }
+}
+
+Configuration VMHostVMKernelDumpFile_RemoveVMKernelDumpFile_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VMHostVMKernelDumpFile $AllNodes.VMHostVMKernelDumpFileResourceName {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            Name = $AllNodes.VMHostName
+            DatastoreName = $AllNodes.DatastoreName
+            FileName = $AllNodes.DumpFileName
+            Ensure = 'Absent'
+            Force = $AllNodes.Force
+        }
+    }
+}
+
+Configuration VMHostVMKernelDumpFile_RemoveVmfsDatastore_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VmfsDatastore $AllNodes.VmfsDatastoreResourceName {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            VMHostName = $AllNodes.VMHostName
+            Name = $AllNodes.DatastoreName
+            Path = $AllNodes.ScsiLunCanonicalName
+            Ensure = 'Absent'
         }
     }
 }

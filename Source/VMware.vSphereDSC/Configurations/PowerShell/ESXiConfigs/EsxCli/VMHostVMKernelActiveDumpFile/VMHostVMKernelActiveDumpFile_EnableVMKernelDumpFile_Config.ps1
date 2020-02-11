@@ -14,28 +14,59 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config {
+Param(
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $Server,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $User,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $Password,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $Name
+)
+
+$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
+
+$script:configurationData = @{
+    AllNodes = @(
+        @{
+            NodeName = 'localhost'
+            PSDscAllowPlainTextPassword = $true
+            Server = $Server
+            Credential = $Credential
+            Name = $Name
+        }
+    )
+}
+
+<#
+.DESCRIPTION
+
+Enables the VMKernel dump file on the specified VMHost by selecting the best available file using the smart selection algorithm.
+#>
+Configuration VMHostVMKernelActiveDumpFile_EnableVMKernelDumpFile_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        VMHostDCUIKeyboard $AllNodes.VMHostDCUIKeyboardResourceName {
+        VMHostVMKernelActiveDumpFile VMHostVMKernelActiveDumpFile {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.VMHostName
-            Layout = $AllNodes.VMHostDCUIKeyboardLayout
+            Name = $AllNodes.Name
+            Enable = $true
+            Smart = $true
         }
     }
 }
 
-Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayoutToInitialState_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
-
-    Node $AllNodes.NodeName {
-        VMHostDCUIKeyboard $AllNodes.VMHostDCUIKeyboardResourceName {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            Name = $AllNodes.VMHostName
-            Layout = $AllNodes.InitialVMHostDCUIKeyboardLayout
-        }
-    }
-}
+VMHostVMKernelActiveDumpFile_EnableVMKernelDumpFile_Config -ConfigurationData $script:configurationData

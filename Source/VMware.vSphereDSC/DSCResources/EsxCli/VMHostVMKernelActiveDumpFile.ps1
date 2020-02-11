@@ -15,18 +15,26 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostDCUIKeyboard : EsxCliBaseDSC {
-    VMHostDCUIKeyboard() {
-        $this.EsxCliCommand = 'system.settings.keyboard.layout'
+class VMHostVMKernelActiveDumpFile : EsxCliBaseDSC {
+    VMHostVMKernelActiveDumpFile() {
+        $this.EsxCliCommand = 'system.coredump.file'
     }
 
     <#
     .DESCRIPTION
 
-    Specifies the name of the Direct Console User Interface Keyboard Layout.
+    Specifies whether the VMKernel dump file should be enabled or disabled.
     #>
-    [DscProperty(Mandatory)]
-    [string] $Layout
+    [DscProperty()]
+    [nullable[bool]] $Enable
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether to select the best available file using the smart selection algorithm. Can only be used when 'Enabled' property is specified with '$true' value.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Smart
 
     [void] Set() {
         try {
@@ -53,7 +61,7 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
             $this.GetEsxCli($vmHost)
             $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
 
-            $result = ($this.Layout -eq $esxCliGetMethodResult)
+            $result = !$this.ShouldModifyVMKernelDumpFile($esxCliGetMethodResult)
 
             $this.WriteDscResourceState($result)
 
@@ -65,10 +73,10 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
         }
     }
 
-    [VMHostDCUIKeyboard] Get() {
+    [VMHostVMKernelActiveDumpFile] Get() {
         try {
             Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostDCUIKeyboard]::new()
+            $result = [VMHostVMKernelActiveDumpFile]::new()
 
             $this.ConnectVIServer()
 
@@ -88,13 +96,33 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
     <#
     .DESCRIPTION
 
+    Checks if the VMKernel dump file should be modified.
+    #>
+    [bool] ShouldModifyVMKernelDumpFile($esxCliGetMethodResult) {
+        $result = $null
+
+        if ($null -ne $this.Enable) {
+            if ($this.Enable) { $result = [string]::IsNullOrEmpty($esxCliGetMethodResult.Active) }
+            else { $result = ![string]::IsNullOrEmpty($esxCliGetMethodResult.Active) }
+        }
+        else {
+            $result = $false
+        }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
     Populates the result returned from the Get method.
     #>
     [void] PopulateResult($result, $vmHost) {
         $result.Server = $this.Connection.Name
         $result.Name = $vmHost.Name
+        $result.Smart = $this.Smart
 
         $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
-        $result.Layout = $esxCliGetMethodResult
+        $result.Enable = ![string]::IsNullOrEmpty($esxCliGetMethodResult.Active)
     }
 }

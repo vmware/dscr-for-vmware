@@ -14,28 +14,26 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
+<#
+.DESCRIPTION
 
-    Node $AllNodes.NodeName {
-        VMHostDCUIKeyboard $AllNodes.VMHostDCUIKeyboardResourceName {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            Name = $AllNodes.VMHostName
-            Layout = $AllNodes.VMHostDCUIKeyboardLayout
-        }
+Retrieves the canonical name of the Scsi logical unit that will contain the Vmfs Datastore used in the Integration Tests.
+#>
+function Get-ScsiLunCanonicalName {
+    [CmdletBinding()]
+    [OutputType([string])]
+
+    $viServer = Connect-VIServer -Server $Server -Credential $Credential -ErrorAction Stop -Verbose:$false
+
+    $vmHost = Get-VMHost -Server $viServer -Name $Name -ErrorAction Stop -Verbose:$false
+    $datastoreSystem = Get-View -Server $viServer -Id $vmHost.ExtensionData.ConfigManager.DatastoreSystem -ErrorAction Stop -Verbose:$false
+    $scsiLun = $datastoreSystem.QueryAvailableDisksForVmfs($null) | Select-Object -First 1
+
+    if ($null -eq $scsiLun) {
+        throw 'The Vmfs Datastore that is used in the Integration Tests requires one unused Scsi logical unit to be available.'
     }
-}
 
-Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayoutToInitialState_Config {
-    Import-DscResource -ModuleName VMware.vSphereDSC
+    Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop -Verbose:$false
 
-    Node $AllNodes.NodeName {
-        VMHostDCUIKeyboard $AllNodes.VMHostDCUIKeyboardResourceName {
-            Server = $AllNodes.Server
-            Credential = $AllNodes.Credential
-            Name = $AllNodes.VMHostName
-            Layout = $AllNodes.InitialVMHostDCUIKeyboardLayout
-        }
-    }
+    $scsiLun.CanonicalName
 }

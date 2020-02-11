@@ -38,10 +38,10 @@ Param(
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
 
-. "$PSScriptRoot\VMHostDCUIKeyboard.Integration.Tests.Helpers.ps1"
-$script:initialVMHostDCUIKeyboardLayout = Get-InitialVMHostDCUIKeyboardLayout
+. "$PSScriptRoot\VMHostVMKernelActiveDumpPartition.Integration.Tests.Helpers.ps1"
+$script:initialVMHostVMKernelDumpPartitionState = Get-InitialVMHostVMKernelDumpPartitionState
 
-$script:dscResourceName = 'VMHostDCUIKeyboard'
+$script:dscResourceName = 'VMHostVMKernelActiveDumpPartition'
 $script:moduleFolderPath = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path -Path (Join-Path -Path $moduleFolderPath -ChildPath 'Tests') -ChildPath 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$script:dscResourceName\$($script:dscResourceName)_Config.ps1"
@@ -54,32 +54,48 @@ $script:configurationData = @{
             Server = $Server
             Credential = $Credential
             VMHostName = $Name
-            VMHostDCUIKeyboardResourceName = 'VMHostDCUIKeyboard'
-            InitialVMHostDCUIKeyboardLayout = $script:initialVMHostDCUIKeyboardLayout
-            VMHostDCUIKeyboardLayout = 'United Kingdom'
+            VMHostVMKernelActiveDumpPartitionResourceName = 'VMHostVMKernelActiveDumpPartition'
+            InitialVMKernelDumpPartitionState = $script:initialVMHostVMKernelDumpPartitionState
+            EnableVMKernelDumpPartition = $true
+            DisableVMKernelDumpPartition = $false
+            UseSmartAlgorithmForVMKernelDumpPartition = $true
         }
     )
 }
 
-$script:configModifyVMHostDCUIKeyboardLayout = "$($script:dscResourceName)_ModifyVMHostDCUIKeyboardLayout_Config"
-$script:configModifyVMHostDCUIKeyboardLayoutToInitialState = "$($script:dscResourceName)_ModifyVMHostDCUIKeyboardLayoutToInitialState_Config"
+$script:configEnableVMKernelDumpPartition = "$($script:dscResourceName)_EnableVMKernelDumpPartition_Config"
+$script:configDisableVMKernelDumpPartition = "$($script:dscResourceName)_DisableVMKernelDumpPartition_Config"
 
 . $script:configurationFile -ErrorAction Stop
 
-$script:mofFileModifyVMHostDCUIKeyboardLayoutPath = "$script:integrationTestsFolderPath\$script:configModifyVMHostDCUIKeyboardLayout\"
-$script:mofFileModifyVMHostDCUIKeyboardLayoutToInitialStatePath = "$script:integrationTestsFolderPath\$script:configModifyVMHostDCUIKeyboardLayoutToInitialState\"
+$script:mofFileEnableVMKernelDumpPartitionPath = "$script:integrationTestsFolderPath\$script:configEnableVMKernelDumpPartition\"
+$script:mofFileDisableVMKernelDumpPartitionPath = "$script:integrationTestsFolderPath\$script:configDisableVMKernelDumpPartition\"
 
 Describe "$($script:dscResourceName)_Integration" {
-    Context "When using configuration $script:configModifyVMHostDCUIKeyboardLayout" {
+    Context "When using configuration $script:configEnableVMKernelDumpPartition" {
         BeforeAll {
             # Arrange
-            & $script:configModifyVMHostDCUIKeyboardLayout `
-                -OutputPath $script:mofFileModifyVMHostDCUIKeyboardLayoutPath `
+            & $script:configDisableVMKernelDumpPartition `
+                -OutputPath $script:mofFileDisableVMKernelDumpPartitionPath `
                 -ConfigurationData $script:configurationData `
                 -ErrorAction Stop
 
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileModifyVMHostDCUIKeyboardLayoutPath
+            & $script:configEnableVMKernelDumpPartition `
+                -OutputPath $script:mofFileEnableVMKernelDumpPartitionPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
+            $startDscConfigurationParametersDisableVMKernelDumpPartition = @{
+                Path = $script:mofFileDisableVMKernelDumpPartitionPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
+            $startDscConfigurationParametersEnableVMKernelDumpPartition = @{
+                Path = $script:mofFileEnableVMKernelDumpPartitionPath
                 ComputerName = $script:configurationData.AllNodes.NodeName
                 Wait = $true
                 Force = $true
@@ -88,13 +104,14 @@ Describe "$($script:dscResourceName)_Integration" {
             }
 
             # Act
-            Start-DscConfiguration @startDscConfigurationParameters
+            Start-DscConfiguration @startDscConfigurationParametersDisableVMKernelDumpPartition
+            Start-DscConfiguration @startDscConfigurationParametersEnableVMKernelDumpPartition
         }
 
         It 'Should apply the MOF without throwing' {
             # Arrange
             $startDscConfigurationParameters = @{
-                Path = $script:mofFileModifyVMHostDCUIKeyboardLayoutPath
+                Path = $script:mofFileEnableVMKernelDumpPartitionPath
                 ComputerName = $script:configurationData.AllNodes.NodeName
                 Wait = $true
                 Force = $true
@@ -113,18 +130,19 @@ Describe "$($script:dscResourceName)_Integration" {
 
         It 'Should be able to call Get-DscConfiguration and all parameters should match' {
             # Arrange && Act
-            $configuration = Get-DscConfiguration -Verbose -ErrorAction Stop | Where-Object -FilterScript { $_.ConfigurationName -eq $script:configModifyVMHostDCUIKeyboardLayout }
+            $configuration = Get-DscConfiguration -Verbose -ErrorAction Stop | Where-Object -FilterScript { $_.ConfigurationName -eq $script:configEnableVMKernelDumpPartition }
 
             # Assert
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
             $configuration.Name | Should -Be $script:configurationData.AllNodes.VMHostName
-            $configuration.Layout | Should -Be $script:configurationData.AllNodes.VMHostDCUIKeyboardLayout
+            $configuration.Enable | Should -Be $script:configurationData.AllNodes.EnableVMKernelDumpPartition
+            $configuration.Smart | Should -Be $script:configurationData.AllNodes.UseSmartAlgorithmForVMKernelDumpPartition
         }
 
         It 'Should return $true when Test-DscConfiguration is run' {
             # Arrange
             $testDscConfigurationParameters = @{
-                ReferenceConfiguration = "$script:mofFileModifyVMHostDCUIKeyboardLayoutPath\$($script:configurationData.AllNodes.NodeName).mof"
+                ReferenceConfiguration = "$script:mofFileEnableVMKernelDumpPartitionPath\$($script:configurationData.AllNodes.NodeName).mof"
                 ComputerName = $script:configurationData.AllNodes.NodeName
                 Verbose = $true
                 ErrorAction = 'Stop'
@@ -135,26 +153,11 @@ Describe "$($script:dscResourceName)_Integration" {
         }
 
         AfterAll {
-            # Arrange
-            & $script:configModifyVMHostDCUIKeyboardLayoutToInitialState `
-                -OutputPath $script:mofFileModifyVMHostDCUIKeyboardLayoutToInitialStatePath `
-                -ConfigurationData $script:configurationData `
-                -ErrorAction Stop
+            # Arrange && Act
+            Restore-VMHostVMKernelDumpPartitionToInitialState
 
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileModifyVMHostDCUIKeyboardLayoutToInitialStatePath
-                ComputerName = $script:configurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
-
-            # Act
-            Start-DscConfiguration @startDscConfigurationParameters
-
-            Remove-Item -Path $script:mofFileModifyVMHostDCUIKeyboardLayoutPath -Recurse -Confirm:$false -ErrorAction Stop
-            Remove-Item -Path $script:mofFileModifyVMHostDCUIKeyboardLayoutToInitialStatePath -Recurse -Confirm:$false -ErrorAction Stop
+            Remove-Item -Path $script:mofFileDisableVMKernelDumpPartitionPath -Recurse -Confirm:$false -ErrorAction Stop
+            Remove-Item -Path $script:mofFileEnableVMKernelDumpPartitionPath -Recurse -Confirm:$false -ErrorAction Stop
         }
     }
 }

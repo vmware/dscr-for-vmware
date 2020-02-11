@@ -33,7 +33,7 @@ Param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]
-    $VMHostName
+    $Name
 )
 
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, (ConvertTo-SecureString -String $Password -AsPlainText -Force)
@@ -45,7 +45,7 @@ $script:configurationData = @{
             PSDscAllowPlainTextPassword = $true
             Server = $Server
             Credential = $Credential
-            VMHostName = $VMHostName
+            Name = $Name
         }
     )
 }
@@ -62,7 +62,7 @@ Configuration VMHostDCUIKeyboard_ModifyVMHostDCUIKeyboardLayout_Config {
         VMHostDCUIKeyboard VMHostDCUIKeyboard {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
-            Name = $AllNodes.VMHostName
+            Name = $AllNodes.Name
             Layout = 'US Default'
         }
     }

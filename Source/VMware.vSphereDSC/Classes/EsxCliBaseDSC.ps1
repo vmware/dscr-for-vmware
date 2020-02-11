@@ -66,7 +66,7 @@ class EsxCliBaseDSC : VMHostBaseDSC {
 
     Executes the specified method for modification - 'set', 'add' or 'remove' of the specified EsxCli command.
     #>
-    [void] ExecuteEsxCliModifyMethod($methodName) {
+    [void] ExecuteEsxCliModifyMethod($methodName, $methodArguments) {
         $esxCliCommandMethod = "$($this.EsxCliCommand).$methodName."
         $esxCliMethodArgs = $null
 
@@ -86,19 +86,25 @@ class EsxCliBaseDSC : VMHostBaseDSC {
         $commandArgs = @()
         $commandArgs = $commandArgs + $esxCliMethodArgs.Keys
         foreach ($key in $commandArgs) {
-            # The name of the property of the Dsc Resource starts with a capital letter whereas the key of the argument contains only lower case letters.
-            $dscResourcePropertyName = $dscResourceNamesOfProperties | Where-Object -FilterScript { $_.ToLower() -eq $key.ToLower() }
+            # The argument of the method is present in the method arguments hashtable and should be used instead of the property of the Dsc Resource.
+            if ($methodArguments.Count -gt 0 -and $null -ne $methodArguments.$key) {
+                $esxCliMethodArgs.$key = $methodArguments.$key
+            }
+            else {
+                # The name of the property of the Dsc Resource starts with a capital letter whereas the key of the argument contains only lower case letters.
+                $dscResourcePropertyName = $dscResourceNamesOfProperties | Where-Object -FilterScript { $_.ToLower() -eq $key.ToLower() }
 
-            # Not all properties of the Dsc Resource are part of the arguments hashtable.
-            if ($null -ne $dscResourcePropertyName) {
-                if ($this.$dscResourcePropertyName -is [string]) {
-                    if (![string]::IsNullOrEmpty($this.$dscResourcePropertyName)) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
-                }
-                elseif ($this.$dscResourcePropertyName -is [array]) {
-                    if ($null -ne $this.$dscResourcePropertyName -and $this.$dscResourcePropertyName.Length -gt 0) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
-                }
-                else {
-                    if ($null -ne $this.$dscResourcePropertyName) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                # Not all properties of the Dsc Resource are part of the arguments hashtable.
+                if ($null -ne $dscResourcePropertyName) {
+                    if ($this.$dscResourcePropertyName -is [string]) {
+                        if (![string]::IsNullOrEmpty($this.$dscResourcePropertyName)) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                    }
+                    elseif ($this.$dscResourcePropertyName -is [array]) {
+                        if ($null -ne $this.$dscResourcePropertyName -and $this.$dscResourcePropertyName.Length -gt 0) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                    }
+                    else {
+                        if ($null -ne $this.$dscResourcePropertyName) { $esxCliMethodArgs.$key = $this.$dscResourcePropertyName }
+                    }
                 }
             }
         }
@@ -109,6 +115,15 @@ class EsxCliBaseDSC : VMHostBaseDSC {
         catch {
             throw ($this.EsxCliCommandFailedMessage -f ('esxcli.' + $this.EsxCliCommand), $_.Exception.Message)
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Executes the specified method for modification - 'set', 'add' or 'remove' of the specified EsxCli command.
+    #>
+    [void] ExecuteEsxCliModifyMethod($methodName) {
+        $this.ExecuteEsxCliModifyMethod($methodName, @{})
     }
 
     <#

@@ -269,6 +269,13 @@ $script:constants = @{
     Gateway = '192.168.0.1'
     Destination = '192.168.100.0'
     PrefixLength = 32
+    EnableVMKernelDumpPartition = $true
+    UseSmartAlgorithmForVMKernelDumpPartition = $true
+    DumpFileName = 'MyTestDumpFile'
+    DumpFileSizeInMB = 1181
+    DumpFileSizeInBytes = 1238368256
+    EnableVMKernelDumpFile = $true
+    UseSmartAlgorithmForVMKernelDumpFile = $true
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1363,4 +1370,21 @@ $script:vmHostIPRouteOne = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHostRoute
     Gateway = $script:constants.Gateway
     Destination = $script:constants.Destination
     PrefixLength = $script:constants.PrefixLength
+}
+
+$script:vmKernelDumpPartition = @{
+    Active = 'mpx.vmhba32:C0:T0:L0:7'
+    Configured = 'mpx.vmhba32:C0:T0:L0:7'
+}
+
+$script:vmKernelDumpFile = @{
+    Active = 'mpx.vmhba32:C0:T0:L0:7'
+    Configured = 'mpx.vmhba32:C0:T0:L0:7'
+    Path = '/vmfs/volumes/{0}/vmkdump/{1}.dumpfile' -f $script:constants.DatastoreName, $script:constants.DumpFileName
+    Size = $script:constants.DumpFileSizeInBytes
+}
+
+$script:fileSystem = @{
+    UUID = [Guid]::NewGuid()
+    VolumeName = $script:constants.DatastoreName
 }
