@@ -11818,6 +11818,199 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 }
 
 [DscResource()]
+class VMHostIPRoute : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the gateway IPv4/IPv6 address of the route.
+    #>
+    [DscProperty(Key)]
+    [string] $Gateway
+
+    <#
+    .DESCRIPTION
+
+    Specifies the destination IPv4/IPv6 address of the route.
+    #>
+    [DscProperty(Key)]
+    [string] $Destination
+
+    <#
+    .DESCRIPTION
+
+    Specifies the prefix length of the destination IP address. For IPv4, the valid values are from 0 to 32, and for IPv6 - from 0 to 128.
+    #>
+    [DscProperty(Key)]
+    [int] $PrefixLength
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the IPv4/IPv6 route should be present or absent.
+    #>
+    [DscProperty(Mandatory = $true)]
+    [Ensure] $Ensure
+
+    hidden [string] $CreateVMHostIPRouteMessage = "Creating IP Route with Gateway address {0} and Destination address {1} on VMHost {2}."
+    hidden [string] $RemoveVMHostIPRouteMessage = "Removing IP Route with Gateway address {0} and Destination address {1} on VMHost {2}."
+
+    hidden [string] $CouldNotCreateVMHostIPRouteMessage = "Could not create IP Route with Gateway address {0} and Destination address {1} on VMHost {2}. For more information: {3}"
+    hidden [string] $CouldNotRemoveVMHostIPRouteMessage = "Could not remove IP Route with Gateway address {0} and Destination address {1} on VMHost {2}. For more information: {3}"
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostIPRoute) {
+                    $this.NewVMHostIPRoute($vmHost)
+                }
+            }
+            else {
+                if ($null -ne $vmHostIPRoute) {
+                    $this.RemoveVMHostIPRoute($vmHostIPRoute)
+                }
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
+
+            $result = $null
+            if ($this.Ensure -eq [Ensure]::Present) {
+                $result = ($null -ne $vmHostIPRoute)
+            }
+            else {
+                $result = ($null -eq $vmHostIPRoute)
+            }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostIPRoute] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostIPRoute]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
+
+            $this.PopulateResult($result, $vmHostIPRoute)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the configured IPv4/IPv6 route with the specified Gateway and Destination addresses if it exists.
+    #>
+    [PSObject] GetVMHostIPRoute($vmHost) {
+        return (Get-VMHostRoute -Server $this.Connection -VMHost $vmHost -ErrorAction SilentlyContinue -Verbose:$false |
+                Where-Object -FilterScript { $_.Gateway -eq $this.Gateway -and $_.Destination -eq $this.Destination -and $_.PrefixLength -eq $this.PrefixLength })
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new IP route with the specified Gateway and Destination addresses.
+    #>
+    [void] NewVMHostIPRoute($vmHost) {
+        $newVMHostRouteParams = @{
+            Server = $this.Connection
+            VMHost = $vmHost
+            Gateway = $this.Gateway
+            Destination = $this.Destination
+            PrefixLength = $this.PrefixLength
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            Write-VerboseLog -Message $this.CreateVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $vmHost.Name)
+            New-VMHostRoute @newVMHostRouteParams
+        }
+        catch {
+            throw ($this.CouldNotCreateVMHostIPRouteMessage -f $this.Gateway, $this.Destination, $vmHost.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the IP route with the specified Gateway and Destination addresses.
+    #>
+    [void] RemoveVMHostIPRoute($vmHostIPRoute) {
+        $removeVMHostRouteParams = @{
+            VMHostRoute = $vmHostIPRoute
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            Write-VerboseLog -Message $this.RemoveVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $this.Name)
+            Remove-VMHostRoute @removeVMHostRouteParams
+        }
+        catch {
+            throw ($this.CouldNotRemoveVMHostIPRouteMessage -f $this.Gateway, $this.Destination, $this.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHostIPRoute) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $this.Name
+
+        if ($null -ne $vmHostIPRoute) {
+            $result.Ensure = [Ensure]::Present
+            $result.Gateway = $vmHostIPRoute.Gateway
+            $result.Destination = $vmHostIPRoute.Destination
+            $result.PrefixLength = $vmHostIPRoute.PrefixLength
+        }
+        else {
+            $result.Ensure = [Ensure]::Absent
+            $result.Gateway = $this.Gateway
+            $result.Destination = $this.Destination
+            $result.PrefixLength = $this.PrefixLength
+        }
+    }
+}
+
+[DscResource()]
 class VMHostGraphics : VMHostGraphicsBaseDSC {
     <#
     .DESCRIPTION

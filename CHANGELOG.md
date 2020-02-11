@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.43 - 2020-02-11
+### Added
+- Added VMHostIPRoute DSC Resource.
+- Added Unit Tests for VMHostIPRoute DSC Resource.
+- Added Integration Tests for VMHostIPRoute DSC Resource.
+- Added Documentation and example Configurations for VMHostIPRoute DSC Resource.
+
 ## 2.0.0.42 - 2020-01-09
 ### Added
 - Added VMHostDCUIKeyboard DSC Resource.
