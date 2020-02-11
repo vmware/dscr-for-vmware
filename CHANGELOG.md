@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.49 - 2020-02-11
+### Added
+- Added VMHostScsiLunPath DSC Resource.
+- Added Unit Tests for VMHostScsiLunPath DSC Resource.
+- Added Integration Tests for VMHostScsiLunPath DSC Resource.
+- Added Documentation and example Configuration for VMHostScsiLunPath DSC Resource.
+
 ## 2.0.0.48 - 2020-02-11
 ### Added
 - Added VMHostvSANNetworkConfiguration DSC Resource.
