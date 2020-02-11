@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.46 - 2020-02-11
+### Added
+- Added VMHostNetworkCoreDump DSC Resource.
+- Added Unit Tests for VMHostNetworkCoreDump DSC Resource.
+- Added Integration Tests for VMHostNetworkCoreDump DSC Resource.
+- Added Documentation and example Configuration for VMHostNetworkCoreDump DSC Resource.
+
 ## 2.0.0.45 - 2020-02-11
 ### Added
 - Added VMHostVMKernelModule DSC Resource.
