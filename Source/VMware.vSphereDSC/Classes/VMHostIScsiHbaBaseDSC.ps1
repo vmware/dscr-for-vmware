@@ -119,6 +119,15 @@ class VMHostIScsiHbaBaseDSC : VMHostEntityBaseDSC {
     <#
     .DESCRIPTION
 
+    Checks if the CHAP settings should be modified based on the current authentication properties.
+    #>
+    [bool] ShouldModifyCHAPSettings($authenticationProperties) {
+        return $this.ShouldModifyCHAPSettings($authenticationProperties, $null, $null)
+    }
+
+    <#
+    .DESCRIPTION
+
     Populates the cmdlet parameters with the CHAP settings based on the following criteria:
     1. CHAP settings can only be passed to the cmdlet if the 'InheritChap' option is not passed or it is passed with a '$false' value.
     2. Mutual CHAP settings can only be passed to the cmdlet if the 'InheritMutualChap' option is not passed or it is passed with a '$false' value.
@@ -158,5 +167,14 @@ class VMHostIScsiHbaBaseDSC : VMHostEntityBaseDSC {
                 }
             }
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the cmdlet parameters with the CHAP settings.
+    #>
+    [void] PopulateCmdletParametersWithCHAPSettings($cmdletParams) {
+        $this.PopulateCmdletParametersWithCHAPSettings($cmdletParams, $null, $null)
     }
 }

@@ -52,7 +52,7 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
 
             $iScsiHba = $this.GetIScsiHba($this.Name)
 
-            $result = !$this.ShouldModifyCHAPSettings($iScsiHba.AuthenticationProperties, $null, $null)
+            $result = !$this.ShouldModifyCHAPSettings($iScsiHba.AuthenticationProperties)
 
             $this.WriteDscResourceState($result)
 
@@ -97,7 +97,7 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
             Verbose = $false
         }
 
-        $this.PopulateCmdletParametersWithCHAPSettings($setVMHostHbaParams, $null, $null)
+        $this.PopulateCmdletParametersWithCHAPSettings($setVMHostHbaParams)
 
         try {
             Write-VerboseLog -Message $this.ConfigureIScsiHbaChapMessage -Arguments @($iScsiHba.Device, $this.VMHost.Name)
