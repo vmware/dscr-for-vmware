@@ -553,3 +553,25 @@ function Invoke-EsxCliCommandMethod {
 
     Invoke-Expression -Command ("`$EsxCli." + ($EsxCliCommandMethod -f "`$EsxCliCommandMethodArguments")) -ErrorAction Stop -Verbose:$false
 }
+
+function Update-VMHostFirewallRuleset {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [VMware.Vim.HostFirewallSystem]
+        $VMHostFirewallSystem,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $VMHostFirewallRulesetId,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [VMware.Vim.HostFirewallRulesetRulesetSpec]
+        $VMHostFirewallRulesetSpec
+    )
+
+    $VMHostFirewallSystem.UpdateRuleset($VMHostFirewallRulesetId, $VMHostFirewallRulesetSpec)
+}

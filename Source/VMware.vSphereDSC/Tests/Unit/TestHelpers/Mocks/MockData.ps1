@@ -333,6 +333,16 @@ $script:constants = @{
     VMHostActiveScsiLunPath = $true
     VMHostPreferredScsiLunPath = $true
     DiskPartition = 1
+    FirewallSystemType = 'HostFirewallSystem'
+    FirewallSystemValue = 'firewallSystem-1'
+    FirewallRulesetKey = 'CIMHttpServer'
+    FirewallRulesetName = 'CIM Server'
+    FirewallRulesetEnabled = $true
+    FirewallRulesetAllIP = $false
+    FirewallRulesetIPAddressesOne = @('192.0.20.10', '192.0.20.11', '192.0.20.12')
+    FirewallRulesetIPAddressesTwo = @('192.0.20.10', '192.0.20.11', '192.0.20.13')
+    FirewallRulesetIPNetworksOne = @('10.20.120.12/22', '10.20.120.12/23', '10.20.120.12/24')
+    FirewallRulesetIPNetworksTwo = @('10.20.120.12/22', '10.20.120.12/23', '10.20.120.12/25')
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -674,29 +684,33 @@ $script:vmHost = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{
                 Type = $script:constants.OptionManagerType
                 Value = $script:constants.OptionManagerValue
             }
+            CacheConfigurationManager = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.CacheConfigurationManagerType
+                Value = $script:constants.CacheConfigurationManagerValue
+            }
             EsxAgentHostManager = [VMware.Vim.ManagedObjectReference] @{
                 Type = $script:constants.EsxAgentHostManagerType
                 Value = $script:constants.EsxAgentHostManagerValue
             }
-            PciPassthruSystem = [VMware.Vim.ManagedObjectReference] @{
-                Type = $script:constants.PciPassthruSystemType
-                Value = $script:constants.PciPassthruSystemValue
+            FirewallSystem = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.FirewallSystemType
+                Value = $script:constants.FirewallSystemValue
             }
             GraphicsManager = [VMware.Vim.ManagedObjectReference] @{
                 Type = $script:constants.GraphicsManagerType
                 Value = $script:constants.GraphicsManagerValue
             }
-            PowerSystem = [VMware.Vim.ManagedObjectReference] @{
-                Type = $script:constants.PowerSystemType
-                Value = $script:constants.PowerSystemValue
-            }
-            CacheConfigurationManager = [VMware.Vim.ManagedObjectReference] @{
-                Type = $script:constants.CacheConfigurationManagerType
-                Value = $script:constants.CacheConfigurationManagerValue
-            }
             NetworkSystem = [VMware.Vim.ManagedObjectReference] @{
                 Type = $script:constants.NetworkSystemType
                 Value = $script:constants.NetworkSystemValue
+            }
+            PciPassthruSystem = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.PciPassthruSystemType
+                Value = $script:constants.PciPassthruSystemValue
+            }
+            PowerSystem = [VMware.Vim.ManagedObjectReference] @{
+                Type = $script:constants.PowerSystemType
+                Value = $script:constants.PowerSystemValue
             }
         }
         Network = @(
@@ -1549,6 +1563,65 @@ $script:vmHostDiskWithPartitions = [VMware.VimAutomation.ViCore.Impl.V1.Host.Sto
                     Partition = $script:constants.DiskPartition
                 }
             )
+        }
+    }
+}
+
+$script:firewallRulesetIPNetworksOne = @(
+        [VMware.Vim.HostFirewallRulesetIpNetwork] @{
+            Network = '10.20.120.12'
+            PrefixLength = '22'
+        },
+        [VMware.Vim.HostFirewallRulesetIpNetwork] @{
+            Network = '10.20.120.12'
+            PrefixLength = '23'
+        },
+        [VMware.Vim.HostFirewallRulesetIpNetwork] @{
+            Network = '10.20.120.12'
+            PrefixLength = '24'
+        }
+)
+
+$script:firewallRulesetIPNetworksTwo = @(
+    [VMware.Vim.HostFirewallRulesetIpNetwork] @{
+        Network = '10.20.120.12'
+        PrefixLength = '22'
+    },
+    [VMware.Vim.HostFirewallRulesetIpNetwork] @{
+        Network = '10.20.120.12'
+        PrefixLength = '23'
+    },
+    [VMware.Vim.HostFirewallRulesetIpNetwork] @{
+        Network = '10.20.120.12'
+        PrefixLength = '25'
+    }
+)
+
+$script:vmHostFirewallSystem = [VMware.Vim.HostFirewallSystem] @{
+    MoRef = [VMware.Vim.ManagedObjectReference] @{
+        Type = $script:constants.FirewallSystemType
+        Value = $script:constants.FirewallSystemValue
+    }
+}
+
+$script:vmHostFirewallRulesetSpec = [VMware.Vim.HostFirewallRulesetRulesetSpec] @{
+    AllowedHosts = [VMware.Vim.HostFirewallRulesetIpList] @{
+        AllIp = !$script:constants.FirewallRulesetAllIP
+        IpAddress = $script:constants.FirewallRulesetIPAddressesTwo
+        IpNetwork = $script:firewallRulesetIPNetworksTwo
+    }
+}
+
+$script:vmHostFirewallRuleset = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHostFirewallExceptionImpl] @{
+    Name = $script:constants.FirewallRulesetName
+    VMHost = $script:vmHost
+    Enabled = $script:constants.FirewallRulesetEnabled
+    ExtensionData = [VMware.Vim.HostFirewallRuleset] @{
+        Key = $script:constants.FirewallRulesetKey
+        AllowedHosts = [VMware.Vim.HostFirewallRulesetIpList] @{
+            AllIp = $script:constants.FirewallRulesetAllIP
+            IpAddress = $script:constants.FirewallRulesetIPAddressesOne
+            IpNetwork = $script:firewallRulesetIPNetworksOne
         }
     }
 }
