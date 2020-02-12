@@ -1,6 +1,19 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.53 - 2020-02-12
+### Added
+- Introduced VMHostIScsiHbaBaseDSC class.
+- Added VMHostIScsiHba DSC Resource.
+- Added VMHostIScsiHbaTarget DSC Resource.
+- Added Unit Tests for VMHostIScsiHbaBaseDSC class.
+- Added Unit Tests for VMHostIScsiHba DSC Resource.
+- Added Unit Tests for VMHostIScsiHbaTarget DSC Resource.
+- Added Integration Tests for VMHostIScsiHba DSC Resource.
+- Added Integration Tests for VMHostIScsiHbaTarget DSC Resource.
+- Added Documentation and example Configurations for VMHostIScsiHba DSC Resource.
+- Added Documentation and example Configurations for VMHostIScsiHbaTarget DSC Resource.
+
 ## 2.0.0.52 - 2020-02-12
 ### Added
 - Added StandardSwitch Composite DSC Resource.

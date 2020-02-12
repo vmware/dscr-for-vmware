@@ -20,7 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 RootModule = 'VMware.vSphereDSC.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.0.0.52'
+ModuleVersion = '2.0.0.53'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -56,6 +56,6 @@ VariablesToExport = '*'
 AliasesToExport = @()
 
 # DSC resources to export from this module
-DscResourcesToExport = @('Datacenter', 'DatacenterFolder', 'Folder', 'NfsUser', 'PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'vCenterVMHost', 'VDPortGroup', 'VDSwitch', 'VDSwitchVMHost', 'VMHostAccount', 'VMHostAdvancedSettings', 'VMHostAgentVM', 'VMHostAuthentication', 'VMHostCache', 'VMHostConfiguration', 'VMHostDnsSettings', 'VMHostFirewallRuleset', 'VMHostNtpSettings', 'VMHostPciPassthrough', 'VMHostPermission', 'VMHostPowerPolicy', 'VMHostRole', 'VMHostSatpClaimRule', 'VMHostScsiLun', 'VMHostScsiLunPath', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'NfsDatastore', 'VmfsDatastore', 'VMHostVssPortGroup', 'VMHostVssPortGroupSecurity', 'VMHostVssPortGroupShaping', 'VMHostVssPortGroupTeaming', 'VMHostAcceptanceLevel', 'VMHostDCUIKeyboard', 'VMHostNetworkCoreDump', 'VMHostSharedSwapSpace', 'VMHostSNMPAgent', 'VMHostSoftwareDevice', 'VMHostVMKernelActiveDumpFile', 'VMHostVMKernelActiveDumpPartition', 'VMHostVMKernelDumpFile', 'VMHostVMKernelModule', 'VMHostvSANNetworkConfiguration', 'VMHostVDSwitchMigration', 'VMHostVssMigration', 'VMHostPhysicalNic', 'VMHostVssNic', 'VMHostIPRoute', 'VMHostGraphics', 'VMHostGraphicsDevice', 'VMHostVss', 'VMHostVssBridge', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'DrsCluster', 'HACluster')
+DscResourcesToExport = @('Datacenter', 'DatacenterFolder', 'Folder', 'NfsUser', 'PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'vCenterVMHost', 'VDPortGroup', 'VDSwitch', 'VDSwitchVMHost', 'VMHostAccount', 'VMHostAdvancedSettings', 'VMHostAgentVM', 'VMHostAuthentication', 'VMHostCache', 'VMHostConfiguration', 'VMHostDnsSettings', 'VMHostFirewallRuleset', 'VMHostIScsiHba', 'VMHostIScsiHbaTarget', 'VMHostNtpSettings', 'VMHostPciPassthrough', 'VMHostPermission', 'VMHostPowerPolicy', 'VMHostRole', 'VMHostSatpClaimRule', 'VMHostScsiLun', 'VMHostScsiLunPath', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'NfsDatastore', 'VmfsDatastore', 'VMHostVssPortGroup', 'VMHostVssPortGroupSecurity', 'VMHostVssPortGroupShaping', 'VMHostVssPortGroupTeaming', 'VMHostAcceptanceLevel', 'VMHostDCUIKeyboard', 'VMHostNetworkCoreDump', 'VMHostSharedSwapSpace', 'VMHostSNMPAgent', 'VMHostSoftwareDevice', 'VMHostVMKernelActiveDumpFile', 'VMHostVMKernelActiveDumpPartition', 'VMHostVMKernelDumpFile', 'VMHostVMKernelModule', 'VMHostvSANNetworkConfiguration', 'VMHostVDSwitchMigration', 'VMHostVssMigration', 'VMHostPhysicalNic', 'VMHostVssNic', 'VMHostIPRoute', 'VMHostGraphics', 'VMHostGraphicsDevice', 'VMHostVss', 'VMHostVssBridge', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'DrsCluster', 'HACluster')
 
 }
