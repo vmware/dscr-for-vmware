@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.51 - 2020-02-12
+### Added
+- Added VMHostFirewallRuleset DSC Resource.
+- Added Unit Tests for VMHostFirewallRuleset DSC Resource.
+- Added Integration Tests for VMHostFirewallRuleset DSC Resource.
+- Added Documentation and example Configuration for VMHostFirewallRuleset DSC Resource.
+
 ## 2.0.0.50 - 2020-02-12
 ### Added
 - Added VMHostScsiLun DSC Resource.
