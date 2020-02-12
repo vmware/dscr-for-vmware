@@ -322,10 +322,17 @@ $script:constants = @{
     VMHostvSanNetworkConfigurationMulticastTTL = 5
     VMHostvSanNetworkConfigurationTrafficType = 'vsan'
     VMHostScsiLunCanonicalName = 'mpx.vmhba1:C0:T3:L1'
+    VMHostScsiLunMultipathPolicy = 'Fixed'
+    VMHostScsiLunBlocksToSwitchPath = 100
+    VMHostScsiLunCommandsToSwitchPath = 10
+    VMHostScsiLunDeletePartitions = $true
+    VMHostScsiLunIsLocal = $true
+    VMHostScsiLunIsSsd = $true
     VMHostScsiLunPathName = 'vmhba1:C0:T3:L1'
     VMHostScsiLunPathState = 'Active'
     VMHostActiveScsiLunPath = $true
     VMHostPreferredScsiLunPath = $true
+    DiskPartition = 1
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1503,6 +1510,11 @@ $script:vmHostvSanNetworkConfigurationIPInterface = @{
 $script:vmHostScsiLun = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.Scsi.ScsiLunImpl] @{
     CanonicalName = $script:constants.VMHostScsiLunCanonicalName
     VMHost = $script:vmHost
+    MultipathPolicy = $script:constants.VMHostScsiLunMultipathPolicy
+    BlocksToSwitchPath = $script:constants.VMHostScsiLunBlocksToSwitchPath
+    CommandsToSwitchPath = $script:constants.VMHostScsiLunCommandsToSwitchPath
+    IsLocal = $script:constants.VMHostScsiLunIsLocal
+    IsSsd = $script:constants.VMHostScsiLunIsSsd
 }
 
 $script:vmHostScsiLunPath = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.Scsi.ScsiLunPathImpl] @{
@@ -1510,4 +1522,33 @@ $script:vmHostScsiLunPath = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.Sc
     ScsiLun = $script:vmHostScsiLun
     State = $script:constants.VMHostScsiLunPathState
     Preferred = $script:constants.VMHostPreferredScsiLunPath
+}
+
+$script:notPreferredVMHostScsiLunPath = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.Scsi.ScsiLunPathImpl] @{
+    Name = $script:constants.VMHostScsiLunPathName
+    ScsiLun = $script:vmHostScsiLun
+    State = $script:constants.VMHostScsiLunPathState
+    Preferred = !$script:constants.VMHostPreferredScsiLunPath
+}
+
+$script:vmHostDisk = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.VMHostDiskImpl] @{
+    VMHost = $script:vmHost
+    ScsiLun = $script:vmHostScsiLun
+    ExtensionData = [VMware.Vim.HostDiskPartitionInfo] @{
+        Spec = [VMware.Vim.HostDiskPartitionSpec] @{}
+    }
+}
+
+$script:vmHostDiskWithPartitions = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.VMHostDiskImpl] @{
+    VMHost = $script:vmHost
+    ScsiLun = $script:vmHostScsiLun
+    ExtensionData = [VMware.Vim.HostDiskPartitionInfo] @{
+        Spec = [VMware.Vim.HostDiskPartitionSpec] @{
+            Partition = @(
+                [VMware.Vim.HostDiskPartitionAttributes] @{
+                    Partition = $script:constants.DiskPartition
+                }
+            )
+        }
+    }
 }
