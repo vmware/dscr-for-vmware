@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.52 - 2020-02-12
+### Added
+- Added StandardSwitch Composite DSC Resource.
+- Added Documentation and example Configuration for StandardSwitch Composite DSC Resource.
+
 ## 2.0.0.51 - 2020-02-12
 ### Added
 - Added VMHostFirewallRuleset DSC Resource.

@@ -179,6 +179,7 @@ enum NicTeamingPolicy {
     Loadbalance_srcmac
     Loadbalance_srcid
     Failover_explicit
+    Unset
 }
 
 enum DrsAutomationLevel {
@@ -13288,6 +13289,412 @@ class VMHostVssNic : VMHostNicBaseDSC {
 }
 
 [DscResource()]
+class VMHostIPRoute : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the gateway IPv4/IPv6 address of the route.
+    #>
+    [DscProperty(Key)]
+    [string] $Gateway
+
+    <#
+    .DESCRIPTION
+
+    Specifies the destination IPv4/IPv6 address of the route.
+    #>
+    [DscProperty(Key)]
+    [string] $Destination
+
+    <#
+    .DESCRIPTION
+
+    Specifies the prefix length of the destination IP address. For IPv4, the valid values are from 0 to 32, and for IPv6 - from 0 to 128.
+    #>
+    [DscProperty(Key)]
+    [int] $PrefixLength
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the IPv4/IPv6 route should be present or absent.
+    #>
+    [DscProperty(Mandatory = $true)]
+    [Ensure] $Ensure
+
+    hidden [string] $CreateVMHostIPRouteMessage = "Creating IP Route with Gateway address {0} and Destination address {1} on VMHost {2}."
+    hidden [string] $RemoveVMHostIPRouteMessage = "Removing IP Route with Gateway address {0} and Destination address {1} on VMHost {2}."
+
+    hidden [string] $CouldNotCreateVMHostIPRouteMessage = "Could not create IP Route with Gateway address {0} and Destination address {1} on VMHost {2}. For more information: {3}"
+    hidden [string] $CouldNotRemoveVMHostIPRouteMessage = "Could not remove IP Route with Gateway address {0} and Destination address {1} on VMHost {2}. For more information: {3}"
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $vmHostIPRoute) {
+                    $this.NewVMHostIPRoute($vmHost)
+                }
+            }
+            else {
+                if ($null -ne $vmHostIPRoute) {
+                    $this.RemoveVMHostIPRoute($vmHostIPRoute)
+                }
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
+
+            $result = $null
+            if ($this.Ensure -eq [Ensure]::Present) {
+                $result = ($null -ne $vmHostIPRoute)
+            }
+            else {
+                $result = ($null -eq $vmHostIPRoute)
+            }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [VMHostIPRoute] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [VMHostIPRoute]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
+
+            $this.PopulateResult($result, $vmHostIPRoute)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the configured IPv4/IPv6 route with the specified Gateway and Destination addresses if it exists.
+    #>
+    [PSObject] GetVMHostIPRoute($vmHost) {
+        return (Get-VMHostRoute -Server $this.Connection -VMHost $vmHost -ErrorAction SilentlyContinue -Verbose:$false |
+                Where-Object -FilterScript { $_.Gateway -eq $this.Gateway -and $_.Destination -eq $this.Destination -and $_.PrefixLength -eq $this.PrefixLength })
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new IP route with the specified Gateway and Destination addresses.
+    #>
+    [void] NewVMHostIPRoute($vmHost) {
+        $newVMHostRouteParams = @{
+            Server = $this.Connection
+            VMHost = $vmHost
+            Gateway = $this.Gateway
+            Destination = $this.Destination
+            PrefixLength = $this.PrefixLength
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            Write-VerboseLog -Message $this.CreateVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $vmHost.Name)
+            New-VMHostRoute @newVMHostRouteParams
+        }
+        catch {
+            throw ($this.CouldNotCreateVMHostIPRouteMessage -f $this.Gateway, $this.Destination, $vmHost.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the IP route with the specified Gateway and Destination addresses.
+    #>
+    [void] RemoveVMHostIPRoute($vmHostIPRoute) {
+        $removeVMHostRouteParams = @{
+            VMHostRoute = $vmHostIPRoute
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            Write-VerboseLog -Message $this.RemoveVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $this.Name)
+            Remove-VMHostRoute @removeVMHostRouteParams
+        }
+        catch {
+            throw ($this.CouldNotRemoveVMHostIPRouteMessage -f $this.Gateway, $this.Destination, $this.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHostIPRoute) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $this.Name
+
+        if ($null -ne $vmHostIPRoute) {
+            $result.Ensure = [Ensure]::Present
+            $result.Gateway = $vmHostIPRoute.Gateway
+            $result.Destination = $vmHostIPRoute.Destination
+            $result.PrefixLength = $vmHostIPRoute.PrefixLength
+        }
+        else {
+            $result.Ensure = [Ensure]::Absent
+            $result.Gateway = $this.Gateway
+            $result.Destination = $this.Destination
+            $result.PrefixLength = $this.PrefixLength
+        }
+    }
+}
+
+[DscResource()]
+class VMHostGraphics : VMHostGraphicsBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the default graphics type for the specified VMHost.
+    #>
+    [DscProperty(Mandatory)]
+    [GraphicsType] $GraphicsType
+
+    <#
+    .DESCRIPTION
+
+    Specifies the policy for assigning shared passthrough VMs to a host graphics device.
+    #>
+    [DscProperty(Mandatory)]
+    [SharedPassthruAssignmentPolicy] $SharedPassthruAssignmentPolicy
+
+    [void] Set() {
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+
+            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+            $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
+            $this.RestartVMHost($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [bool] Test() {
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+
+            return !$this.ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [VMHostGraphics] Get() {
+        try {
+            $result = [VMHostGraphics]::new()
+            $result.Server = $this.Server
+
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+
+            $result.Name = $vmHost.Name
+            $result.GraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
+            $result.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the Graphics Configuration needs to be updated with the desired values.
+    #>
+    [bool] ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager) {
+        if ($this.GraphicsType -ne $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType) {
+            return $true
+        }
+        elseif ($this.SharedPassthruAssignmentPolicy -ne $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy) {
+            return $true
+        }
+        else {
+            return $false
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Graphics Configuration of the specified VMHost.
+    #>
+    [void] UpdateGraphicsConfiguration($vmHostGraphicsManager) {
+        $vmHostGraphicsConfig = New-Object VMware.Vim.HostGraphicsConfig
+
+        $vmHostGraphicsConfig.HostDefaultGraphicsType = $this.ConvertEnumValueToServerValue($this.GraphicsType)
+        $vmHostGraphicsConfig.SharedPassthruAssignmentPolicy = $this.ConvertEnumValueToServerValue($this.SharedPassthruAssignmentPolicy)
+
+        try {
+            Update-GraphicsConfig -VMHostGraphicsManager $vmHostGraphicsManager -VMHostGraphicsConfig $vmHostGraphicsConfig
+        }
+        catch {
+            throw "The Graphics Configuration of VMHost $($this.Name) could not be updated: $($_.Exception.Message)"
+        }
+    }
+}
+
+[DscResource()]
+class VMHostGraphicsDevice : VMHostGraphicsBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the Graphics device identifier (ex. PCI ID).
+    #>
+    [DscProperty(Key)]
+    [string] $Id
+
+    <#
+    .DESCRIPTION
+
+    Specifies the graphics type for the specified Device in 'Id' property.
+    #>
+    [DscProperty(Mandatory)]
+    [GraphicsType] $GraphicsType
+
+    [void] Set() {
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+
+            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
+            $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
+            $this.RestartVMHost($vmHost)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [bool] Test() {
+    	try {
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
+
+            return ($this.GraphicsType -eq $foundDevice.GraphicsType)
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    [VMHostGraphicsDevice] Get() {
+        try {
+            $result = [VMHostGraphicsDevice]::new()
+            $result.Server = $this.Server
+
+            $this.ConnectVIServer()
+            $vmHost = $this.GetVMHost()
+            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
+            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
+
+            $result.Name = $vmHost.Name
+            $result.Id = $foundDevice.DeviceId
+            $result.GraphicsType = $foundDevice.GraphicsType
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Graphics Device with the specified Id from the server.
+    #>
+    [PSObject] GetGraphicsDevice($vmHostGraphicsManager) {
+        $foundDevice = $vmHostGraphicsManager.GraphicsConfig.DeviceType | Where-Object { $_.DeviceId -eq $this.Id }
+        if ($null -eq $foundDevice) {
+            throw "Device $($this.Id) was not found in the available Graphics devices."
+        }
+
+        return $foundDevice
+    }
+
+    <#
+    .DESCRIPTION
+
+    Performs an update on the Graphics Configuration of the specified VMHost by changing the Graphics Type for the
+    specified Device.
+    #>
+    [void] UpdateGraphicsConfiguration($vmHostGraphicsManager) {
+        $vmHostGraphicsConfig = New-Object VMware.Vim.HostGraphicsConfig
+
+        $vmHostGraphicsConfig.HostDefaultGraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
+        $vmHostGraphicsConfig.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
+        $vmHostGraphicsConfig.DeviceType = @()
+
+        $vmHostGraphicsConfigDeviceType = New-Object VMware.Vim.HostGraphicsConfigDeviceType
+        $vmHostGraphicsConfigDeviceType.DeviceId = $this.Id
+        $vmHostGraphicsConfigDeviceType.GraphicsType = $this.ConvertEnumValueToServerValue($this.GraphicsType)
+
+        $vmHostGraphicsConfig.DeviceType += $vmHostGraphicsConfigDeviceType
+
+        try {
+            Update-GraphicsConfig -VMHostGraphicsManager $vmHostGraphicsManager -VMHostGraphicsConfig $vmHostGraphicsConfig
+        }
+        catch {
+            throw "The Graphics Configuration of VMHost $($this.Name) could not be updated: $($_.Exception.Message)"
+        }
+    }
+}
+
+[DscResource()]
 class VMHostVss : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
@@ -14074,7 +14481,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Network adapter teaming policy.
     #>
     [DscProperty()]
-    [NicTeamingPolicy] $Policy
+    [NicTeamingPolicy] $Policy = [NicTeamingPolicy]::Unset
 
     <#
     .DESCRIPTION
@@ -14190,8 +14597,10 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         }
 
         $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
-        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq ($this.Policy).ToString().ToLower())
         $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
+
+        # The Network Adapter teaming policy should determine the Desired State only when it is specified.
+        if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq $this.Policy.ToString().ToLower()) }
 
         return ($vssTeamingTest -notcontains $false)
     }
@@ -14210,11 +14619,12 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             ActiveNic = $this.ActiveNic
             StandbyNic = $this.StandbyNic
             NotifySwitches = $this.NotifySwitches
-            Policy = ($this.Policy).ToString().ToLower()
             RollingOrder = $this.RollingOrder
         }
-        $vss = $this.GetVss()
 
+        if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingArgs.Policy = $this.Policy.ToString().ToLower() }
+
+        $vss = $this.GetVss()
         if ($this.Ensure -eq 'Present') {
             if ($this.Equals($vss)) {
                 return
@@ -14266,412 +14676,6 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             $vmHostVSSTeaming.NotifySwitches = $this.NotifySwitches
             $vmHostVSSTeaming.Policy = $this.Policy
             $vmHostVSSTeaming.RollingOrder = $this.RollingOrder
-        }
-    }
-}
-
-[DscResource()]
-class VMHostIPRoute : VMHostBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Specifies the gateway IPv4/IPv6 address of the route.
-    #>
-    [DscProperty(Key)]
-    [string] $Gateway
-
-    <#
-    .DESCRIPTION
-
-    Specifies the destination IPv4/IPv6 address of the route.
-    #>
-    [DscProperty(Key)]
-    [string] $Destination
-
-    <#
-    .DESCRIPTION
-
-    Specifies the prefix length of the destination IP address. For IPv4, the valid values are from 0 to 32, and for IPv6 - from 0 to 128.
-    #>
-    [DscProperty(Key)]
-    [int] $PrefixLength
-
-    <#
-    .DESCRIPTION
-
-    Specifies whether the IPv4/IPv6 route should be present or absent.
-    #>
-    [DscProperty(Mandatory = $true)]
-    [Ensure] $Ensure
-
-    hidden [string] $CreateVMHostIPRouteMessage = "Creating IP Route with Gateway address {0} and Destination address {1} on VMHost {2}."
-    hidden [string] $RemoveVMHostIPRouteMessage = "Removing IP Route with Gateway address {0} and Destination address {1} on VMHost {2}."
-
-    hidden [string] $CouldNotCreateVMHostIPRouteMessage = "Could not create IP Route with Gateway address {0} and Destination address {1} on VMHost {2}. For more information: {3}"
-    hidden [string] $CouldNotRemoveVMHostIPRouteMessage = "Could not remove IP Route with Gateway address {0} and Destination address {1} on VMHost {2}. For more information: {3}"
-
-    [void] Set() {
-        try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
-            $this.ConnectVIServer()
-
-            $vmHost = $this.GetVMHost()
-            $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
-
-            if ($this.Ensure -eq [Ensure]::Present) {
-                if ($null -eq $vmHostIPRoute) {
-                    $this.NewVMHostIPRoute($vmHost)
-                }
-            }
-            else {
-                if ($null -ne $vmHostIPRoute) {
-                    $this.RemoveVMHostIPRoute($vmHostIPRoute)
-                }
-            }
-        }
-        finally {
-            $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
-        }
-    }
-
-    [bool] Test() {
-        try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
-            $this.ConnectVIServer()
-
-            $vmHost = $this.GetVMHost()
-            $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
-
-            $result = $null
-            if ($this.Ensure -eq [Ensure]::Present) {
-                $result = ($null -ne $vmHostIPRoute)
-            }
-            else {
-                $result = ($null -eq $vmHostIPRoute)
-            }
-
-            $this.WriteDscResourceState($result)
-
-            return $result
-        }
-        finally {
-            $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
-        }
-    }
-
-    [VMHostIPRoute] Get() {
-        try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostIPRoute]::new()
-
-            $this.ConnectVIServer()
-
-            $vmHost = $this.GetVMHost()
-            $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
-
-            $this.PopulateResult($result, $vmHostIPRoute)
-
-            return $result
-        }
-        finally {
-            $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the configured IPv4/IPv6 route with the specified Gateway and Destination addresses if it exists.
-    #>
-    [PSObject] GetVMHostIPRoute($vmHost) {
-        return (Get-VMHostRoute -Server $this.Connection -VMHost $vmHost -ErrorAction SilentlyContinue -Verbose:$false |
-                Where-Object -FilterScript { $_.Gateway -eq $this.Gateway -and $_.Destination -eq $this.Destination -and $_.PrefixLength -eq $this.PrefixLength })
-    }
-
-    <#
-    .DESCRIPTION
-
-    Creates a new IP route with the specified Gateway and Destination addresses.
-    #>
-    [void] NewVMHostIPRoute($vmHost) {
-        $newVMHostRouteParams = @{
-            Server = $this.Connection
-            VMHost = $vmHost
-            Gateway = $this.Gateway
-            Destination = $this.Destination
-            PrefixLength = $this.PrefixLength
-            Confirm = $false
-            ErrorAction = 'Stop'
-            Verbose = $false
-        }
-
-        try {
-            Write-VerboseLog -Message $this.CreateVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $vmHost.Name)
-            New-VMHostRoute @newVMHostRouteParams
-        }
-        catch {
-            throw ($this.CouldNotCreateVMHostIPRouteMessage -f $this.Gateway, $this.Destination, $vmHost.Name, $_.Exception.Message)
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Removes the IP route with the specified Gateway and Destination addresses.
-    #>
-    [void] RemoveVMHostIPRoute($vmHostIPRoute) {
-        $removeVMHostRouteParams = @{
-            VMHostRoute = $vmHostIPRoute
-            Confirm = $false
-            ErrorAction = 'Stop'
-            Verbose = $false
-        }
-
-        try {
-            Write-VerboseLog -Message $this.RemoveVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $this.Name)
-            Remove-VMHostRoute @removeVMHostRouteParams
-        }
-        catch {
-            throw ($this.CouldNotRemoveVMHostIPRouteMessage -f $this.Gateway, $this.Destination, $this.Name, $_.Exception.Message)
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Populates the result returned from the Get method.
-    #>
-    [void] PopulateResult($result, $vmHostIPRoute) {
-        $result.Server = $this.Connection.Name
-        $result.Name = $this.Name
-
-        if ($null -ne $vmHostIPRoute) {
-            $result.Ensure = [Ensure]::Present
-            $result.Gateway = $vmHostIPRoute.Gateway
-            $result.Destination = $vmHostIPRoute.Destination
-            $result.PrefixLength = $vmHostIPRoute.PrefixLength
-        }
-        else {
-            $result.Ensure = [Ensure]::Absent
-            $result.Gateway = $this.Gateway
-            $result.Destination = $this.Destination
-            $result.PrefixLength = $this.PrefixLength
-        }
-    }
-}
-
-[DscResource()]
-class VMHostGraphics : VMHostGraphicsBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Specifies the default graphics type for the specified VMHost.
-    #>
-    [DscProperty(Mandatory)]
-    [GraphicsType] $GraphicsType
-
-    <#
-    .DESCRIPTION
-
-    Specifies the policy for assigning shared passthrough VMs to a host graphics device.
-    #>
-    [DscProperty(Mandatory)]
-    [SharedPassthruAssignmentPolicy] $SharedPassthruAssignmentPolicy
-
-    [void] Set() {
-    	try {
-            $this.ConnectVIServer()
-            $vmHost = $this.GetVMHost()
-            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-
-            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
-            $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
-            $this.RestartVMHost($vmHost)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [bool] Test() {
-    	try {
-            $this.ConnectVIServer()
-            $vmHost = $this.GetVMHost()
-            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-
-            return !$this.ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [VMHostGraphics] Get() {
-        try {
-            $result = [VMHostGraphics]::new()
-            $result.Server = $this.Server
-
-            $this.ConnectVIServer()
-            $vmHost = $this.GetVMHost()
-            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-
-            $result.Name = $vmHost.Name
-            $result.GraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
-            $result.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
-
-            return $result
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the Graphics Configuration needs to be updated with the desired values.
-    #>
-    [bool] ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager) {
-        if ($this.GraphicsType -ne $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType) {
-            return $true
-        }
-        elseif ($this.SharedPassthruAssignmentPolicy -ne $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy) {
-            return $true
-        }
-        else {
-            return $false
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Performs an update on the Graphics Configuration of the specified VMHost.
-    #>
-    [void] UpdateGraphicsConfiguration($vmHostGraphicsManager) {
-        $vmHostGraphicsConfig = New-Object VMware.Vim.HostGraphicsConfig
-
-        $vmHostGraphicsConfig.HostDefaultGraphicsType = $this.ConvertEnumValueToServerValue($this.GraphicsType)
-        $vmHostGraphicsConfig.SharedPassthruAssignmentPolicy = $this.ConvertEnumValueToServerValue($this.SharedPassthruAssignmentPolicy)
-
-        try {
-            Update-GraphicsConfig -VMHostGraphicsManager $vmHostGraphicsManager -VMHostGraphicsConfig $vmHostGraphicsConfig
-        }
-        catch {
-            throw "The Graphics Configuration of VMHost $($this.Name) could not be updated: $($_.Exception.Message)"
-        }
-    }
-}
-
-[DscResource()]
-class VMHostGraphicsDevice : VMHostGraphicsBaseDSC {
-    <#
-    .DESCRIPTION
-
-    Specifies the Graphics device identifier (ex. PCI ID).
-    #>
-    [DscProperty(Key)]
-    [string] $Id
-
-    <#
-    .DESCRIPTION
-
-    Specifies the graphics type for the specified Device in 'Id' property.
-    #>
-    [DscProperty(Mandatory)]
-    [GraphicsType] $GraphicsType
-
-    [void] Set() {
-    	try {
-            $this.ConnectVIServer()
-            $vmHost = $this.GetVMHost()
-            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-
-            $this.EnsureVMHostIsInMaintenanceMode($vmHost)
-            $this.UpdateGraphicsConfiguration($vmHostGraphicsManager)
-            $this.RestartVMHost($vmHost)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [bool] Test() {
-    	try {
-            $this.ConnectVIServer()
-            $vmHost = $this.GetVMHost()
-            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
-
-            return ($this.GraphicsType -eq $foundDevice.GraphicsType)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    [VMHostGraphicsDevice] Get() {
-        try {
-            $result = [VMHostGraphicsDevice]::new()
-            $result.Server = $this.Server
-
-            $this.ConnectVIServer()
-            $vmHost = $this.GetVMHost()
-            $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
-            $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
-
-            $result.Name = $vmHost.Name
-            $result.Id = $foundDevice.DeviceId
-            $result.GraphicsType = $foundDevice.GraphicsType
-
-            return $result
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Graphics Device with the specified Id from the server.
-    #>
-    [PSObject] GetGraphicsDevice($vmHostGraphicsManager) {
-        $foundDevice = $vmHostGraphicsManager.GraphicsConfig.DeviceType | Where-Object { $_.DeviceId -eq $this.Id }
-        if ($null -eq $foundDevice) {
-            throw "Device $($this.Id) was not found in the available Graphics devices."
-        }
-
-        return $foundDevice
-    }
-
-    <#
-    .DESCRIPTION
-
-    Performs an update on the Graphics Configuration of the specified VMHost by changing the Graphics Type for the
-    specified Device.
-    #>
-    [void] UpdateGraphicsConfiguration($vmHostGraphicsManager) {
-        $vmHostGraphicsConfig = New-Object VMware.Vim.HostGraphicsConfig
-
-        $vmHostGraphicsConfig.HostDefaultGraphicsType = $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType
-        $vmHostGraphicsConfig.SharedPassthruAssignmentPolicy = $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy
-        $vmHostGraphicsConfig.DeviceType = @()
-
-        $vmHostGraphicsConfigDeviceType = New-Object VMware.Vim.HostGraphicsConfigDeviceType
-        $vmHostGraphicsConfigDeviceType.DeviceId = $this.Id
-        $vmHostGraphicsConfigDeviceType.GraphicsType = $this.ConvertEnumValueToServerValue($this.GraphicsType)
-
-        $vmHostGraphicsConfig.DeviceType += $vmHostGraphicsConfigDeviceType
-
-        try {
-            Update-GraphicsConfig -VMHostGraphicsManager $vmHostGraphicsManager -VMHostGraphicsConfig $vmHostGraphicsConfig
-        }
-        catch {
-            throw "The Graphics Configuration of VMHost $($this.Name) could not be updated: $($_.Exception.Message)"
         }
     }
 }
