@@ -240,7 +240,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     Creates a new VMKernel Network Adapter connected to the specified Virtual Switch and Port Group for the specified VMHost.
     If the Port Id is specified, the Port Group is ignored and only the Port Id is passed to the cmdlet.
     #>
-    [void] AddVMHostNetworkAdapter($virtualSwitch, $portId) {
+    [PSObject] AddVMHostNetworkAdapter($virtualSwitch, $portId) {
         $vmHostNetworkAdapterParams = $this.GetVMHostNetworkAdapterParams()
 
         $vmHostNetworkAdapterParams.Server = $this.Connection
@@ -255,7 +255,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
         }
 
         try {
-            New-VMHostNetworkAdapter @vmHostNetworkAdapterParams
+            return New-VMHostNetworkAdapter @vmHostNetworkAdapterParams
         }
         catch {
             throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($virtualSwitch.Name) and Port Group $($this.PortGroupName). For more information: $($_.Exception.Message)"

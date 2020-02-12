@@ -232,6 +232,14 @@ InModuleScope -ModuleName $script:moduleName {
 
                     Assert-MockCalled @assertMockCalledParams
                 }
+
+                It 'Should return the correct VMKernel Network Adapter' {
+                    # Act
+                    $result = $vmHostNicBaseDSC.AddVMHostNetworkAdapter($script:virtualSwitch, $null)
+
+                    # Assert
+                    $result | Should -Be $script:vmHostNetworkAdapter
+                }
             }
 
             Context 'Invoking with Port Id' {
@@ -274,6 +282,14 @@ InModuleScope -ModuleName $script:moduleName {
                     }
 
                     Assert-MockCalled @assertMockCalledParams
+                }
+
+                It 'Should return the correct VMKernel Network Adapter' {
+                    # Act
+                    $result = $vmHostNicBaseDSC.AddVMHostNetworkAdapter($script:virtualSwitch, $script:constants.VMKernelNetworkAdapterPortId)
+
+                    # Assert
+                    $result | Should -Be $script:vmHostNetworkAdapter
                 }
             }
         }

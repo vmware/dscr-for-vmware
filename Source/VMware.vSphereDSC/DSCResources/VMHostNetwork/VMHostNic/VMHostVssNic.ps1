@@ -43,9 +43,10 @@ class VMHostVssNic : VMHostNicBaseDSC {
 
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $vmHostNetworkAdapter) {
-                    $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
+                    $vmHostNetworkAdapter = $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
                 }
-                else {
+
+                if ($this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)) {
                     $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
                 }
             }
