@@ -89897,6 +89897,38 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.Host.Storage
             return (ChapType + "_" + ChapInherited + "_" + ChapName + "_" + MutualChapEnabled + "_" + MutualChapInherited + "_" + MutualChapName + "_" + Uid).GetHashCode();
         }
     }
+	
+	public class IScsiHbaImpl : HbaImpl, IScsiHba, IEquatable<IScsiHbaImpl>
+	{
+		public IScsiHbaAuthenticationProperties AuthenticationProperties { get; set; }
+		
+		public IScsiHbaAuthenticationCapability AuthenticationCapability { get; set; }
+		
+		public int? CurrentSpeedMb { get; set; }
+		
+		public string IScsiAlias { get; set; }
+		
+		public string IScsiName { get; set; }
+		
+		public bool IsSoftwareBased { get; set; }
+		
+		public int? MaxSpeedMb { get; set; }
+		
+		public bool Equals(IScsiHbaImpl iScsiHbaImpl)
+        {
+            return (iScsiHbaImpl != null && ((this.AuthenticationProperties == null && iScsiHbaImpl.AuthenticationProperties == null) || (this.AuthenticationProperties != null && this.AuthenticationProperties.Equals(iScsiHbaImpl.AuthenticationProperties))) && ((this.AuthenticationCapability == null && iScsiHbaImpl.AuthenticationCapability == null) || (this.AuthenticationCapability != null && this.AuthenticationCapability.Equals(iScsiHbaImpl.AuthenticationCapability))) && this.CurrentSpeedMb == iScsiHbaImpl.CurrentSpeedMb && this.IScsiAlias == iScsiHbaImpl.IScsiAlias && this.IScsiName == iScsiHbaImpl.IScsiName && this.IsSoftwareBased == iScsiHbaImpl.IsSoftwareBased && this.MaxSpeedMb == iScsiHbaImpl.MaxSpeedMb && this.Device == iScsiHbaImpl.Device && this.Key == iScsiHbaImpl.Key && this.Model == iScsiHbaImpl.Model && this.Pci == iScsiHbaImpl.Pci && this.Driver == iScsiHbaImpl.Driver && this.Bus == iScsiHbaImpl.Bus && this.VMHostId == iScsiHbaImpl.VMHostId && ((this.VMHost == null && iScsiHbaImpl.VMHost == null) || (this.VMHost != null && this.VMHost.Equals(iScsiHbaImpl.VMHost))) && this.Status == iScsiHbaImpl.Status && this.Type == iScsiHbaImpl.Type && ((this.ScsiLunUids == null && iScsiHbaImpl.ScsiLunUids == null) || (this.ScsiLunUids != null && iScsiHbaImpl.ScsiLunUids != null && Enumerable.SequenceEqual(this.ScsiLunUids, iScsiHbaImpl.ScsiLunUids))) && this.Uid == iScsiHbaImpl.Uid && this.Name == iScsiHbaImpl.Name && ((this.ExtensionData == null && iScsiHbaImpl.ExtensionData == null) || (this.ExtensionData != null && this.ExtensionData.Equals(iScsiHbaImpl.ExtensionData))));
+        }
+
+        public override bool Equals(object iScsiHbaImpl)
+        {
+            return Equals(iScsiHbaImpl as IScsiHbaImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (AuthenticationProperties + "_" + AuthenticationCapability + "_" + CurrentSpeedMb + "_" + IScsiAlias + "_" + IScsiName + "_" + IsSoftwareBased + "_" + MaxSpeedMb + "_" + Device + "_" + Key + "_" + Model + "_" + Pci + "_" + Driver + "_" + Bus + "_" + VMHostId + "_" + VMHost + "_" + Status + "_" + Type + "_" + ScsiLunUids + "_" + Uid + "_" + Name + "_" + ExtensionData).GetHashCode();
+        }
+	}
 
     public class IScsiHbaSendTargetImpl : IScsiHbaTarget, IEquatable<IScsiHbaSendTargetImpl>
     {

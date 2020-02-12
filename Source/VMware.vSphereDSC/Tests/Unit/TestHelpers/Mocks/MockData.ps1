@@ -343,6 +343,23 @@ $script:constants = @{
     FirewallRulesetIPAddressesTwo = @('192.0.20.10', '192.0.20.11', '192.0.20.13')
     FirewallRulesetIPNetworksOne = @('10.20.120.12/22', '10.20.120.12/23', '10.20.120.12/24')
     FirewallRulesetIPNetworksTwo = @('10.20.120.12/22', '10.20.120.12/23', '10.20.120.12/25')
+    IScsiHbaDeviceName = 'vmhba65'
+    IScsiDeviceType = 'iSCSI'
+    ChapTypeProhibited = 'Prohibited'
+    ChapTypeRequired = 'Required'
+    ChapInherited = $true
+    ChapName = 'MyChapName'
+    ChapPassword = 'MyChapPassword'
+    MutualChapInherited = $true
+    MutualChapEnabled = $true
+    MutualChapName = 'MyMutualChapName'
+    MutualChapPassword = 'MyMutualChapPassword'
+    IScsiHbaTargetAddress = '10.23.84.73'
+    IScsiHbaTargetPort = 3260
+    IScsiIPEndPoint = '10.23.84.73:3260'
+    IScsiHbaSendTargetType = 'Send'
+    IScsiHbaStaticTargetType = 'Static'
+    IScsiName = 'iqn.com.vmware:esx-server'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1623,5 +1640,31 @@ $script:vmHostFirewallRuleset = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHost
             IpAddress = $script:constants.FirewallRulesetIPAddressesOne
             IpNetwork = $script:firewallRulesetIPNetworksOne
         }
+    }
+}
+
+$script:iScsiHba = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaImpl] @{
+    Device = $script:constants.IScsiHbaDeviceName
+    VMHost = $script:vmHost
+    AuthenticationProperties = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaAuthenticationPropertiesImpl] @{
+        ChapType = $script:constants.ChapTypeRequired
+        ChapName = $script:constants.ChapName
+        MutualChapEnabled = $script:constants.MutualChapEnabled
+        MutualChapName = $script:constants.MutualChapName
+    }
+}
+
+$script:iScsiHbaTarget = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaTargetImpl] @{
+    Address = $script:constants.IScsiHbaTargetAddress
+    Port = $script:constants.IScsiHbaTargetPort
+    Type = $script:constants.IScsiHbaSendTargetType
+    IScsiHbaName = $script:constants.IScsiHbaDeviceName
+    AuthenticationProperties = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaAuthenticationPropertiesImpl] @{
+        ChapType = $script:constants.ChapTypeRequired
+        ChapInherited = $script:constants.ChapInherited
+        ChapName = $script:constants.ChapName
+        MutualChapInherited = $script:constants.MutualChapInherited
+        MutualChapEnabled = $script:constants.MutualChapEnabled
+        MutualChapName = $script:constants.MutualChapName
     }
 }
