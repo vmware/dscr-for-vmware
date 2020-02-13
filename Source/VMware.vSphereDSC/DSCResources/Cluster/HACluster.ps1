@@ -216,10 +216,14 @@ class HACluster : DatacenterInventoryBaseDSC {
         $clusterParams.ErrorAction = 'Stop'
 
         $this.PopulateClusterParams($clusterParams, $this.HAEnabledParameterName, $this.HAEnabled)
-        $this.PopulateClusterParams($clusterParams, $this.HAAdmissionControlEnabledParameterName, $this.HAAdmissionControlEnabled)
-        $this.PopulateClusterParams($clusterParams, $this.HAFailoverLevelParameterName, $this.HAFailoverLevel)
-        $this.PopulateClusterParams($clusterParams, $this.HAIsolationResponseParameterName, $this.HAIsolationResponse)
-        $this.PopulateClusterParams($clusterParams, $this.HARestartPriorityParemeterName, $this.HARestartPriority)
+
+        # High Availability settings cannot be passed to the cmdlets if 'HAEnabled' is $false.
+        if ($null -eq $this.HAEnabled -or $this.HAEnabled) {
+            $this.PopulateClusterParams($clusterParams, $this.HAAdmissionControlEnabledParameterName, $this.HAAdmissionControlEnabled)
+            $this.PopulateClusterParams($clusterParams, $this.HAFailoverLevelParameterName, $this.HAFailoverLevel)
+            $this.PopulateClusterParams($clusterParams, $this.HAIsolationResponseParameterName, $this.HAIsolationResponse)
+            $this.PopulateClusterParams($clusterParams, $this.HARestartPriorityParemeterName, $this.HARestartPriority)
+        }
 
         return $clusterParams
     }
