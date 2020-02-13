@@ -99,7 +99,8 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
 
             <#
             If there is another Datastore with the same name on the vCenter Server but on a different VMHost, we need to inform the user that the Datastore cannot be created with the
-            specified name. Otherwise the Datastore will be created with appended '(1)' to its name.
+            specified name. vCenter Server accepts multiple Datastore creations with the same name but changes the names internally to avoid name duplication.
+            vCenter Server appends '(<index>)' to the Datastore name.
             #>
             $datastoreInvCenter = Get-Datastore @getDatastoreParams
             if ($null -ne $datastoreInvCenter) {

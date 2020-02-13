@@ -1,4 +1,4 @@
-# VMKernelDumpFile
+# VMHostVMKernelDumpFile
 
 ## Parameters
 

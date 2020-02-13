@@ -159,9 +159,7 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Set-Cluster'
-                        ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm -and $HAEnabled -eq !$script:constants.HAEnabled -and `
-                                            $HAAdmissionControlEnabled -eq !$script:constants.HAAdmissionControlEnabled -and $HAFailoverLevel -eq $script:constants.HAFailoverLevel -and `
-                                            $HAIsolationResponse -eq $script:constants.HAIsolationResponse -and $HARestartPriority -eq $script:constants.HARestartPriority }
+                        ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm -and $HAEnabled -eq !$script:constants.HAEnabled }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'

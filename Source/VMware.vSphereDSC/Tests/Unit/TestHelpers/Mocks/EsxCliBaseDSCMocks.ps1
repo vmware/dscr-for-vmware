@@ -135,3 +135,61 @@ function New-MocksWhenTheEsxCliCommandRetrievalMethodIsExecutedSuccessfully {
 
     $esxCliBaseDSCProperties
 }
+
+function Compare-Hashtables {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [hashtable]
+        $HashtableOne,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [hashtable]
+        $HashtableTwo
+    )
+
+    $result = $true
+    if ($HashtableOne.Keys.Count -ne $HashtableTwo.Keys.Count) {
+        $result = $false
+    }
+    else {
+        $hashtableTwoKeys = $HashtableTwo.Keys
+        foreach ($key in $HashtableOne.Keys) {
+            if ($hashtableTwoKeys -NotContains $key) {
+                $result = $false
+                break
+            }
+
+            $hashtableOneValue = $HashtableOne.$key
+            $hashtableTwoValue = $HashtableTwo.$key
+
+            if ($hashtableOneValue -is [array] -and $hashtableTwoValue -is [array]) {
+                $elementsToAdd = $hashtableOneValue | Where-Object -FilterScript { $hashtableTwoValue -NotContains $_ }
+                $elementsToRemove = $hashtableTwoValue | Where-Object -FilterScript { $hashtableOneValue -NotContains $_ }
+
+                if ($null -ne $elementsToAdd -or $null -ne $elementsToRemove) {
+                    $result = $false
+                    break
+                }
+            }
+            elseif ($hashtableOneValue -is [hashtable] -and $hashtableTwoValue -is [hashtable]) {
+                $areEqual = Compare-Hashtables -HashtableOne $hashtableOneValue -HashtableTwo $hashtableTwoValue
+                if (!$areEqual) {
+                    $result = $false
+                    break
+                }
+            }
+            else {
+                if ($hashtableOneValue -ne $hashtableTwoValue) {
+                    $result = $false
+                    break
+                }
+            }
+        }
+    }
+
+    return $result
+}

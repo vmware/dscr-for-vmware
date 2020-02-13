@@ -210,7 +210,7 @@ InModuleScope -ModuleName $script:moduleName {
                         ParameterFilter = {
                             $EsxCli -eq $script:esxCli -and
                             $EsxCliCommandMethod -eq $script:constants.EsxCliSetMethodInvoke -and
-                            $null -eq (Compare-Object -ReferenceObject $EsxCliCommandMethodArguments.Values -DifferenceObject $expectedEsxCliSetMethodArgs.Values)
+                            (Compare-Hashtables -HashtableOne $EsxCliCommandMethodArguments -HashtableTwo $expectedEsxCliSetMethodArgs)
                         }
                         Exactly = $true
                         Times = 1
