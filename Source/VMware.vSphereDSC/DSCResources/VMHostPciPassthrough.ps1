@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostPciPassthrough : VMHostBaseDSC {
+class VMHostPciPassthrough : VMHostRestartBaseDSC {
     <#
     .DESCRIPTION
 
@@ -70,6 +70,7 @@ class VMHostPciPassthrough : VMHostBaseDSC {
         try {
             $result = [VMHostPciPassthrough]::new()
             $result.Server = $this.Server
+            $result.RestartTimeoutMinutes = $this.RestartTimeoutMinutes
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()

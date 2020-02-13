@@ -65,6 +65,7 @@ class VMHostGraphicsDevice : VMHostGraphicsBaseDSC {
         try {
             $result = [VMHostGraphicsDevice]::new()
             $result.Server = $this.Server
+            $result.RestartTimeoutMinutes = $this.RestartTimeoutMinutes
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()

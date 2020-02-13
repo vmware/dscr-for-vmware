@@ -66,6 +66,7 @@ $script:constants = @{
     VMHostName = 'MyVMHost'
     VMHostConnectionState = 'Maintenance'
     VMHostPort = 443
+    DefaultVMHostRestartTimeoutMinutes = 5
     OptionManagerType = 'OptionManager'
     OptionManagerValue = 'EsxHostAdvSettings-1'
     BufferCacheFlushIntervalAdvancedSettingName = 'BufferCache.FlushInterval'

@@ -226,6 +226,7 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $result.Server | Should -Be $resourceProperties.Server
                     $result.Name | Should -Be $script:constants.VMHostName
+                    $result.RestartTimeoutMinutes | Should -Be $script:constants.DefaultVMHostRestartTimeoutMinutes
                     $result.Id | Should -Be $script:constants.GraphicsDeviceId
                     $result.GraphicsType | Should -Be $script:constants.DefaultGraphicsType
                 }

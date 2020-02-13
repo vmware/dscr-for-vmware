@@ -173,6 +173,7 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $result.Server | Should -Be $resourceProperties.Server
                     $result.Name | Should -Be $script:constants.VMHostName
+                    $result.RestartTimeoutMinutes | Should -Be $script:constants.DefaultVMHostRestartTimeoutMinutes
                     $result.GraphicsType | Should -Be $script:constants.DefaultGraphicsType
                     $result.SharedPassthruAssignmentPolicy | Should -Be $script:constants.SharedPassthruAssignmentPolicy
                 }
