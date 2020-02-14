@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.54 - 2020-02-14
+### Added
+- Introduced VMHostRestartBaseDSC class.
+
+### Changed
+- Extended VMHostVssNic DSC Resource to perform Update operation after the VMKernel Network Adapter is created, if needed.
+- Extracted VMHost restart logic from VMHostBaseDSC class to VMHostRestartBaseDSC class.
+- Fixed bug with HAEnabled set to $false when creating or modifying HA Cluster in HACluster DSC Resource.
+- Fixed bug for creating Datastores when connected to vCenter Server when there is existing Datastore with the same name.
+- Updated License.txt.
+
 ## 2.0.0.53 - 2020-02-12
 ### Added
 - Introduced VMHostIScsiHbaBaseDSC class.

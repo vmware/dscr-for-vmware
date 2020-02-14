@@ -751,6 +751,7 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     hidden [string] $ModifyDatastoreMessage = "Modifying Datastore {0} on VMHost {1}."
     hidden [string] $RemoveDatastoreMessage = "Removing Datastore {0} from VMHost {1}."
 
+    hidden [string] $CouldNotCreateDatastoreWithTheSpecifiedNameMessage = "Could not create Datastore {0} on VMHost {1} because there is another Datastore with the same name on vCenter Server {2}."
     hidden [string] $CouldNotCreateDatastoreMessage = "Could not create Datastore {0} on VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotModifyDatastoreMessage = "Could not modify Datastore {0} on VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotRemoveDatastoreMessage = "Could not remove Datastore {0} from VMHost {1}. For more information: {2}"
@@ -761,7 +762,36 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     Retrieves the Datastore with the specified name from the VMHost if it exists.
     #>
     [PSObject] GetDatastore() {
-        return Get-Datastore -Server $this.Connection -Name $this.Name -VMHost $this.VMHost -ErrorAction SilentlyContinue -Verbose:$false
+        $getDatastoreParams = @{
+            Server = $this.Connection
+            Name = $this.Name
+            VMHost = $this.VMHost
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        $datastore = Get-Datastore @getDatastoreParams
+
+        <#
+        If the established connection is to a vCenter Server, Ensure is 'Present' and the Datastore does not exist on the specified VMHost,
+        we need to check if there is a Datastore with the same name on the vCenter Server.
+        #>
+        if ($this.Connection.ProductLine -eq $this.vCenterProductId -and $this.Ensure -eq [Ensure]::Present -and $null -eq $datastore) {
+            # We need to remove the filter by VMHost from the hashtable to search for the Datastore in the whole vCenter Server.
+            $getDatastoreParams.Remove('VMHost')
+
+            <#
+            If there is another Datastore with the same name on the vCenter Server but on a different VMHost, we need to inform the user that the Datastore cannot be created with the
+            specified name. vCenter Server accepts multiple Datastore creations with the same name but changes the names internally to avoid name duplication.
+            vCenter Server appends '(<index>)' to the Datastore name.
+            #>
+            $datastoreInvCenter = Get-Datastore @getDatastoreParams
+            if ($null -ne $datastoreInvCenter) {
+                throw ($this.CouldNotCreateDatastoreWithTheSpecifiedNameMessage -f $this.Name, $this.VMHost.Name, $this.Connection.Name)
+            }
+        }
+
+        return $datastore
     }
 
     <#
@@ -885,130 +915,32 @@ class VMHostBaseDSC : BaseDSC {
     <#
     .DESCRIPTION
 
-    Name of the VMHost to configure.
+    Specifies the name of the VMHost to configure.
     #>
     [DscProperty(Key)]
     [string] $Name
 
-    <#
-    .DESCRIPTION
-
-    Specifies the time in minutes to wait for the VMHost to restart before timing out
-    and aborting the operation. The default value is 5 minutes.
-    #>
-    [DscProperty()]
-    [int] $RestartTimeoutMinutes = 5
-
-    hidden [string] $NotRespondingState = 'NotResponding'
-    hidden [string] $MaintenanceState = 'Maintenance'
+    hidden [string] $CouldNotRetrieveVMHostMessage = "Could not retrieve VMHost {0} on Server {1}. For more information: {2}"
 
     <#
     .DESCRIPTION
 
-    Returns the VMHost with the specified Name on the specified Server.
-    If the VMHost is not found, the method writes an error.
+    Retrieves the VMHost with the specified name from the specified Server.
+    If the VMHost is not found, the method throws an exception.
     #>
     [PSObject] GetVMHost() {
         try {
-            $vmHost = Get-VMHost -Server $this.Connection -Name $this.Name -ErrorAction Stop
-            return $vmHost
+            $getVMHostParams = @{
+                Server = $this.Connection
+                Name = $this.Name
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+
+            return Get-VMHost @getVMHostParams
         }
         catch {
-            throw "VMHost with name $($this.Name) was not found. For more information: $($_.Exception.Message)"
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the specified VMHost is in Maintenance mode and if not, throws an exception.
-    #>
-    [void] EnsureVMHostIsInMaintenanceMode($vmHost) {
-        if ($vmHost.ConnectionState.ToString() -ne $this.MaintenanceState) {
-            throw "The Resource Update operation requires the VMHost $($vmHost.Name) to be in a Maintenance mode."
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Ensures that the specified VMHost is restarted successfully in the specified period of time. If the elapsed time is
-    longer than the desired time for restart, the method throws an exception.
-    #>
-    [void] EnsureRestartTimeoutIsNotReached($elapsedTimeInSeconds) {
-        $timeSpan = New-TimeSpan -Seconds $elapsedTimeInSeconds
-        if ($this.RestartTimeoutMinutes -le $timeSpan.Minutes) {
-            throw "Aborting the operation. VMHost $($this.Name) could not be restarted successfully in $($this.RestartTimeoutMinutes) minutes."
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Ensures that the specified VMHost is in the desired state after successful restart operation.
-    #>
-    [void] EnsureVMHostIsInDesiredState($requiresVIServerConnection, $desiredState) {
-        $sleepTimeInSeconds = 10
-        $elapsedTimeInSeconds = 0
-
-        while ($true) {
-            $this.EnsureRestartTimeoutIsNotReached($elapsedTimeInSeconds)
-
-            Start-Sleep -Seconds $sleepTimeInSeconds
-            $elapsedTimeInSeconds += $sleepTimeInSeconds
-
-            try {
-                if ($requiresVIServerConnection) {
-                    $this.ConnectVIServer()
-                }
-
-                $vmHost = $this.GetVMHost()
-                if ($vmHost.ConnectionState.ToString() -eq $desiredState) {
-                    break
-                }
-
-                Write-VerboseLog -Message "VMHost {0} is still not in {1} State." -Arguments @($this.Name, $desiredState)
-            }
-            catch {
-                <#
-                Here the message used in the try block is written again in the case when an exception is thrown
-                when retrieving the VMHost or establishing a Connection. This way the user still gets notified
-                that the VMHost is not in the Desired State.
-                #>
-                Write-VerboseLog -Message "VMHost {0} is still not in {1} State." -Arguments @($this.Name, $desiredState)
-            }
-        }
-
-        Write-VerboseLog -Message "VMHost {0} is successfully restarted and in {1} State." -Arguments @($this.Name, $desiredState)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Restarts the specified VMHost so that the Update of the VMHost Configuration is successful.
-    #>
-    [void] RestartVMHost($vmHost) {
-        try {
-            Restart-VMHost -Server $this.Connection -VMHost $vmHost -Confirm:$false -ErrorAction Stop
-        }
-        catch {
-            throw "Cannot restart VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
-        }
-
-        <#
-        If the Connection is directly to a vCenter we do not need to establish a new connection so we pass $false
-        to the method 'EnsureVMHostIsInCorrectState'. When the Connection is directly to an ESXi, after a successful
-        restart the ESXi is down so new Connection needs to be established to check the ESXi state. So we pass $true
-        to the method 'EnsureVMHostIsInCorrectState'. We also need to set the variable holding the current Connection
-        to $null, so a new Connection can be established via the ConnectVIServer().
-        #>
-        if ($this.Connection.ProductLine -eq $this.vCenterProductId) {
-            $this.EnsureVMHostIsInDesiredState($false, $this.NotRespondingState)
-            $this.EnsureVMHostIsInDesiredState($false, $this.MaintenanceState)
-        }
-        else {
-            $this.Connection = $null
-            $this.EnsureVMHostIsInDesiredState($true, $this.MaintenanceState)
+            throw ($this.CouldNotRetrieveVMHostMessage -f $this.Name, $this.Connection.Name, $_.Exception.Message)
         }
     }
 }
@@ -1249,7 +1181,132 @@ class InventoryBaseDSC : BaseDSC {
     }
 }
 
-class VMHostGraphicsBaseDSC : VMHostBaseDSC {
+class VMHostRestartBaseDSC : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the time in minutes to wait for the VMHost to restart before timing out
+    and aborting the operation. The default value is 5 minutes.
+    #>
+    [DscProperty()]
+    [int] $RestartTimeoutMinutes = 5
+
+    hidden [string] $NotRespondingState = 'NotResponding'
+    hidden [string] $MaintenanceState = 'Maintenance'
+
+    hidden [string] $VMHostIsRestartedSuccessfullyMessage = "VMHost {0} is successfully restarted and in {1} State."
+    hidden [string] $VMHostIsStillNotInDesiredStateMessage = "VMHost {0} is still not in {1} State."
+    hidden [string] $RestartVMHostMessage = "Restarting VMHost {0}."
+
+    hidden [string] $VMHostIsNotInMaintenanceModeMessage = "The Resource update operation requires the VMHost {0} to be in a Maintenance mode."
+    hidden [string] $CouldNotRestartVMHostInTimeMessage = "VMHost {0} could not be restarted successfully in {1} minutes."
+    hidden [string] $CouldNotRestartVMHostMessage = "Could not restart VMHost {0}. For more information: {1}"
+
+    <#
+    .DESCRIPTION
+
+    Checks if the specified VMHost is in Maintenance mode and if not, throws an exception.
+    #>
+    [void] EnsureVMHostIsInMaintenanceMode($vmHost) {
+        if ($vmHost.ConnectionState.ToString() -ne $this.MaintenanceState) {
+            throw ($this.VMHostIsNotInMaintenanceModeMessage -f $vmHost.Name)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Ensures that the specified VMHost is restarted successfully in the specified period of time. If the elapsed time is
+    longer than the desired time for restart, the method throws an exception.
+    #>
+    [void] EnsureRestartTimeoutIsNotReached($elapsedTimeInSeconds) {
+        $timeSpan = New-TimeSpan -Seconds $elapsedTimeInSeconds
+        if ($this.RestartTimeoutMinutes -le $timeSpan.Minutes) {
+            throw ($this.CouldNotRestartVMHostInTimeMessage -f $this.Name, $this.RestartTimeoutMinutes)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Ensures that the specified VMHost is in a Desired State after successful restart operation.
+    #>
+    [void] EnsureVMHostIsInDesiredState($requiresVIServerConnection, $desiredState) {
+        $sleepTimeInSeconds = 10
+        $elapsedTimeInSeconds = 0
+
+        while ($true) {
+            $this.EnsureRestartTimeoutIsNotReached($elapsedTimeInSeconds)
+
+            Start-Sleep -Seconds $sleepTimeInSeconds
+            $elapsedTimeInSeconds += $sleepTimeInSeconds
+
+            try {
+                if ($requiresVIServerConnection) {
+                    $this.ConnectVIServer()
+                }
+
+                $vmHost = $this.GetVMHost()
+                if ($vmHost.ConnectionState.ToString() -eq $desiredState) {
+                    break
+                }
+
+                Write-VerboseLog -Message $this.VMHostIsStillNotInDesiredStateMessage -Arguments @($this.Name, $desiredState)
+            }
+            catch {
+                <#
+                Here the message used in the try block is written again in the case when an exception is thrown
+                when retrieving the VMHost or establishing a Connection. This way the user still gets notified
+                that the VMHost is not in the Desired State.
+                #>
+                Write-VerboseLog -Message $this.VMHostIsStillNotInDesiredStateMessage -Arguments @($this.Name, $desiredState)
+            }
+        }
+
+        Write-VerboseLog -Message $this.VMHostIsRestartedSuccessfullyMessage -Arguments @($this.Name, $desiredState)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Restarts the specified VMHost so that the update of the VMHost Configuration is successful.
+    #>
+    [void] RestartVMHost($vmHost) {
+        try {
+            $restartVMHostParams = @{
+                Server = $this.Connection
+                VMHost = $vmHost
+                Confirm = $false
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+
+            Write-VerboseLog -Message $this.RestartVMHostMessage -Arguments @($vmHost.Name)
+            Restart-VMHost @restartVMHostParams
+        }
+        catch {
+            throw ($this.CouldNotRestartVMHostMessage -f $vmHost.Name, $_.Exception.Message)
+        }
+
+        <#
+        If the Connection is directly to a vCenter we do not need to establish a new connection so we pass $false
+        to the method 'EnsureVMHostIsInCorrectState'. When the Connection is directly to an ESXi, after a successful
+        restart the ESXi is down so new Connection needs to be established to check the ESXi state. So we pass $true
+        to the method 'EnsureVMHostIsInCorrectState'. We also need to set the variable holding the current Connection
+        to $null, so a new Connection can be established via the ConnectVIServer().
+        #>
+        if ($this.Connection.ProductLine -eq $this.vCenterProductId) {
+            $this.EnsureVMHostIsInDesiredState($false, $this.NotRespondingState)
+            $this.EnsureVMHostIsInDesiredState($false, $this.MaintenanceState)
+        }
+        else {
+            $this.Connection = $null
+            $this.EnsureVMHostIsInDesiredState($true, $this.MaintenanceState)
+        }
+    }
+}
+
+class VMHostGraphicsBaseDSC : VMHostRestartBaseDSC {
     <#
     .DESCRIPTION
 
@@ -1760,7 +1817,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     Creates a new VMKernel Network Adapter connected to the specified Virtual Switch and Port Group for the specified VMHost.
     If the Port Id is specified, the Port Group is ignored and only the Port Id is passed to the cmdlet.
     #>
-    [void] AddVMHostNetworkAdapter($virtualSwitch, $portId) {
+    [PSObject] AddVMHostNetworkAdapter($virtualSwitch, $portId) {
         $vmHostNetworkAdapterParams = $this.GetVMHostNetworkAdapterParams()
 
         $vmHostNetworkAdapterParams.Server = $this.Connection
@@ -1775,7 +1832,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
         }
 
         try {
-            New-VMHostNetworkAdapter @vmHostNetworkAdapterParams
+            return New-VMHostNetworkAdapter @vmHostNetworkAdapterParams
         }
         catch {
             throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($virtualSwitch.Name) and Port Group $($this.PortGroupName). For more information: $($_.Exception.Message)"
@@ -7278,7 +7335,7 @@ class VMHostNtpSettings : VMHostBaseDSC {
 }
 
 [DscResource()]
-class VMHostPciPassthrough : VMHostBaseDSC {
+class VMHostPciPassthrough : VMHostRestartBaseDSC {
     <#
     .DESCRIPTION
 
@@ -7333,6 +7390,7 @@ class VMHostPciPassthrough : VMHostBaseDSC {
         try {
             $result = [VMHostPciPassthrough]::new()
             $result.Server = $this.Server
+            $result.RestartTimeoutMinutes = $this.RestartTimeoutMinutes
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
@@ -7485,7 +7543,7 @@ class VMHostPermission : BaseDSC {
     hidden [string] $CouldNotRetrievePrincipalMessage = "Could not retrieve Principal {0} from VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotRetrieveRoleMessage = "Could not retrieve Role from VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotCreatePermissionMessage = "Could not create Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
-    hidden [string] $CouldNotModifyPermissionMessage = "Could not modify Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
+    hidden [string] $CouldNotModifyPermissionMessage = "Could not modify Permission for Entity {0} and Principal {1} on VMHost {2}. For more information: {3}"
     hidden [string] $CouldNotRemovePermissionMessage = "Could not remove Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
 
     [void] Set() {
@@ -7889,7 +7947,7 @@ class VMHostPermission : BaseDSC {
             Set-VIPermission @setVIPermissionParams
         }
         catch {
-            throw ($this.CouldNotModifyPermissionMessage -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name, $_.Exception.Message)
+            throw ($this.CouldNotModifyPermissionMessage -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -13795,9 +13853,10 @@ class VMHostVssNic : VMHostNicBaseDSC {
 
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $vmHostNetworkAdapter) {
-                    $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
+                    $vmHostNetworkAdapter = $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
                 }
-                else {
+
+                if ($this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)) {
                     $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
                 }
             }
@@ -14122,6 +14181,7 @@ class VMHostGraphics : VMHostGraphicsBaseDSC {
         try {
             $result = [VMHostGraphics]::new()
             $result.Server = $this.Server
+            $result.RestartTimeoutMinutes = $this.RestartTimeoutMinutes
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
@@ -14226,6 +14286,7 @@ class VMHostGraphicsDevice : VMHostGraphicsBaseDSC {
         try {
             $result = [VMHostGraphicsDevice]::new()
             $result.Server = $this.Server
+            $result.RestartTimeoutMinutes = $this.RestartTimeoutMinutes
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
@@ -15820,10 +15881,14 @@ class HACluster : DatacenterInventoryBaseDSC {
         $clusterParams.ErrorAction = 'Stop'
 
         $this.PopulateClusterParams($clusterParams, $this.HAEnabledParameterName, $this.HAEnabled)
-        $this.PopulateClusterParams($clusterParams, $this.HAAdmissionControlEnabledParameterName, $this.HAAdmissionControlEnabled)
-        $this.PopulateClusterParams($clusterParams, $this.HAFailoverLevelParameterName, $this.HAFailoverLevel)
-        $this.PopulateClusterParams($clusterParams, $this.HAIsolationResponseParameterName, $this.HAIsolationResponse)
-        $this.PopulateClusterParams($clusterParams, $this.HARestartPriorityParemeterName, $this.HARestartPriority)
+
+        # High Availability settings cannot be passed to the cmdlets if 'HAEnabled' is $false.
+        if ($null -eq $this.HAEnabled -or $this.HAEnabled) {
+            $this.PopulateClusterParams($clusterParams, $this.HAAdmissionControlEnabledParameterName, $this.HAAdmissionControlEnabled)
+            $this.PopulateClusterParams($clusterParams, $this.HAFailoverLevelParameterName, $this.HAFailoverLevel)
+            $this.PopulateClusterParams($clusterParams, $this.HAIsolationResponseParameterName, $this.HAIsolationResponse)
+            $this.PopulateClusterParams($clusterParams, $this.HARestartPriorityParemeterName, $this.HARestartPriority)
+        }
 
         return $clusterParams
     }
