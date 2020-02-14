@@ -1,5 +1,5 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018-2020 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
@@ -43,9 +43,10 @@ class VMHostVssNic : VMHostNicBaseDSC {
 
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $vmHostNetworkAdapter) {
-                    $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
+                    $vmHostNetworkAdapter = $this.AddVMHostNetworkAdapter($virtualSwitch, $null)
                 }
-                else {
+
+                if ($this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)) {
                     $this.UpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
                 }
             }

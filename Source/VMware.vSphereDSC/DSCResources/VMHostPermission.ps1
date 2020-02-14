@@ -1,5 +1,5 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018-2020 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
@@ -87,7 +87,7 @@ class VMHostPermission : BaseDSC {
     hidden [string] $CouldNotRetrievePrincipalMessage = "Could not retrieve Principal {0} from VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotRetrieveRoleMessage = "Could not retrieve Role from VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotCreatePermissionMessage = "Could not create Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
-    hidden [string] $CouldNotModifyPermissionMessage = "Could not modify Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
+    hidden [string] $CouldNotModifyPermissionMessage = "Could not modify Permission for Entity {0} and Principal {1} on VMHost {2}. For more information: {3}"
     hidden [string] $CouldNotRemovePermissionMessage = "Could not remove Permission for Entity {0}, Principal {1} and Role {2} on VMHost {3}. For more information: {4}"
 
     [void] Set() {
@@ -491,7 +491,7 @@ class VMHostPermission : BaseDSC {
             Set-VIPermission @setVIPermissionParams
         }
         catch {
-            throw ($this.CouldNotModifyPermissionMessage -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name, $_.Exception.Message)
+            throw ($this.CouldNotModifyPermissionMessage -f $vmHostPermission.Entity.Name, $vmHostPermission.Principal, $this.Connection.Name, $_.Exception.Message)
         }
     }
 

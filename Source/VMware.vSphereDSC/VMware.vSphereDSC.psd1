@@ -1,5 +1,5 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018-2020 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
@@ -35,7 +35,7 @@ Author = 'VMware'
 CompanyName = 'VMware'
 
 # Copyright statement for this module
-Copyright = '(c) 2018 VMware. All rights reserved.'
+Copyright = '(c) 2018-2020 VMware. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'PowerShell Module containing DSC Resources for vSphere.'

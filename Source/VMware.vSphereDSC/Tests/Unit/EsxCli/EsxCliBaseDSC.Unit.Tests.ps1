@@ -1,5 +1,5 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018-2020 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
@@ -210,7 +210,7 @@ InModuleScope -ModuleName $script:moduleName {
                         ParameterFilter = {
                             $EsxCli -eq $script:esxCli -and
                             $EsxCliCommandMethod -eq $script:constants.EsxCliSetMethodInvoke -and
-                            $null -eq (Compare-Object -ReferenceObject $EsxCliCommandMethodArguments.Values -DifferenceObject $expectedEsxCliSetMethodArgs.Values)
+                            (Compare-Hashtables -HashtableOne $EsxCliCommandMethodArguments -HashtableTwo $expectedEsxCliSetMethodArgs)
                         }
                         Exactly = $true
                         Times = 1

@@ -1,5 +1,5 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018-2020 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
@@ -68,6 +68,7 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     hidden [string] $ModifyDatastoreMessage = "Modifying Datastore {0} on VMHost {1}."
     hidden [string] $RemoveDatastoreMessage = "Removing Datastore {0} from VMHost {1}."
 
+    hidden [string] $CouldNotCreateDatastoreWithTheSpecifiedNameMessage = "Could not create Datastore {0} on VMHost {1} because there is another Datastore with the same name on vCenter Server {2}."
     hidden [string] $CouldNotCreateDatastoreMessage = "Could not create Datastore {0} on VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotModifyDatastoreMessage = "Could not modify Datastore {0} on VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotRemoveDatastoreMessage = "Could not remove Datastore {0} from VMHost {1}. For more information: {2}"
@@ -78,7 +79,36 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     Retrieves the Datastore with the specified name from the VMHost if it exists.
     #>
     [PSObject] GetDatastore() {
-        return Get-Datastore -Server $this.Connection -Name $this.Name -VMHost $this.VMHost -ErrorAction SilentlyContinue -Verbose:$false
+        $getDatastoreParams = @{
+            Server = $this.Connection
+            Name = $this.Name
+            VMHost = $this.VMHost
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        $datastore = Get-Datastore @getDatastoreParams
+
+        <#
+        If the established connection is to a vCenter Server, Ensure is 'Present' and the Datastore does not exist on the specified VMHost,
+        we need to check if there is a Datastore with the same name on the vCenter Server.
+        #>
+        if ($this.Connection.ProductLine -eq $this.vCenterProductId -and $this.Ensure -eq [Ensure]::Present -and $null -eq $datastore) {
+            # We need to remove the filter by VMHost from the hashtable to search for the Datastore in the whole vCenter Server.
+            $getDatastoreParams.Remove('VMHost')
+
+            <#
+            If there is another Datastore with the same name on the vCenter Server but on a different VMHost, we need to inform the user that the Datastore cannot be created with the
+            specified name. vCenter Server accepts multiple Datastore creations with the same name but changes the names internally to avoid name duplication.
+            vCenter Server appends '(<index>)' to the Datastore name.
+            #>
+            $datastoreInvCenter = Get-Datastore @getDatastoreParams
+            if ($null -ne $datastoreInvCenter) {
+                throw ($this.CouldNotCreateDatastoreWithTheSpecifiedNameMessage -f $this.Name, $this.VMHost.Name, $this.Connection.Name)
+            }
+        }
+
+        return $datastore
     }
 
     <#

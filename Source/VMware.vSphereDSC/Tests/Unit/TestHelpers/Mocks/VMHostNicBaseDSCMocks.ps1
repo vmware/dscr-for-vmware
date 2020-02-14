@@ -1,5 +1,5 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018-2020 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
@@ -122,8 +122,10 @@ function New-MocksWhenAddingVMKernelNetworkAdapter {
 
     $vmHostNetworkAdapterBaseDSCProperties = New-VMHostNicBaseDSCProperties
 
+    $vmHostNetworkAdapterMock = $script:vmHostNetworkAdapter
+
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $PortGroup -eq $script:constants.VirtualPortGroupName -and $VirtualSwitch -eq $script:virtualSwitch -and $VMHost -eq $script:vmHost -and $VMKernel } -Verifiable
-    Mock -CommandName New-VMHostNetworkAdapter -MockWith { return $null }.GetNewClosure() -Verifiable
+    Mock -CommandName New-VMHostNetworkAdapter -MockWith { return $vmHostNetworkAdapterMock }.GetNewClosure() -Verifiable
 
     $vmHostNetworkAdapterBaseDSCProperties
 }

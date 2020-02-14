@@ -1,5 +1,5 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018-2020 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
@@ -159,9 +159,7 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Set-Cluster'
-                        ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm -and $HAEnabled -eq !$script:constants.HAEnabled -and `
-                                            $HAAdmissionControlEnabled -eq !$script:constants.HAAdmissionControlEnabled -and $HAFailoverLevel -eq $script:constants.HAFailoverLevel -and `
-                                            $HAIsolationResponse -eq $script:constants.HAIsolationResponse -and $HARestartPriority -eq $script:constants.HARestartPriority }
+                        ParameterFilter = { $Cluster -eq $script:cluster -and $Server -eq $script:viServer -and !$Confirm -and $HAEnabled -eq !$script:constants.HAEnabled }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'

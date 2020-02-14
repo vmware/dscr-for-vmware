@@ -1,5 +1,5 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018-2020 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostPciPassthrough : VMHostBaseDSC {
+class VMHostPciPassthrough : VMHostRestartBaseDSC {
     <#
     .DESCRIPTION
 
@@ -70,6 +70,7 @@ class VMHostPciPassthrough : VMHostBaseDSC {
         try {
             $result = [VMHostPciPassthrough]::new()
             $result.Server = $this.Server
+            $result.RestartTimeoutMinutes = $this.RestartTimeoutMinutes
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()

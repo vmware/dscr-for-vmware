@@ -1,5 +1,5 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved
+Copyright (c) 2018-2020 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
@@ -76,7 +76,7 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $assertMockCalledParams = @{
                         CommandName = 'Set-VMHostNetworkAdapter'
-                        ParameterFilter = { $VirtualNic -eq $script:vmHostNetworkAdapter }
+                        ParameterFilter = { $VirtualNic -eq $script:vmHostNetworkAdapter -and $IPv6Enabled -eq !$script:constants.VMKernelNetworkAdapterIPv6Enabled }
                         Exactly = $true
                         Times = 1
                         Scope = 'It'
@@ -160,7 +160,7 @@ InModuleScope -ModuleName $script:moduleName {
             Context 'Invoking with Ensure Present, existing VMKernel Network Adapter and matching settings' {
                 BeforeAll {
                     # Arrange
-                    $resourceProperties = New-MocksWhenEnsurePresentAndVMKernelNetworkAdapterExists
+                    $resourceProperties = New-MocksWhenEnsurePresentVMKernelNetworkAdapterExistsAndMatchingSettings
                     $resource = New-Object -TypeName $resourceName -Property $resourceProperties
                 }
 
