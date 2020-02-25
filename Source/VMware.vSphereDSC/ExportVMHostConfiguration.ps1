@@ -947,6 +947,62 @@ function Read-VMHostNetworkCoreDump {
 <#
 .DESCRIPTION
 
+Reads the information about advanced settings on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostAdvancedSettings DSC Resource.
+#>
+function Read-VMHostAdvancedSettings {
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) advanced settings..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostAdvancedSettings = Get-AdvancedSetting -Server $script:viServer -Entity $script:vmHost -ErrorAction Stop -Verbose:$false
+    $advancedSettings = @{}
+
+    foreach ($vmHostAdvancedSetting in $vmHostAdvancedSettings) {
+        $advancedSettingName = $vmHostAdvancedSetting.Name
+        $advancedSettingValue = $vmHostAdvancedSetting.Value
+        $advancedSettings.$advancedSettingName = $advancedSettingValue
+    }
+
+    $vmHostAdvancedSettingsDscResourceKeyProperties = @{
+        Server = $Server
+        Credential = $Credential
+        Name = $VMHostName
+        AdvancedSettings = $advancedSettings
+    }
+
+    $vmHostAdvancedSettingsDscResource = New-Object -TypeName 'VMHostAdvancedSettings' -Property $vmHostAdvancedSettingsDscResourceKeyProperties
+    $vmHostAdvancedSettingsDscResourceGetMethodResult = $vmHostAdvancedSettingsDscResource.Get()
+
+    New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostAdvancedSettings' -VMHostDscResourceInstanceName 'VMHostAdvancedSettings' -VMHostDscGetMethodResult $vmHostAdvancedSettingsDscResourceGetMethodResult
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about graphics devices on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostGraphicsDevice DSC Resource.
+#>
+function Read-VMHostGraphicsDevices {
+    Write-Host "Retrieving information about graphics devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostGraphicsManager = Get-View -Server $script:viServer -Id $script:vmHost.ExtensionData.ConfigManager.GraphicsManager -ErrorAction Stop -Verbose:$false
+    $graphicsDevices = $vmHostGraphicsManager.GraphicsConfig.DeviceType
+
+    foreach ($graphicsDevice in $graphicsDevices) {
+        $vmHostGraphicsDeviceDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $VMHostName
+            Id = $graphicsDevice.DeviceId
+        }
+
+        $vmHostGraphicsDeviceDscResource = New-Object -TypeName 'VMHostGraphicsDevice' -Property $vmHostGraphicsDeviceDscResourceKeyProperties
+        $vmHostGraphicsDeviceDscResourceGetMethodResult = $vmHostGraphicsDeviceDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostGraphicsDevice' -VMHostDscResourceInstanceName "VMHostGraphicsDevice_$($graphicsDevice.DeviceId)" -VMHostDscGetMethodResult $vmHostGraphicsDeviceDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
 The main function for reading the current VMHost configuration. It acts as a call dispatcher, calling all required functions
 in the proper order to read the whole information of the VMHost that is exposed as DSC Resources.
 #>
@@ -970,6 +1026,51 @@ function Read-VMHostConfiguration {
     Read-VMHostDnsSettings
     Read-VMHostIPRoutes
     Read-VMHostNetworkCoreDump
+
+    # VMHost settings DSC Resources
+    Write-Warning -Message 'Evacuate property of VMHostConfiguration DSC Resource will not be exported in the configuration.'
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) configuration..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostConfiguration'
+
+    Read-VMHostAdvancedSettings
+
+    Write-Host "Retrieving information about TPS settings on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostTpsSettings'
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) settings..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSettings'
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) power policy..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostPowerPolicy'
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) graphics settings..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostGraphics'
+
+    Read-VMHostGraphicsDevices
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) syslog settings..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSyslog'
+
+    Write-Warning -Message 'Reset property of VMHostSNMPAgent DSC Resource will not be exported in the configuration.'
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) SNMP agent settings..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSNMPAgent'
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) shared swap space settings..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSharedSwapSpace'
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) DCUI keyboard..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostDCUIKeyboard'
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) acceptance level..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostAcceptanceLevel'
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) VMKernel active dump partition settings..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostVMKernelActiveDumpPartition'
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) VMKernel active dump file settings..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostVMKernelActiveDumpFile'
+
+    Write-Warning -Message "VMHost $($script:vmHost) SATP Claim Rules are not exported into the configuration."
 }
 
 <#
