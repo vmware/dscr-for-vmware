@@ -40,6 +40,8 @@ Param(
 
 $script:viServer = $null
 $script:vmHost = $null
+$script:availableVSphereDscResources = $null
+$script:vSphereDscResourcesPropertiesToExclude = $null
 $script:vmHostConfigurationName = "VMHost_Config"
 $script:vmHostConfigurationFileName = $script:vmHostConfigurationName + '_' + (Get-Date -Format 'yyyy-MM-dd') + '.ps1'
 $script:vmHostDscConfigContent = New-Object -TypeName 'System.Text.StringBuilder'
@@ -146,6 +148,267 @@ function Set-ConfigurationData {
     [void] $script:vmHostDscConfigContent.Append("        }`r`n")
     [void] $script:vmHostDscConfigContent.Append("    )`r`n")
     [void] $script:vmHostDscConfigContent.Append("}`r`n`r`n")
+}
+
+<#
+.DESCRIPTION
+Gets the list of the properties for the specified VMHost DSC Resource that are going to be populated in the VMHost DSC Configuration.
+The common properties for all VMHost DSC Resources - Server and Credential as well as one of VMHostName and Name (depending on the base class of the DSC Resource) are not
+part of the returned list of properties because they are populated automatically.
+
+.PARAMETER VMHostDscResource
+The VMHost DSC Resource which properties are going to be retrieved.
+#>
+function Get-VMHostDscResourceProperties {
+    [CmdletBinding()]
+    [OutputType([array])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]
+        $VMHostDscResource
+    )
+
+    $vmHostDscResourcePropertiesToExclude = $script:vSphereDscResourcesPropertiesToExclude
+
+    # VMHostRole DSC Resource does not have a property for VMHost.
+    if ($VMHostDscResource.Name -ne 'VMHostRole') {
+        if ($VMHostDscResource.Properties.Name -Contains 'VMHostName') {
+            $vmHostDscResourcePropertiesToExclude += 'VMHostName'
+            [void] $script:vmHostDscConfigContent.Append("                VMHostName = `$vmHostName`r`n")
+        }
+        elseif ($VMHostDscResource.Properties.Name -Contains 'Name') {
+            $vmHostDscResourcePropertiesToExclude += 'Name'
+            [void] $script:vmHostDscConfigContent.Append("                Name = `$vmHostName`r`n")
+        }
+    }
+
+    $VMHostDscResource.Properties | Where-Object -FilterScript { $vmHostDscResourcePropertiesToExclude -NotContains $_.Name }
+}
+
+<#
+.DESCRIPTION
+Pushes the specified string property to the VMHost DSC Resource block with the following syntax: <propertyName> = '<propertyValue>'.
+
+.PARAMETER PropertyName
+The name of the string property that is going to be pushed to the VMHost DSC Resource block.
+
+.PARAMETER PropertyValue
+The value of the string property that is going to be pushed to the VMHost DSC Resource block.
+#>
+function Push-StringPropertyToVMHostDscResourceBlock {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $PropertyName,
+
+        [Parameter()]
+        [string]
+        $PropertyValue
+    )
+
+    [void] $script:vmHostDscConfigContent.Append("                $propertyName = '$propertyValue'`r`n")
+}
+
+<#
+.DESCRIPTION
+Pushes the specified bool property to the VMHost DSC Resource block with the following syntax: <propertyName> = $<propertyValue>.
+The property is pushed only when its value is not $null.
+
+.PARAMETER PropertyName
+The name of the bool property that is going to be pushed to the VMHost DSC Resource block.
+
+.PARAMETER PropertyValue
+The value of the bool property that is going to be pushed to the VMHost DSC Resource block.
+#>
+function Push-BoolPropertyToVMHostDscResourceBlock {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $PropertyName,
+
+        [Parameter()]
+        [nullable[bool]]
+        $PropertyValue
+    )
+
+    if ($null -ne $PropertyValue) {
+        [void] $script:vmHostDscConfigContent.Append("                $PropertyName = `$$($PropertyValue.ToString().ToLower())`r`n")
+    }
+}
+
+<#
+.DESCRIPTION
+Pushes the specified string array property to the VMHost DSC Resource block with the following syntax: <propertyName> = @('<arrayValue1>', '<arrayValue2>').
+If the property is $null, empty array is pushed: @().
+
+.PARAMETER PropertyName
+The name of the string array property that is going to be pushed to the VMHost DSC Resource block.
+
+.PARAMETER PropertyValue
+The value of the string array property that is going to be pushed to the VMHost DSC Resource block.
+#>
+function Push-StringArrayPropertyToVMHostDscResourceBlock {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $PropertyName,
+
+        [Parameter()]
+        [string[]]
+        $PropertyValue
+    )
+
+    if ($null -eq $PropertyValue) {
+        [void] $script:vmHostDscConfigContent.Append("                $PropertyName = @()`r`n")
+    }
+    else {
+        $arrayProperty = '@('
+        for ($i = 0; $i -lt $PropertyValue.Length; $i++) {
+            if ($i -eq $PropertyValue.Length - 1) {
+                $arrayProperty += "'$($PropertyValue[$i])'"
+            }
+            else {
+                $arrayProperty += "'$($PropertyValue[$i])', "
+            }
+        }
+        $arrayProperty += ')'
+
+        [void] $script:vmHostDscConfigContent.Append("                $PropertyName = $arrayProperty`r`n")
+    }
+}
+
+<#
+.DESCRIPTION
+Pushes the specified value type property to the VMHost DSC Resource block with the following syntax: <propertyName> = <propertyValue>.
+The property is pushed only when its value is not $null.
+
+.PARAMETER PropertyName
+The name of the value type property that is going to be pushed to the VMHost DSC Resource block.
+
+.PARAMETER PropertyValue
+The value of the value type property that is going to be pushed to the VMHost DSC Resource block.
+#>
+function Push-ValueTypePropertyToVMHostDscResourceBlock {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $PropertyName,
+
+        [Parameter()]
+        [System.ValueType]
+        $PropertyValue
+    )
+
+    if ($null -ne $PropertyValue) {
+        [void] $script:vmHostDscConfigContent.Append("                $PropertyName = $PropertyValue`r`n")
+    }
+}
+
+<#
+.DESCRIPTION
+Pushes the specified hashtable property to the VMHost DSC Resource block with the following syntax: <propertyName> = @{ <key1> = '<value1>', <key2> = '<value2>' }.
+If the property is $null, empty hashtable is pushed: @{}.
+
+.PARAMETER PropertyName
+The name of the hashtable property that is going to be pushed to the VMHost DSC Resource block.
+
+.PARAMETER PropertyValue
+The value of the hashtable property that is going to be pushed to the VMHost DSC Resource block.
+#>
+function Push-HashtablePropertyToVMHostDscResourceBlock {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $PropertyName,
+
+        [Parameter()]
+        [hashtable]
+        $PropertyValue
+    )
+
+    if ($null -eq $PropertyValue) {
+        [void] $script:vmHostDscConfigContent.Append("                $PropertyName = @{}`r`n")
+    }
+    else {
+        $hashtableProperty = "@{`r`n"
+        foreach ($key in $PropertyValue.Keys) {
+            if ($null -eq $PropertyValue.$key) { $hashtableProperty += "                    '$key' = `$null`r`n" }
+            else { $hashtableProperty += "                    '$key' = '$($PropertyValue.$key)'`r`n" }
+        }
+        $hashtableProperty += '                }'
+
+        [void] $script:vmHostDscConfigContent.Append("                $PropertyName = $hashtableProperty`r`n")
+    }
+}
+
+<#
+.DESCRIPTION
+Adds a new DSC Resource block in the VMHost DSC Configuration for the specified DSC Resource with the information retrieved from the Get() method of the DSC Resource.
+
+.PARAMETER VMHostDscResourceName
+The name of the DSC Resource that is going to be added to the VMHost DSC Configuration as a DSC Resource block.
+
+.PARAMETER VMHostDscResourceInstanceName
+The name of the instance of the DSC Resource with the specified name that is going to be added to the VMHost DSC Configuration as a DSC Resource block.
+
+.PARAMETER VMHostDscGetMethodResult
+The result of the Get() method of the specified DSC Resource that is going to be added to the VMHost DSC Configuration as a DSC Resource block.
+#>
+function New-VMHostDscResourceBlock {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $VMHostDscResourceName,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $VMHostDscResourceInstanceName,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]
+        $VMHostDscGetMethodResult
+    )
+
+    [void] $script:vmHostDscConfigContent.Append("            $VMHostDscResourceName '$VMHostDscResourceInstanceName' {`r`n")
+    [void] $script:vmHostDscConfigContent.Append("                Server = `$AllNodes.Server`r`n")
+    [void] $script:vmHostDscConfigContent.Append("                Credential = `$AllNodes.Credential`r`n")
+
+    $vmHostDscResource = $script:availableVSphereDscResources | Where-Object -FilterScript { $_.Name -eq $VMHostDscResourceName }
+    $vmHostDscResourceProperties = Get-VMHostDscResourceProperties -VMHostDscResource $vmHostDscResource
+
+    foreach ($vmHostDscResourceProperty in $vmHostDscResourceProperties) {
+        $propertyName = $vmHostDscResourceProperty.Name
+        $propertyValue = $VMHostDscGetMethodResult.$propertyName
+
+        if ($vmHostDscResourceProperty.PropertyType -eq '[string]') { Push-StringPropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
+        elseif ($vmHostDscResourceProperty.PropertyType -eq '[bool]') { Push-BoolPropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
+        elseif ($vmHostDscResourceProperty.PropertyType -eq '[string[]]') { Push-StringArrayPropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
+        elseif ($vmHostDscResourceProperty.PropertyType -eq '[Int32]' -or $vmHostDscResourceProperty.PropertyType -eq '[Int64]') { Push-ValueTypePropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
+        elseif ($vmHostDscResourceProperty.PropertyType -eq '[Nullable`1]') {
+            if ($propertyValue -is [bool]) { Push-BoolPropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
+            else { Push-ValueTypePropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
+        }
+        elseif ($vmHostDscResourceProperty.PropertyType -eq '[HashTable]') { Push-HashtablePropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
+    }
+
+    if ($null -ne $VMHostDscGetMethodResult.DependsOn) { [void] $script:vmHostDscConfigContent.Append("                DependsOn = '$($VMHostDscGetMethodResult.DependsOn)'`r`n") }
+
+    [void] $script:vmHostDscConfigContent.Append("            }`r`n`r`n")
 }
 
 <#
