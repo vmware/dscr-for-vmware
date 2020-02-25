@@ -413,6 +413,34 @@ function New-VMHostDscResourceBlock {
 
 <#
 .DESCRIPTION
+Reads the information about the specified DSC Resource and exposes it in the VMHost DSC Configuration.
+
+.PARAMETER VMHostDscResourceName
+The name of the VMHost DSC Resource that is going to be exposed in the VMHost DSC Configuration.
+#>
+function Read-VMHostDscResourceInfo {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $VMHostDscResourceName
+    )
+
+    $vmHostDscResourceKeyProperties = @{
+        Server = $Server
+        Credential = $Credential
+        Name = $VMHostName
+    }
+
+    $vmHostDscResource = New-Object -TypeName $VMHostDscResourceName -Property $vmHostDscResourceKeyProperties
+    $getMethodResult = $vmHostDscResource.Get()
+
+    New-VMHostDscResourceBlock -VMHostDscResourceName $VMHostDscResourceName -VMHostDscResourceInstanceName $VMHostDscResourceName -VMHostDscGetMethodResult $getMethodResult
+}
+
+<#
+.DESCRIPTION
 
 Reads the information about SCSI devices and paths to the SCSI devices on the specified VMHost and exposes it in the VMHost DSC Configuration
 with the VMHostScsiLun and VMHostScsiLunPath DSC Resources.
@@ -586,6 +614,339 @@ function Read-Datastores {
 <#
 .DESCRIPTION
 
+Reads the information about Physical Network Adapters on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostPhysicalNic DSC Resource.
+#>
+function Read-VMHostPhysicalNetworkAdapters {
+    Write-Host "Retrieving information about Physical Network Adapters on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $physicalNetworkAdapters = Get-VMHostNetworkAdapter -Server $script:viServer -VMHost $script:vmHost -Physical -ErrorAction Stop -Verbose:$false
+
+    foreach ($physicalNetworkAdapter in $physicalNetworkAdapters) {
+        $vmHostPhysicalNicDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $physicalNetworkAdapter.Name
+        }
+
+        $vmHostPhysicalNicDscResource = New-Object -TypeName 'VMHostPhysicalNic' -Property $vmHostPhysicalNicDscResourceKeyProperties
+        $vmHostPhysicalNicDscResourceGetMethodResult = $vmHostPhysicalNicDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostPhysicalNic' -VMHostDscResourceInstanceName "VMHostPhysicalNic_$($physicalNetworkAdapter.Name)" -VMHostDscGetMethodResult $vmHostPhysicalNicDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about Standard Switches on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the StandardSwitch Composite DSC Resource.
+#>
+function Read-StandardSwitches {
+    Write-Host "Retrieving information about Standard Switches on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $standardSwitches = Get-VirtualSwitch -Server $script:viServer -VMHost $script:vmHost -Standard -ErrorAction Stop -Verbose:$false
+
+    foreach ($standardSwitch in $standardSwitches) {
+        $vmHostVssDscResourcesKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $VMHostName
+            VssName = $standardSwitch.Name
+        }
+
+        $vmHostVssDscResource = New-Object -TypeName 'VMHostVss' -Property $vmHostVssDscResourcesKeyProperties
+        $vmHostVssDscResourceGetMethodResult = $vmHostVssDscResource.Get()
+
+        $vmHostVssBridgeDscResource = New-Object -TypeName 'VMHostVssBridge' -Property $vmHostVssDscResourcesKeyProperties
+        $vmHostVssBridgeDscResourceGetMethodResult = $vmHostVssBridgeDscResource.Get()
+
+        $vmHostVssSecurityDscResource = New-Object -TypeName 'VMHostVssSecurity' -Property $vmHostVssDscResourcesKeyProperties
+        $vmHostVssSecurityDscResourceGetMethodResult = $vmHostVssSecurityDscResource.Get()
+
+        $vmHostVssShapingDscResource = New-Object -TypeName 'VMHostVssShaping' -Property $vmHostVssDscResourcesKeyProperties
+        $vmHostVssShapingDscResourceGetMethodResult = $vmHostVssShapingDscResource.Get()
+
+        $vmHostVssTeamingDscResource = New-Object -TypeName 'VMHostVssTeaming' -Property $vmHostVssDscResourcesKeyProperties
+        $vmHostVssTeamingDscResourceGetMethodResult = $vmHostVssTeamingDscResource.Get()
+
+        $standardSwitchDscResourceDependencies = ''
+        for ($i = 0; $i -lt $vmHostVssBridgeDscResourceGetMethodResult.NicDevice.Length; $i++) {
+            if ($i -eq $vmHostVssBridgeDscResourceGetMethodResult.NicDevice.Length - 1) {
+                $standardSwitchDscResourceDependencies += "[VMHostPhysicalNic]VMHostPhysicalNic_$($vmHostVssBridgeDscResourceGetMethodResult.NicDevice[$i])"
+            }
+            else {
+                $standardSwitchDscResourceDependencies += "[VMHostPhysicalNic]VMHostPhysicalNic_$($vmHostVssBridgeDscResourceGetMethodResult.NicDevice[$i]), "
+            }
+        }
+
+        $standardSwitchDscResourceResult = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $standardSwitch.Name
+            Ensure = $vmHostVssDscResourceGetMethodResult.Ensure
+            Mtu = $vmHostVssDscResourceGetMethodResult.Mtu
+            NicDevice = $vmHostVssBridgeDscResourceGetMethodResult.NicDevice
+            BeaconInterval = $vmHostVssBridgeDscResourceGetMethodResult.BeaconInterval
+            LinkDiscoveryProtocolType = $vmHostVssBridgeDscResourceGetMethodResult.LinkDiscoveryProtocolProtocol
+            LinkDiscoveryProtocolOperation = $vmHostVssBridgeDscResourceGetMethodResult.LinkDiscoveryProtocolOperation
+            AllowPromiscuous = $vmHostVssSecurityDscResourceGetMethodResult.AllowPromiscuous
+            ForgedTransmits = $vmHostVssSecurityDscResourceGetMethodResult.ForgedTransmits
+            MacChanges = $vmHostVssSecurityDscResourceGetMethodResult.MacChanges
+            AverageBandwidth = $vmHostVssShapingDscResourceGetMethodResult.AverageBandwidth
+            BurstSize = $vmHostVssShapingDscResourceGetMethodResult.BurstSize
+            Enabled = $vmHostVssShapingDscResourceGetMethodResult.Enabled
+            PeakBandwidth = $vmHostVssShapingDscResourceGetMethodResult.PeakBandwidth
+            CheckBeacon = $vmHostVssTeamingDscResourceGetMethodResult.CheckBeacon
+            ActiveNic = $vmHostVssTeamingDscResourceGetMethodResult.ActiveNic
+            StandbyNic = $vmHostVssTeamingDscResourceGetMethodResult.StandbyNic
+            NotifySwitches = $vmHostVssTeamingDscResourceGetMethodResult.NotifySwitches
+            Policy = $vmHostVssTeamingDscResourceGetMethodResult.Policy
+            RollingOrder = $vmHostVssTeamingDscResourceGetMethodResult.RollingOrder
+            DependsOn = $standardSwitchDscResourceDependencies
+        }
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'StandardSwitch' -VMHostDscResourceInstanceName "StandardSwitch_$($standardSwitch.Name)" -VMHostDscGetMethodResult $standardSwitchDscResourceResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about Standard Port Groups on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the StandardPortGroup Composite DSC Resource.
+#>
+function Read-StandardPortGroups {
+    Write-Host "Retrieving information about Standard Port Groups on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $standardPortGroups = Get-VirtualPortGroup -Server $script:viServer -VMHost $script:vmHost -Standard -ErrorAction Stop -Verbose:$false
+
+    foreach ($standardPortGroup in $standardPortGroups) {
+        $vmHostVssPortGroupDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $standardPortGroup.Name
+            VssName = $standardPortGroup.VirtualSwitchName
+        }
+
+        $vmHostVssPortGroupDscResourcesKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $standardPortGroup.Name
+        }
+
+        $vmHostVssPortGroupDscResource = New-Object -TypeName 'VMHostVssPortGroup' -Property $vmHostVssPortGroupDscResourceKeyProperties
+        $vmHostVssPortGroupDscResourceGetMethodResult = $vmHostVssPortGroupDscResource.Get()
+
+        $vmHostVssPortGroupSecurityDscResource = New-Object -TypeName 'VMHostVssPortGroupSecurity' -Property $vmHostVssPortGroupDscResourcesKeyProperties
+        $vmHostVssPortGroupSecurityDscResourceGetMethodResult = $vmHostVssPortGroupSecurityDscResource.Get()
+
+        $vmHostVssPortGroupShapingDscResource = New-Object -TypeName 'VMHostVssPortGroupShaping' -Property $vmHostVssPortGroupDscResourcesKeyProperties
+        $vmHostVssPortGroupShapingDscResourceGetMethodResult = $vmHostVssPortGroupShapingDscResource.Get()
+
+        $vmHostVssPortGroupTeamingDscResource = New-Object -TypeName 'VMHostVssPortGroupTeaming' -Property $vmHostVssPortGroupDscResourcesKeyProperties
+        $vmHostVssPortGroupTeamingDscResourceGetMethodResult = $vmHostVssPortGroupTeamingDscResource.Get()
+
+        $standardPortGroupDscResourceResult = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $standardPortGroup.Name
+            VssName = $standardPortGroup.VirtualSwitchName
+            Ensure = $vmHostVssPortGroupDscResourceGetMethodResult.Ensure
+            VLanId = $vmHostVssPortGroupDscResourceGetMethodResult.VLanId
+            AllowPromiscuous = $vmHostVssPortGroupSecurityDscResourceGetMethodResult.AllowPromiscuous
+            AllowPromiscuousInherited = $vmHostVssPortGroupSecurityDscResourceGetMethodResult.AllowPromiscuousInherited
+            ForgedTransmits = $vmHostVssPortGroupSecurityDscResourceGetMethodResult.ForgedTransmits
+            ForgedTransmitsInherited = $vmHostVssPortGroupSecurityDscResourceGetMethodResult.ForgedTransmitsInherited
+            MacChanges = $vmHostVssPortGroupSecurityDscResourceGetMethodResult.MacChanges
+            MacChangesInherited = $vmHostVssPortGroupSecurityDscResourceGetMethodResult.MacChangesInherited
+            Enabled = $vmHostVssPortGroupShapingDscResourceGetMethodResult.Enabled
+            AverageBandwidth = $vmHostVssPortGroupShapingDscResourceGetMethodResult.AverageBandwidth
+            PeakBandwidth = $vmHostVssPortGroupShapingDscResourceGetMethodResult.PeakBandwidth
+            BurstSize = $vmHostVssPortGroupShapingDscResourceGetMethodResult.BurstSize
+            FailbackEnabled = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.FailbackEnabled
+            LoadBalancingPolicy = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.LoadBalancingPolicy
+            ActiveNic = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.ActiveNic
+            StandbyNic = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.StandbyNic
+            UnusedNic = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.UnusedNic
+            NetworkFailoverDetectionPolicy = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.NetworkFailoverDetectionPolicy
+            InheritFailback = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.InheritFailback
+            InheritFailoverOrder = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.InheritFailoverOrder
+            InheritLoadBalancingPolicy = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.InheritLoadBalancingPolicy
+            InheritNetworkFailoverDetectionPolicy = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.InheritNetworkFailoverDetectionPolicy
+            InheritNotifySwitches = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.InheritNotifySwitches
+            DependsOn = "[StandardSwitch]StandardSwitch_$($standardPortGroup.VirtualSwitchName)"
+        }
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'StandardPortGroup' -VMHostDscResourceInstanceName "StandardPortGroup_$($standardPortGroup.Name)" -VMHostDscGetMethodResult $standardPortGroupDscResourceResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about VMKernel Network Adapters on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostVssNic DSC Resource.
+#>
+function Read-VMKernelNetworkAdapters {
+    Write-Host "Retrieving information about VMKernel Network Adapters on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmKernelNetworkAdapters = Get-VMHostNetworkAdapter -Server $script:viServer -VMHost $script:vmHost -VMKernel -ErrorAction Stop -Verbose:$false
+
+    foreach ($vmKernelNetworkAdapter in $vmKernelNetworkAdapters) {
+        $portGroup = Get-VirtualPortGroup -Server $script:viServer -VMHost $script:vmHost -Name $vmKernelNetworkAdapter.PortGroupName -ErrorAction Stop -Verbose:$false
+        $vmHostVssNicDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            VssName = $portGroup.VirtualSwitchName
+            PortGroupName = $vmKernelNetworkAdapter.PortGroupName
+        }
+
+        $vmHostVssNicDscResource = New-Object -TypeName 'VMHostVssNic' -Property $vmHostVssNicDscResourceKeyProperties
+        $vmHostVssNicDscResourceGetMethodResult = $vmHostVssNicDscResource.Get()
+
+        $vmHostVssNicDscResourceResult = @{
+            VssName = $vmHostVssNicDscResourceGetMethodResult.VssName
+            PortGroupName = $vmHostVssNicDscResourceGetMethodResult.PortGroupName
+            Ensure = $vmHostVssNicDscResourceGetMethodResult.Ensure
+            Dhcp = $vmHostVssNicDscResourceGetMethodResult.Dhcp
+            IP = $vmHostVssNicDscResourceGetMethodResult.IP
+            SubnetMask = $vmHostVssNicDscResourceGetMethodResult.SubnetMask
+            Mac = $vmHostVssNicDscResourceGetMethodResult.Mac
+            AutomaticIPv6 = $vmHostVssNicDscResourceGetMethodResult.AutomaticIPv6
+            IPv6 = $vmHostVssNicDscResourceGetMethodResult.IPv6
+            IPv6ThroughDhcp = $vmHostVssNicDscResourceGetMethodResult.IPv6ThroughDhcp
+            Mtu = $vmHostVssNicDscResourceGetMethodResult.Mtu
+            IPv6Enabled = $vmHostVssNicDscResourceGetMethodResult.IPv6Enabled
+            ManagementTrafficEnabled = $vmHostVssNicDscResourceGetMethodResult.ManagementTrafficEnabled
+            FaultToleranceLoggingEnabled = $vmHostVssNicDscResourceGetMethodResult.FaultToleranceLoggingEnabled
+            VMotionEnabled = $vmHostVssNicDscResourceGetMethodResult.VMotionEnabled
+            VsanTrafficEnabled = $vmHostVssNicDscResourceGetMethodResult.VsanTrafficEnabled
+            DependsOn = "[StandardPortGroup]StandardPortGroup_$($vmKernelNetworkAdapter.PortGroupName)"
+        }
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVssNic' -VMHostDscResourceInstanceName "VMHostVssNic_$($vmKernelNetworkAdapter.Name)" -VMHostDscGetMethodResult $vmHostVssNicDscResourceResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about DNS settings on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostDnsSettings DSC Resource.
+#>
+function Read-VMHostDnsSettings {
+    Write-Host "Retrieving information about DNS settings on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+
+    $vmHostDnsSettingsDscResourceKeyProperties = @{
+        Server = $Server
+        Credential = $Credential
+        Name = $VMHostName
+    }
+
+    $vmHostDnsSettingsDscResource = New-Object -TypeName 'VMHostDnsSettings' -Property $vmHostDnsSettingsDscResourceKeyProperties
+    $vmHostDnsSettingsDscResourceGetMethodResult = $vmHostDnsSettingsDscResource.Get()
+
+    if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice) -or ![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice)) {
+        $vmHostDnsSettingsDscResourceDependencies = ''
+        if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice)) {
+            $vmHostDnsSettingsDscResourceDependencies += "[VMHostVssNic]VMHostVssNic_$($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice)"
+        }
+
+        if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice) -and $vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice -ne $vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice) {
+            if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceDependencies)) {
+                $vmHostDnsSettingsDscResourceDependencies += ", "
+            }
+
+            $vmHostDnsSettingsDscResourceDependencies += "[VMHostVssNic]VMHostVssNic_$($vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice)"
+        }
+
+        $vmHostDnsSettingsDscResourceResult = @{
+            Address = $vmHostDnsSettingsDscResourceGetMethodResult.Address
+            Dhcp = $vmHostDnsSettingsDscResourceGetMethodResult.Dhcp
+            DomainName = $vmHostDnsSettingsDscResourceGetMethodResult.DomainName
+            HostName = $vmHostDnsSettingsDscResourceGetMethodResult.HostName
+            Ipv6VirtualNicDevice = $vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice
+            SearchDomain = $vmHostDnsSettingsDscResourceGetMethodResult.SearchDomain
+            VirtualNicDevice = $vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice
+            DependsOn = $vmHostDnsSettingsDscResourceDependencies
+        }
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostDnsSettings' -VMHostDscResourceInstanceName 'VMHostDnsSettings' -VMHostDscGetMethodResult $vmHostDnsSettingsDscResourceResult
+    }
+    else {
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostDnsSettings' -VMHostDscResourceInstanceName 'VMHostDnsSettings' -VMHostDscGetMethodResult $vmHostDnsSettingsDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about IP Routes on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostIPRoute DSC Resource.
+#>
+function Read-VMHostIPRoutes {
+    Write-Host "Retrieving information about IP Routes on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $ipRoutes = Get-VMHostRoute -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
+
+    foreach ($ipRoute in $ipRoutes) {
+        $vmHostIPRouteDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $VMHostName
+            Gateway = $ipRoute.Gateway
+            Destination = $ipRoute.Destination
+            PrefixLength = $ipRoute.PrefixLength
+        }
+
+        $vmHostIPRouteDscResource = New-Object -TypeName 'VMHostIPRoute' -Property $vmHostIPRouteDscResourceKeyProperties
+        $vmHostIPRouteDscResourceGetMethodResult = $vmHostIPRouteDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIPRoute' -VMHostDscResourceInstanceName "VMHostIPRoute_$($ipRoute.Gateway)_$($ipRoute.Destination)" -VMHostDscGetMethodResult $vmHostIPRouteDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about network core dump configuration on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostNetworkCoreDump DSC Resource.
+#>
+function Read-VMHostNetworkCoreDump {
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) network core dump configuration..." -BackgroundColor DarkGreen -ForegroundColor White
+
+    $vmHostNetworkCoreDumpDscResourceKeyProperties = @{
+        Server = $Server
+        Credential = $Credential
+        Name = $VMHostName
+    }
+
+    $vmHostNetworkCoreDumpDscResource = New-Object -TypeName 'VMHostNetworkCoreDump' -Property $vmHostNetworkCoreDumpDscResourceKeyProperties
+    $vmHostNetworkCoreDumpDscResourceGetMethodResult = $vmHostNetworkCoreDumpDscResource.Get()
+
+    if (![string]::IsNullOrEmpty($vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName)) {
+        $vmHostNetworkCoreDumpDscResourceDependencies = "[VMHostVssNic]VMHostVssNic_$($vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName)"
+
+        $vmHostNetworkCoreDumpDscResourceResult = @{
+            Enable = $vmHostNetworkCoreDumpDscResourceGetMethodResult.Enable
+            InterfaceName = $vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName
+            ServerIp = $vmHostNetworkCoreDumpDscResourceGetMethodResult.ServerIp
+            ServerPort = $vmHostNetworkCoreDumpDscResourceGetMethodResult.ServerPort
+            DependsOn = $vmHostNetworkCoreDumpDscResourceDependencies
+        }
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostNetworkCoreDump' -VMHostDscResourceInstanceName 'VMHostNetworkCoreDump' -VMHostDscGetMethodResult $vmHostNetworkCoreDumpDscResourceResult
+    }
+    else {
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostNetworkCoreDump' -VMHostDscResourceInstanceName 'VMHostNetworkCoreDump' -VMHostDscGetMethodResult $vmHostNetworkCoreDumpDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
 The main function for reading the current VMHost configuration. It acts as a call dispatcher, calling all required functions
 in the proper order to read the whole information of the VMHost that is exposed as DSC Resources.
 #>
@@ -597,6 +958,18 @@ function Read-VMHostConfiguration {
     Read-ScsiDevices
     Read-IScsiHbas
     Read-Datastores
+
+    # VMHost Network DSC Resources
+    Write-Host "Retrieving information about NTP settings on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostNtpSettings'
+
+    Read-VMHostPhysicalNetworkAdapters
+    Read-StandardSwitches
+    Read-StandardPortGroups
+    Read-VMKernelNetworkAdapters
+    Read-VMHostDnsSettings
+    Read-VMHostIPRoutes
+    Read-VMHostNetworkCoreDump
 }
 
 <#
