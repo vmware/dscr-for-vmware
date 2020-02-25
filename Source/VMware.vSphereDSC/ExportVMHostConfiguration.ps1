@@ -414,6 +414,194 @@ function New-VMHostDscResourceBlock {
 <#
 .DESCRIPTION
 
+Reads the information about SCSI devices and paths to the SCSI devices on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostScsiLun and VMHostScsiLunPath DSC Resources.
+#>
+function Read-ScsiDevices {
+    Write-Host "Retrieving information about SCSI devices and paths to the SCSI devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $scsiLuns = Get-ScsiLun -Server $script:viServer -VmHost $script:vmHost -ErrorAction Stop -Verbose:$false
+
+    if ($scsiLuns.Length -gt 0) {
+        Write-Warning -Message 'DeletePartitions property of VMHostScsiLun DSC Resource will not be exported in the configuration.'
+    }
+
+    foreach ($scsiLun in $scsiLuns) {
+        $vmHostScsiLunDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            CanonicalName = $scsiLun.CanonicalName
+        }
+
+        $vmHostScsiLunDscResource = New-Object -TypeName 'VMHostScsiLun' -Property $vmHostScsiLunDscResourceKeyProperties
+        $vmHostScsiLunDscResourceGetMethodResult = $vmHostScsiLunDscResource.Get()
+
+        # The DSC engine requires a required resource name to be in the format '[<typename>]<name>', with alphanumeric characters, spaces, '_', '-', '.' and '\'.
+        $formattedScsiLunCanonicalName = $scsiLun.CanonicalName -Replace ':', ''
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLun' -VMHostDscResourceInstanceName "VMHostScsiLun_$formattedScsiLunCanonicalName" -VMHostDscGetMethodResult $vmHostScsiLunDscResourceGetMethodResult
+
+        $scsiLunPaths = Get-ScsiLunPath -ScsiLun $scsiLun -ErrorAction Stop -Verbose:$false
+        foreach ($scsiLunPath in $scsiLunPaths) {
+            $vmHostScsiLunPathDscResourceKeyProperties = @{
+                Server = $Server
+                Credential = $Credential
+                VMHostName = $VMHostName
+                Name = $scsiLunPath.Name
+                ScsiLunCanonicalName = $scsiLun.CanonicalName
+            }
+
+            $vmHostScsiLunPathDscResource = New-Object -TypeName 'VMHostScsiLunPath' -Property $vmHostScsiLunPathDscResourceKeyProperties
+            $vmHostScsiLunPathDscResourceGetMethodResult = $vmHostScsiLunPathDscResource.Get()
+
+            $vmHostScsiLunPathDscResourceResult = @{
+                Name = $vmHostScsiLunPathDscResourceGetMethodResult.Name
+                ScsiLunCanonicalName = $vmHostScsiLunPathDscResourceGetMethodResult.ScsiLunCanonicalName
+                Active = $vmHostScsiLunPathDscResourceGetMethodResult.Active
+                Preferred = $vmHostScsiLunPathDscResourceGetMethodResult.Preferred
+                DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
+            }
+
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLunPath' -VMHostDscResourceInstanceName "VMHostScsiLunPath_$($scsiLunPath.Name)" -VMHostDscGetMethodResult $vmHostScsiLunPathDscResourceResult
+        }
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about iSCSI Host Bus Adapters and iSCSI Host Bus Adapter targets on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostIScsiHba and VMHostIScsiHbaTarget DSC Resources.
+#>
+function Read-IScsiHbas {
+    Write-Host "Retrieving information about iSCSI Host Bus Adapters and iSCSI Host Bus Adapter targets on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $iScsiHbas = Get-VMHostHba -Server $script:viServer -VMHost $script:vmHost -Type 'iSCSI' -ErrorAction Stop -Verbose:$false
+
+    if ($iScsiHbas.Length -gt 0) {
+        Write-Warning -Message 'Force, ChapPassword and MutualChapPassword properties of VMHostIScsiHba and VMHostIScsiHbaTarget DSC Resources will not be exported in the configuration.'
+        $script:vSphereDscResourcesPropertiesToExclude += 'ChapPassword'
+        $script:vSphereDscResourcesPropertiesToExclude += 'MutualChapPassword'
+    }
+
+    foreach ($iScsiHba in $iScsiHbas) {
+        $vmHostIScsiHbaDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $iScsiHba.Name
+        }
+
+        $vmHostIScsiHbaDscResource = New-Object -TypeName 'VMHostIScsiHba' -Property $vmHostIScsiHbaDscResourceKeyProperties
+        $vmHostIScsiHbaDscResourceGetMethodResult = $vmHostIScsiHbaDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHba' -VMHostDscResourceInstanceName "VMHostIScsiHba_$($iScsiHba.Name)" -VMHostDscGetMethodResult $vmHostIScsiHbaDscResourceGetMethodResult
+
+        $iScsiHbaTargets = Get-IScsiHbaTarget -Server $script:viServer -IScsiHba $iScsiHba -ErrorAction Stop -Verbose:$false
+        foreach ($iScsiHbaTarget in $iScsiHbaTargets) {
+            $vmHostIScsiHbaTargetDscResourceKeyProperties = @{
+                Server = $Server
+                Credential = $Credential
+                VMHostName = $VMHostName
+                Address = $iScsiHbaTarget.Address
+                Port = $iScsiHbaTarget.Port
+                IScsiHbaName = $iScsiHba.Name
+                TargetType = $iScsiHbaTarget.Type
+            }
+
+            $vmHostIScsiHbaTargetDscResource = New-Object -TypeName 'VMHostIScsiHbaTarget' -Property $vmHostIScsiHbaTargetDscResourceKeyProperties
+            $vmHostIScsiHbaTargetDscResourceGetMethodResult = $vmHostIScsiHbaTargetDscResource.Get()
+
+            $vmHostIScsiHbaTargetDscResourceResult = @{
+                Address = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Address
+                Port = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Port
+                IScsiHbaName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiHbaName
+                TargetType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.TargetType
+                Ensure = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Ensure
+                IScsiName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiName
+                InheritChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritChap
+                ChapType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapType
+                ChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapName
+                InheritMutualChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritMutualChap
+                MutualChapEnabled = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapEnabled
+                MutualChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapName
+                Force = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Force
+                DependsOn = "[VMHostIScsiHba]VMHostIScsiHba_$($iScsiHba.Name)"
+            }
+
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHbaTarget' -VMHostDscResourceInstanceName "VMHostIScsiHbaTarget_$($iScsiHbaTarget.Address):$($iScsiHbaTarget.Port)_$($iScsiHbaTarget.Type)" -VMHostDscGetMethodResult $vmHostIScsiHbaTargetDscResourceResult
+        }
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about Datastores on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VmfsDatastore and NfsDatastore DSC Resources.
+#>
+function Read-Datastores {
+    Write-Host "Retrieving information about Datastores on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $datastores = Get-Datastore -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
+
+    foreach ($datastore in $datastores) {
+        $datastoreDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $datastore.Name
+        }
+
+        if ($datastore.Type -eq 'VMFS') {
+            $datastoreDscResourceKeyProperties.Path = $datastore.ExtensionData.Info.Vmfs.Extent.DiskName
+            $vmfsDatastoreDscResource = New-Object -TypeName 'VmfsDatastore' -Property $datastoreDscResourceKeyProperties
+            $vmfsDatastoreDscResourceGetMethodResult = $vmfsDatastoreDscResource.Get()
+
+            # The DSC engine requires a required resource name to be in the format '[<typename>]<name>', with alphanumeric characters, spaces, '_', '-', '.' and '\'.
+            $formattedScsiLunCanonicalName = $vmfsDatastoreDscResourceGetMethodResult.Path -Replace ':', ''
+
+            $vmfsDatastoreDscResourceResult = @{
+                Name = $vmfsDatastoreDscResourceGetMethodResult.Name
+                Path = $vmfsDatastoreDscResourceGetMethodResult.Path
+                Ensure = $vmfsDatastoreDscResourceGetMethodResult.Ensure
+                FileSystemVersion = $vmfsDatastoreDscResourceGetMethodResult.FileSystemVersion
+                BlockSizeMB = $vmfsDatastoreDscResourceGetMethodResult.BlockSizeMB
+                CongestionThresholdMillisecond = $vmfsDatastoreDscResourceGetMethodResult.CongestionThresholdMillisecond
+                StorageIOControlEnabled = $vmfsDatastoreDscResourceGetMethodResult.StorageIOControlEnabled
+                DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
+            }
+
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VmfsDatastore' -VMHostDscResourceInstanceName "VmfsDatastore_$($datastore.Name)" -VMHostDscGetMethodResult $vmfsDatastoreDscResourceResult
+        }
+        elseif ($datastore.Type -eq 'NFS') {
+            $datastoreDscResourceKeyProperties.NfsHost = $datastore.RemoteHost
+            $datastoreDscResourceKeyProperties.Path = $datastore.RemotePath
+            $nfsDatastoreDscResource = New-Object -TypeName 'NfsDatastore' -Property $datastoreDscResourceKeyProperties
+            $nfsDatastoreDscResourceGetMethodResult = $nfsDatastoreDscResource.Get()
+
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'NfsDatastore' -VMHostDscResourceInstanceName "NfsDatastore_$($datastore.Name)" -VMHostDscGetMethodResult $nfsDatastoreDscResourceGetMethodResult
+        }
+    }
+}
+
+<#
+.DESCRIPTION
+
+The main function for reading the current VMHost configuration. It acts as a call dispatcher, calling all required functions
+in the proper order to read the whole information of the VMHost that is exposed as DSC Resources.
+#>
+function Read-VMHostConfiguration {
+    $script:availableVSphereDscResources = Get-DscResource -Module 'VMware.vSphereDSC' -ErrorAction Stop -Verbose:$false
+    $script:vSphereDscResourcesPropertiesToExclude = @('Server', 'Credential', 'DependsOn', 'PsDscRunAsCredential')
+
+    # VMHost Storage DSC Resources
+    Read-ScsiDevices
+    Read-IScsiHbas
+    Read-Datastores
+}
+
+<#
+.DESCRIPTION
+
 The main function for extracting the VMHost DSC Configuration. It acts as a call dispatcher, calling all required functions
 in the proper order to get the full Configuration.
 #>
@@ -429,6 +617,8 @@ function Export-VMHostConfiguration {
     [void] $script:vmHostDscConfigContent.Append("    Import-DscResource -ModuleName VMware.vSphereDSC`r`n`r`n")
     [void] $script:vmHostDscConfigContent.Append("    Node `$AllNodes.NodeName {`r`n")
     [void] $script:vmHostDscConfigContent.Append("        foreach (`$vmHostName in `$AllNodes.VMHostNames) {`r`n")
+
+    Read-VMHostConfiguration
 
     [void] $script:vmHostDscConfigContent.Append("        }`r`n")
 
