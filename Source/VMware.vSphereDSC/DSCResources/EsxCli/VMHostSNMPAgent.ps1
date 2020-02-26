@@ -237,7 +237,7 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
         $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Hwsrc) -and $this.Hwsrc -ne $esxCliGetMethodResult.hwsrc)
         $shouldModifyVMHostSNMPAgent += ($null -ne $this.LargeStorage -and $this.LargeStorage -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.largestorage))
         $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.LogLevel) -and $this.LogLevel -ne $esxCliGetMethodResult.loglevel)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.NoTraps -and $this.NoTraps -ne $esxCliGetMethodResult.notraps)
+        $shouldModifyVMHostSNMPAgent += ($null -ne $this.NoTraps -and $this.NoTraps -ne [string] $esxCliGetMethodResult.notraps)
         $shouldModifyVMHostSNMPAgent += ($null -ne $this.Port -and $this.Port -ne [int] $esxCliGetMethodResult.port)
         $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Privacy) -and $this.Privacy -ne $esxCliGetMethodResult.privacy)
         $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.RemoteUsers) -and $this.RemoteUsers -ne $esxCliGetMethodResult.remoteusers)
