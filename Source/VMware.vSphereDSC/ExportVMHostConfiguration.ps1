@@ -1212,6 +1212,241 @@ function Read-VMHostCache {
 <#
 .DESCRIPTION
 
+Reads the information about roles on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostRole DSC Resource.
+#>
+function Read-VMHostRoles {
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) roles..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostRoles = Get-VIRole -Server $script:viServer -ErrorAction Stop -Verbose:$false
+
+    foreach ($vmHostRole in $vmHostRoles) {
+        $vmHostRoleDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $vmHostRole.Name
+        }
+
+        $vmHostRoleDscResource = New-Object -TypeName 'VMHostRole' -Property $vmHostRoleDscResourceKeyProperties
+        $vmHostRoleDscResourceGetMethodResult = $vmHostRoleDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostRole' -VMHostDscResourceInstanceName "VMHostRole_$($vmHostRole.Name)" -VMHostDscGetMethodResult $vmHostRoleDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about accounts on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostAccount DSC Resource.
+#>
+function Read-VMHostAccounts {
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) accounts..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostAccounts = Get-VMHostAccount -Server $script:viServer -ErrorAction Stop -Verbose:$false
+
+    if ($vmHostAccounts.Length -gt 0) {
+        Write-Warning -Message 'AccountPassword property of VMHostAccount DSC Resource will not be exported in the configuration.'
+        $script:vSphereDscResourcesPropertiesToExclude += 'AccountPassword'
+    }
+
+    foreach ($vmHostAccount in $vmHostAccounts) {
+        $vmHostAccountDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Id = $vmHostAccount.Id
+        }
+
+        $vmHostAccountDscResource = New-Object -TypeName 'VMHostAccount' -Property $vmHostAccountDscResourceKeyProperties
+        $vmHostAccountDscResourceGetMethodResult = $vmHostAccountDscResource.Get()
+
+        $vmHostAccountDscResourceResult = @{
+            Id = $vmHostAccountDscResourceGetMethodResult.Id
+            Ensure = $vmHostAccountDscResourceGetMethodResult.Ensure
+            Role = $vmHostAccountDscResourceGetMethodResult.Role
+            Description = $vmHostAccountDscResourceGetMethodResult.Description
+            DependsOn = "[VMHostRole]VMHostRole_$($vmHostAccountDscResourceGetMethodResult.Role)"
+        }
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostAccount' -VMHostDscResourceInstanceName "VMHostAccount_$($vmHostAccount.Id)" -VMHostDscGetMethodResult $vmHostAccountDscResourceResult
+    }
+}
+
+<#
+.DESCRIPTION
+Retrieves the location of the specified Entity. Location consists of 0 or more Inventory Items.
+Inventory Item names in the location are separated by '/'.
+
+.PARAMETER Entity
+The Entity which location needs to be retrieved.
+#>
+function Get-EntityLocation {
+    [CmdletBinding()]
+    [OutputType([string])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]
+        $Entity
+    )
+
+    $entityLocationAsArray = @()
+
+    if ($null -ne $Entity.Parent) {
+        $entityParent = $Entity.Parent
+
+        while ($null -ne $entityParent) {
+            $entityLocationAsArray += $entityParent
+            $entityParent = $entityParent.Parent
+        }
+    }
+
+    # The Parent of the Entity should be the last element in the array.
+    [array]::Reverse($entityLocationAsArray)
+    $entityLocationAsArray -Join '/'
+}
+
+<#
+.DESCRIPTION
+Retrieves the type of the specified Entity. Valid Entity types are: 'Datacenter', 'VMHost', 'Datastore', 'VM', 'ResourcePool' and 'VApp'.
+
+.PARAMETER Entity
+The Entity which type needs to be retrieved.
+#>
+function Get-EntityType {
+    [CmdletBinding()]
+    [OutputType([string])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]
+        $Entity
+    )
+
+    $entityTypeNamespace = $Entity.GetType().FullName.Split('.')
+    $entityTypeName = $entityTypeNamespace[$entityTypeNamespace.Length - 1]
+
+    $entityType = $entityTypeName -Replace 'Impl', ''
+
+    <#
+        If the Entity type is a 'Folder', the Entity is the default root folder of the VMHost which is not a valid Entity type.
+        So the Entity type should be modified to 'VMHost'.
+    #>
+    if ($entityType -eq 'Folder') {
+        $entityType = 'VMHost'
+    }
+
+    $entityType
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about permissions on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostPermission DSC Resource.
+#>
+function Read-VMHostPermissions {
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) permissions..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostPermissions = Get-VIPermission -Server $script:viServer -ErrorAction Stop -Verbose:$false
+
+    foreach ($vmHostPermission in $vmHostPermissions) {
+        $permissionEntity = $vmHostPermission.Entity
+
+        $entityName = $permissionEntity.Name
+        $entityLocation = Get-EntityLocation -Entity $permissionEntity
+        $entityType = Get-EntityType -Entity $permissionEntity
+        $principalName = $vmHostPermission.Principal
+
+        $vmHostPermissionDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            EntityName = $entityName
+            EntityLocation = $entityLocation
+            EntityType = $entityType
+            PrincipalName = $principalName
+        }
+
+        $vmHostPermissionDscResource = New-Object -TypeName 'VMHostPermission' -Property $vmHostPermissionDscResourceKeyProperties
+        $vmHostPermissionDscResourceGetMethodResult = $vmHostPermissionDscResource.Get()
+
+        $vmHostPermissionDscResourceResult = @{
+            Id = $vmHostPermissionDscResourceGetMethodResult.Id
+            EntityName = $vmHostPermissionDscResourceGetMethodResult.EntityName
+            EntityLocation = $vmHostPermissionDscResourceGetMethodResult.EntityLocation
+            EntityType = $vmHostPermissionDscResourceGetMethodResult.EntityType
+            PrincipalName = $vmHostPermissionDscResourceGetMethodResult.PrincipalName
+            RoleName = $vmHostPermissionDscResourceGetMethodResult.RoleName
+            Ensure = $vmHostPermissionDscResourceGetMethodResult.Ensure
+            Propagate = $vmHostPermissionDscResourceGetMethodResult.Propagate
+            DependsOn = "[VMHostAccount]VMHostAccount_$principalName"
+        }
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostPermission' -VMHostDscResourceInstanceName "VMHostPermission_$($entityName)_$principalName" -VMHostDscGetMethodResult $vmHostPermissionDscResourceResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about authentication and NFS user accounts on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostAuthentication and NfsUser DSC Resources.
+#>
+function Read-VMHostAuthentication {
+    if ($script:viServer.ProductLine -eq 'embeddedEsx') {
+        Read-VMHostRoles
+        Read-VMHostAccounts
+        Read-VMHostPermissions
+    }
+    else {
+        Write-Warning -Message "VMHost $($script:vmHost) accounts, roles and permissions cannot be exported into the configuration because the connection is to vCenter Server instance. Connect directly to the ESXi to export them."
+    }
+
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) authentication and NFS user accounts..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostAuthenticationInfo = Get-VMHostAuthentication -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
+
+    if ($null -ne $vmHostAuthenticationInfo.Domain) {
+        $vmHostAuthenticationDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $VMHostName
+            DomainName = $vmHostAuthenticationInfo.Domain
+            DomainAction = 'Join'
+        }
+
+        $vmHostAuthenticationDscResource = New-Object -TypeName 'VMHostAuthentication' -Property $vmHostAuthenticationDscResourceKeyProperties
+        $vmHostAuthenticationDscResourceGetMethodResult = $vmHostAuthenticationDscResource.Get()
+
+        Write-Warning -Message 'DomainCredential property of VMHostAuthentication DSC Resource will not be exported in the configuration.'
+        $script:vSphereDscResourcesPropertiesToExclude += 'DomainCredential'
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostAuthentication' -VMHostDscResourceInstanceName 'VMHostAuthentication' -VMHostDscGetMethodResult $vmHostAuthenticationDscResourceGetMethodResult
+
+        $nfsUser = Get-NfsUser -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
+        $nfsUserDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $nfsUser.Username
+        }
+
+        $nfsUserDscResource = New-Object -TypeName 'NfsUser' -Property $nfsUserDscResourceKeyProperties
+        $nfsUserDscResourceGetMethodResult = $nfsUserDscResource.Get()
+
+        Write-Warning -Message 'Password and Force properties of NfsUser DSC Resource will not be exported in the configuration.'
+        $script:vSphereDscResourcesPropertiesToExclude += 'Password'
+
+        $nfsUserDscResourceResult = @{
+            Name = $nfsUserDscResourceGetMethodResult.Name
+            Ensure = $nfsUserDscResourceGetMethodResult.Ensure
+            Force = $nfsUserDscResourceGetMethodResult.Force
+            DependsOn = "[VMHostAuthentication]VMHostAuthentication"
+        }
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'NfsUser' -VMHostDscResourceInstanceName 'NfsUser' -VMHostDscGetMethodResult $nfsUserDscResourceResult
+    }
+}
+
+<#
+.DESCRIPTION
+
 The main function for reading the current VMHost configuration. It acts as a call dispatcher, calling all required functions
 in the proper order to read the whole information of the VMHost that is exposed as DSC Resources.
 #>
@@ -1286,6 +1521,7 @@ function Read-VMHostConfiguration {
     Read-VMHostFirewallRulesets
     Read-VMHostPciPassthrough
     Read-VMHostCache
+    Read-VMHostAuthentication
 
     if ($script:viServer.ProductLine -eq 'vpx') {
         Write-Host "Retrieving information about VMHost $($script:vmHost.Name) AgentVM settings..." -BackgroundColor DarkGreen -ForegroundColor White
