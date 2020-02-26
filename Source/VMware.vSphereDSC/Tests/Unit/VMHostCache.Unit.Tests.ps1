@@ -255,7 +255,7 @@ InModuleScope -ModuleName $script:moduleName {
                 # Assert
                 $result.Server | Should -Be $resourceProperties.Server
                 $result.Name | Should -Be $script:constants.VMHostName
-                $result.Datastore | Should -Be $script:datastore.Name
+                $result.DatastoreName | Should -Be $script:datastore.Name
                 $result.SwapSizeGB | Should -Be $script:constants.SwapSizeGB
             }
         }

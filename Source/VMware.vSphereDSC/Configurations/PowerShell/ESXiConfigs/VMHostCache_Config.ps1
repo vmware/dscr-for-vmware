@@ -56,7 +56,7 @@ Configuration VMHostCache_Config {
             Name = $Name
             Server = $Server
             Credential = $Credential
-            Datastore = 'MyDatastore'
+            DatastoreName = 'MyDatastore'
             SwapSizeGB = 1
         }
     }

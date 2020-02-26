@@ -1199,7 +1199,7 @@ function Read-VMHostCache {
             Server = $Server
             Credential = $Credential
             Name = $VMHostName
-            Datastore = $datastoreName
+            DatastoreName = $datastoreName
         }
 
         $vmHostCacheDscResource = New-Object -TypeName 'VMHostCache' -Property $vmHostCacheDscResourceKeyProperties
