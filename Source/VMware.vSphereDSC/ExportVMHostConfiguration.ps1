@@ -1535,6 +1535,25 @@ function Read-VMHostConfiguration {
 <#
 .DESCRIPTION
 
+Returns the path to the output file of the VMHost DSC Configuration.
+#>
+function Get-VMHostDscConfigurationOutputFile {
+    [CmdletBinding()]
+    [OutputType([string])]
+    Param()
+
+    $vmHostDscConfigurationOutputFile = $OutputPath
+    if (!$OutputPath.EndsWith('\') -and !$OutputPath.EndsWith('/')) {
+        $vmHostDscConfigurationOutputFile += '\'
+    }
+
+    $vmHostDscConfigurationOutputFile += $script:vmHostConfigurationFileName
+    $vmHostDscConfigurationOutputFile
+}
+
+<#
+.DESCRIPTION
+
 The main function for extracting the VMHost DSC Configuration. It acts as a call dispatcher, calling all required functions
 in the proper order to get the full Configuration.
 #>
@@ -1560,7 +1579,7 @@ function Export-VMHostConfiguration {
 
     [void] $script:vmHostDscConfigContent.Append("$script:vmHostConfigurationName -ConfigurationData `$script:configurationData")
 
-    $outputFile = $OutputPath + $script:vmHostConfigurationFileName
+    $outputFile = Get-VMHostDscConfigurationOutputFile
     $script:vmHostDscConfigContent.ToString() | Out-File -FilePath $outputFile -Encoding Default
 
     Disconnect-VSphereServer
