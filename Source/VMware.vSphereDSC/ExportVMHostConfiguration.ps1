@@ -1003,6 +1003,107 @@ function Read-VMHostGraphicsDevices {
 <#
 .DESCRIPTION
 
+Reads the information about software devices, VMKernel modules, vSan network configuration and VMKernel dump files on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostSoftwareDevice, VMHostVMKernelModule, VMHostvSANNetworkConfiguration and VMHostVMKernelDumpFile DSC Resources.
+#>
+function Read-VMHostEsxCliInfo {
+    $esxCli = Get-EsxCli -Server $script:viServer -VMHost $script:vmHost -V2 -ErrorAction Stop -Verbose:$false
+
+    Write-Host "Retrieving information about software devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostSoftwareDevices = $esxCli.device.software.list.Invoke()
+    foreach ($vmHostSoftwareDevice in $vmHostSoftwareDevices) {
+        $vmHostSoftwareDeviceDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $VMHostName
+            DeviceIdentifier = $vmHostSoftwareDevice.DeviceID
+        }
+
+        $vmHostSoftwareDeviceDscResource = New-Object -TypeName 'VMHostSoftwareDevice' -Property $vmHostSoftwareDeviceDscResourceKeyProperties
+        $vmHostSoftwareDeviceDscResourceGetMethodResult = $vmHostSoftwareDeviceDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostSoftwareDevice' -VMHostDscResourceInstanceName "VMHostSoftwareDevice_$($vmHostSoftwareDevice.DeviceID)" -VMHostDscGetMethodResult $vmHostSoftwareDeviceDscResourceGetMethodResult
+    }
+
+    Write-Host "Retrieving information about VMKernel modules on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostVMKernelModules = $esxCli.system.module.list.Invoke()
+
+    if ($vmHostVMKernelModules.Length -gt 0) {
+        Write-Warning -Message 'Force property of VMHostVMKernelModule DSC Resource will not be exported in the configuration.'
+    }
+
+    foreach ($vmHostVMKernelModule in $vmHostVMKernelModules) {
+        $vmHostVMKernelModuleDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $VMHostName
+            Module = $vmHostVMKernelModule.Name
+        }
+
+        $vmHostVMKernelModuleDscResource = New-Object -TypeName 'VMHostVMKernelModule' -Property $vmHostVMKernelModuleDscResourceKeyProperties
+        $vmHostVMKernelModuleDscResourceGetMethodResult = $vmHostVMKernelModuleDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVMKernelModule' -VMHostDscResourceInstanceName "VMHostVMKernelModule_$($vmHostVMKernelModule.Name)" -VMHostDscGetMethodResult $vmHostVMKernelModuleDscResourceGetMethodResult
+    }
+
+    Write-Host "Retrieving information about vSan network configuration on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostvSanNetworkConfigurations = $esxCli.vsan.network.list.Invoke()
+
+    if ($null -ne $vmHostvSanNetworkConfigurations.VmkNicName) {
+        Write-Warning -Message 'Force property of VMHostvSANNetworkConfiguration DSC Resource will not be exported in the configuration.'
+        foreach ($vmHostvSanNetworkConfiguration in $vmHostvSanNetworkConfigurations) {
+            if ($null -ne $vmHostvSanNetworkConfiguration) {
+                $vmHostvSANNetworkConfigurationDscResourceKeyProperties = @{
+                    Server = $Server
+                    Credential = $Credential
+                    Name = $VMHostName
+                    InterfaceName = $vmHostvSanNetworkConfiguration.VmkNicName
+                }
+
+                $vmHostvSANNetworkConfigurationDscResource = New-Object -TypeName 'VMHostvSANNetworkConfiguration' -Property $vmHostvSANNetworkConfigurationDscResourceKeyProperties
+                $vmHostvSANNetworkConfigurationDscResourceGetMethodResult = $vmHostvSANNetworkConfigurationDscResource.Get()
+
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostvSANNetworkConfiguration' -VMHostDscResourceInstanceName "VMHostvSANNetworkConfiguration_$($vmHostvSanNetworkConfiguration.VmkNicName)" -VMHostDscGetMethodResult $vmHostvSANNetworkConfigurationDscResourceGetMethodResult
+            }
+        }
+    }
+
+    Write-Host "Retrieving information about VMKernel dump files on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostVMKernelDumpFiles = $esxCli.system.coredump.file.list.Invoke()
+
+    if ($null -ne $vmHostVMKernelDumpFiles.Path) {
+        foreach ($vmHostVMKernelDumpFile in $vmHostVMKernelDumpFiles) {
+            $vmHostVMKernelDumpFileParts = $vmHostVMKernelDumpFile.Path -Split '/'
+            $vmHostVMKernelDumpFileName = ($vmHostVMKernelDumpFileParts[5] -Split '\.')[0]
+            $vmHostVMKernelDumpFileDatastoreName = $null
+
+            $fileSystems = $esxCli.storage.filesystem.list.Invoke(@{})
+            foreach ($fileSystem in $fileSystems) {
+                if ($fileSystem.UUID -eq $vmHostVMKernelDumpFileParts[3] -or $fileSystem.VolumeName -eq $vmHostVMKernelDumpFileParts[3]) {
+                    $vmHostVMKernelDumpFileDatastoreName = $fileSystem.VolumeName
+                    break
+                }
+            }
+
+            $vmHostVMKernelDumpFileDscResourceKeyProperties = @{
+                Server = $Server
+                Credential = $Credential
+                Name = $VMHostName
+                DatastoreName = $vmHostVMKernelDumpFileDatastoreName
+                FileName = $vmHostVMKernelDumpFileName
+            }
+
+            $vmHostVMKernelDumpFileDscResource = New-Object -TypeName 'VMHostVMKernelDumpFile' -Property $vmHostVMKernelDumpFileDscResourceKeyProperties
+            $vmHostVMKernelDumpFileDscResourceGetMethodResult = $vmHostVMKernelDumpFileDscResource.Get()
+
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVMKernelDumpFile' -VMHostDscResourceInstanceName "VMHostVMKernelDumpFile_$($vmHostVMKernelDumpFileDatastoreName)_$vmHostVMKernelDumpFileName" -VMHostDscGetMethodResult $vmHostVMKernelDumpFileDscResourceGetMethodResult
+        }
+    }
+}
+
+<#
+.DESCRIPTION
+
 The main function for reading the current VMHost configuration. It acts as a call dispatcher, calling all required functions
 in the proper order to read the whole information of the VMHost that is exposed as DSC Resources.
 #>
@@ -1071,6 +1172,8 @@ function Read-VMHostConfiguration {
     Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostVMKernelActiveDumpFile'
 
     Write-Warning -Message "VMHost $($script:vmHost) SATP Claim Rules are not exported into the configuration."
+
+    Read-VMHostEsxCliInfo
 }
 
 <#
