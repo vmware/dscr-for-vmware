@@ -398,7 +398,9 @@ function New-VMHostDscResourceBlock {
         if ($vmHostDscResourceProperty.PropertyType -eq '[string]') { Push-StringPropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
         elseif ($vmHostDscResourceProperty.PropertyType -eq '[bool]') { Push-BoolPropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
         elseif ($vmHostDscResourceProperty.PropertyType -eq '[string[]]') { Push-StringArrayPropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
-        elseif ($vmHostDscResourceProperty.PropertyType -eq '[Int32]' -or $vmHostDscResourceProperty.PropertyType -eq '[Int64]') { Push-ValueTypePropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
+        elseif ($vmHostDscResourceProperty.PropertyType -eq '[Int32]' -or $vmHostDscResourceProperty.PropertyType -eq '[Int64]' -or $vmHostDscResourceProperty.PropertyType -eq '[double]') {
+            Push-ValueTypePropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue
+        }
         elseif ($vmHostDscResourceProperty.PropertyType -eq '[Nullable`1]') {
             if ($propertyValue -is [bool]) { Push-BoolPropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
             else { Push-ValueTypePropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
@@ -1104,6 +1106,112 @@ function Read-VMHostEsxCliInfo {
 <#
 .DESCRIPTION
 
+Reads the information about Services on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostService DSC Resource.
+#>
+function Read-VMHostServices {
+    Write-Host "Retrieving information about Services on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostServices = Get-VMHostService -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
+
+    foreach ($vmHostService in $vmHostServices) {
+        $vmHostServiceDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $VMHostName
+            Key = $vmHostService.Key
+        }
+
+        $vmHostServiceDscResource = New-Object -TypeName 'VMHostService' -Property $vmHostServiceDscResourceKeyProperties
+        $vmHostServiceDscResourceGetMethodResult = $vmHostServiceDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostService' -VMHostDscResourceInstanceName "VMHostService_$($vmHostService.Key)" -VMHostDscGetMethodResult $vmHostServiceDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about firewall rulesets on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostFirewallRuleset DSC Resource.
+#>
+function Read-VMHostFirewallRulesets {
+    Write-Host "Retrieving information about firewall rulesets on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostFirewallRulesets = Get-VMHostFirewallException -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
+
+    foreach ($vmHostFirewallRuleset in $vmHostFirewallRulesets) {
+        $vmHostFirewallRulesetDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $vmHostFirewallRuleset.Name
+        }
+
+        $vmHostFirewallRulesetDscResource = New-Object -TypeName 'VMHostFirewallRuleset' -Property $vmHostFirewallRulesetDscResourceKeyProperties
+        $vmHostFirewallRulesetDscResourceGetMethodResult = $vmHostFirewallRulesetDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostFirewallRuleset' -VMHostDscResourceInstanceName "VMHostFirewallRuleset_$($vmHostFirewallRuleset.Name)" -VMHostDscGetMethodResult $vmHostFirewallRulesetDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about Pci passthrough devices on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostPciPassthrough DSC Resource.
+#>
+function Read-VMHostPciPassthrough {
+    Write-Host "Retrieving information about Pci passthrough devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostPciPassthruSystem = Get-View -Server $script:viServer -Id $script:vmHost.ExtensionData.ConfigManager.PciPassthruSystem -ErrorAction Stop -Verbose:$false
+    $vmHostPciDevices = $vmHostPciPassthruSystem.PciPassthruInfo | Where-Object -FilterScript { $_.PassthruCapable }
+
+    foreach ($vmHostPciDevice in $vmHostPciDevices) {
+        $vmHostPciPassthroughDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $VMHostName
+            Id = $vmHostPciDevice.Id
+        }
+
+        $vmHostPciPassthroughDscResource = New-Object -TypeName 'VMHostPciPassthrough' -Property $vmHostPciPassthroughDscResourceKeyProperties
+        $vmHostPciPassthroughDscResourceGetMethodResult = $vmHostPciPassthroughDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostPciPassthrough' -VMHostDscResourceInstanceName "VMHostPciPassthrough_$($vmHostPciDevice.Name)" -VMHostDscGetMethodResult $vmHostPciPassthroughDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about cache on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostCache DSC Resource.
+#>
+function Read-VMHostCache {
+    Write-Host "Retrieving information about cache on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    $vmHostCacheConfigurationManager = Get-View -Server $script:viServer -Id $script:vmHost.ExtensionData.ConfigManager.CacheConfigurationManager -ErrorAction Stop -Verbose:$false
+    $vmHostCacheConfigurationDatastores = $vmHostCacheConfigurationManager.CacheConfigurationInfo.Key
+
+    foreach ($vmHostCacheConfigurationDatastoreMoRef in $vmHostCacheConfigurationDatastores) {
+        $datastoreName = Get-Datastore -Server $script:viServer -VMHost $script:vmHost |
+                         Where-Object -FilterScript { $_.ExtensionData.MoRef -eq $vmHostCacheConfigurationDatastoreMoRef } |
+                         Select-Object -ExpandProperty Name
+
+        $vmHostCacheDscResourceKeyProperties = @{
+            Server = $Server
+            Credential = $Credential
+            Name = $VMHostName
+            Datastore = $datastoreName
+        }
+
+        $vmHostCacheDscResource = New-Object -TypeName 'VMHostCache' -Property $vmHostCacheDscResourceKeyProperties
+        $vmHostCacheDscResourceGetMethodResult = $vmHostCacheDscResource.Get()
+
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostCache' -VMHostDscResourceInstanceName "VMHostCache_$datastoreName" -VMHostDscGetMethodResult $vmHostCacheDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
 The main function for reading the current VMHost configuration. It acts as a call dispatcher, calling all required functions
 in the proper order to read the whole information of the VMHost that is exposed as DSC Resources.
 #>
@@ -1174,6 +1282,18 @@ function Read-VMHostConfiguration {
     Write-Warning -Message "VMHost $($script:vmHost) SATP Claim Rules are not exported into the configuration."
 
     Read-VMHostEsxCliInfo
+    Read-VMHostServices
+    Read-VMHostFirewallRulesets
+    Read-VMHostPciPassthrough
+    Read-VMHostCache
+
+    if ($script:viServer.ProductLine -eq 'vpx') {
+        Write-Host "Retrieving information about VMHost $($script:vmHost.Name) AgentVM settings..." -BackgroundColor DarkGreen -ForegroundColor White
+        Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostAgentVM'
+    }
+    else {
+        Write-Warning -Message "VMHost $($script:vmHost) AgentVM settings cannot be exported into the configuration because the connection is to ESXi. Connect directly to vCenter Server instance to export them."
+    }
 }
 
 <#
