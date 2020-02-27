@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.55 - 2020-02-27
+### Changed
+- Fixed bugs with nullable properties for all Standard Switch DSC Resources.
+
 ## 2.0.0.54 - 2020-02-14
 ### Added
 - Introduced VMHostRestartBaseDSC class.

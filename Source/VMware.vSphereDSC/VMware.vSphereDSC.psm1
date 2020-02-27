@@ -14465,7 +14465,7 @@ class VMHostVss : VMHostVssBaseDSC {
 
         $vssTest = @()
         $vssTest += ($vss.Name -eq $this.VssName)
-        $vssTest += ($vss.MTU -eq $this.MTU)
+        $vssTest += ($null -eq $this.Mtu -or $vss.MTU -eq $this.MTU)
 
         return ($vssTest -notcontains $false)
     }
@@ -14548,6 +14548,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
 
     <#
     .DESCRIPTION
+
     The beacon configuration to probe for the validity of a link.
     If this is set, beacon probing is configured and will be used.
     If this is not set, beacon probing is disabled.
@@ -14571,13 +14572,6 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     #>
     [DscProperty()]
     [LinkDiscoveryProtocolProtocol] $LinkDiscoveryProtocolProtocol = [LinkDiscoveryProtocolProtocol]::Unset
-
-    <#
-    .DESCRIPTION
-
-    Hidden property to have the name of the VSS Bridge type for later use.
-    #>
-    hidden [string] $bridgeType = 'HostVirtualSwitchBondBridge'
 
     [void] Set() {
         try {
@@ -14651,25 +14645,20 @@ class VMHostVssBridge : VMHostVssBaseDSC {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssBridgeTest = @()
-        if ($null -eq $vss.Spec.Bridge) {
-            $vssBridgeTest += $false
-        }
-        else {
 
-            $correctType = $vss.Spec.Bridge.GetType().Name -eq $this.bridgeType
-            $vssBridgeTest += $correctType
-            if ($correctType) {
-                $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Bridge.NicDevice -DifferenceObject $this.NicDevice
-                $vssBridgeTest += ($null -eq $comparingResult)
-                $vssBrdigeTest += ($vss.Spec.Bridge.Beacon.Interval -eq $this.BeaconInterval)
-                if ($this.LinkDiscoveryProtocolOperation -ne [LinkDiscoveryProtocolOperation]::Unset) {
-                    $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation.ToString() -eq $this.LinkDiscoveryProtocolOperation.ToString())
-                }
-                if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
-                    $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol.ToString() -eq $this.LinkDiscoveryProtocolProtocol.ToString())
-                }
-            }
+        $vssBridgeTest += !$this.ShouldUpdateArraySetting($vss.Spec.Bridge.NicDevice, $this.NicDevice)
+        $vssBrdigeTest += ($null -eq $this.BeaconInterval -or $vss.Spec.Bridge.Beacon.Interval -eq $this.BeaconInterval)
+
+        if ($this.LinkDiscoveryProtocolOperation -ne [LinkDiscoveryProtocolOperation]::Unset) {
+            if ($null -eq $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation) { $vssBridgeTest += $false }
+            else { $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation.ToString() -eq $this.LinkDiscoveryProtocolOperation.ToString()) }
         }
+
+        if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
+            if ($null -eq $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol) { $vssBridgeTest += $false }
+            else { $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol.ToString() -eq $this.LinkDiscoveryProtocolProtocol.ToString()) }
+        }
+
         return ($vssBridgeTest -NotContains $false)
     }
 
@@ -14684,12 +14673,17 @@ class VMHostVssBridge : VMHostVssBaseDSC {
         $vssBridgeArgs = @{
             Name = $this.VssName
             NicDevice = $this.NicDevice
-            BeaconInterval = $this.BeaconInterval
         }
-        if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
-            $vssBridgeArgs.Add('LinkDiscoveryProtocolProtocol', $this.LinkDiscoveryProtocolProtocol.ToString())
-            $vssBridgeArgs.Add('LinkDiscoveryProtocolOperation', $this.LinkDiscoveryProtocolOperation.ToSTring())
+
+        # The Bridge configuration of the Standard Switch should be populated only when the Nic devices are passed.
+        if ($this.NicDevice.Count -gt 0) {
+            if ($null -ne $this.BeaconInterval) { $vssBridgeArgs.BeaconInterval = $this.BeaconInterval }
+            if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
+                $vssBridgeArgs.Add('LinkDiscoveryProtocolProtocol', $this.LinkDiscoveryProtocolProtocol.ToString())
+                $vssBridgeArgs.Add('LinkDiscoveryProtocolOperation', $this.LinkDiscoveryProtocolOperation.ToSTring())
+            }
         }
+
         $vss = $this.GetVss()
 
         if ($this.Ensure -eq 'Present') {
@@ -14699,7 +14693,6 @@ class VMHostVssBridge : VMHostVssBaseDSC {
         }
         else {
             $vssBridgeArgs.NicDevice = @()
-            $vssBridgeArgs.BeaconInterval = 0
         }
         $vssBridgeArgs.Add('Operation', 'edit')
 
@@ -14842,9 +14835,9 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssSecurityTest = @()
-        $vssSecurityTest += ($vss.Spec.Policy.Security.AllowPromiscuous -eq $this.AllowPromiscuous)
-        $vssSecurityTest += ($vss.Spec.Policy.Security.ForgedTransmits -eq $this.ForgedTransmits)
-        $vssSecurityTest += ($vss.Spec.Policy.Security.MacChanges -eq $this.MacChanges)
+        $vssSecurityTest += ($null -eq $this.AllowPromiscuous -or $vss.Spec.Policy.Security.AllowPromiscuous -eq $this.AllowPromiscuous)
+        $vssSecurityTest += ($null -eq $this.ForgedTransmits -or $vss.Spec.Policy.Security.ForgedTransmits -eq $this.ForgedTransmits)
+        $vssSecurityTest += ($null -eq $this.MacChanges -or $vss.Spec.Policy.Security.MacChanges -eq $this.MacChanges)
 
         return ($vssSecurityTest -notcontains $false)
     }
@@ -15018,10 +15011,10 @@ class VMHostVssShaping : VMHostVssBaseDSC {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssShapingTest = @()
-        $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.AverageBandwidth -eq $this.AverageBandwidth)
-        $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.BurstSize -eq $this.BurstSize)
-        $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.Enabled -eq $this.Enabled)
-        $vssShapingTest += ($vss.Spec.Policy.ShapingPolicy.PeakBandwidth -eq $this.PeakBandwidth)
+        $vssShapingTest += ($null -eq $this.AverageBandwidth -or $vss.Spec.Policy.ShapingPolicy.AverageBandwidth -eq $this.AverageBandwidth)
+        $vssShapingTest += ($null -eq $this.BurstSize -or $vss.Spec.Policy.ShapingPolicy.BurstSize -eq $this.BurstSize)
+        $vssShapingTest += ($null -eq $this.Enabled -or $vss.Spec.Policy.ShapingPolicy.Enabled -eq $this.Enabled)
+        $vssShapingTest += ($null -eq $this.PeakBandwidth -or $vss.Spec.Policy.ShapingPolicy.PeakBandwidth -eq $this.PeakBandwidth)
 
         return ($vssShapingTest -notcontains $false)
     }
@@ -15218,38 +15211,11 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssTeamingTest = @()
-        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
-
-        if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic) {
-            if ($null -ne $this.ActiveNic -and $this.ActiveNic.Length -ne 0) {
-                $vssTeamingTest += $false
-            }
-            else {
-                $vssTeamingTest += $true
-            }
-        }
-        else {
-            $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic -DifferenceObject $this.ActiveNic
-            $areEqual = $null -eq $comparingResult
-            $vssTeamingTest += $areEqual
-        }
-
-        if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic) {
-            if ($null -ne $this.StandbyNic -and $this.StandbyNic.Length -ne 0) {
-                $vssTeamingTest += $false
-            }
-            else {
-                $vssTeamingTest += $true
-            }
-        }
-        else {
-            $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic -DifferenceObject $this.StandbyNic
-            $areEqual = $null -eq $comparingResult
-            $vssTeamingTest += $areEqual
-        }
-
-        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
-        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
+        $vssTeamingTest += ($null -eq $this.CheckBeacon -or $vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
+        $vssTeamingTest += !$this.ShouldUpdateArraySetting($vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic, $this.ActiveNic)
+        $vssTeamingTest += !$this.ShouldUpdateArraySetting($vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic, $this.StandbyNic)
+        $vssTeamingTest += ($null -eq $this.NotifySwitches -or $vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
+        $vssTeamingTest += ($null -eq $this.RollingOrder -or $vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
 
         # The Network Adapter teaming policy should determine the Desired State only when it is specified.
         if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq $this.Policy.ToString().ToLower()) }
@@ -15267,13 +15233,13 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 
         $vssTeamingArgs = @{
             Name = $this.VssName
-            CheckBeacon = $this.CheckBeacon
             ActiveNic = $this.ActiveNic
             StandbyNic = $this.StandbyNic
             NotifySwitches = $this.NotifySwitches
             RollingOrder = $this.RollingOrder
         }
 
+        if ($null -ne $this.CheckBeacon) { $vssTeamingArgs.CheckBeacon = $this.CheckBeacon }
         if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingArgs.Policy = $this.Policy.ToString().ToLower() }
 
         $vss = $this.GetVss()
