@@ -44,7 +44,7 @@ function New-MocksWhenPassedSwapSizeIsNegative {
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostCacheProperties = New-VMHostCacheProperties
-    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.DatastoreName = $script:constants.DatastoreName
     $vmHostCacheProperties.SwapSizeGB = $script:constants.NegativeSwapSize
 
     $datastoreMock = $script:datastore
@@ -59,7 +59,7 @@ function New-MocksWhenPassedSwapSizeIsBiggerThanDatastoreFreeSpace {
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostCacheProperties = New-VMHostCacheProperties
-    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.DatastoreName = $script:constants.DatastoreName
     $vmHostCacheProperties.SwapSizeGB = $script:constants.OverflowingSwapSize
 
     $datastoreMock = $script:datastore
@@ -74,7 +74,7 @@ function New-MocksWhenUpdateCacheConfigurationResultsInError {
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostCacheProperties = New-VMHostCacheProperties
-    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.DatastoreName = $script:constants.DatastoreName
     $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB
 
     $datastoreMock = $script:datastore
@@ -94,7 +94,7 @@ function New-MocksWhenUpdateCacheConfigurationResultsInSuccess {
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostCacheProperties = New-VMHostCacheProperties
-    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.DatastoreName = $script:constants.DatastoreName
     $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB
 
     $datastoreMock = $script:datastore
@@ -114,7 +114,7 @@ function New-MocksWhenSwapSizeIsNotEqualToCurrentSwapSize {
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostCacheProperties = New-VMHostCacheProperties
-    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.DatastoreName = $script:constants.DatastoreName
     $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB * 2
 
     $datastoreMock = $script:datastore
@@ -129,7 +129,7 @@ function New-MocksWhenSwapSizeIsEqualToCurrentSwapSize {
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostCacheProperties = New-VMHostCacheProperties
-    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.DatastoreName = $script:constants.DatastoreName
     $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB
 
     $datastoreMock = $script:datastore
@@ -144,7 +144,7 @@ function New-MocksInGet {
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostCacheProperties = New-VMHostCacheProperties
-    $vmHostCacheProperties.Datastore = $script:constants.DatastoreName
+    $vmHostCacheProperties.DatastoreName = $script:constants.DatastoreName
     $vmHostCacheProperties.SwapSizeGB = $script:constants.SwapSizeGB
 
     $datastoreMock = $script:datastore

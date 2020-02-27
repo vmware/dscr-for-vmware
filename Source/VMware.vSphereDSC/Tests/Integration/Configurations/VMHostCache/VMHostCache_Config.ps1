@@ -61,7 +61,7 @@ Configuration VMHostCache_WhenSwapSizeIsZeroGigabytes_Config {
             Name = $Name
             Server = $Server
             Credential = $script:viServerCredential
-            Datastore = $DatastoreName
+            DatastoreName = $DatastoreName
             SwapSizeGB = $script:zeroGigabytesSwapSize
         }
     }
@@ -75,7 +75,7 @@ Configuration VMHostCache_WhenSwapSizeIsOneGigabyte_Config {
             Name = $Name
             Server = $Server
             Credential = $script:viServerCredential
-            Datastore = $DatastoreName
+            DatastoreName = $DatastoreName
             SwapSizeGB = $script:oneGigabyteSwapSize
         }
     }
@@ -89,7 +89,7 @@ Configuration VMHostCache_WhenSwapSizeIsTwoGigabytes_Config {
             Name = $Name
             Server = $Server
             Credential = $script:viServerCredential
-            Datastore = $DatastoreName
+            DatastoreName = $DatastoreName
             SwapSizeGB = $script:twoGigabytesSwapSize
         }
     }

@@ -107,7 +107,7 @@ try {
                 # Assert
                 $configuration.Server | Should -Be $Server
                 $configuration.Name | Should -Be $Name
-                $configuration.Datastore | Should -Be $script:datastoreName
+                $configuration.DatastoreName | Should -Be $script:datastoreName
                 $configuration.SwapSizeGB | Should -Be $script:zeroGigabytesSwapSize
             }
 
@@ -160,7 +160,7 @@ try {
                 # Assert
                 $configuration.Server | Should -Be $Server
                 $configuration.Name | Should -Be $Name
-                $configuration.Datastore | Should -Be $script:datastoreName
+                $configuration.DatastoreName | Should -Be $script:datastoreName
                 $configuration.SwapSizeGB | Should -Be $script:oneGigabyteSwapSize
             }
 
@@ -228,7 +228,7 @@ try {
                 # Assert
                 $configuration.Server | Should -Be $Server
                 $configuration.Name | Should -Be $Name
-                $configuration.Datastore | Should -Be $script:datastoreName
+                $configuration.DatastoreName | Should -Be $script:datastoreName
                 $configuration.SwapSizeGB | Should -Be $script:twoGigabytesSwapSize
             }
 

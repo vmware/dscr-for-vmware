@@ -25,7 +25,7 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
 
     Specifies the name of the Datastore for the dump file.
     #>
-    [DscProperty(Mandatory)]
+    [DscProperty(Key)]
     [string] $DatastoreName
 
     <#
@@ -33,7 +33,7 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
 
     Specifies the file name of the dump file.
     #>
-    [DscProperty(Mandatory)]
+    [DscProperty(Key)]
     [string] $FileName
 
     <#

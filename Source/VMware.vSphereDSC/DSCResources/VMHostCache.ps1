@@ -19,10 +19,10 @@ class VMHostCache : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the Datastore used for swap performance enhancement.
+    Specifies the name of the Datastore used for swap performance enhancement.
     #>
     [DscProperty(Key)]
-    [string] $Datastore
+    [string] $DatastoreName
 
     <#
     .DESCRIPTION
@@ -100,11 +100,11 @@ class VMHostCache : VMHostBaseDSC {
     #>
     [PSObject] GetDatastore($vmHost) {
         try {
-            $foundDatastore = Get-Datastore -Server $this.Connection -Name $this.Datastore -RelatedObject $vmHost -ErrorAction Stop
+            $foundDatastore = Get-Datastore -Server $this.Connection -Name $this.DatastoreName -RelatedObject $vmHost -ErrorAction Stop
             return $foundDatastore
         }
         catch {
-            throw "Could not retrieve Datastore $($this.Datastore) for VMHost $($this.Name). For more information: $($_.Exception.Message)"
+            throw "Could not retrieve Datastore $($this.DatastoreName) for VMHost $($this.Name). For more information: $($_.Exception.Message)"
         }
     }
 
@@ -200,7 +200,7 @@ class VMHostCache : VMHostBaseDSC {
         $foundDatastore = $this.GetDatastore($vmHost)
         $datastoreCacheInfo = $this.GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore)
 
-        $result.Datastore = $foundDatastore.Name
+        $result.DatastoreName = $foundDatastore.Name
         $result.SwapSizeGB = $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize)
     }
 }

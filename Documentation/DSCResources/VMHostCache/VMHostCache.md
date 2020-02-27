@@ -7,7 +7,7 @@
 | **Server** | Key | string | Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi. ||
 | **Name** | Key | string | Name of the VMHost to configure. ||
 | **Credential** | Mandatory | PSCredential | Credentials needed for connection to the specified Server. ||
-| **Datastore** | Key | string | The Datastore used for swap performance enhancement. ||
+| **DatastoreName** | Key | string | The name of the Datastore used for swap performance enhancement. ||
 | **SwapSizeGB** | Mandatory | double | The space to allocate on the specified Datastore to implement swap performance enhancements, in GB. This value should be less than or equal to the free space capacity of the Datastore. ||
 
 ## Description
@@ -46,7 +46,7 @@ Configuration VMHostCache_Config {
             Name = $Name
             Server = $Server
             Credential = $Credential
-            Datastore = 'MyDatastore'
+            DatastoreName = 'MyDatastore'
             SwapSizeGB = 1
         }
     }
