@@ -115,9 +115,9 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssSecurityTest = @()
-        $vssSecurityTest += ($vss.Spec.Policy.Security.AllowPromiscuous -eq $this.AllowPromiscuous)
-        $vssSecurityTest += ($vss.Spec.Policy.Security.ForgedTransmits -eq $this.ForgedTransmits)
-        $vssSecurityTest += ($vss.Spec.Policy.Security.MacChanges -eq $this.MacChanges)
+        $vssSecurityTest += ($null -eq $this.AllowPromiscuous -or $vss.Spec.Policy.Security.AllowPromiscuous -eq $this.AllowPromiscuous)
+        $vssSecurityTest += ($null -eq $this.ForgedTransmits -or $vss.Spec.Policy.Security.ForgedTransmits -eq $this.ForgedTransmits)
+        $vssSecurityTest += ($null -eq $this.MacChanges -or $vss.Spec.Policy.Security.MacChanges -eq $this.MacChanges)
 
         return ($vssSecurityTest -notcontains $false)
     }

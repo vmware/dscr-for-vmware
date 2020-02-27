@@ -133,7 +133,7 @@ class VMHostVss : VMHostVssBaseDSC {
 
         $vssTest = @()
         $vssTest += ($vss.Name -eq $this.VssName)
-        $vssTest += ($vss.MTU -eq $this.MTU)
+        $vssTest += ($null -eq $this.Mtu -or $vss.MTU -eq $this.MTU)
 
         return ($vssTest -notcontains $false)
     }

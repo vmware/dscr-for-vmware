@@ -140,38 +140,11 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
         $vssTeamingTest = @()
-        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
-
-        if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic) {
-            if ($null -ne $this.ActiveNic -and $this.ActiveNic.Length -ne 0) {
-                $vssTeamingTest += $false
-            }
-            else {
-                $vssTeamingTest += $true
-            }
-        }
-        else {
-            $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic -DifferenceObject $this.ActiveNic
-            $areEqual = $null -eq $comparingResult
-            $vssTeamingTest += $areEqual
-        }
-
-        if ($null -eq $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic) {
-            if ($null -ne $this.StandbyNic -and $this.StandbyNic.Length -ne 0) {
-                $vssTeamingTest += $false
-            }
-            else {
-                $vssTeamingTest += $true
-            }
-        }
-        else {
-            $comparingResult = Compare-Object -ReferenceObject $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic -DifferenceObject $this.StandbyNic
-            $areEqual = $null -eq $comparingResult
-            $vssTeamingTest += $areEqual
-        }
-
-        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
-        $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
+        $vssTeamingTest += ($null -eq $this.CheckBeacon -or $vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
+        $vssTeamingTest += !$this.ShouldUpdateArraySetting($vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic, $this.ActiveNic)
+        $vssTeamingTest += !$this.ShouldUpdateArraySetting($vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic, $this.StandbyNic)
+        $vssTeamingTest += ($null -eq $this.NotifySwitches -or $vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
+        $vssTeamingTest += ($null -eq $this.RollingOrder -or $vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
 
         # The Network Adapter teaming policy should determine the Desired State only when it is specified.
         if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq $this.Policy.ToString().ToLower()) }
@@ -189,13 +162,13 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 
         $vssTeamingArgs = @{
             Name = $this.VssName
-            CheckBeacon = $this.CheckBeacon
             ActiveNic = $this.ActiveNic
             StandbyNic = $this.StandbyNic
             NotifySwitches = $this.NotifySwitches
             RollingOrder = $this.RollingOrder
         }
 
+        if ($null -ne $this.CheckBeacon) { $vssTeamingArgs.CheckBeacon = $this.CheckBeacon }
         if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingArgs.Policy = $this.Policy.ToString().ToLower() }
 
         $vss = $this.GetVss()
