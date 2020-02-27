@@ -264,8 +264,8 @@ function Update-Network {
         'VSS' {
             $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssConfig.Name }
 
-            if ($null -eq $hostVirtualSwitchConfig -and 'add' -ne $VssConfig.Operation) {
-                throw "Standard Virtual Switch $($this.Name) was not found"
+            if ($null -eq $hostVirtualSwitchConfig -and $VssConfig.Operation -ne 'add') {
+                throw "Standard Virtual Switch $($VssConfig.Name) was not found."
             }
 
             if ($null -eq $hostVirtualSwitchConfig) {
@@ -289,9 +289,9 @@ function Update-Network {
             $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssSecurityConfig.Name }
 
             $hostVirtualSwitchConfig.ChangeOperation = $VssSecurityConfig.Operation
-            $hostVirtualSwitchConfig.Spec.Policy.Security.AllowPromiscuous = $VssSecurityConfig.AllowPromiscuous
-            $hostVirtualSwitchConfig.Spec.Policy.Security.ForgedTransmits = $VssSecurityConfig.ForgedTransmits
-            $hostVirtualSwitchConfig.Spec.Policy.Security.MacChanges = $VssSecurityConfig.MacChanges
+            if ($null -ne $VssSecurityConfig.AllowPromiscuous) { $hostVirtualSwitchConfig.Spec.Policy.Security.AllowPromiscuous = $VssSecurityConfig.AllowPromiscuous }
+            if ($null -ne $VssSecurityConfig.ForgedTransmits) { $hostVirtualSwitchConfig.Spec.Policy.Security.ForgedTransmits = $VssSecurityConfig.ForgedTransmits }
+            if ($null -ne $VssSecurityConfig.MacChanges) { $hostVirtualSwitchConfig.Spec.Policy.Security.MacChanges = $VssSecurityConfig.MacChanges }
 
             $configNet.Vswitch += $hostVirtualSwitchConfig
         }
@@ -300,10 +300,10 @@ function Update-Network {
             $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssShapingConfig.Name }
 
             $hostVirtualSwitchConfig.ChangeOperation = $VssShapingConfig.Operation
-            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.AverageBandwidth = $VssShapingConfig.AverageBandwidth
-            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.BurstSize = $VssShapingConfig.BurstSize
-            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.Enabled = $VssShapingConfig.Enabled
-            $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.PeakBandwidth = $VssShapingConfig.PeakBandwidth
+            if ($null -ne $VssShapingConfig.Enabled) { $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.Enabled = $VssShapingConfig.Enabled }
+            if ($null -ne $VssShapingConfig.AverageBandwidth) { $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.AverageBandwidth = $VssShapingConfig.AverageBandwidth }
+            if ($null -ne $VssShapingConfig.BurstSize) { $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.BurstSize = $VssShapingConfig.BurstSize }
+            if ($null -ne $VssShapingConfig.PeakBandwidth) { $hostVirtualSwitchConfig.Spec.Policy.ShapingPolicy.PeakBandwidth = $VssShapingConfig.PeakBandwidth }
 
             $configNet.Vswitch += $hostVirtualSwitchConfig
         }
@@ -311,31 +311,33 @@ function Update-Network {
         'VSSTeaming' {
             $hostVirtualSwitchConfig = $NetworkSystem.NetworkConfig.Vswitch | Where-Object { $_.Name -eq $VssTeamingConfig.Name }
 
-            if ($VssTeamingConfig.CheckBeacon -and
-                ($hostVirtualSwitchConfig.Spec.Bridge -isnot [VMware.Vim.HostVirtualSwitchBridge] -or
+            if ($null -ne $VssTeamingConfig.CheckBeacon -and
+                $VssTeamingConfig.CheckBeacon -and
+                ($hostVirtualSwitchConfig.Spec.Bridge -isNot [VMware.Vim.HostVirtualSwitchBridge] -or
                     $hostVirtualSwitchConfig.Spec.Bridge.Interval -eq 0)) {
                 throw 'VMHostVssTeaming: Configuration error - CheckBeacon can only be enabled if the VirtualSwitch has been configured to use the beacon.'
             }
 
-            if (-not $VssTeamingConfig.CheckBeacon -and
+            if ($null -ne $VssTeamingConfig.CheckBeacon -and
+                !$VssTeamingConfig.CheckBeacon -and
                 $hostVirtualSwitchConfig.Spec.Bridge -is [VMware.Vim.HostVirtualSwitchBridge] -and
                 $hostVirtualSwitchConfig.Spec.Bridge.Interval -eq 0) {
                 throw 'VMHostVssTeaming: Configuration error - CheckBeacon can only be disabled if the VirtualSwitch has not been configured to use the beacon.'
             }
 
-            if ((0 -ne $VssTeamingConfig.ActiveNic.Count -or
-                    0 -ne $VssTeamingConfig.StandbyNic.Count) -and
+            if (($VssTeamingConfig.ActiveNic.Count -ne 0 -or
+                $VssTeamingConfig.StandbyNic.Count -ne 0) -and
                 $null -ne $hostVirtualSwitchConfig.Spec.Bridge -and
-                0 -eq $hostVirtualSwitchConfig.Spec.Bridge.NicDevice.Count) {
-                throw "VMHostVssTeaming: Configuration error - You cannot use Active- or Standby NICs, when there are no NICs assigned to the Bridge"
+                $hostVirtualSwitchConfig.Spec.Bridge.NicDevice.Count -eq 0) {
+                throw "VMHostVssTeaming: Configuration error - You cannot use Active or Standby NICs, when there are no NICs assigned to the Bridge."
             }
 
             $hostVirtualSwitchConfig.ChangeOperation = $VssTeamingConfig.Operation
-            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon = $VssTeamingConfig.CheckBeacon
-            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.ActiveNic = $VssTeamingConfig.ActiveNic
-            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.StandbyNic = $VssTeamingConfig.StandbyNic
-            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NotifySwitches = $VssTeamingConfig.NotifySwitches
-            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.RollingOrder = $VssTeamingConfig.RollingOrder
+            if ($null -ne $VssTeamingConfig.CheckBeacon) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon = $VssTeamingConfig.CheckBeacon }
+            if (![string]::IsNullOrEmpty($VssTeamingConfig.ActiveNic)) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.ActiveNic = $VssTeamingConfig.ActiveNic }
+            if (![string]::IsNullOrEmpty($VssTeamingConfig.StandbyNic)) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.StandbyNic = $VssTeamingConfig.StandbyNic }
+            if ($null -ne $VssTeamingConfig.NotifySwitches) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NotifySwitches = $VssTeamingConfig.NotifySwitches }
+            if ($null -ne $VssTeamingConfig.RollingOrder) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.RollingOrder = $VssTeamingConfig.RollingOrder }
 
             # The Network Adapter teaming policy should be specified only when it is passed.
             if ($null -ne $VssTeamingConfig.Policy) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.Policy = $VssTeamingConfig.Policy }
@@ -351,18 +353,17 @@ function Update-Network {
                     $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.StandbyNic.Count -ne 0) {
                     throw "VMHostVssBridge: Configuration error - When NICs are defined as Active or Standby, you must specify them under NicDevice as well."
                 }
-                elseif ($VssBridgeConfig.BeaconInterval) {
+                elseif ($null -ne $VssBridgeConfig.BeaconInterval) {
                     throw "VMHostVssBridge: Configuration error - When you define a BeaconInterval, you must have one or more NICs defined under NicDevice."
                 }
-                elseif ($VssBridgeConfig.LinkDiscoveryProtocolOperation -or $VssBridgeConfig.LinkDiscoveryProtocolProtocol) {
+                elseif (![string]::IsNullOrEmpty($VssBridgeConfig.LinkDiscoveryProtocolOperation) -or ![string]::IsNullOrEmpty($VssBridgeConfig.LinkDiscoveryProtocolProtocol)) {
                     throw "VMHostVssBridge: Configuration error - When you use Link Discovery, you must have NICs defined under NicDevice."
                 }
             }
             else {
-                if ($VssBridgeConfig.BeaconInterval -eq 0 -and $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $true) {
+                if ($VssBridgeConfig.BeaconInterval -eq 0 -and $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon) {
                     throw "VMHostVssBridge: Configuration error - You can not have a Beacon interval of zero, when Beacon Checking is enabled."
                 }
-
             }
 
             $hostVirtualSwitchConfig.ChangeOperation = $VssBridgeConfig.Operation
@@ -371,23 +372,25 @@ function Update-Network {
                 $hostVirtualSwitchConfig.Spec.Bridge = New-Object -TypeName 'VMware.Vim.HostVirtualSwitchBondBridge'
                 $hostVirtualSwitchConfig.Spec.Bridge.NicDevice = $VssBridgeConfig.NicDevice
 
-                if (0 -ne $VssBridgeConfig.BeaconInterval) {
+                if ($VssBridgeConfig.BeaconInterval -ne 0) {
                     $hostVirtualSwitchConfig.Spec.Bridge.Beacon = New-Object VMware.Vim.HostVirtualSwitchBeaconConfig
                     $hostVirtualSwitchConfig.Spec.Bridge.Beacon.Interval = $VssBridgeConfig.BeaconInterval
                 }
                 else {
                     if ($vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon) {
-                        throw "VMHostVssBridge: Configuration error - When CheckBeacon is True, the BeaconInterval cannot be 0"
+                        throw "VMHostVssBridge: Configuration error - When CheckBeacon is True, the BeaconInterval cannot be 0."
                     }
                 }
 
-                if ( [LinkDiscoveryProtocolProtocol]::CDP -eq $VssBridgeConfig.LinkDiscoveryProtocolProtocol) {
-                    $hostVirtualSwitchConfig.Spec.Bridge.linkDiscoveryProtocolConfig = New-Object -TypeName VMware.Vim.LinkDiscoveryProtocolConfig
-                    $hostVirtualSwitchConfig.Spec.Bridge.linkDiscoveryProtocolConfig.Operation = ([string]$VssBridgeConfig.LinkDiscoveryProtocolOperation).ToLower()
-                    $hostVirtualSwitchConfig.Spec.Bridge.linkDiscoveryProtocolConfig.Protocol = ([string]$VssBridgeConfig.LinkDiscoveryProtocolProtocol).ToLower()
-                }
-                elseif ( [LinkDiscoveryProtocolProtocol]::CDP -ne $VssBridgeConfig.LinkDiscoveryProtocolProtocol ) {
-                    throw "VMHostVssBridge: Configuration error - A Virtual Switch (VSS) only supports CDP as the Link Discovery Protocol"
+                if (![string]::IsNullOrEmpty($VssBridgeConfig.LinkDiscoveryProtocolProtocol)) {
+                    if ($VssBridgeConfig.LinkDiscoveryProtocolProtocol -eq ([LinkDiscoveryProtocolProtocol]::CDP).ToString()) {
+                        $hostVirtualSwitchConfig.Spec.Bridge.linkDiscoveryProtocolConfig = New-Object -TypeName VMware.Vim.LinkDiscoveryProtocolConfig
+                        $hostVirtualSwitchConfig.Spec.Bridge.linkDiscoveryProtocolConfig.Operation = $VssBridgeConfig.LinkDiscoveryProtocolOperation.ToLower()
+                        $hostVirtualSwitchConfig.Spec.Bridge.linkDiscoveryProtocolConfig.Protocol = $VssBridgeConfig.LinkDiscoveryProtocolProtocol.ToLower()
+                    }
+                    else {
+                        throw "VMHostVssBridge: Configuration error - A Virtual Switch (VSS) only supports CDP as the Link Discovery Protocol."
+                    }
                 }
             }
             else {
