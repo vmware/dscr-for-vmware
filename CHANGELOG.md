@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.56 - 2020-02-27
+Export VMHost DSC Configuration (#253)
+
+* Add a script that exports the VMHost state as a DSC Configuration
+* Modify DatastoreName and FileName properties of VMHostVMKernelDumpFile to be 'Key' instead of 'Mandatory'
+* Fix bug with nullable NoTraps property of VMHostSNMPAgent DSC Resource
+* Rename Datastore property of VMHostCache DSC Resource to DatastoreName
+* Fix bug with nullable properties for VMHostSyslog DSC Resource
+
+Signed-off-by: SimeonGerginov <simeongerginov1@gmail.com>
 ## 2.0.0.55 - 2020-02-27
 ### Changed
 - Fixed bugs with nullable properties for all Standard Switch DSC Resources.
