@@ -2,15 +2,15 @@
 All notable changes to this project will be documented in this file.
 
 ## 2.0.0.56 - 2020-02-27
-Export VMHost DSC Configuration (#253)
+### Added
+- Added a script that exports the VMHost state as a DSC Configuration.
 
-* Add a script that exports the VMHost state as a DSC Configuration
-* Modify DatastoreName and FileName properties of VMHostVMKernelDumpFile to be 'Key' instead of 'Mandatory'
-* Fix bug with nullable NoTraps property of VMHostSNMPAgent DSC Resource
-* Rename Datastore property of VMHostCache DSC Resource to DatastoreName
-* Fix bug with nullable properties for VMHostSyslog DSC Resource
+### Changed
+- Modified DatastoreName and FileName properties of VMHostVMKernelDumpFile to be **Key** instead of **Mandatory**.
+- Renamed Datastore property of VMHostCache DSC Resource to DatastoreName.
+- Fixed bug with nullable NoTraps property of VMHostSNMPAgent DSC Resource.
+- Fixed bug with nullable properties for VMHostSyslog DSC Resource.
 
-Signed-off-by: SimeonGerginov <simeongerginov1@gmail.com>
 ## 2.0.0.55 - 2020-02-27
 ### Changed
 - Fixed bugs with nullable properties for all Standard Switch DSC Resources.
@@ -271,7 +271,7 @@ Signed-off-by: SimeonGerginov <simeongerginov1@gmail.com>
 
 ### Changed
 - Refactored all existing DSC Resources to use DisconnectVIServer() from BaseDSC.
--  Updated CODING_GUIDELINES section for creating new DSC Resources.
+- Updated CODING_GUIDELINES section for creating new DSC Resources.
 
 ## 2.0.0.24 - 2019-10-02
 ### Added
@@ -337,7 +337,7 @@ Signed-off-by: SimeonGerginov <simeongerginov1@gmail.com>
 
 ### Changed
 - Changed logging mechanism from Write-Verbose to Write-VerboseLog and Write-Warning to Write-WarningLog.
- 
+
 ## 2.0.0.16 - 2019-09-03
 ### Added
 - Added VMHostCache DSC Resource.
