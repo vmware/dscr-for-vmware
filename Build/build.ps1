@@ -185,6 +185,57 @@ function Update-CodeCoveragePercentInTextFile {
     $readMeContent | Set-Content -Path $TextFilePath
 }
 
+<#
+.SYNOPSIS
+Comments the 'RequiredModules' lines in the specified module manifest file.
+
+.DESCRIPTION
+Comments the 'RequiredModules' lines in the specified module manifest file. The 'RequiredModules' lines need to be
+commented, because the build executes the Unit tests without PowerCLI being installed on the machine. So VMware.PowerCLI is not needed
+as a dependency to execute the Unit tests and it is commented out in the manifest file to avoid throwing an exception and failing the build.
+
+.PARAMETER ModuleManifestPath
+Specifies the path to the module manifest file where the 'RequiredModules' lines are located.
+#>
+function Disable-RequiredModulesInModuleManifest {
+    [CmdletBinding()]
+    [OutputType([void])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $ModuleManifestPath
+    )
+
+    $startLinePattern = '*RequiredModules*'
+    $endLinePattern = ')'
+    $requiredModulesToComment = @()
+
+    $index = 1
+    $startLine = 0
+    $endLine = 0
+
+    $moduleManifestContent = Get-Content -Path $ModuleManifestPath -ErrorAction Stop -Verbose:$false
+    foreach ($line in $moduleManifestContent) {
+        if ($line -Like $startLinePattern) {
+            $startLine = $index
+        }
+
+        # The 'RequiredModules' is an array which can be on multiple lines, so each line till the end of the array needs to be commented.
+        if ($startLine -ne 0) { $requiredModulesToComment += '# ' + $line }
+
+        if ($line.Trim().EndsWith($endLinePattern) -and $startLine -ne 0) {
+            $endLine = $index
+            break
+        }
+
+        $index++
+    }
+
+    $moduleManifestContent = $moduleManifestContent[0..($startLine - 2)], $requiredModulesToComment, $moduleManifestContent[$endLine..($moduleManifestContent.Length - 1)]
+    $moduleManifestContent | Out-File -FilePath $ModuleManifestPath -Encoding Default
+}
+
 $script:ProjectRoot = (Get-Item -Path $PSScriptRoot).Parent.FullName
 
 # Adds the Source directory from the repository to the list of modules directories.
@@ -202,6 +253,10 @@ Register-PSRepository -Default -ErrorAction SilentlyContinue
 
 # Installs Pester.
 Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck
+
+# Comments the 'RequiredModules' array in the module manifest file.
+$moduleManifestPath = Join-Path -Path $script:ModuleRoot -ChildPath "$($script:ModuleName).psd1"
+Disable-RequiredModulesInModuleManifest -ModuleManifestPath $moduleManifestPath
 
 # Runs all unit tests in the module.
 $script:ModuleFolderPath = (Get-Module $script:ModuleName -ListAvailable).ModuleBase
