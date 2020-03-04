@@ -187,44 +187,53 @@ function Update-CodeCoveragePercentInTextFile {
 
 <#
 .SYNOPSIS
-Comments the 'RequiredModules' lines in the specified module manifest file.
+Gets the range between the start and the end line of the specified line pattern.
 
 .DESCRIPTION
-Comments the 'RequiredModules' lines in the specified module manifest file. The 'RequiredModules' lines need to be
-commented, because the build executes the Unit tests without PowerCLI being installed on the machine. So VMware.PowerCLI is not needed
-as a dependency to execute the Unit tests and it is commented out in the manifest file to avoid throwing an exception and failing the build.
+Gets the range between the start and the end line of the specified line pattern.
+The returned hashtable contains the start line and the end line of the specified line pattern.
 
-.PARAMETER ModuleManifestPath
-Specifies the path to the module manifest file where the 'RequiredModules' lines are located.
+.PARAMETER FileContent
+The content of the file in which the line pattern is going to be searched.
+
+.PARAMETER StartLinePattern
+The start of the searched line pattern.
+
+.PARAMETER EndLinePattern
+The end of the searched line pattern.
 #>
-function Disable-RequiredModulesInModuleManifest {
+function Get-LinesRange {
     [CmdletBinding()]
-    [OutputType([void])]
+    [OutputType([System.Collections.Hashtable])]
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
+        [System.Object[]]
+        $FileContent,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
         [string]
-        $ModuleManifestPath
+        $StartLinePattern,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $EndLinePattern
     )
 
-    $startLinePattern = '*RequiredModules*'
-    $endLinePattern = ')'
-    $requiredModulesToComment = @()
+    $range = @{}
 
     $index = 1
     $startLine = 0
     $endLine = 0
 
-    $moduleManifestContent = Get-Content -Path $ModuleManifestPath -ErrorAction Stop -Verbose:$false
-    foreach ($line in $moduleManifestContent) {
-        if ($line -Like $startLinePattern) {
+    foreach ($line in $FileContent) {
+        if ($line -Like $StartLinePattern) {
             $startLine = $index
         }
 
-        # The 'RequiredModules' is an array which can be on multiple lines, so each line till the end of the array needs to be commented.
-        if ($startLine -ne 0) { $requiredModulesToComment += '# ' + $line }
-
-        if ($line.Trim().EndsWith($endLinePattern) -and $startLine -ne 0) {
+        if ($line.Trim().EndsWith($EndLinePattern) -and $startLine -ne 0) {
             $endLine = $index
             break
         }
@@ -232,8 +241,86 @@ function Disable-RequiredModulesInModuleManifest {
         $index++
     }
 
-    $moduleManifestContent = $moduleManifestContent[0..($startLine - 2)], $requiredModulesToComment, $moduleManifestContent[$endLine..($moduleManifestContent.Length - 1)]
-    $moduleManifestContent | Out-File -FilePath $ModuleManifestPath -Encoding Default
+    $range.StartLine = $startLine
+    $range.EndLine = $endLine
+
+    $range
+}
+
+<#
+.SYNOPSIS
+Gets the 'RequiredModules' array for the VMware.vSphereDSC module from the specified RequiredModules file.
+
+.DESCRIPTION
+Gets the 'RequiredModules' array for the VMware.vSphereDSC module from the specified RequiredModules file.
+The RequiredModules file contains the array of 'RequiredModules' that the VMware.vSphereDSC module depends on.
+
+.PARAMETER RequiredModulesContent
+The content of the RequiredModules file which contains the array of 'RequiredModules' that the VMware.vSphereDSC module depends on.
+#>
+function Get-RequiredModules {
+    [CmdletBinding()]
+    [OutputType([string[]])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [System.Object[]]
+        $RequiredModulesContent
+    )
+
+    $licenseRange = Get-LinesRange -FileContent $RequiredModulesContent -StartLinePattern '*Copyright*' -EndLinePattern '#>'
+    $licenseEndLine = $licenseRange.EndLine + 1
+
+    # We skip the comment lines for the License and the License text for the RequiredModules file.
+    $requiredModules = $RequiredModulesContent[$licenseEndLine..($RequiredModulesContent.Length - 1)]
+    $requiredModules
+}
+
+<#
+.SYNOPSIS
+Updates the 'RequiredModules' array in the specified module manifest file with the specified 'RequiredModules' array.
+
+.DESCRIPTION
+Updates the 'RequiredModules' array in the specified module manifest file with the specified RequiredModules array.
+The 'RequiredModules' array contains the modules that the VMware.vSphereDSC module depends on.
+
+.PARAMETER ModuleManifestContent
+The content of the module manifest file which should be updated with the 'RequiredModules' array.
+
+.PARAMETER RequiredModules
+The array of required modules that the VMware.vSphereDSC module depends on.
+#>
+function Update-RequiredModules {
+    [CmdletBinding()]
+    [OutputType([System.Object[]])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [System.Object[]]
+        $ModuleManifestContent,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string[]]
+        $RequiredModules
+    )
+
+    $requiredModulesInModuleManifestRange = Get-LinesRange -FileContent $ModuleManifestContent -StartLinePattern "*RequiredModules*" -EndLinePattern ")"
+    $requiredModulesStartLine = $requiredModulesInModuleManifestRange.StartLine
+    $requiredModulesEndLine = $requiredModulesInModuleManifestRange.EndLine
+
+    $moduleManifestUpdatedContent = @()
+    for ($i = 0; $i -le $requiredModulesStartLine - 2; $i++) {
+        $moduleManifestUpdatedContent += $ModuleManifestContent[$i]
+    }
+
+    $moduleManifestUpdatedContent += $RequiredModules
+
+    for ($i = $requiredModulesEndLine; $i -le $ModuleManifestContent.Length - 1; $i++) {
+        $moduleManifestUpdatedContent += $ModuleManifestContent[$i]
+    }
+
+    $moduleManifestUpdatedContent
 }
 
 $script:ProjectRoot = (Get-Item -Path $PSScriptRoot).Parent.FullName
@@ -248,15 +335,18 @@ $script:ModuleRoot = Join-Path -Path $script:SourceRoot -ChildPath $script:Modul
 $script:BuildModuleFilePath = Join-Path -Path $script:ModuleRoot -ChildPath "$script:ModuleName.build.ps1"
 . $script:BuildModuleFilePath
 
+$script:PsdPath = Join-Path -Path $script:ModuleRoot -ChildPath "$($script:ModuleName).psd1"
+$script:PsdContent = Get-Content -Path $script:PsdPath
+
+# The 'RequiredModules' array needs to be empty before the Unit tests are executed because 'VMware.PowerCLI' is not installed during the build procedure.
+$emptyRequiredModulesArray = @("RequiredModules = @()")
+$script:PsdContent = Update-RequiredModules -ModuleManifestContent $script:PsdContent -RequiredModules $emptyRequiredModulesArray
+
 # Registeres default PSRepository.
 Register-PSRepository -Default -ErrorAction SilentlyContinue
 
 # Installs Pester.
 Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck
-
-# Comments the 'RequiredModules' array in the module manifest file.
-$moduleManifestPath = Join-Path -Path $script:ModuleRoot -ChildPath "$($script:ModuleName).psd1"
-Disable-RequiredModulesInModuleManifest -ModuleManifestPath $moduleManifestPath
 
 # Runs all unit tests in the module.
 $script:ModuleFolderPath = (Get-Module $script:ModuleName -ListAvailable).ModuleBase
@@ -276,10 +366,18 @@ $script:ReadMePath = Join-Path -Path $script:ProjectRoot -ChildPath 'README.md'
 Update-CodeCoveragePercentInTextFile -CodeCoveragePercent $script:CoveragePercent -TextFilePath $script:ReadMePath
 
 if ($env:TRAVIS_EVENT_TYPE -eq 'push' -and $env:TRAVIS_BRANCH -eq 'master') {
-    $psdPath = Join-Path -Path $script:ModuleRoot -ChildPath "$($script:ModuleName).psd1"
     $changelogDocumentPath = Join-Path -Path $script:ProjectRoot -ChildPath 'CHANGELOG.md'
 
-    $moduleVersion = Get-ModuleVersion -PsdPath $psdPath
+    # Retrieving the 'RequiredModules' array from the RequiredModules file.
+    $requiredModulesFilePath = Join-Path -Path $script:ModuleRoot -ChildPath 'RequiredModules.ps1'
+    $requiredModulesContent = Get-Content -Path $requiredModulesFilePath
+    $requiredModules = Get-RequiredModules -RequiredModulesContent $requiredModulesContent
+
+    # Updating the required modules array in the psd1 file.
+    $script:PsdContent = Update-RequiredModules -ModuleManifestContent $script:PsdContent -RequiredModules $requiredModules
+    $script:PsdContent | Out-File -FilePath $script:PsdPath -Encoding Default
+
+    $moduleVersion = Get-ModuleVersion -PsdPath $script:PsdPath
     $pullRequestDescription = Get-PullRequestDescription
 
     Update-ChangelogDocument -ChangelogDocumentPath $changelogDocumentPath -PullRequestDescription $pullRequestDescription -ModuleVersion $moduleVersion

@@ -41,9 +41,7 @@ Description = 'This PowerShell module contains DSC Resources for vSphere.'
 PowerShellVersion = '5.1'
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @(
-@{ "ModuleName" = "VMware.PowerCLI"; "ModuleVersion" = "11.5.0.14912921" }
-)
+RequiredModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @()
