@@ -9851,10 +9851,12 @@ class VMHostTpsSettings : VMHostBaseDSC {
             $result.Name = $vmHost.Name
             $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
 
+            $vmHostTpsSettingsDscResourcePropertyNames = $this.GetType().GetProperties().Name
             foreach ($tpsSetting in $tpsSettings) {
                 $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
-
-                $result.$tpsSettingName = $tpsSetting.Value
+                if ($vmHostTpsSettingsDscResourcePropertyNames -Contains $tpsSettingName) {
+                    $result.$tpsSettingName = $tpsSetting.Value
+                }
             }
 
             return $result

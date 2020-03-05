@@ -20,7 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 RootModule = 'VMware.vSphereDSC.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.0.0.56'
+ModuleVersion = '2.0.0.57'
 
 # ID used to uniquely identify this module
 GUID = '664b57b4-bd8d-4a56-9984-278f7fe10cf8'
@@ -41,7 +41,9 @@ Description = 'This PowerShell module contains DSC Resources for vSphere.'
 PowerShellVersion = '5.1'
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @()
+RequiredModules = @(
+@{ "ModuleName" = "VMware.VimAutomation.Vds"; "ModuleVersion" = "11.2.0.12483615" }
+)
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @()

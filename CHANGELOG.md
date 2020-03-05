@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.57 - 2020-03-05
+### Added
+- Added **VMware.VimAutomation.Vds** as dependency in module manifest.
+
+### Changed
+- Updated README.md section for available DSC Resources.
+- Fixed bug with Tps setting not exposed in VMHostTpsSettings DSC Resource.
+
 ## 2.0.0.56 - 2020-02-27
 ### Added
 - Added a script that exports the VMHost state as a DSC Configuration.
