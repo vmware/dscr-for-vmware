@@ -341,6 +341,7 @@ $script:PsdContent = Get-Content -Path $script:PsdPath
 # The 'RequiredModules' array needs to be empty before the Unit tests are executed because 'VMware.PowerCLI' is not installed during the build procedure.
 $emptyRequiredModulesArray = @("RequiredModules = @()")
 $script:PsdContent = Update-RequiredModules -ModuleManifestContent $script:PsdContent -RequiredModules $emptyRequiredModulesArray
+$script:PsdContent | Out-File -FilePath $script:PsdPath -Encoding Default
 
 # Registeres default PSRepository.
 Register-PSRepository -Default -ErrorAction SilentlyContinue
