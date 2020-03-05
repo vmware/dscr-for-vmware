@@ -6,15 +6,14 @@
 
 The **VMware.vSphereDSC** module is a collection of DSC Resources. This module includes DSC resources that simplify the management of vCenter and ESXi settings, with a simple declarative language.
 
-The **VMware.vSphereDSC** module contains resources which are configuring:
+The **VMware.vSphereDSC** module contains resources for:
 
-- **NTP**, **DNS**, **TPS** and **Syslog** settings of VMHosts.
-- **Motd** and **Issue** Advanced Settings of VMHosts.
-- **Host services** of VMHosts.
-- **SATP Claim Rules** of VMHosts.
-- **Statistics** and **Advanced Settings** of vCenters.
-
-The Module also contains resources for Creating, Updating and Deleting **Clusters**.
+- **Datacenters**, **Folders** and **Clusters**
+- **Standard** and **distributed switches** and **portgroups** and **network migration** between them
+- **Host network adapters**
+- **Datastores** (**VMFS** and **NFS**) and **storage adapters**
+- **Host accounts**, **roles** and **permissions**
+- **vCenter** and **Host** settings
 
 For more information about all available **Resources**, please visit the **wiki** page of the repository: [Wiki](https://github.com/vmware/dscr-for-vmware/wiki).
 
