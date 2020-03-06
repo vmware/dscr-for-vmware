@@ -15,5 +15,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 RequiredModules = @(
-@{ "ModuleName" = "VMware.VimAutomation.Vds"; "ModuleVersion" = "11.2.0.12483615" }
+@{ "ModuleName" = "VMware.VimAutomation.Vds"; "ModuleVersion" = "11.2.0.12483615" },
+@{ "ModuleName" = "VMware.VimAutomation.Storage"; "ModuleVersion" = "11.5.0.14901686" }
 )
