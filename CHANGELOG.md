@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0.58 - 2020-03-06
+### Added
+- Added VMware.VimAutomation.Storage as dependency of VMware.vSphereDSC.
+
 ## 2.0.0.57 - 2020-03-05
 ### Added
 - Added **VMware.VimAutomation.Vds** as dependency in module manifest.
