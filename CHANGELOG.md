@@ -1,6 +1,54 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.58 - 2020-03-06
+### Added
+- **NfsDatastore**: DSC Resource that is used to create, update and delete NFS Datastores on the VMHost.
+- **NfsUser**: DSC Resource that is used to create, change the password and delete Nfs Users on the VMHost.
+- **StandardPortGroup**: Composite DSC Resource that is used to create, update and delete Standard Port Groups which are associated with a Standard Switch. The resource also modifies the different policies of the Standard Port Group - Security, Shaping and Teaming policies.
+- **StandardSwitch**: Composite DSC Resource that is used to create, update and delete Standard Switches on the VMHost. The resource also modifies the different policies of the Standard Switch - Security, Shaping and Teaming policies as well as creating a bridge to connect the Standard Switch to Physical Network Adapters.
+- **VDPortGroup**: DSC Resource that is used to create, update and delete vSphere Distributed Port Groups.
+- **VDSwitch**: DSC Resource that is used to create, update and delete vSphere Distributed Switches.
+- **VDSwitchVMHost**: DSC Resource that is used to add/remove VMHosts to/from vSphere Distributed Switches.
+- **VMHostAcceptanceLevel**: DSC Resource that is used to modify the acceptance level of the VMHost.
+- **VMHostAdvancedSettings**: DSC Resource that is used to modify the Advanced Settings of the VMHost.
+- **VMHostAgentVM**: DSC Resource that is used to modify the configuration of Agent Virtual Machine resources on the VMHost.
+- **VMHostAuthentication**: DSC Resource that is used to include/exclude VMHosts in/from Domains.
+- **VMHostCache**: DSC Resource that is used to configure the host cache/swap performance enhancement.
+- **VMHostConfiguration**: DSC Resource that is used to modify the configuration of the VMHost.
+- **VMHostDCUIKeyboard**: DSC Resource that is used to modify the Direct Console User Interface Keyboard Layout.
+- **VMHostFirewallRuleset**: DSC Resource that is used to enable/disable firewall rulesets on the VMHost.
+- **VMHostGraphics**: DSC Resource that is used to modify the Graphics configuration on the VMHost.
+- **VMHostGraphicsDevice**: DSC Resource that is used to modify the Graphics Type of the Graphics Device.
+- **VMHostIPRoute**: DSC Resource that is used to create and delete IPv4/IPv6 routes on the VMHost.
+- **VMHostIScsiHba**: DSC Resource that is used to modify the CHAP settings of the iSCSI Host Bus Adapters on the VMHost.
+- **VMHostIScsiHbaTarget**: DSC Resource that is used to create, modify the CHAP settings and delete iSCSI Host Bus Adapter targets from iSCSI Host Bus Adapters.
+- **VMHostNetworkCoreDump**: DSC Resource that is used to modify the network coredump configuration of the VMHost.
+- **VMHostPciPassthrough**: DSC Resource that is used to modify the PciPassthru configuration of the PCI Device on the VMHost.
+- **VMHostPermission**: DSC Resource that is used to create, update and delete Permissions for Entity, Principal and Role on the VMHost.
+- **VMHostPhysicalNic**: DSC Resource that is used to modify the speed and duplex settings of the Physical Network Adapter.
+- **VMHostPowerPolicy**: DSC Resource that is used to modify the Power Management Policy of the VMHost.
+- **VMHostRole**: DSC Resource that is used to create, update and delete Roles on the VMHost.
+- **VMHostSNMPAgent**: DSC Resource that is used to modify the SNMP agent configuration on the VMHost.
+- **VMHostScsiLun**: DSC Resource that is used to modify the configuration of SCSI Luns on the VMHost.
+- **VMHostScsiLunPath**: DSC Resource that is used to configure SCSI Lun paths to SCSI devices on the VMHost.
+- **VMHostSharedSwapSpace**: DSC Resource that is used to modify the configuration of system-wide shared swap space on the VMHost.
+- **VMHostSoftwareDevice**: DSC Resource that is used to add a device to enable a software device driver or to remove a software device on the VMHost.
+- **VMHostVDSwitchMigration**: DSC Resource that is used to migrate Physical Network Adapters and VMKernel Network Adapters attached to Standard Port Groups to vSphere Distributed Switches.
+- **VMHostVMKernelActiveDumpFile**: DSC Resource that is used to enable/disable the VMKernel dump file on the VMHost.
+- **VMHostVMKernelActiveDumpPartition**: DSC Resource that is used to enable/disable the VMKernel dump partition on the VMHost.
+- **VMHostVMKernelDumpFile**: DSC Resource that is used to create and delete VMKernel dump files on a Datastore on the VMHost.
+- **VMHostVMKernelModule**: DSC Resource that is used to enable/disable VMKernel modules on the VMHost.
+- **VMHostVssMigration**: DSC Resource that is used to migrate Physical Network Adapters and VMKernel Network Adapters attached to Standard Port Groups to Standard Switches.
+- **VMHostVssNic**: DSC Resource that is used to create, update and delete VMKernel Network Adapters added to Standard Switch and Standard Port Group.
+- **VMHostVssPortGroup**: DSC Resource that is used to create, update and delete Standard Port Groups which are associated with a Standard Switch.
+- **VMHostVssPortGroupSecurity**: DSC Resource that is used to modify the Security Policy of the Standard Port Group.
+- **VMHostVssPortGroupShaping**: DSC Resource that is used to modify the Shaping Policy of the Standard Port Group.
+- **VMHostVssPortGroupTeaming**: DSC Resource that is used to modify the Teaming Policy of the Standard Port Group.
+- **VMHostvSANNetworkConfiguration**: DSC Resource that is used to add and remove vSAN network configuration IP Interfaces on the VMHost.
+- **VmfsDatastore**: DSC Resource that is used to create, update and delete VMFS Datastores on the VMHost.
+- **vCenterVMHost**: DSC Resource that is used to add, move to another location or remove VMHosts on the vCenter Server.
+
 ## 2.0.0.58 - 2020-03-06
 ### Added
 - Added VMware.VimAutomation.Storage as dependency of VMware.vSphereDSC.
