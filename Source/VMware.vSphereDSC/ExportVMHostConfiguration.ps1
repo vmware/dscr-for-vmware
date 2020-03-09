@@ -797,7 +797,21 @@ function Read-VMKernelNetworkAdapters {
     $vmKernelNetworkAdapters = Get-VMHostNetworkAdapter -Server $script:viServer -VMHost $script:vmHost -VMKernel -ErrorAction Stop -Verbose:$false
 
     foreach ($vmKernelNetworkAdapter in $vmKernelNetworkAdapters) {
-        $portGroup = Get-VirtualPortGroup -Server $script:viServer -VMHost $script:vmHost -Name $vmKernelNetworkAdapter.PortGroupName -ErrorAction Stop -Verbose:$false
+        $getVirtualPortGroupParams = @{
+            Server = $script:viServer
+            VMHost = $script:vmHost
+            Name = $vmKernelNetworkAdapter.PortGroupName
+            Standard = $true
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        $portGroup = Get-VirtualPortGroup @getVirtualPortGroupParams
+        if ($null -eq $portGroup) {
+            # The Port Group is a Distributed Port Group, so the VMKernel Network Adapter should not be exported through the VMHostVssNic DSC Resource.
+            continue
+        }
+
         $vmHostVssNicDscResourceKeyProperties = @{
             Server = $Server
             Credential = $Credential
@@ -808,6 +822,16 @@ function Read-VMKernelNetworkAdapters {
 
         $vmHostVssNicDscResource = New-Object -TypeName 'VMHostVssNic' -Property $vmHostVssNicDscResourceKeyProperties
         $vmHostVssNicDscResourceGetMethodResult = $vmHostVssNicDscResource.Get()
+
+        if ($vmHostVssNicDscResourceGetMethodResult.Ensure.ToString() -eq 'Absent') {
+            <#
+                There could be a Distributed and Standard Port Groups with the same name and
+                the VMKernel Network Adapter could be connected to the Distributed Port Group. So the VMHostVssNic will
+                not find a VMKernel Network Adapter for the Standard Port Group and Switch and it should be skipped in the
+                exported configuration.
+            #>
+            continue
+        }
 
         $vmHostVssNicDscResourceResult = @{
             VssName = $vmHostVssNicDscResourceGetMethodResult.VssName
@@ -1011,20 +1035,23 @@ with the VMHostSoftwareDevice, VMHostVMKernelModule, VMHostvSANNetworkConfigurat
 function Read-VMHostEsxCliInfo {
     $esxCli = Get-EsxCli -Server $script:viServer -VMHost $script:vmHost -V2 -ErrorAction Stop -Verbose:$false
 
-    Write-Host "Retrieving information about software devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    $vmHostSoftwareDevices = $esxCli.device.software.list.Invoke()
-    foreach ($vmHostSoftwareDevice in $vmHostSoftwareDevices) {
-        $vmHostSoftwareDeviceDscResourceKeyProperties = @{
-            Server = $Server
-            Credential = $Credential
-            Name = $VMHostName
-            DeviceIdentifier = $vmHostSoftwareDevice.DeviceID
+    # If no software devices are present on the VMHost, an exception will be thrown when the Invoke() method is executed.
+    if ($null -ne $esxCli.device.software.list) {
+        Write-Host "Retrieving information about software devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+        $vmHostSoftwareDevices = $esxCli.device.software.list.Invoke()
+        foreach ($vmHostSoftwareDevice in $vmHostSoftwareDevices) {
+            $vmHostSoftwareDeviceDscResourceKeyProperties = @{
+                Server = $Server
+                Credential = $Credential
+                Name = $VMHostName
+                DeviceIdentifier = $vmHostSoftwareDevice.DeviceID
+            }
+
+            $vmHostSoftwareDeviceDscResource = New-Object -TypeName 'VMHostSoftwareDevice' -Property $vmHostSoftwareDeviceDscResourceKeyProperties
+            $vmHostSoftwareDeviceDscResourceGetMethodResult = $vmHostSoftwareDeviceDscResource.Get()
+
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostSoftwareDevice' -VMHostDscResourceInstanceName "VMHostSoftwareDevice_$($vmHostSoftwareDevice.DeviceID)" -VMHostDscGetMethodResult $vmHostSoftwareDeviceDscResourceGetMethodResult
         }
-
-        $vmHostSoftwareDeviceDscResource = New-Object -TypeName 'VMHostSoftwareDevice' -Property $vmHostSoftwareDeviceDscResourceKeyProperties
-        $vmHostSoftwareDeviceDscResourceGetMethodResult = $vmHostSoftwareDeviceDscResource.Get()
-
-        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostSoftwareDevice' -VMHostDscResourceInstanceName "VMHostSoftwareDevice_$($vmHostSoftwareDevice.DeviceID)" -VMHostDscGetMethodResult $vmHostSoftwareDeviceDscResourceGetMethodResult
     }
 
     Write-Host "Retrieving information about VMKernel modules on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
@@ -1472,9 +1499,14 @@ function Read-VMHostConfiguration {
     Read-VMHostNetworkCoreDump
 
     # VMHost settings DSC Resources
-    Write-Warning -Message 'Evacuate property of VMHostConfiguration DSC Resource will not be exported in the configuration.'
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) configuration..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostConfiguration'
+    if ($script:vmHost.VMSwapfilePolicy.ToString() -eq 'Inherit') {
+        Write-Warning -Message "VMHost configuration with swapfile placement policy 'Inherited' will not be exported in the configuration."
+    }
+    else {
+        Write-Warning -Message 'Evacuate property of VMHostConfiguration DSC Resource will not be exported in the configuration.'
+        Write-Host "Retrieving information about VMHost $($script:vmHost.Name) configuration..." -BackgroundColor DarkGreen -ForegroundColor White
+        Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostConfiguration'
+    }
 
     Read-VMHostAdvancedSettings
 
