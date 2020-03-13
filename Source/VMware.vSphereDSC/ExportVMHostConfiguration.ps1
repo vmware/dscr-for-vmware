@@ -35,7 +35,11 @@ Param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]
-    $OutputPath
+    $OutputPath,
+
+    [Parameter()]
+    [string[]]
+    $VMHostDscResourcesToExport
 )
 
 $script:viServer = $null
@@ -432,6 +436,36 @@ function New-VMHostDscResourceBlock {
     }
 
     [void] $script:vmHostDscConfigContent.Append("            }`r`n`r`n")
+}
+
+<#
+.SYNOPSIS
+Checks if the specified VMHost DSC Resource should be exported.
+
+.DESCRIPTION
+Checks if the specified VMHost DSC Resource should be exported. If the VMHost DSC Resource is specified
+in the VMHostDscResourcesToExport array or the array is not passed, the VMHost DSC Resource will be exported.
+Otherwise the VMHost DSC Resource will not be exported.
+
+.PARAMETER VMHostDscResourceName
+The name of the VMHost DSC Resource that will be checked whether to be exported.
+#>
+function Test-ExportVMHostDscResource {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $VMHostDscResourceName
+    )
+
+    $result = $false
+    if ($VMHostDscResourcesToExport.Count -eq 0 -or $VMHostDscResourcesToExport -Contains $VMHostDscResourceName) {
+        $result = $true
+    }
+
+    $result
 }
 
 <#
