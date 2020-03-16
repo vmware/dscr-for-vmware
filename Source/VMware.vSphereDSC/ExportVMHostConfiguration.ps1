@@ -720,6 +720,10 @@ Reads the information about Datastores on the specified VMHost and exposes it in
 with the VmfsDatastore and NfsDatastore DSC Resources.
 #>
 function Read-Datastores {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VmfsDatastore') -and !(Test-ExportVMHostDscResource -VMHostDscResourceName 'NfsDatastore')) {
+        return
+    }
+
     Write-Host "Retrieving information about Datastores on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $datastores = Get-Datastore -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
 
@@ -731,28 +735,33 @@ function Read-Datastores {
             Name = $datastore.Name
         }
 
-        if ($datastore.Type -eq 'VMFS') {
+        if ($datastore.Type -eq 'VMFS' -and (Test-ExportVMHostDscResource -VMHostDscResourceName 'VmfsDatastore')) {
             $datastoreDscResourceKeyProperties.Path = $datastore.ExtensionData.Info.Vmfs.Extent.DiskName
             $vmfsDatastoreDscResource = New-Object -TypeName 'VmfsDatastore' -Property $datastoreDscResourceKeyProperties
             $vmfsDatastoreDscResourceGetMethodResult = $vmfsDatastoreDscResource.Get()
 
-            # The DSC engine requires a required resource name to be in the format '[<typename>]<name>', with alphanumeric characters, spaces, '_', '-', '.' and '\'.
-            $formattedScsiLunCanonicalName = $vmfsDatastoreDscResourceGetMethodResult.Path -Replace ':', ''
+            if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostScsiLun') {
+                # The DSC engine requires a required resource name to be in the format '[<typename>]<name>', with alphanumeric characters, spaces, '_', '-', '.' and '\'.
+                $formattedScsiLunCanonicalName = $vmfsDatastoreDscResourceGetMethodResult.Path -Replace ':', ''
 
-            $vmfsDatastoreDscResourceResult = @{
-                Name = $vmfsDatastoreDscResourceGetMethodResult.Name
-                Path = $vmfsDatastoreDscResourceGetMethodResult.Path
-                Ensure = $vmfsDatastoreDscResourceGetMethodResult.Ensure
-                FileSystemVersion = $vmfsDatastoreDscResourceGetMethodResult.FileSystemVersion
-                BlockSizeMB = $vmfsDatastoreDscResourceGetMethodResult.BlockSizeMB
-                CongestionThresholdMillisecond = $vmfsDatastoreDscResourceGetMethodResult.CongestionThresholdMillisecond
-                StorageIOControlEnabled = $vmfsDatastoreDscResourceGetMethodResult.StorageIOControlEnabled
-                DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
+                $vmfsDatastoreDscResourceResult = @{
+                    Name = $vmfsDatastoreDscResourceGetMethodResult.Name
+                    Path = $vmfsDatastoreDscResourceGetMethodResult.Path
+                    Ensure = $vmfsDatastoreDscResourceGetMethodResult.Ensure
+                    FileSystemVersion = $vmfsDatastoreDscResourceGetMethodResult.FileSystemVersion
+                    BlockSizeMB = $vmfsDatastoreDscResourceGetMethodResult.BlockSizeMB
+                    CongestionThresholdMillisecond = $vmfsDatastoreDscResourceGetMethodResult.CongestionThresholdMillisecond
+                    StorageIOControlEnabled = $vmfsDatastoreDscResourceGetMethodResult.StorageIOControlEnabled
+                    DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
+                }
+
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VmfsDatastore' -VMHostDscResourceInstanceName "VmfsDatastore_$($datastore.Name)" -VMHostDscGetMethodResult $vmfsDatastoreDscResourceResult
             }
-
-            New-VMHostDscResourceBlock -VMHostDscResourceName 'VmfsDatastore' -VMHostDscResourceInstanceName "VmfsDatastore_$($datastore.Name)" -VMHostDscGetMethodResult $vmfsDatastoreDscResourceResult
+            else {
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VmfsDatastore' -VMHostDscResourceInstanceName "VmfsDatastore_$($datastore.Name)" -VMHostDscGetMethodResult $vmfsDatastoreDscResourceGetMethodResult
+            }
         }
-        elseif ($datastore.Type -eq 'NFS') {
+        elseif ($datastore.Type -eq 'NFS' -and (Test-ExportVMHostDscResource -VMHostDscResourceName 'NfsDatastore')) {
             $datastoreDscResourceKeyProperties.NfsHost = $datastore.RemoteHost
             $datastoreDscResourceKeyProperties.Path = $datastore.RemotePath
             $nfsDatastoreDscResource = New-Object -TypeName 'NfsDatastore' -Property $datastoreDscResourceKeyProperties
