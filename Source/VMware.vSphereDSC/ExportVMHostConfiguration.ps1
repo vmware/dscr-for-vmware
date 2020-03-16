@@ -45,6 +45,7 @@ Param(
 $script:viServer = $null
 $script:vmHost = $null
 $script:scsiLuns = $null
+$script:iScsiHbas = $null
 
 $script:availableVSphereDscResources = $null
 $script:vSphereDscResourcesPropertiesToExclude = $null
@@ -112,6 +113,22 @@ function Get-ScsiDevices {
         }
         catch {
             throw "Could not retrieve SCSI devices from VMHost $VMHostName on vSphere Server $($script:viServer.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+}
+
+<#
+.DESCRIPTION
+
+Retrieves all iSCSI Host Bus Adapters that are available on the specified VMHost.
+#>
+function Get-IScsiHostBusAdapters {
+    if ($null -eq $script:iScsiHbas) {
+        try {
+            $script:iScsiHbas = Get-VMHostHba -Server $script:viServer -VMHost $script:vmHost -Type 'iSCSI' -ErrorAction Stop -Verbose:$false
+        }
+        catch {
+            throw "Could not retrieve iSCSI Host Bus Adapters from VMHost $VMHostName on vSphere Server $($script:viServer.Name). For more information: $($_.Exception.Message)"
         }
     }
 }
@@ -602,20 +619,24 @@ function Read-ScsiDevicesPaths {
 <#
 .DESCRIPTION
 
-Reads the information about iSCSI Host Bus Adapters and iSCSI Host Bus Adapter targets on the specified VMHost and exposes it in the VMHost DSC Configuration
-with the VMHostIScsiHba and VMHostIScsiHbaTarget DSC Resources.
+Reads the information about iSCSI Host Bus Adapters on the specified VMHost and exposes them in the VMHost DSC Configuration
+with the VMHostIScsiHba DSC Resource.
 #>
 function Read-IScsiHbas {
-    Write-Host "Retrieving information about iSCSI Host Bus Adapters and iSCSI Host Bus Adapter targets on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    $iScsiHbas = Get-VMHostHba -Server $script:viServer -VMHost $script:vmHost -Type 'iSCSI' -ErrorAction Stop -Verbose:$false
-
-    if ($iScsiHbas.Length -gt 0) {
-        Write-Warning -Message 'Force, ChapPassword and MutualChapPassword properties of VMHostIScsiHba and VMHostIScsiHbaTarget DSC Resources will not be exported in the configuration.'
-        $script:vSphereDscResourcesPropertiesToExclude += 'ChapPassword'
-        $script:vSphereDscResourcesPropertiesToExclude += 'MutualChapPassword'
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostIScsiHba')) {
+        return
     }
 
-    foreach ($iScsiHba in $iScsiHbas) {
+    Write-Host "Retrieving information about iSCSI Host Bus Adapters on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Get-IScsiHostBusAdapters
+
+    if ($script:iScsiHbas.Length -gt 0) {
+        Write-Warning -Message 'Force, ChapPassword and MutualChapPassword properties of VMHostIScsiHba DSC Resource will not be exported in the configuration.'
+        if ($script:vSphereDscResourcesPropertiesToExclude -NotContains 'ChapPassword') { $script:vSphereDscResourcesPropertiesToExclude += 'ChapPassword' }
+        if ($script:vSphereDscResourcesPropertiesToExclude -NotContains 'MutualChapPassword') { $script:vSphereDscResourcesPropertiesToExclude += 'MutualChapPassword' }
+    }
+
+    foreach ($iScsiHba in $script:iScsiHbas) {
         $vmHostIScsiHbaDscResourceKeyProperties = @{
             Server = $Server
             Credential = $Credential
@@ -627,7 +648,30 @@ function Read-IScsiHbas {
         $vmHostIScsiHbaDscResourceGetMethodResult = $vmHostIScsiHbaDscResource.Get()
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHba' -VMHostDscResourceInstanceName "VMHostIScsiHba_$($iScsiHba.Name)" -VMHostDscGetMethodResult $vmHostIScsiHbaDscResourceGetMethodResult
+    }
+}
 
+<#
+.DESCRIPTION
+
+Reads the information about iSCSI Host Bus Adapter targets on the specified VMHost and exposes them in the VMHost DSC Configuration
+with the VMHostIScsiHbaTarget DSC Resource.
+#>
+function Read-IScsiHbaTargets {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostIScsiHbaTarget')) {
+        return
+    }
+
+    Write-Host "Retrieving information about iSCSI Host Bus Adapter targets on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Get-IScsiHostBusAdapters
+
+    if ($script:iScsiHbas.Length -gt 0) {
+        Write-Warning -Message 'Force, ChapPassword and MutualChapPassword properties of VMHostIScsiHbaTarget DSC Resource will not be exported in the configuration.'
+        if ($script:vSphereDscResourcesPropertiesToExclude -NotContains 'ChapPassword') { $script:vSphereDscResourcesPropertiesToExclude += 'ChapPassword' }
+        if ($script:vSphereDscResourcesPropertiesToExclude -NotContains 'MutualChapPassword') { $script:vSphereDscResourcesPropertiesToExclude += 'MutualChapPassword' }
+    }
+
+    foreach ($iScsiHba in $script:iScsiHbas) {
         $iScsiHbaTargets = Get-IScsiHbaTarget -Server $script:viServer -IScsiHba $iScsiHba -ErrorAction Stop -Verbose:$false
         foreach ($iScsiHbaTarget in $iScsiHbaTargets) {
             $vmHostIScsiHbaTargetDscResourceKeyProperties = @{
@@ -643,24 +687,28 @@ function Read-IScsiHbas {
             $vmHostIScsiHbaTargetDscResource = New-Object -TypeName 'VMHostIScsiHbaTarget' -Property $vmHostIScsiHbaTargetDscResourceKeyProperties
             $vmHostIScsiHbaTargetDscResourceGetMethodResult = $vmHostIScsiHbaTargetDscResource.Get()
 
-            $vmHostIScsiHbaTargetDscResourceResult = @{
-                Address = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Address
-                Port = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Port
-                IScsiHbaName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiHbaName
-                TargetType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.TargetType
-                Ensure = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Ensure
-                IScsiName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiName
-                InheritChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritChap
-                ChapType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapType
-                ChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapName
-                InheritMutualChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritMutualChap
-                MutualChapEnabled = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapEnabled
-                MutualChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapName
-                Force = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Force
-                DependsOn = "[VMHostIScsiHba]VMHostIScsiHba_$($iScsiHba.Name)"
-            }
+            if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostIScsiHba') {
+                $vmHostIScsiHbaTargetDscResourceResult = @{
+                    Address = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Address
+                    Port = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Port
+                    IScsiHbaName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiHbaName
+                    TargetType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.TargetType
+                    Ensure = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Ensure
+                    IScsiName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiName
+                    InheritChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritChap
+                    ChapType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapType
+                    ChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapName
+                    InheritMutualChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritMutualChap
+                    MutualChapEnabled = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapEnabled
+                    MutualChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapName
+                    DependsOn = "[VMHostIScsiHba]VMHostIScsiHba_$($iScsiHba.Name)"
+                }
 
-            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHbaTarget' -VMHostDscResourceInstanceName "VMHostIScsiHbaTarget_$($iScsiHbaTarget.Address):$($iScsiHbaTarget.Port)_$($iScsiHbaTarget.Type)" -VMHostDscGetMethodResult $vmHostIScsiHbaTargetDscResourceResult
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHbaTarget' -VMHostDscResourceInstanceName "VMHostIScsiHbaTarget_$($iScsiHbaTarget.Address):$($iScsiHbaTarget.Port)_$($iScsiHbaTarget.Type)" -VMHostDscGetMethodResult $vmHostIScsiHbaTargetDscResourceResult
+            }
+            else {
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHbaTarget' -VMHostDscResourceInstanceName "VMHostIScsiHbaTarget_$($iScsiHbaTarget.Address):$($iScsiHbaTarget.Port)_$($iScsiHbaTarget.Type)" -VMHostDscGetMethodResult $vmHostIScsiHbaTargetDscResourceGetMethodResult
+            }
         }
     }
 }
@@ -1605,6 +1653,7 @@ function Read-VMHostConfiguration {
     Read-ScsiDevices
     Read-ScsiDevicesPaths
     Read-IScsiHbas
+    Read-IScsiHbaTargets
     Read-Datastores
 
     # VMHost Network DSC Resources
