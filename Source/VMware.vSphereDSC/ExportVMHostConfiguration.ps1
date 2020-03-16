@@ -44,6 +44,8 @@ Param(
 
 $script:viServer = $null
 $script:vmHost = $null
+$script:scsiLuns = $null
+
 $script:availableVSphereDscResources = $null
 $script:vSphereDscResourcesPropertiesToExclude = $null
 $script:vmHostConfigurationName = "VMHost_Config"
@@ -95,6 +97,22 @@ function Get-VSphereVMHost {
     }
     catch {
         throw "Could not retrieve VMHost $VMHostName from vSphere Server $($script:viServer.Name). For more information: $($_.Exception.Message)"
+    }
+}
+
+<#
+.DESCRIPTION
+
+Retrieves all SCSI devices that are available on the specified VMHost.
+#>
+function Get-ScsiDevices {
+    if ($null -eq $script:scsiLuns) {
+        try {
+            $script:scsiLuns = Get-ScsiLun -Server $script:viServer -VmHost $script:vmHost -ErrorAction Stop -Verbose:$false
+        }
+        catch {
+            throw "Could not retrieve SCSI devices from VMHost $VMHostName on vSphere Server $($script:viServer.Name). For more information: $($_.Exception.Message)"
+        }
     }
 }
 
@@ -499,18 +517,22 @@ function Read-VMHostDscResourceInfo {
 <#
 .DESCRIPTION
 
-Reads the information about SCSI devices and paths to the SCSI devices on the specified VMHost and exposes it in the VMHost DSC Configuration
-with the VMHostScsiLun and VMHostScsiLunPath DSC Resources.
+Reads the information about SCSI devices on the specified VMHost and exposes them in the VMHost DSC Configuration
+with the VMHostScsiLun DSC Resource.
 #>
 function Read-ScsiDevices {
-    Write-Host "Retrieving information about SCSI devices and paths to the SCSI devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    $scsiLuns = Get-ScsiLun -Server $script:viServer -VmHost $script:vmHost -ErrorAction Stop -Verbose:$false
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostScsiLun')) {
+        return
+    }
 
-    if ($scsiLuns.Length -gt 0) {
+    Write-Host "Retrieving information about SCSI devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Get-ScsiDevices
+
+    if ($script:scsiLuns.Length -gt 0) {
         Write-Warning -Message 'DeletePartitions property of VMHostScsiLun DSC Resource will not be exported in the configuration.'
     }
 
-    foreach ($scsiLun in $scsiLuns) {
+    foreach ($scsiLun in $script:scsiLuns) {
         $vmHostScsiLunDscResourceKeyProperties = @{
             Server = $Server
             Credential = $Credential
@@ -525,7 +547,24 @@ function Read-ScsiDevices {
         $formattedScsiLunCanonicalName = $scsiLun.CanonicalName -Replace ':', ''
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLun' -VMHostDscResourceInstanceName "VMHostScsiLun_$formattedScsiLunCanonicalName" -VMHostDscGetMethodResult $vmHostScsiLunDscResourceGetMethodResult
+    }
+}
 
+<#
+.DESCRIPTION
+
+Reads the information about paths to SCSI devices on the specified VMHost and exposes them in the VMHost DSC Configuration
+with the VMHostScsiLunPath DSC Resource.
+#>
+function Read-ScsiDevicesPaths {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostScsiLunPath')) {
+        return
+    }
+
+    Write-Host "Retrieving information about paths to SCSI devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Get-ScsiDevices
+
+    foreach ($scsiLun in $script:scsiLuns) {
         $scsiLunPaths = Get-ScsiLunPath -ScsiLun $scsiLun -ErrorAction Stop -Verbose:$false
         foreach ($scsiLunPath in $scsiLunPaths) {
             $vmHostScsiLunPathDscResourceKeyProperties = @{
@@ -539,15 +578,23 @@ function Read-ScsiDevices {
             $vmHostScsiLunPathDscResource = New-Object -TypeName 'VMHostScsiLunPath' -Property $vmHostScsiLunPathDscResourceKeyProperties
             $vmHostScsiLunPathDscResourceGetMethodResult = $vmHostScsiLunPathDscResource.Get()
 
-            $vmHostScsiLunPathDscResourceResult = @{
-                Name = $vmHostScsiLunPathDscResourceGetMethodResult.Name
-                ScsiLunCanonicalName = $vmHostScsiLunPathDscResourceGetMethodResult.ScsiLunCanonicalName
-                Active = $vmHostScsiLunPathDscResourceGetMethodResult.Active
-                Preferred = $vmHostScsiLunPathDscResourceGetMethodResult.Preferred
-                DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
-            }
+            if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostScsiLun') {
+                # The DSC engine requires a required resource name to be in the format '[<typename>]<name>', with alphanumeric characters, spaces, '_', '-', '.' and '\'.
+                $formattedScsiLunCanonicalName = $scsiLun.CanonicalName -Replace ':', ''
 
-            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLunPath' -VMHostDscResourceInstanceName "VMHostScsiLunPath_$($scsiLunPath.Name)" -VMHostDscGetMethodResult $vmHostScsiLunPathDscResourceResult
+                $vmHostScsiLunPathDscResourceResult = @{
+                    Name = $vmHostScsiLunPathDscResourceGetMethodResult.Name
+                    ScsiLunCanonicalName = $vmHostScsiLunPathDscResourceGetMethodResult.ScsiLunCanonicalName
+                    Active = $vmHostScsiLunPathDscResourceGetMethodResult.Active
+                    Preferred = $vmHostScsiLunPathDscResourceGetMethodResult.Preferred
+                    DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
+                }
+
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLunPath' -VMHostDscResourceInstanceName "VMHostScsiLunPath_$($scsiLunPath.Name)" -VMHostDscGetMethodResult $vmHostScsiLunPathDscResourceResult
+            }
+            else {
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLunPath' -VMHostDscResourceInstanceName "VMHostScsiLunPath_$($scsiLunPath.Name)" -VMHostDscGetMethodResult $vmHostScsiLunPathDscResourceGetMethodResult
+            }
         }
     }
 }
@@ -1556,6 +1603,7 @@ function Read-VMHostConfiguration {
 
     # VMHost Storage DSC Resources
     Read-ScsiDevices
+    Read-ScsiDevicesPaths
     Read-IScsiHbas
     Read-Datastores
 
