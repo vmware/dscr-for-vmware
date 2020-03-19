@@ -35,11 +35,18 @@ Param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]
-    $OutputPath
+    $OutputPath,
+
+    [Parameter()]
+    [string[]]
+    $VMHostDscResourcesToExport
 )
 
 $script:viServer = $null
 $script:vmHost = $null
+$script:scsiLuns = $null
+$script:iScsiHbas = $null
+
 $script:availableVSphereDscResources = $null
 $script:vSphereDscResourcesPropertiesToExclude = $null
 $script:vmHostConfigurationName = "VMHost_Config"
@@ -91,6 +98,38 @@ function Get-VSphereVMHost {
     }
     catch {
         throw "Could not retrieve VMHost $VMHostName from vSphere Server $($script:viServer.Name). For more information: $($_.Exception.Message)"
+    }
+}
+
+<#
+.DESCRIPTION
+
+Retrieves all SCSI devices that are available on the specified VMHost.
+#>
+function Get-ScsiDevices {
+    if ($null -eq $script:scsiLuns) {
+        try {
+            $script:scsiLuns = Get-ScsiLun -Server $script:viServer -VmHost $script:vmHost -ErrorAction Stop -Verbose:$false
+        }
+        catch {
+            throw "Could not retrieve SCSI devices from VMHost $VMHostName on vSphere Server $($script:viServer.Name). For more information: $($_.Exception.Message)"
+        }
+    }
+}
+
+<#
+.DESCRIPTION
+
+Retrieves all iSCSI Host Bus Adapters that are available on the specified VMHost.
+#>
+function Get-IScsiHostBusAdapters {
+    if ($null -eq $script:iScsiHbas) {
+        try {
+            $script:iScsiHbas = Get-VMHostHba -Server $script:viServer -VMHost $script:vmHost -Type 'iSCSI' -ErrorAction Stop -Verbose:$false
+        }
+        catch {
+            throw "Could not retrieve iSCSI Host Bus Adapters from VMHost $VMHostName on vSphere Server $($script:viServer.Name). For more information: $($_.Exception.Message)"
+        }
     }
 }
 
@@ -435,11 +474,48 @@ function New-VMHostDscResourceBlock {
 }
 
 <#
+.SYNOPSIS
+Checks if the specified VMHost DSC Resource should be exported.
+
+.DESCRIPTION
+Checks if the specified VMHost DSC Resource should be exported. If the VMHost DSC Resource is specified
+in the VMHostDscResourcesToExport array or the array is not passed, the VMHost DSC Resource will be exported.
+Otherwise the VMHost DSC Resource will not be exported.
+
+.PARAMETER VMHostDscResourceName
+The name of the VMHost DSC Resource that will be checked whether to be exported.
+#>
+function Test-ExportVMHostDscResource {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $VMHostDscResourceName
+    )
+
+    $result = $false
+    if ($VMHostDscResourcesToExport.Count -eq 0 -or $VMHostDscResourcesToExport -Contains $VMHostDscResourceName) {
+        $result = $true
+    }
+
+    $result
+}
+
+<#
+.SYNOPSIS
+Reads the information about the specified DSC Resource and exposes it in the VMHost DSC Configuration.
+
 .DESCRIPTION
 Reads the information about the specified DSC Resource and exposes it in the VMHost DSC Configuration.
+The user is notified with a message about the currently exported VMHost DSC Resource.
 
 .PARAMETER VMHostDscResourceName
 The name of the VMHost DSC Resource that is going to be exposed in the VMHost DSC Configuration.
+
+.PARAMETER Message
+The message that is shown to the user when the specified VMHost DSC Resource is exported.
 #>
 function Read-VMHostDscResourceInfo {
     [CmdletBinding()]
@@ -447,8 +523,19 @@ function Read-VMHostDscResourceInfo {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $VMHostDscResourceName
+        $VMHostDscResourceName,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Message
     )
+
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName $VMHostDscResourceName)) {
+        return
+    }
+
+    Write-Host $Message -BackgroundColor DarkGreen -ForegroundColor White
 
     $vmHostDscResourceKeyProperties = @{
         Server = $Server
@@ -465,18 +552,22 @@ function Read-VMHostDscResourceInfo {
 <#
 .DESCRIPTION
 
-Reads the information about SCSI devices and paths to the SCSI devices on the specified VMHost and exposes it in the VMHost DSC Configuration
-with the VMHostScsiLun and VMHostScsiLunPath DSC Resources.
+Reads the information about SCSI devices on the specified VMHost and exposes them in the VMHost DSC Configuration
+with the VMHostScsiLun DSC Resource.
 #>
 function Read-ScsiDevices {
-    Write-Host "Retrieving information about SCSI devices and paths to the SCSI devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    $scsiLuns = Get-ScsiLun -Server $script:viServer -VmHost $script:vmHost -ErrorAction Stop -Verbose:$false
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostScsiLun')) {
+        return
+    }
 
-    if ($scsiLuns.Length -gt 0) {
+    Write-Host "Retrieving information about SCSI devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Get-ScsiDevices
+
+    if ($script:scsiLuns.Length -gt 0) {
         Write-Warning -Message 'DeletePartitions property of VMHostScsiLun DSC Resource will not be exported in the configuration.'
     }
 
-    foreach ($scsiLun in $scsiLuns) {
+    foreach ($scsiLun in $script:scsiLuns) {
         $vmHostScsiLunDscResourceKeyProperties = @{
             Server = $Server
             Credential = $Credential
@@ -491,7 +582,24 @@ function Read-ScsiDevices {
         $formattedScsiLunCanonicalName = $scsiLun.CanonicalName -Replace ':', ''
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLun' -VMHostDscResourceInstanceName "VMHostScsiLun_$formattedScsiLunCanonicalName" -VMHostDscGetMethodResult $vmHostScsiLunDscResourceGetMethodResult
+    }
+}
 
+<#
+.DESCRIPTION
+
+Reads the information about paths to SCSI devices on the specified VMHost and exposes them in the VMHost DSC Configuration
+with the VMHostScsiLunPath DSC Resource.
+#>
+function Read-ScsiDevicesPaths {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostScsiLunPath')) {
+        return
+    }
+
+    Write-Host "Retrieving information about paths to SCSI devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Get-ScsiDevices
+
+    foreach ($scsiLun in $script:scsiLuns) {
         $scsiLunPaths = Get-ScsiLunPath -ScsiLun $scsiLun -ErrorAction Stop -Verbose:$false
         foreach ($scsiLunPath in $scsiLunPaths) {
             $vmHostScsiLunPathDscResourceKeyProperties = @{
@@ -505,15 +613,23 @@ function Read-ScsiDevices {
             $vmHostScsiLunPathDscResource = New-Object -TypeName 'VMHostScsiLunPath' -Property $vmHostScsiLunPathDscResourceKeyProperties
             $vmHostScsiLunPathDscResourceGetMethodResult = $vmHostScsiLunPathDscResource.Get()
 
-            $vmHostScsiLunPathDscResourceResult = @{
-                Name = $vmHostScsiLunPathDscResourceGetMethodResult.Name
-                ScsiLunCanonicalName = $vmHostScsiLunPathDscResourceGetMethodResult.ScsiLunCanonicalName
-                Active = $vmHostScsiLunPathDscResourceGetMethodResult.Active
-                Preferred = $vmHostScsiLunPathDscResourceGetMethodResult.Preferred
-                DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
-            }
+            if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostScsiLun') {
+                # The DSC engine requires a required resource name to be in the format '[<typename>]<name>', with alphanumeric characters, spaces, '_', '-', '.' and '\'.
+                $formattedScsiLunCanonicalName = $scsiLun.CanonicalName -Replace ':', ''
 
-            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLunPath' -VMHostDscResourceInstanceName "VMHostScsiLunPath_$($scsiLunPath.Name)" -VMHostDscGetMethodResult $vmHostScsiLunPathDscResourceResult
+                $vmHostScsiLunPathDscResourceResult = @{
+                    Name = $vmHostScsiLunPathDscResourceGetMethodResult.Name
+                    ScsiLunCanonicalName = $vmHostScsiLunPathDscResourceGetMethodResult.ScsiLunCanonicalName
+                    Active = $vmHostScsiLunPathDscResourceGetMethodResult.Active
+                    Preferred = $vmHostScsiLunPathDscResourceGetMethodResult.Preferred
+                    DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
+                }
+
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLunPath' -VMHostDscResourceInstanceName "VMHostScsiLunPath_$($scsiLunPath.Name)" -VMHostDscGetMethodResult $vmHostScsiLunPathDscResourceResult
+            }
+            else {
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostScsiLunPath' -VMHostDscResourceInstanceName "VMHostScsiLunPath_$($scsiLunPath.Name)" -VMHostDscGetMethodResult $vmHostScsiLunPathDscResourceGetMethodResult
+            }
         }
     }
 }
@@ -521,20 +637,24 @@ function Read-ScsiDevices {
 <#
 .DESCRIPTION
 
-Reads the information about iSCSI Host Bus Adapters and iSCSI Host Bus Adapter targets on the specified VMHost and exposes it in the VMHost DSC Configuration
-with the VMHostIScsiHba and VMHostIScsiHbaTarget DSC Resources.
+Reads the information about iSCSI Host Bus Adapters on the specified VMHost and exposes them in the VMHost DSC Configuration
+with the VMHostIScsiHba DSC Resource.
 #>
 function Read-IScsiHbas {
-    Write-Host "Retrieving information about iSCSI Host Bus Adapters and iSCSI Host Bus Adapter targets on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    $iScsiHbas = Get-VMHostHba -Server $script:viServer -VMHost $script:vmHost -Type 'iSCSI' -ErrorAction Stop -Verbose:$false
-
-    if ($iScsiHbas.Length -gt 0) {
-        Write-Warning -Message 'Force, ChapPassword and MutualChapPassword properties of VMHostIScsiHba and VMHostIScsiHbaTarget DSC Resources will not be exported in the configuration.'
-        $script:vSphereDscResourcesPropertiesToExclude += 'ChapPassword'
-        $script:vSphereDscResourcesPropertiesToExclude += 'MutualChapPassword'
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostIScsiHba')) {
+        return
     }
 
-    foreach ($iScsiHba in $iScsiHbas) {
+    Write-Host "Retrieving information about iSCSI Host Bus Adapters on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Get-IScsiHostBusAdapters
+
+    if ($script:iScsiHbas.Length -gt 0) {
+        Write-Warning -Message 'Force, ChapPassword and MutualChapPassword properties of VMHostIScsiHba DSC Resource will not be exported in the configuration.'
+        if ($script:vSphereDscResourcesPropertiesToExclude -NotContains 'ChapPassword') { $script:vSphereDscResourcesPropertiesToExclude += 'ChapPassword' }
+        if ($script:vSphereDscResourcesPropertiesToExclude -NotContains 'MutualChapPassword') { $script:vSphereDscResourcesPropertiesToExclude += 'MutualChapPassword' }
+    }
+
+    foreach ($iScsiHba in $script:iScsiHbas) {
         $vmHostIScsiHbaDscResourceKeyProperties = @{
             Server = $Server
             Credential = $Credential
@@ -546,7 +666,30 @@ function Read-IScsiHbas {
         $vmHostIScsiHbaDscResourceGetMethodResult = $vmHostIScsiHbaDscResource.Get()
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHba' -VMHostDscResourceInstanceName "VMHostIScsiHba_$($iScsiHba.Name)" -VMHostDscGetMethodResult $vmHostIScsiHbaDscResourceGetMethodResult
+    }
+}
 
+<#
+.DESCRIPTION
+
+Reads the information about iSCSI Host Bus Adapter targets on the specified VMHost and exposes them in the VMHost DSC Configuration
+with the VMHostIScsiHbaTarget DSC Resource.
+#>
+function Read-IScsiHbaTargets {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostIScsiHbaTarget')) {
+        return
+    }
+
+    Write-Host "Retrieving information about iSCSI Host Bus Adapter targets on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+    Get-IScsiHostBusAdapters
+
+    if ($script:iScsiHbas.Length -gt 0) {
+        Write-Warning -Message 'Force, ChapPassword and MutualChapPassword properties of VMHostIScsiHbaTarget DSC Resource will not be exported in the configuration.'
+        if ($script:vSphereDscResourcesPropertiesToExclude -NotContains 'ChapPassword') { $script:vSphereDscResourcesPropertiesToExclude += 'ChapPassword' }
+        if ($script:vSphereDscResourcesPropertiesToExclude -NotContains 'MutualChapPassword') { $script:vSphereDscResourcesPropertiesToExclude += 'MutualChapPassword' }
+    }
+
+    foreach ($iScsiHba in $script:iScsiHbas) {
         $iScsiHbaTargets = Get-IScsiHbaTarget -Server $script:viServer -IScsiHba $iScsiHba -ErrorAction Stop -Verbose:$false
         foreach ($iScsiHbaTarget in $iScsiHbaTargets) {
             $vmHostIScsiHbaTargetDscResourceKeyProperties = @{
@@ -562,24 +705,28 @@ function Read-IScsiHbas {
             $vmHostIScsiHbaTargetDscResource = New-Object -TypeName 'VMHostIScsiHbaTarget' -Property $vmHostIScsiHbaTargetDscResourceKeyProperties
             $vmHostIScsiHbaTargetDscResourceGetMethodResult = $vmHostIScsiHbaTargetDscResource.Get()
 
-            $vmHostIScsiHbaTargetDscResourceResult = @{
-                Address = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Address
-                Port = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Port
-                IScsiHbaName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiHbaName
-                TargetType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.TargetType
-                Ensure = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Ensure
-                IScsiName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiName
-                InheritChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritChap
-                ChapType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapType
-                ChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapName
-                InheritMutualChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritMutualChap
-                MutualChapEnabled = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapEnabled
-                MutualChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapName
-                Force = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Force
-                DependsOn = "[VMHostIScsiHba]VMHostIScsiHba_$($iScsiHba.Name)"
-            }
+            if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostIScsiHba') {
+                $vmHostIScsiHbaTargetDscResourceResult = @{
+                    Address = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Address
+                    Port = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Port
+                    IScsiHbaName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiHbaName
+                    TargetType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.TargetType
+                    Ensure = $vmHostIScsiHbaTargetDscResourceGetMethodResult.Ensure
+                    IScsiName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.IScsiName
+                    InheritChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritChap
+                    ChapType = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapType
+                    ChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.ChapName
+                    InheritMutualChap = $vmHostIScsiHbaTargetDscResourceGetMethodResult.InheritMutualChap
+                    MutualChapEnabled = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapEnabled
+                    MutualChapName = $vmHostIScsiHbaTargetDscResourceGetMethodResult.MutualChapName
+                    DependsOn = "[VMHostIScsiHba]VMHostIScsiHba_$($iScsiHba.Name)"
+                }
 
-            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHbaTarget' -VMHostDscResourceInstanceName "VMHostIScsiHbaTarget_$($iScsiHbaTarget.Address):$($iScsiHbaTarget.Port)_$($iScsiHbaTarget.Type)" -VMHostDscGetMethodResult $vmHostIScsiHbaTargetDscResourceResult
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHbaTarget' -VMHostDscResourceInstanceName "VMHostIScsiHbaTarget_$($iScsiHbaTarget.Address):$($iScsiHbaTarget.Port)_$($iScsiHbaTarget.Type)" -VMHostDscGetMethodResult $vmHostIScsiHbaTargetDscResourceResult
+            }
+            else {
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostIScsiHbaTarget' -VMHostDscResourceInstanceName "VMHostIScsiHbaTarget_$($iScsiHbaTarget.Address):$($iScsiHbaTarget.Port)_$($iScsiHbaTarget.Type)" -VMHostDscGetMethodResult $vmHostIScsiHbaTargetDscResourceGetMethodResult
+            }
         }
     }
 }
@@ -591,6 +738,10 @@ Reads the information about Datastores on the specified VMHost and exposes it in
 with the VmfsDatastore and NfsDatastore DSC Resources.
 #>
 function Read-Datastores {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VmfsDatastore') -and !(Test-ExportVMHostDscResource -VMHostDscResourceName 'NfsDatastore')) {
+        return
+    }
+
     Write-Host "Retrieving information about Datastores on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $datastores = Get-Datastore -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
 
@@ -602,28 +753,33 @@ function Read-Datastores {
             Name = $datastore.Name
         }
 
-        if ($datastore.Type -eq 'VMFS') {
+        if ($datastore.Type -eq 'VMFS' -and (Test-ExportVMHostDscResource -VMHostDscResourceName 'VmfsDatastore')) {
             $datastoreDscResourceKeyProperties.Path = $datastore.ExtensionData.Info.Vmfs.Extent.DiskName
             $vmfsDatastoreDscResource = New-Object -TypeName 'VmfsDatastore' -Property $datastoreDscResourceKeyProperties
             $vmfsDatastoreDscResourceGetMethodResult = $vmfsDatastoreDscResource.Get()
 
-            # The DSC engine requires a required resource name to be in the format '[<typename>]<name>', with alphanumeric characters, spaces, '_', '-', '.' and '\'.
-            $formattedScsiLunCanonicalName = $vmfsDatastoreDscResourceGetMethodResult.Path -Replace ':', ''
+            if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostScsiLun') {
+                # The DSC engine requires a required resource name to be in the format '[<typename>]<name>', with alphanumeric characters, spaces, '_', '-', '.' and '\'.
+                $formattedScsiLunCanonicalName = $vmfsDatastoreDscResourceGetMethodResult.Path -Replace ':', ''
 
-            $vmfsDatastoreDscResourceResult = @{
-                Name = $vmfsDatastoreDscResourceGetMethodResult.Name
-                Path = $vmfsDatastoreDscResourceGetMethodResult.Path
-                Ensure = $vmfsDatastoreDscResourceGetMethodResult.Ensure
-                FileSystemVersion = $vmfsDatastoreDscResourceGetMethodResult.FileSystemVersion
-                BlockSizeMB = $vmfsDatastoreDscResourceGetMethodResult.BlockSizeMB
-                CongestionThresholdMillisecond = $vmfsDatastoreDscResourceGetMethodResult.CongestionThresholdMillisecond
-                StorageIOControlEnabled = $vmfsDatastoreDscResourceGetMethodResult.StorageIOControlEnabled
-                DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
+                $vmfsDatastoreDscResourceResult = @{
+                    Name = $vmfsDatastoreDscResourceGetMethodResult.Name
+                    Path = $vmfsDatastoreDscResourceGetMethodResult.Path
+                    Ensure = $vmfsDatastoreDscResourceGetMethodResult.Ensure
+                    FileSystemVersion = $vmfsDatastoreDscResourceGetMethodResult.FileSystemVersion
+                    BlockSizeMB = $vmfsDatastoreDscResourceGetMethodResult.BlockSizeMB
+                    CongestionThresholdMillisecond = $vmfsDatastoreDscResourceGetMethodResult.CongestionThresholdMillisecond
+                    StorageIOControlEnabled = $vmfsDatastoreDscResourceGetMethodResult.StorageIOControlEnabled
+                    DependsOn = "[VMHostScsiLun]VMHostScsiLun_$formattedScsiLunCanonicalName"
+                }
+
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VmfsDatastore' -VMHostDscResourceInstanceName "VmfsDatastore_$($datastore.Name)" -VMHostDscGetMethodResult $vmfsDatastoreDscResourceResult
             }
-
-            New-VMHostDscResourceBlock -VMHostDscResourceName 'VmfsDatastore' -VMHostDscResourceInstanceName "VmfsDatastore_$($datastore.Name)" -VMHostDscGetMethodResult $vmfsDatastoreDscResourceResult
+            else {
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VmfsDatastore' -VMHostDscResourceInstanceName "VmfsDatastore_$($datastore.Name)" -VMHostDscGetMethodResult $vmfsDatastoreDscResourceGetMethodResult
+            }
         }
-        elseif ($datastore.Type -eq 'NFS') {
+        elseif ($datastore.Type -eq 'NFS' -and (Test-ExportVMHostDscResource -VMHostDscResourceName 'NfsDatastore')) {
             $datastoreDscResourceKeyProperties.NfsHost = $datastore.RemoteHost
             $datastoreDscResourceKeyProperties.Path = $datastore.RemotePath
             $nfsDatastoreDscResource = New-Object -TypeName 'NfsDatastore' -Property $datastoreDscResourceKeyProperties
@@ -641,6 +797,10 @@ Reads the information about Physical Network Adapters on the specified VMHost an
 with the VMHostPhysicalNic DSC Resource.
 #>
 function Read-VMHostPhysicalNetworkAdapters {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostPhysicalNic')) {
+        return
+    }
+
     Write-Host "Retrieving information about Physical Network Adapters on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $physicalNetworkAdapters = Get-VMHostNetworkAdapter -Server $script:viServer -VMHost $script:vmHost -Physical -ErrorAction Stop -Verbose:$false
 
@@ -666,6 +826,10 @@ Reads the information about Standard Switches on the specified VMHost and expose
 with the StandardSwitch Composite DSC Resource.
 #>
 function Read-StandardSwitches {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'StandardSwitch')) {
+        return
+    }
+
     Write-Host "Retrieving information about Standard Switches on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $standardSwitches = Get-VirtualSwitch -Server $script:viServer -VMHost $script:vmHost -Standard -ErrorAction Stop -Verbose:$false
 
@@ -735,7 +899,7 @@ function Read-StandardSwitches {
             RollingOrder = $vmHostVssTeamingDscResourceGetMethodResult.RollingOrder
         }
 
-        if ($null -ne $standardSwitchDscResourceDependencies) {
+        if ($null -ne $standardSwitchDscResourceDependencies -and (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostPhysicalNic')) {
             $standardSwitchDscResourceResult.DependsOn = $standardSwitchDscResourceDependencies
         }
 
@@ -750,6 +914,10 @@ Reads the information about Standard Port Groups on the specified VMHost and exp
 with the StandardPortGroup Composite DSC Resource.
 #>
 function Read-StandardPortGroups {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'StandardPortGroup')) {
+        return
+    }
+
     Write-Host "Retrieving information about Standard Port Groups on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $standardPortGroups = Get-VirtualPortGroup -Server $script:viServer -VMHost $script:vmHost -Standard -ErrorAction Stop -Verbose:$false
 
@@ -810,7 +978,10 @@ function Read-StandardPortGroups {
             InheritLoadBalancingPolicy = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.InheritLoadBalancingPolicy
             InheritNetworkFailoverDetectionPolicy = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.InheritNetworkFailoverDetectionPolicy
             InheritNotifySwitches = $vmHostVssPortGroupTeamingDscResourceGetMethodResult.InheritNotifySwitches
-            DependsOn = "[StandardSwitch]StandardSwitch_$($standardPortGroup.VirtualSwitchName)"
+        }
+
+        if (Test-ExportVMHostDscResource -VMHostDscResourceName 'StandardSwitch') {
+            $standardPortGroupDscResourceResult.DependsOn = "[StandardSwitch]StandardSwitch_$($standardPortGroup.VirtualSwitchName)"
         }
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'StandardPortGroup' -VMHostDscResourceInstanceName "StandardPortGroup_$($standardPortGroup.Name)" -VMHostDscGetMethodResult $standardPortGroupDscResourceResult
@@ -824,6 +995,10 @@ Reads the information about VMKernel Network Adapters on the specified VMHost an
 with the VMHostVssNic DSC Resource.
 #>
 function Read-VMKernelNetworkAdapters {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostVssNic')) {
+        return
+    }
+
     Write-Host "Retrieving information about VMKernel Network Adapters on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmKernelNetworkAdapters = Get-VMHostNetworkAdapter -Server $script:viServer -VMHost $script:vmHost -VMKernel -ErrorAction Stop -Verbose:$false
 
@@ -864,27 +1039,32 @@ function Read-VMKernelNetworkAdapters {
             continue
         }
 
-        $vmHostVssNicDscResourceResult = @{
-            VssName = $vmHostVssNicDscResourceGetMethodResult.VssName
-            PortGroupName = $vmHostVssNicDscResourceGetMethodResult.PortGroupName
-            Ensure = $vmHostVssNicDscResourceGetMethodResult.Ensure
-            Dhcp = $vmHostVssNicDscResourceGetMethodResult.Dhcp
-            IP = $vmHostVssNicDscResourceGetMethodResult.IP
-            SubnetMask = $vmHostVssNicDscResourceGetMethodResult.SubnetMask
-            Mac = $vmHostVssNicDscResourceGetMethodResult.Mac
-            AutomaticIPv6 = $vmHostVssNicDscResourceGetMethodResult.AutomaticIPv6
-            IPv6 = $vmHostVssNicDscResourceGetMethodResult.IPv6
-            IPv6ThroughDhcp = $vmHostVssNicDscResourceGetMethodResult.IPv6ThroughDhcp
-            Mtu = $vmHostVssNicDscResourceGetMethodResult.Mtu
-            IPv6Enabled = $vmHostVssNicDscResourceGetMethodResult.IPv6Enabled
-            ManagementTrafficEnabled = $vmHostVssNicDscResourceGetMethodResult.ManagementTrafficEnabled
-            FaultToleranceLoggingEnabled = $vmHostVssNicDscResourceGetMethodResult.FaultToleranceLoggingEnabled
-            VMotionEnabled = $vmHostVssNicDscResourceGetMethodResult.VMotionEnabled
-            VsanTrafficEnabled = $vmHostVssNicDscResourceGetMethodResult.VsanTrafficEnabled
-            DependsOn = "[StandardPortGroup]StandardPortGroup_$($vmKernelNetworkAdapter.PortGroupName)"
-        }
+        if (Test-ExportVMHostDscResource -VMHostDscResourceName 'StandardPortGroup') {
+            $vmHostVssNicDscResourceResult = @{
+                VssName = $vmHostVssNicDscResourceGetMethodResult.VssName
+                PortGroupName = $vmHostVssNicDscResourceGetMethodResult.PortGroupName
+                Ensure = $vmHostVssNicDscResourceGetMethodResult.Ensure
+                Dhcp = $vmHostVssNicDscResourceGetMethodResult.Dhcp
+                IP = $vmHostVssNicDscResourceGetMethodResult.IP
+                SubnetMask = $vmHostVssNicDscResourceGetMethodResult.SubnetMask
+                Mac = $vmHostVssNicDscResourceGetMethodResult.Mac
+                AutomaticIPv6 = $vmHostVssNicDscResourceGetMethodResult.AutomaticIPv6
+                IPv6 = $vmHostVssNicDscResourceGetMethodResult.IPv6
+                IPv6ThroughDhcp = $vmHostVssNicDscResourceGetMethodResult.IPv6ThroughDhcp
+                Mtu = $vmHostVssNicDscResourceGetMethodResult.Mtu
+                IPv6Enabled = $vmHostVssNicDscResourceGetMethodResult.IPv6Enabled
+                ManagementTrafficEnabled = $vmHostVssNicDscResourceGetMethodResult.ManagementTrafficEnabled
+                FaultToleranceLoggingEnabled = $vmHostVssNicDscResourceGetMethodResult.FaultToleranceLoggingEnabled
+                VMotionEnabled = $vmHostVssNicDscResourceGetMethodResult.VMotionEnabled
+                VsanTrafficEnabled = $vmHostVssNicDscResourceGetMethodResult.VsanTrafficEnabled
+                DependsOn = "[StandardPortGroup]StandardPortGroup_$($vmKernelNetworkAdapter.PortGroupName)"
+            }
 
-        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVssNic' -VMHostDscResourceInstanceName "VMHostVssNic_$($vmKernelNetworkAdapter.Name)" -VMHostDscGetMethodResult $vmHostVssNicDscResourceResult
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVssNic' -VMHostDscResourceInstanceName "VMHostVssNic_$($vmKernelNetworkAdapter.Name)" -VMHostDscGetMethodResult $vmHostVssNicDscResourceResult
+        }
+        else {
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVssNic' -VMHostDscResourceInstanceName "VMHostVssNic_$($vmKernelNetworkAdapter.Name)" -VMHostDscGetMethodResult $vmHostVssNicDscResourceGetMethodResult
+        }
     }
 }
 
@@ -895,6 +1075,10 @@ Reads the information about DNS settings on the specified VMHost and exposes it 
 with the VMHostDnsSettings DSC Resource.
 #>
 function Read-VMHostDnsSettings {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostDnsSettings')) {
+        return
+    }
+
     Write-Host "Retrieving information about DNS settings on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
 
     $vmHostDnsSettingsDscResourceKeyProperties = @{
@@ -906,7 +1090,11 @@ function Read-VMHostDnsSettings {
     $vmHostDnsSettingsDscResource = New-Object -TypeName 'VMHostDnsSettings' -Property $vmHostDnsSettingsDscResourceKeyProperties
     $vmHostDnsSettingsDscResourceGetMethodResult = $vmHostDnsSettingsDscResource.Get()
 
-    if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice) -or ![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice)) {
+    if (
+        (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostVssNic') -and
+        (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice) -or
+        ![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice))
+    ) {
         $vmHostDnsSettingsDscResourceDependencies = @()
         if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice)) {
             $vmHostDnsSettingsDscResourceDependencies += "[VMHostVssNic]VMHostVssNic_$($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice)"
@@ -941,6 +1129,10 @@ Reads the information about IP Routes on the specified VMHost and exposes it in 
 with the VMHostIPRoute DSC Resource.
 #>
 function Read-VMHostIPRoutes {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostIPRoute')) {
+        return
+    }
+
     Write-Host "Retrieving information about IP Routes on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $ipRoutes = Get-VMHostRoute -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
 
@@ -968,6 +1160,10 @@ Reads the information about network core dump configuration on the specified VMH
 with the VMHostNetworkCoreDump DSC Resource.
 #>
 function Read-VMHostNetworkCoreDump {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostNetworkCoreDump')) {
+        return
+    }
+
     Write-Host "Retrieving information about VMHost $($script:vmHost.Name) network core dump configuration..." -BackgroundColor DarkGreen -ForegroundColor White
 
     $vmHostNetworkCoreDumpDscResourceKeyProperties = @{
@@ -979,7 +1175,10 @@ function Read-VMHostNetworkCoreDump {
     $vmHostNetworkCoreDumpDscResource = New-Object -TypeName 'VMHostNetworkCoreDump' -Property $vmHostNetworkCoreDumpDscResourceKeyProperties
     $vmHostNetworkCoreDumpDscResourceGetMethodResult = $vmHostNetworkCoreDumpDscResource.Get()
 
-    if (![string]::IsNullOrEmpty($vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName)) {
+    if (
+        ![string]::IsNullOrEmpty($vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName) -and
+        (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostVssNic')
+    ) {
         $vmHostNetworkCoreDumpDscResourceResult = @{
             Enable = $vmHostNetworkCoreDumpDscResourceGetMethodResult.Enable
             InterfaceName = $vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName
@@ -1002,6 +1201,10 @@ Reads the information about advanced settings on the specified VMHost and expose
 with the VMHostAdvancedSettings DSC Resource.
 #>
 function Read-VMHostAdvancedSettings {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostAdvancedSettings')) {
+        return
+    }
+
     Write-Host "Retrieving information about VMHost $($script:vmHost.Name) advanced settings..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmHostAdvancedSettings = Get-AdvancedSetting -Server $script:viServer -Entity $script:vmHost -ErrorAction Stop -Verbose:$false
     $advancedSettings = @{}
@@ -1032,6 +1235,10 @@ Reads the information about graphics devices on the specified VMHost and exposes
 with the VMHostGraphicsDevice DSC Resource.
 #>
 function Read-VMHostGraphicsDevices {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostGraphicsDevice')) {
+        return
+    }
+
     Write-Host "Retrieving information about graphics devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmHostGraphicsManager = Get-View -Server $script:viServer -Id $script:vmHost.ExtensionData.ConfigManager.GraphicsManager -ErrorAction Stop -Verbose:$false
     $graphicsDevices = $vmHostGraphicsManager.GraphicsConfig.DeviceType
@@ -1061,7 +1268,10 @@ function Read-VMHostEsxCliInfo {
     $esxCli = Get-EsxCli -Server $script:viServer -VMHost $script:vmHost -V2 -ErrorAction Stop -Verbose:$false
 
     # If no software devices are present on the VMHost, an exception will be thrown when the Invoke() method is executed.
-    if ($null -ne $esxCli.device.software.list) {
+    if (
+        $null -ne $esxCli.device.software.list -and
+        (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostSoftwareDevice')
+    ) {
         Write-Host "Retrieving information about software devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
         $vmHostSoftwareDevices = $esxCli.device.software.list.Invoke()
         foreach ($vmHostSoftwareDevice in $vmHostSoftwareDevices) {
@@ -1079,78 +1289,84 @@ function Read-VMHostEsxCliInfo {
         }
     }
 
-    Write-Host "Retrieving information about VMKernel modules on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    $vmHostVMKernelModules = $esxCli.system.module.list.Invoke()
+    if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostVMKernelModule') {
+        Write-Host "Retrieving information about VMKernel modules on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+        $vmHostVMKernelModules = $esxCli.system.module.list.Invoke()
 
-    if ($vmHostVMKernelModules.Length -gt 0) {
-        Write-Warning -Message 'Force property of VMHostVMKernelModule DSC Resource will not be exported in the configuration.'
-    }
-
-    foreach ($vmHostVMKernelModule in $vmHostVMKernelModules) {
-        $vmHostVMKernelModuleDscResourceKeyProperties = @{
-            Server = $Server
-            Credential = $Credential
-            Name = $VMHostName
-            Module = $vmHostVMKernelModule.Name
+        if ($vmHostVMKernelModules.Length -gt 0) {
+            Write-Warning -Message 'Force property of VMHostVMKernelModule DSC Resource will not be exported in the configuration.'
         }
 
-        $vmHostVMKernelModuleDscResource = New-Object -TypeName 'VMHostVMKernelModule' -Property $vmHostVMKernelModuleDscResourceKeyProperties
-        $vmHostVMKernelModuleDscResourceGetMethodResult = $vmHostVMKernelModuleDscResource.Get()
-
-        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVMKernelModule' -VMHostDscResourceInstanceName "VMHostVMKernelModule_$($vmHostVMKernelModule.Name)" -VMHostDscGetMethodResult $vmHostVMKernelModuleDscResourceGetMethodResult
-    }
-
-    Write-Host "Retrieving information about vSan network configuration on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    $vmHostvSanNetworkConfigurations = $esxCli.vsan.network.list.Invoke()
-
-    if ($null -ne $vmHostvSanNetworkConfigurations.VmkNicName) {
-        Write-Warning -Message 'Force property of VMHostvSANNetworkConfiguration DSC Resource will not be exported in the configuration.'
-        foreach ($vmHostvSanNetworkConfiguration in $vmHostvSanNetworkConfigurations) {
-            if ($null -ne $vmHostvSanNetworkConfiguration) {
-                $vmHostvSANNetworkConfigurationDscResourceKeyProperties = @{
-                    Server = $Server
-                    Credential = $Credential
-                    Name = $VMHostName
-                    InterfaceName = $vmHostvSanNetworkConfiguration.VmkNicName
-                }
-
-                $vmHostvSANNetworkConfigurationDscResource = New-Object -TypeName 'VMHostvSANNetworkConfiguration' -Property $vmHostvSANNetworkConfigurationDscResourceKeyProperties
-                $vmHostvSANNetworkConfigurationDscResourceGetMethodResult = $vmHostvSANNetworkConfigurationDscResource.Get()
-
-                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostvSANNetworkConfiguration' -VMHostDscResourceInstanceName "VMHostvSANNetworkConfiguration_$($vmHostvSanNetworkConfiguration.VmkNicName)" -VMHostDscGetMethodResult $vmHostvSANNetworkConfigurationDscResourceGetMethodResult
-            }
-        }
-    }
-
-    Write-Host "Retrieving information about VMKernel dump files on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    $vmHostVMKernelDumpFiles = $esxCli.system.coredump.file.list.Invoke()
-
-    if ($null -ne $vmHostVMKernelDumpFiles.Path) {
-        foreach ($vmHostVMKernelDumpFile in $vmHostVMKernelDumpFiles) {
-            $vmHostVMKernelDumpFileParts = $vmHostVMKernelDumpFile.Path -Split '/'
-            $vmHostVMKernelDumpFileName = ($vmHostVMKernelDumpFileParts[5] -Split '\.')[0]
-            $vmHostVMKernelDumpFileDatastoreName = $null
-
-            $fileSystems = $esxCli.storage.filesystem.list.Invoke(@{})
-            foreach ($fileSystem in $fileSystems) {
-                if ($fileSystem.UUID -eq $vmHostVMKernelDumpFileParts[3] -or $fileSystem.VolumeName -eq $vmHostVMKernelDumpFileParts[3]) {
-                    $vmHostVMKernelDumpFileDatastoreName = $fileSystem.VolumeName
-                    break
-                }
-            }
-
-            $vmHostVMKernelDumpFileDscResourceKeyProperties = @{
+        foreach ($vmHostVMKernelModule in $vmHostVMKernelModules) {
+            $vmHostVMKernelModuleDscResourceKeyProperties = @{
                 Server = $Server
                 Credential = $Credential
                 Name = $VMHostName
-                DatastoreName = $vmHostVMKernelDumpFileDatastoreName
-                FileName = $vmHostVMKernelDumpFileName
+                Module = $vmHostVMKernelModule.Name
             }
 
-            $vmHostVMKernelDumpFileDscResource = New-Object -TypeName 'VMHostVMKernelDumpFile' -Property $vmHostVMKernelDumpFileDscResourceKeyProperties
-            $vmHostVMKernelDumpFileDscResourceGetMethodResult = $vmHostVMKernelDumpFileDscResource.Get()
+            $vmHostVMKernelModuleDscResource = New-Object -TypeName 'VMHostVMKernelModule' -Property $vmHostVMKernelModuleDscResourceKeyProperties
+            $vmHostVMKernelModuleDscResourceGetMethodResult = $vmHostVMKernelModuleDscResource.Get()
 
-            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVMKernelDumpFile' -VMHostDscResourceInstanceName "VMHostVMKernelDumpFile_$($vmHostVMKernelDumpFileDatastoreName)_$vmHostVMKernelDumpFileName" -VMHostDscGetMethodResult $vmHostVMKernelDumpFileDscResourceGetMethodResult
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVMKernelModule' -VMHostDscResourceInstanceName "VMHostVMKernelModule_$($vmHostVMKernelModule.Name)" -VMHostDscGetMethodResult $vmHostVMKernelModuleDscResourceGetMethodResult
+        }
+    }
+
+    if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostvSANNetworkConfiguration') {
+        Write-Host "Retrieving information about vSan network configuration on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+        $vmHostvSanNetworkConfigurations = $esxCli.vsan.network.list.Invoke()
+
+        if ($null -ne $vmHostvSanNetworkConfigurations.VmkNicName) {
+            Write-Warning -Message 'Force property of VMHostvSANNetworkConfiguration DSC Resource will not be exported in the configuration.'
+            foreach ($vmHostvSanNetworkConfiguration in $vmHostvSanNetworkConfigurations) {
+                if ($null -ne $vmHostvSanNetworkConfiguration) {
+                    $vmHostvSANNetworkConfigurationDscResourceKeyProperties = @{
+                        Server = $Server
+                        Credential = $Credential
+                        Name = $VMHostName
+                        InterfaceName = $vmHostvSanNetworkConfiguration.VmkNicName
+                    }
+
+                    $vmHostvSANNetworkConfigurationDscResource = New-Object -TypeName 'VMHostvSANNetworkConfiguration' -Property $vmHostvSANNetworkConfigurationDscResourceKeyProperties
+                    $vmHostvSANNetworkConfigurationDscResourceGetMethodResult = $vmHostvSANNetworkConfigurationDscResource.Get()
+
+                    New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostvSANNetworkConfiguration' -VMHostDscResourceInstanceName "VMHostvSANNetworkConfiguration_$($vmHostvSanNetworkConfiguration.VmkNicName)" -VMHostDscGetMethodResult $vmHostvSANNetworkConfigurationDscResourceGetMethodResult
+                }
+            }
+        }
+    }
+
+    if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostVMKernelDumpFile') {
+        Write-Host "Retrieving information about VMKernel dump files on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
+        $vmHostVMKernelDumpFiles = $esxCli.system.coredump.file.list.Invoke()
+
+        if ($null -ne $vmHostVMKernelDumpFiles.Path) {
+            foreach ($vmHostVMKernelDumpFile in $vmHostVMKernelDumpFiles) {
+                $vmHostVMKernelDumpFileParts = $vmHostVMKernelDumpFile.Path -Split '/'
+                $vmHostVMKernelDumpFileName = ($vmHostVMKernelDumpFileParts[5] -Split '\.')[0]
+                $vmHostVMKernelDumpFileDatastoreName = $null
+
+                $fileSystems = $esxCli.storage.filesystem.list.Invoke(@{})
+                foreach ($fileSystem in $fileSystems) {
+                    if ($fileSystem.UUID -eq $vmHostVMKernelDumpFileParts[3] -or $fileSystem.VolumeName -eq $vmHostVMKernelDumpFileParts[3]) {
+                        $vmHostVMKernelDumpFileDatastoreName = $fileSystem.VolumeName
+                        break
+                    }
+                }
+
+                $vmHostVMKernelDumpFileDscResourceKeyProperties = @{
+                    Server = $Server
+                    Credential = $Credential
+                    Name = $VMHostName
+                    DatastoreName = $vmHostVMKernelDumpFileDatastoreName
+                    FileName = $vmHostVMKernelDumpFileName
+                }
+
+                $vmHostVMKernelDumpFileDscResource = New-Object -TypeName 'VMHostVMKernelDumpFile' -Property $vmHostVMKernelDumpFileDscResourceKeyProperties
+                $vmHostVMKernelDumpFileDscResourceGetMethodResult = $vmHostVMKernelDumpFileDscResource.Get()
+
+                New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostVMKernelDumpFile' -VMHostDscResourceInstanceName "VMHostVMKernelDumpFile_$($vmHostVMKernelDumpFileDatastoreName)_$vmHostVMKernelDumpFileName" -VMHostDscGetMethodResult $vmHostVMKernelDumpFileDscResourceGetMethodResult
+            }
         }
     }
 }
@@ -1162,6 +1378,10 @@ Reads the information about Services on the specified VMHost and exposes it in t
 with the VMHostService DSC Resource.
 #>
 function Read-VMHostServices {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostService')) {
+        return
+    }
+
     Write-Host "Retrieving information about Services on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmHostServices = Get-VMHostService -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
 
@@ -1187,6 +1407,10 @@ Reads the information about firewall rulesets on the specified VMHost and expose
 with the VMHostFirewallRuleset DSC Resource.
 #>
 function Read-VMHostFirewallRulesets {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostFirewallRuleset')) {
+        return
+    }
+
     Write-Host "Retrieving information about firewall rulesets on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmHostFirewallRulesets = Get-VMHostFirewallException -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
 
@@ -1212,6 +1436,10 @@ Reads the information about Pci passthrough devices on the specified VMHost and 
 with the VMHostPciPassthrough DSC Resource.
 #>
 function Read-VMHostPciPassthrough {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostPciPassthrough')) {
+        return
+    }
+
     Write-Host "Retrieving information about Pci passthrough devices on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmHostPciPassthruSystem = Get-View -Server $script:viServer -Id $script:vmHost.ExtensionData.ConfigManager.PciPassthruSystem -ErrorAction Stop -Verbose:$false
     $vmHostPciDevices = $vmHostPciPassthruSystem.PciPassthruInfo | Where-Object -FilterScript { $_.PassthruCapable }
@@ -1238,6 +1466,10 @@ Reads the information about cache on the specified VMHost and exposes it in the 
 with the VMHostCache DSC Resource.
 #>
 function Read-VMHostCache {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostCache')) {
+        return
+    }
+
     Write-Host "Retrieving information about cache on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmHostCacheConfigurationManager = Get-View -Server $script:viServer -Id $script:vmHost.ExtensionData.ConfigManager.CacheConfigurationManager -ErrorAction Stop -Verbose:$false
     $vmHostCacheConfigurationDatastores = $vmHostCacheConfigurationManager.CacheConfigurationInfo.Key
@@ -1268,6 +1500,10 @@ Reads the information about roles on the specified VMHost and exposes it in the 
 with the VMHostRole DSC Resource.
 #>
 function Read-VMHostRoles {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostRole')) {
+        return
+    }
+
     Write-Host "Retrieving information about VMHost $($script:vmHost.Name) roles..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmHostRoles = Get-VIRole -Server $script:viServer -ErrorAction Stop -Verbose:$false
 
@@ -1292,6 +1528,10 @@ Reads the information about accounts on the specified VMHost and exposes it in t
 with the VMHostAccount DSC Resource.
 #>
 function Read-VMHostAccounts {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostAccount')) {
+        return
+    }
+
     Write-Host "Retrieving information about VMHost $($script:vmHost.Name) accounts..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmHostAccounts = Get-VMHostAccount -Server $script:viServer -ErrorAction Stop -Verbose:$false
 
@@ -1310,15 +1550,20 @@ function Read-VMHostAccounts {
         $vmHostAccountDscResource = New-Object -TypeName 'VMHostAccount' -Property $vmHostAccountDscResourceKeyProperties
         $vmHostAccountDscResourceGetMethodResult = $vmHostAccountDscResource.Get()
 
-        $vmHostAccountDscResourceResult = @{
-            Id = $vmHostAccountDscResourceGetMethodResult.Id
-            Ensure = $vmHostAccountDscResourceGetMethodResult.Ensure
-            Role = $vmHostAccountDscResourceGetMethodResult.Role
-            Description = $vmHostAccountDscResourceGetMethodResult.Description
-            DependsOn = "[VMHostRole]VMHostRole_$($vmHostAccountDscResourceGetMethodResult.Role)"
-        }
+        if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostRole') {
+            $vmHostAccountDscResourceResult = @{
+                Id = $vmHostAccountDscResourceGetMethodResult.Id
+                Ensure = $vmHostAccountDscResourceGetMethodResult.Ensure
+                Role = $vmHostAccountDscResourceGetMethodResult.Role
+                Description = $vmHostAccountDscResourceGetMethodResult.Description
+                DependsOn = "[VMHostRole]VMHostRole_$($vmHostAccountDscResourceGetMethodResult.Role)"
+            }
 
-        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostAccount' -VMHostDscResourceInstanceName "VMHostAccount_$($vmHostAccount.Id)" -VMHostDscGetMethodResult $vmHostAccountDscResourceResult
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostAccount' -VMHostDscResourceInstanceName "VMHostAccount_$($vmHostAccount.Id)" -VMHostDscGetMethodResult $vmHostAccountDscResourceResult
+        }
+        else {
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostAccount' -VMHostDscResourceInstanceName "VMHostAccount_$($vmHostAccount.Id)" -VMHostDscGetMethodResult $vmHostAccountDscResourceGetMethodResult
+        }
     }
 }
 
@@ -1403,6 +1648,10 @@ Reads the information about permissions on the specified VMHost and exposes it i
 with the VMHostPermission DSC Resource.
 #>
 function Read-VMHostPermissions {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostPermission')) {
+        return
+    }
+
     Write-Host "Retrieving information about VMHost $($script:vmHost.Name) permissions..." -BackgroundColor DarkGreen -ForegroundColor White
     $vmHostPermissions = Get-VIPermission -Server $script:viServer -ErrorAction Stop -Verbose:$false
 
@@ -1426,10 +1675,22 @@ function Read-VMHostPermissions {
         $vmHostPermissionDscResource = New-Object -TypeName 'VMHostPermission' -Property $vmHostPermissionDscResourceKeyProperties
         $vmHostPermissionDscResourceGetMethodResult = $vmHostPermissionDscResource.Get()
 
-        $vmHostPermissionDscResourceDependencies = @("[VMHostAccount]VMHostAccount_$principalName")
+        $vmHostPermissionDscResourceDependencies = $null
+
+        if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostAccount') {
+            if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostRole') {
+                $vmHostPermissionDscResourceDependencies = @("[VMHostAccount]VMHostAccount_$principalName")
+            }
+            else {
+                $vmHostPermissionDscResourceDependencies = "[VMHostAccount]VMHostAccount_$principalName"
+            }
+        }
 
         # Permission could exist without a Role.
-        if (![string]::IsNullOrEmpty($vmHostPermissionDscResourceGetMethodResult.RoleName)) {
+        if (
+            ![string]::IsNullOrEmpty($vmHostPermissionDscResourceGetMethodResult.RoleName) -and
+            (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostRole')
+        ) {
             $vmHostPermissionDscResourceDependencies += "[VMHostRole]VMHostRole_$($vmHostPermissionDscResourceGetMethodResult.RoleName)"
         }
 
@@ -1442,7 +1703,10 @@ function Read-VMHostPermissions {
             RoleName = $vmHostPermissionDscResourceGetMethodResult.RoleName
             Ensure = $vmHostPermissionDscResourceGetMethodResult.Ensure
             Propagate = $vmHostPermissionDscResourceGetMethodResult.Propagate
-            DependsOn = $vmHostPermissionDscResourceDependencies
+        }
+
+        if ($null -ne $vmHostPermissionDscResourceDependencies) {
+            $vmHostPermissionDscResourceResult.DependsOn = $vmHostPermissionDscResourceDependencies
         }
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostPermission' -VMHostDscResourceInstanceName "VMHostPermission_$($entityName)_$principalName" -VMHostDscGetMethodResult $vmHostPermissionDscResourceResult
@@ -1452,53 +1716,31 @@ function Read-VMHostPermissions {
 <#
 .DESCRIPTION
 
-Reads the information about authentication and NFS user accounts on the specified VMHost and exposes it in the VMHost DSC Configuration
-with the VMHostAuthentication and NfsUser DSC Resources.
+Reads the information about NFS user accounts on the specified VMHost and exposes them in the VMHost DSC Configuration
+with the NfsUser DSC Resource.
 #>
-function Read-VMHostAuthentication {
-    if ($script:viServer.ProductLine -eq 'embeddedEsx') {
-        Read-VMHostRoles
-        Read-VMHostAccounts
-        Read-VMHostPermissions
-    }
-    else {
-        Write-Warning -Message "VMHost $($script:vmHost) accounts, roles and permissions cannot be exported into the configuration because the connection is to vCenter Server instance. Connect directly to the ESXi to export them."
+function Read-NfsUserAccounts {
+    if (!(Test-ExportVMHostDscResource -VMHostDscResourceName 'NfsUser')) {
+        return
     }
 
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) authentication and NFS user accounts..." -BackgroundColor DarkGreen -ForegroundColor White
-    $vmHostAuthenticationInfo = Get-VMHostAuthentication -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
+    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) NFS user accounts..." -BackgroundColor DarkGreen -ForegroundColor White
+    $nfsUser = Get-NfsUser -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
 
-    if ($null -ne $vmHostAuthenticationInfo.Domain) {
-        $vmHostAuthenticationDscResourceKeyProperties = @{
-            Server = $Server
-            Credential = $Credential
-            Name = $VMHostName
-            DomainName = $vmHostAuthenticationInfo.Domain
-            DomainAction = 'Join'
-        }
+    $nfsUserDscResourceKeyProperties = @{
+        Server = $Server
+        Credential = $Credential
+        VMHostName = $VMHostName
+        Name = $nfsUser.Username
+    }
 
-        $vmHostAuthenticationDscResource = New-Object -TypeName 'VMHostAuthentication' -Property $vmHostAuthenticationDscResourceKeyProperties
-        $vmHostAuthenticationDscResourceGetMethodResult = $vmHostAuthenticationDscResource.Get()
+    $nfsUserDscResource = New-Object -TypeName 'NfsUser' -Property $nfsUserDscResourceKeyProperties
+    $nfsUserDscResourceGetMethodResult = $nfsUserDscResource.Get()
 
-        Write-Warning -Message 'DomainCredential property of VMHostAuthentication DSC Resource will not be exported in the configuration.'
-        $script:vSphereDscResourcesPropertiesToExclude += 'DomainCredential'
+    Write-Warning -Message 'Password and Force properties of NfsUser DSC Resource will not be exported in the configuration.'
+    $script:vSphereDscResourcesPropertiesToExclude += 'Password'
 
-        New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostAuthentication' -VMHostDscResourceInstanceName 'VMHostAuthentication' -VMHostDscGetMethodResult $vmHostAuthenticationDscResourceGetMethodResult
-
-        $nfsUser = Get-NfsUser -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
-        $nfsUserDscResourceKeyProperties = @{
-            Server = $Server
-            Credential = $Credential
-            VMHostName = $VMHostName
-            Name = $nfsUser.Username
-        }
-
-        $nfsUserDscResource = New-Object -TypeName 'NfsUser' -Property $nfsUserDscResourceKeyProperties
-        $nfsUserDscResourceGetMethodResult = $nfsUserDscResource.Get()
-
-        Write-Warning -Message 'Password and Force properties of NfsUser DSC Resource will not be exported in the configuration.'
-        $script:vSphereDscResourcesPropertiesToExclude += 'Password'
-
+    if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostAuthentication') {
         $nfsUserDscResourceResult = @{
             Name = $nfsUserDscResourceGetMethodResult.Name
             Ensure = $nfsUserDscResourceGetMethodResult.Ensure
@@ -1508,6 +1750,57 @@ function Read-VMHostAuthentication {
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'NfsUser' -VMHostDscResourceInstanceName 'NfsUser' -VMHostDscGetMethodResult $nfsUserDscResourceResult
     }
+    else {
+        New-VMHostDscResourceBlock -VMHostDscResourceName 'NfsUser' -VMHostDscResourceInstanceName 'NfsUser' -VMHostDscGetMethodResult $nfsUserDscResourceGetMethodResult
+    }
+}
+
+<#
+.DESCRIPTION
+
+Reads the information about authentication on the specified VMHost and exposes it in the VMHost DSC Configuration
+with the VMHostRole, VMHostAccount, VMHostPermission, VMHostAuthentication and NfsUser DSC Resources.
+#>
+function Read-VMHostAuthentication {
+    if (
+        (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostRole') -or
+        (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostAccount') -or
+        (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostPermission')
+    ) {
+        if ($script:viServer.ProductLine -eq 'embeddedEsx') {
+            Read-VMHostRoles
+            Read-VMHostAccounts
+            Read-VMHostPermissions
+        }
+        else {
+            Write-Warning -Message "VMHost $($script:vmHost) accounts, roles and permissions cannot be exported into the configuration because the connection is to vCenter Server instance. Connect directly to the ESXi to export them."
+        }
+    }
+
+    if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostAuthentication') {
+        Write-Host "Retrieving information about VMHost $($script:vmHost.Name) authentication..." -BackgroundColor DarkGreen -ForegroundColor White
+        $vmHostAuthenticationInfo = Get-VMHostAuthentication -Server $script:viServer -VMHost $script:vmHost -ErrorAction Stop -Verbose:$false
+
+        if ($null -ne $vmHostAuthenticationInfo.Domain) {
+            $vmHostAuthenticationDscResourceKeyProperties = @{
+                Server = $Server
+                Credential = $Credential
+                Name = $VMHostName
+                DomainName = $vmHostAuthenticationInfo.Domain
+                DomainAction = 'Join'
+            }
+
+            $vmHostAuthenticationDscResource = New-Object -TypeName 'VMHostAuthentication' -Property $vmHostAuthenticationDscResourceKeyProperties
+            $vmHostAuthenticationDscResourceGetMethodResult = $vmHostAuthenticationDscResource.Get()
+
+            Write-Warning -Message 'DomainCredential property of VMHostAuthentication DSC Resource will not be exported in the configuration.'
+            $script:vSphereDscResourcesPropertiesToExclude += 'DomainCredential'
+
+            New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostAuthentication' -VMHostDscResourceInstanceName 'VMHostAuthentication' -VMHostDscGetMethodResult $vmHostAuthenticationDscResourceGetMethodResult
+        }
+    }
+
+    Read-NfsUserAccounts
 }
 
 <#
@@ -1522,12 +1815,13 @@ function Read-VMHostConfiguration {
 
     # VMHost Storage DSC Resources
     Read-ScsiDevices
+    Read-ScsiDevicesPaths
     Read-IScsiHbas
+    Read-IScsiHbaTargets
     Read-Datastores
 
     # VMHost Network DSC Resources
-    Write-Host "Retrieving information about NTP settings on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostNtpSettings'
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostNtpSettings' -Message "Retrieving information about NTP settings on VMHost $($script:vmHost)..."
 
     Read-VMHostPhysicalNetworkAdapters
     Read-StandardSwitches
@@ -1538,52 +1832,37 @@ function Read-VMHostConfiguration {
     Read-VMHostNetworkCoreDump
 
     # VMHost settings DSC Resources
-    if ($script:vmHost.VMSwapfilePolicy.ToString() -eq 'Inherit') {
-        Write-Warning -Message "VMHost configuration with swapfile placement policy 'Inherited' will not be exported in the configuration."
-    }
-    else {
-        Write-Warning -Message 'Evacuate property of VMHostConfiguration DSC Resource will not be exported in the configuration.'
-        Write-Host "Retrieving information about VMHost $($script:vmHost.Name) configuration..." -BackgroundColor DarkGreen -ForegroundColor White
-        Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostConfiguration'
+    if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostConfiguration') {
+        if ($script:vmHost.VMSwapfilePolicy.ToString() -eq 'Inherit') {
+            Write-Warning -Message "VMHost configuration with swapfile placement policy 'Inherited' will not be exported in the configuration."
+        }
+        else {
+            Write-Warning -Message 'Evacuate property of VMHostConfiguration DSC Resource will not be exported in the configuration.'
+            Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostConfiguration' -Message "Retrieving information about VMHost $($script:vmHost.Name) configuration..."
+        }
     }
 
     Read-VMHostAdvancedSettings
 
-    Write-Host "Retrieving information about TPS settings on VMHost $($script:vmHost)..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostTpsSettings'
-
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) settings..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSettings'
-
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) power policy..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostPowerPolicy'
-
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) graphics settings..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostGraphics'
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostTpsSettings' -Message "Retrieving information about TPS settings on VMHost $($script:vmHost)..."
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSettings' -Message "Retrieving information about VMHost $($script:vmHost.Name) settings..."
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostPowerPolicy' -Message "Retrieving information about VMHost $($script:vmHost.Name) power policy..."
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostGraphics' -Message "Retrieving information about VMHost $($script:vmHost.Name) graphics settings..."
 
     Read-VMHostGraphicsDevices
 
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) syslog settings..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSyslog'
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSyslog' -Message "Retrieving information about VMHost $($script:vmHost.Name) syslog settings..."
 
-    Write-Warning -Message 'Reset property of VMHostSNMPAgent DSC Resource will not be exported in the configuration.'
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) SNMP agent settings..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSNMPAgent'
+    if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostSNMPAgent') {
+        Write-Warning -Message 'Reset property of VMHostSNMPAgent DSC Resource will not be exported in the configuration.'
+        Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSNMPAgent' -Message "Retrieving information about VMHost $($script:vmHost.Name) SNMP agent settings..."
+    }
 
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) shared swap space settings..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSharedSwapSpace'
-
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) DCUI keyboard..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostDCUIKeyboard'
-
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) acceptance level..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostAcceptanceLevel'
-
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) VMKernel active dump partition settings..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostVMKernelActiveDumpPartition'
-
-    Write-Host "Retrieving information about VMHost $($script:vmHost.Name) VMKernel active dump file settings..." -BackgroundColor DarkGreen -ForegroundColor White
-    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostVMKernelActiveDumpFile'
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostSharedSwapSpace' -Message "Retrieving information about VMHost $($script:vmHost.Name) shared swap space settings..."
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostDCUIKeyboard' -Message "Retrieving information about VMHost $($script:vmHost.Name) DCUI keyboard..."
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostAcceptanceLevel' -Message "Retrieving information about VMHost $($script:vmHost.Name) acceptance level..."
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostVMKernelActiveDumpPartition' -Message "Retrieving information about VMHost $($script:vmHost.Name) VMKernel active dump partition settings..."
+    Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostVMKernelActiveDumpFile' -Message "Retrieving information about VMHost $($script:vmHost.Name) VMKernel active dump file settings..."
 
     Write-Warning -Message "VMHost $($script:vmHost) SATP Claim Rules are not exported into the configuration."
 
@@ -1594,12 +1873,13 @@ function Read-VMHostConfiguration {
     Read-VMHostCache
     Read-VMHostAuthentication
 
-    if ($script:viServer.ProductLine -eq 'vpx') {
-        Write-Host "Retrieving information about VMHost $($script:vmHost.Name) AgentVM settings..." -BackgroundColor DarkGreen -ForegroundColor White
-        Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostAgentVM'
-    }
-    else {
-        Write-Warning -Message "VMHost $($script:vmHost) AgentVM settings cannot be exported into the configuration because the connection is to ESXi. Connect directly to vCenter Server instance to export them."
+    if (Test-ExportVMHostDscResource -VMHostDscResourceName 'VMHostAgentVM') {
+        if ($script:viServer.ProductLine -eq 'vpx') {
+            Read-VMHostDscResourceInfo -VMHostDscResourceName 'VMHostAgentVM' -Message "Retrieving information about VMHost $($script:vmHost.Name) AgentVM settings..."
+        }
+        else {
+            Write-Warning -Message "VMHost $($script:vmHost) AgentVM settings cannot be exported into the configuration because the connection is to ESXi. Connect directly to vCenter Server instance to export them."
+        }
     }
 }
 
