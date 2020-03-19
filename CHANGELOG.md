@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.60 - 2020-03-19
+### Changed
+- Fixed bugs with multiple dependencies for StandardSwitch, VMHostDnsSettings and VMHostPermission DSC Resources in ExportVMHostConfiguration script.
+
 ## 2.1.0.59 - 2020-03-19
 ### Added
 - Added example DSC Configurations for VMHost Authentication, Storage and Network.
