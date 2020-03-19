@@ -408,7 +408,28 @@ function New-VMHostDscResourceBlock {
         elseif ($vmHostDscResourceProperty.PropertyType -eq '[HashTable]') { Push-HashtablePropertyToVMHostDscResourceBlock -PropertyName $propertyName -PropertyValue $propertyValue }
     }
 
-    if ($null -ne $VMHostDscGetMethodResult.DependsOn) { [void] $script:vmHostDscConfigContent.Append("                DependsOn = '$($VMHostDscGetMethodResult.DependsOn)'`r`n") }
+    <#
+        Depending on the type of DependsOn in the Get method result, the dependencies are
+        appended to the configuration content differently: for array of dependencies, each dependency in
+        the array is appended with quotes. Otherwise the single dependency is appended with quotes.
+    #>
+    if ($null -ne $VMHostDscGetMethodResult.DependsOn) {
+        if ($VMHostDscGetMethodResult.DependsOn -is [array]) {
+            [void] $script:vmHostDscConfigContent.Append("                DependsOn = @(")
+            for ($i = 0; $i -lt $VMHostDscGetMethodResult.DependsOn.Length; $i++) {
+                if ($i -eq $VMHostDscGetMethodResult.DependsOn.Length - 1) {
+                    [void] $script:vmHostDscConfigContent.Append("'$($VMHostDscGetMethodResult.DependsOn[$i])'")
+                }
+                else {
+                    [void] $script:vmHostDscConfigContent.Append("'$($VMHostDscGetMethodResult.DependsOn[$i])', ")
+                }
+            }
+            [void] $script:vmHostDscConfigContent.Append(")`r`n")
+        }
+        else {
+            [void] $script:vmHostDscConfigContent.Append("                DependsOn = '$($VMHostDscGetMethodResult.DependsOn)'`r`n")
+        }
+    }
 
     [void] $script:vmHostDscConfigContent.Append("            }`r`n`r`n")
 }
@@ -671,13 +692,20 @@ function Read-StandardSwitches {
         $vmHostVssTeamingDscResource = New-Object -TypeName 'VMHostVssTeaming' -Property $vmHostVssDscResourcesKeyProperties
         $vmHostVssTeamingDscResourceGetMethodResult = $vmHostVssTeamingDscResource.Get()
 
-        $standardSwitchDscResourceDependencies = ''
-        for ($i = 0; $i -lt $vmHostVssBridgeDscResourceGetMethodResult.NicDevice.Length; $i++) {
-            if ($i -eq $vmHostVssBridgeDscResourceGetMethodResult.NicDevice.Length - 1) {
-                $standardSwitchDscResourceDependencies += "[VMHostPhysicalNic]VMHostPhysicalNic_$($vmHostVssBridgeDscResourceGetMethodResult.NicDevice[$i])"
+        <#
+            If only one NIC device is bridged to the Standard Switch, the DependsOn type is 'string'.
+            Otherwise for more than one NIC device the type is 'string[]'.
+        #>
+        $standardSwitchDscResourceDependencies = $null
+        if ($vmHostVssBridgeDscResourceGetMethodResult.NicDevice.Length -ne 0) {
+            if ($vmHostVssBridgeDscResourceGetMethodResult.NicDevice.Length -eq 1) {
+                $standardSwitchDscResourceDependencies = "[VMHostPhysicalNic]VMHostPhysicalNic_$($vmHostVssBridgeDscResourceGetMethodResult.NicDevice)"
             }
             else {
-                $standardSwitchDscResourceDependencies += "[VMHostPhysicalNic]VMHostPhysicalNic_$($vmHostVssBridgeDscResourceGetMethodResult.NicDevice[$i]), "
+                $standardSwitchDscResourceDependencies = @()
+                for ($i = 0; $i -lt $vmHostVssBridgeDscResourceGetMethodResult.NicDevice.Length; $i++) {
+                    $standardSwitchDscResourceDependencies += "[VMHostPhysicalNic]VMHostPhysicalNic_$($vmHostVssBridgeDscResourceGetMethodResult.NicDevice[$i])"
+                }
             }
         }
 
@@ -705,7 +733,10 @@ function Read-StandardSwitches {
             NotifySwitches = $vmHostVssTeamingDscResourceGetMethodResult.NotifySwitches
             Policy = $vmHostVssTeamingDscResourceGetMethodResult.Policy
             RollingOrder = $vmHostVssTeamingDscResourceGetMethodResult.RollingOrder
-            DependsOn = $standardSwitchDscResourceDependencies
+        }
+
+        if ($null -ne $standardSwitchDscResourceDependencies) {
+            $standardSwitchDscResourceResult.DependsOn = $standardSwitchDscResourceDependencies
         }
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'StandardSwitch' -VMHostDscResourceInstanceName "StandardSwitch_$($standardSwitch.Name)" -VMHostDscGetMethodResult $standardSwitchDscResourceResult
@@ -876,16 +907,12 @@ function Read-VMHostDnsSettings {
     $vmHostDnsSettingsDscResourceGetMethodResult = $vmHostDnsSettingsDscResource.Get()
 
     if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice) -or ![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice)) {
-        $vmHostDnsSettingsDscResourceDependencies = ''
+        $vmHostDnsSettingsDscResourceDependencies = @()
         if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice)) {
             $vmHostDnsSettingsDscResourceDependencies += "[VMHostVssNic]VMHostVssNic_$($vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice)"
         }
 
         if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice) -and $vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice -ne $vmHostDnsSettingsDscResourceGetMethodResult.VirtualNicDevice) {
-            if (![string]::IsNullOrEmpty($vmHostDnsSettingsDscResourceDependencies)) {
-                $vmHostDnsSettingsDscResourceDependencies += ", "
-            }
-
             $vmHostDnsSettingsDscResourceDependencies += "[VMHostVssNic]VMHostVssNic_$($vmHostDnsSettingsDscResourceGetMethodResult.Ipv6VirtualNicDevice)"
         }
 
@@ -953,14 +980,12 @@ function Read-VMHostNetworkCoreDump {
     $vmHostNetworkCoreDumpDscResourceGetMethodResult = $vmHostNetworkCoreDumpDscResource.Get()
 
     if (![string]::IsNullOrEmpty($vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName)) {
-        $vmHostNetworkCoreDumpDscResourceDependencies = "[VMHostVssNic]VMHostVssNic_$($vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName)"
-
         $vmHostNetworkCoreDumpDscResourceResult = @{
             Enable = $vmHostNetworkCoreDumpDscResourceGetMethodResult.Enable
             InterfaceName = $vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName
             ServerIp = $vmHostNetworkCoreDumpDscResourceGetMethodResult.ServerIp
             ServerPort = $vmHostNetworkCoreDumpDscResourceGetMethodResult.ServerPort
-            DependsOn = $vmHostNetworkCoreDumpDscResourceDependencies
+            DependsOn = "[VMHostVssNic]VMHostVssNic_$($vmHostNetworkCoreDumpDscResourceGetMethodResult.InterfaceName)"
         }
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostNetworkCoreDump' -VMHostDscResourceInstanceName 'VMHostNetworkCoreDump' -VMHostDscGetMethodResult $vmHostNetworkCoreDumpDscResourceResult
@@ -1360,6 +1385,13 @@ function Get-EntityType {
     if ($entityType -eq 'Folder') {
         $entityType = 'VMHost'
     }
+    elseif ($entityType -Match 'Datastore') {
+        # The extracted Datastore type is either 'VmfsDatastore' or 'NasDatastore'.
+        $entityType = 'Datastore'
+    }
+    elseif ($entityType -eq 'VirtualMachine') {
+        $entityType = 'VM'
+    }
 
     $entityType
 }
@@ -1394,6 +1426,13 @@ function Read-VMHostPermissions {
         $vmHostPermissionDscResource = New-Object -TypeName 'VMHostPermission' -Property $vmHostPermissionDscResourceKeyProperties
         $vmHostPermissionDscResourceGetMethodResult = $vmHostPermissionDscResource.Get()
 
+        $vmHostPermissionDscResourceDependencies = @("[VMHostAccount]VMHostAccount_$principalName")
+
+        # Permission could exist without a Role.
+        if (![string]::IsNullOrEmpty($vmHostPermissionDscResourceGetMethodResult.RoleName)) {
+            $vmHostPermissionDscResourceDependencies += "[VMHostRole]VMHostRole_$($vmHostPermissionDscResourceGetMethodResult.RoleName)"
+        }
+
         $vmHostPermissionDscResourceResult = @{
             Id = $vmHostPermissionDscResourceGetMethodResult.Id
             EntityName = $vmHostPermissionDscResourceGetMethodResult.EntityName
@@ -1403,7 +1442,7 @@ function Read-VMHostPermissions {
             RoleName = $vmHostPermissionDscResourceGetMethodResult.RoleName
             Ensure = $vmHostPermissionDscResourceGetMethodResult.Ensure
             Propagate = $vmHostPermissionDscResourceGetMethodResult.Propagate
-            DependsOn = "[VMHostAccount]VMHostAccount_$principalName"
+            DependsOn = $vmHostPermissionDscResourceDependencies
         }
 
         New-VMHostDscResourceBlock -VMHostDscResourceName 'VMHostPermission' -VMHostDscResourceInstanceName "VMHostPermission_$($entityName)_$principalName" -VMHostDscGetMethodResult $vmHostPermissionDscResourceResult
