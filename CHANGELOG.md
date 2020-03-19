@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.59 - 2020-03-19
+### Added
+- Added example DSC Configurations for VMHost Authentication, Storage and Network.
+
 ## 2.1.0.58 - 2020-03-06
 ### Added
 - **NfsDatastore**: DSC Resource that is used to create, update and delete NFS Datastores on the VMHost.
