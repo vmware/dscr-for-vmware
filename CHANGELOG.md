@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.62 - 2020-03-31
+### Changed
+- Fixed bug with running Unit Tests locally.
+
 ## 2.1.0.61 - 2020-03-19
 ### Added
 - Added support for specifying which VMHost DSC Resources to export in ExportVMHostConfiguration script.
