@@ -17,8 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 $script:PSModulePath = $env:PSModulePath
 $script:ModuleName = 'VMware.vSphereDSC'
 
-$script:UnitTestsDirectory = Join-Path (Join-Path (Get-Module -Name $script:ModuleName -ListAvailable).ModuleBase 'Tests') 'Unit'
-. "$unitTestsDirectory\TestHelpers\TestUtils.ps1"
+$script:UnitTestsPath = Join-Path (Join-Path (Get-Module -Name $script:ModuleName -ListAvailable).ModuleBase 'Tests') 'Unit'
+. (Join-Path -Path (Join-Path -Path $script:UnitTestsPath -ChildPath 'TestHelpers') -ChildPath 'TestUtils.ps1')
 
 Import-VMwareVSphereDSCModule
 
@@ -29,8 +29,8 @@ try {
     InModuleScope -ModuleName $script:ModuleName {
         $script:DscResourceName = 'DatastoreCluster'
 
-        . "$PSScriptRoot\DatastoreCluster.Mocks.Data.ps1"
-        . "$PSScriptRoot\DatastoreCluster.Mocks.ps1"
+        . (Join-Path -Path $PSScriptRoot -ChildPath 'DatastoreCluster.Mocks.Data.ps1')
+        . (Join-Path -Path $PSScriptRoot -ChildPath 'DatastoreCluster.Mocks.ps1')
 
         Describe "$script:DscResourceName\Set" -Tag 'Set' {
             BeforeAll {

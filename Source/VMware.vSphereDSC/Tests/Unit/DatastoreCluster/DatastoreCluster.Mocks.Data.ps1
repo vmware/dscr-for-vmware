@@ -85,6 +85,12 @@ $script:DatacenterDatastoreFolderViewBaseObject = [VMware.Vim.Folder] @{
 $script:DatacenterDatastoreFolder = [VMware.VimAutomation.ViCore.Impl.V1.Inventory.FolderImpl] @{
     Id = $script:Constants.DatacenterDatastoreFolderId
     Name = $script:Constants.DatacenterDatastoreFolderName
+    ExtensionData = [VMware.Vim.Folder] @{
+        MoRef = [VMware.Vim.ManagedObjectReference] @{
+            Type = $script:Constants.FolderType
+            Value = $script:Constants.DatacenterDatastoreFolderId
+        }
+    }
 }
 
 $script:DatastoreCluster = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement.DatastoreClusterImpl] @{
@@ -94,4 +100,10 @@ $script:DatastoreCluster = [VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagem
     IOLoadBalanceEnabled = $script:Constants.IOLoadBalanceEnabled
     SdrsAutomationLevel = $script:Constants.SdrsAutomationLevel
     SpaceUtilizationThresholdPercent = $script:Constants.SpaceUtilizationThresholdPercent
+    ExtensionData = [VMware.Vim.StoragePod] @{
+        Parent = [VMware.Vim.ManagedObjectReference] @{
+            Type = $script:Constants.FolderType
+            Value = $script:Constants.DatacenterDatastoreFolderId
+        }
+    }
 }

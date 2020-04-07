@@ -164,7 +164,17 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
             Verbose = $false
         }
 
-        return Get-DatastoreCluster @getDatastoreClusterParams
+        $whereObjectParams = @{
+            FilterScript = {
+                $_.ExtensionData.Parent -eq $datastoreClusterLocation.ExtensionData.MoRef
+            }
+        }
+
+        <#
+            Multiple Datastore Clusters with the same name can be present in a Datacenter. So we need to filter
+            by the direct Parent Folder of the Datastore Cluster to retrieve the desired one.
+        #>
+        return Get-DatastoreCluster @getDatastoreClusterParams | Where-Object @whereObjectParams
     }
 
     <#
