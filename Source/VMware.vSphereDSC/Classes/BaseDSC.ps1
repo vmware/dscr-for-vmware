@@ -148,7 +148,7 @@ class BaseDSC {
         $result = $null
 
         if ($this.$settingName -is [string]) {
-            $result = (![string]::IsNullOrEmpty($desiredSetting) -and $desiredSetting -ne $currentSetting)
+            $result = ($null -ne $desiredSetting -and $desiredSetting -ne [string] $currentSetting)
         }
         elseif ($this.$settingName -is [enum]) {
             $result = ($desiredSetting -ne $this.DscResourcesEnumDefaultValue -and $desiredSetting -ne $currentSetting)

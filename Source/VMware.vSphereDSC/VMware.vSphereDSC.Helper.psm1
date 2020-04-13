@@ -57,9 +57,9 @@ function New-DNSConfig {
         [bool] $Dhcp,
         [string] $DomainName,
         [string] $HostName,
-        [string] $Ipv6VirtualNicDevice,
+        $Ipv6VirtualNicDevice,
         [string[]] $SearchDomain,
-        [string] $VirtualNicDevice
+        $VirtualNicDevice
     )
 
     $dnsConfig = New-Object VMware.Vim.HostDnsConfig
@@ -67,16 +67,14 @@ function New-DNSConfig {
     $dnsConfig.DomainName = $DomainName
 
     if (!$Dhcp) {
-        $dnsConfig.Address = $Address
-        $dnsConfig.SearchDomain = $SearchDomain
+        if ($null -ne $Address) { $dnsConfig.Address = $Address }
+        if ($null -ne $SearchDomain) { $dnsConfig.SearchDomain = $SearchDomain }
     }
     else {
         $dnsConfig.Dhcp = $Dhcp
-        $dnsConfig.VirtualNicDevice = $VirtualNicDevice
 
-        if ($Ipv6VirtualNicDevice -ne [string]::Empty) {
-            $dnsConfig.Ipv6VirtualNicDevice = $Ipv6VirtualNicDevice
-        }
+        if ($null -ne $VirtualNicDevice) { $dnsConfig.VirtualNicDevice = $VirtualNicDevice }
+        if ($null -ne $Ipv6VirtualNicDevice) { $dnsConfig.Ipv6VirtualNicDevice = $Ipv6VirtualNicDevice }
     }
 
     return $dnsConfig
