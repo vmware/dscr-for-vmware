@@ -49,6 +49,9 @@ class BaseDSC {
     hidden [string] $GetMethodStartMessage = "Begin executing Get functionality for {0} DSC Resource."
     hidden [string] $GetMethodEndMessage = "End executing Get functionality for {0} DSC Resource."
 
+    hidden [string] $SettingIsNotInDesiredStateMessage = "Setting {0}: Current setting value [ {1} ] does not match desired setting value [ {2} ]."
+    hidden [string] $DscResourcesEnumDefaultValue = 'Unset'
+
     hidden [string] $vCenterProductId = 'vpx'
     hidden [string] $ESXiProductId = 'embeddedEsx'
 
@@ -102,7 +105,7 @@ class BaseDSC {
 
     Checks if the passed array is in the desired state and if an update should be performed.
     #>
-    [bool] ShouldUpdateArraySetting($currentArray, $desiredArray) {
+    [bool] ShouldUpdateArraySetting($settingName, $currentArray, $desiredArray) {
         $result = $null
 
         if ($null -eq $desiredArray) {
@@ -111,6 +114,7 @@ class BaseDSC {
         }
         elseif ($desiredArray.Length -eq 0 -and $currentArray.Length -ne 0) {
             # Empty array specified as desired, but current is not an empty array, so update should be performed.
+            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
             $result = $true
         }
         else {
@@ -119,16 +123,42 @@ class BaseDSC {
 
             if ($null -ne $elementsToAdd -or $null -ne $elementsToRemove) {
                 <#
-                The current array does not contain at least one element from desired array or
-                the desired array is a subset of the current array. In both cases
-                we should perform an update operation.
+                    The current array does not contain at least one element from desired array or
+                    the desired array is a subset of the current array. In both cases
+                    we should perform an update operation.
                 #>
+                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
                 $result = $true
             }
             else {
                 # No need to perform an update operation.
                 $result = $false
             }
+        }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the passed setting is in the desired state and if an update should be performed.
+    #>
+    [bool] ShouldUpdateDscResourceSetting($settingName, $currentSetting, $desiredSetting) {
+        $result = $null
+
+        if ($this.$settingName -is [string]) {
+            $result = (![string]::IsNullOrEmpty($desiredSetting) -and $desiredSetting -ne $currentSetting)
+        }
+        elseif ($this.$settingName -is [enum]) {
+            $result = ($desiredSetting -ne $this.DscResourcesEnumDefaultValue -and $desiredSetting -ne $currentSetting)
+        }
+        else {
+            $result = ($null -ne $desiredSetting -and $desiredSetting -ne $currentSetting)
+        }
+
+        if ($result) {
+            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, $currentSetting, $desiredSetting)
         }
 
         return $result
