@@ -53,6 +53,7 @@ class VMHostTpsSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
@@ -60,31 +61,39 @@ class VMHostTpsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
-            $shouldUpdateTpsSettings = $this.ShouldUpdateTpsSettings($vmHost)
 
-            return !$shouldUpdateTpsSettings
+            $result = !$this.ShouldUpdateTpsSettings($vmHost)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [VMHostTpsSettings] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [VMHostTpsSettings]::new()
             $result.Server = $this.Server
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $result.Name = $vmHost.Name
-            $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+
+            $tpsSettings = $this.GetTpsAdvancedSettings($vmHost)
 
             $vmHostTpsSettingsDscResourcePropertyNames = $this.GetType().GetProperties().Name
             foreach ($tpsSetting in $tpsSettings) {
@@ -98,7 +107,25 @@ class VMHostTpsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Tps advanced settings for the specified VMHost from the server.
+    #>
+    [PSObject] GetTpsAdvancedSettings($vmHost) {
+        $getAdvancedSettingParams = @{
+            Server = $this.Connection
+            Entity = $vmHost
+            Name = $this.TpsSettingsName
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        return Get-AdvancedSetting @getAdvancedSettingParams
     }
 
     <#
@@ -107,12 +134,13 @@ class VMHostTpsSettings : VMHostBaseDSC {
     Returns a boolean value, indicating if update operation should be performed on at least one of the TPS Settings.
     #>
     [bool] ShouldUpdateTpsSettings($vmHost) {
-        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+        $tpsSettings = $this.GetTpsAdvancedSettings($vmHost)
 
         foreach ($tpsSetting in $tpsSettings) {
             $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
 
             if ($null -ne $this.$tpsSettingName -and $this.$tpsSettingName -ne $tpsSetting.Value) {
+                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($tpsSettingName, $tpsSetting.Value, $this.$tpsSettingName)
                 return $true
             }
         }
@@ -126,7 +154,7 @@ class VMHostTpsSettings : VMHostBaseDSC {
     Updates the needed TPS Settings with the specified values.
     #>
     [void] UpdateTpsSettings($vmHost) {
-        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+        $tpsSettings = $this.GetTpsAdvancedSettings($vmHost)
 
         foreach ($tpsSetting in $tpsSettings) {
             $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
@@ -135,7 +163,14 @@ class VMHostTpsSettings : VMHostBaseDSC {
                 continue
             }
 
-            Set-AdvancedSetting -AdvancedSetting $tpsSetting -Value $this.$tpsSettingName -Confirm:$false
+            $setAdvancedSettingParams = @{
+                AdvancedSetting = $tpsSetting
+                Value = $this.$tpsSettingName
+                Confirm = $false
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+            Set-AdvancedSetting @setAdvancedSettingParams
         }
     }
 }
