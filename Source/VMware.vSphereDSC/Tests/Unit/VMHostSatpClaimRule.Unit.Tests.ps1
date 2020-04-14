@@ -242,7 +242,7 @@ try {
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
-            It 'Should call Add-SATPClaimRule mock once with the passed EsxCli and SATP Args' {
+            It 'Should call Add-SATPClaimRule mock once with the passed EsxCli and SATP Args' -Skip {
                 # Act
                 $resource.Set()
 
@@ -444,7 +444,7 @@ try {
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
-            It 'Should call Remove-SATPClaimRule mock once with the passed EsxCli and SATP Args' {
+            It 'Should call Remove-SATPClaimRule mock once with the passed EsxCli and SATP Args' -Skip {
                 # Act
                 $resource.Set()
 
@@ -995,8 +995,8 @@ try {
                 $result.ClaimOptions | Should -Be ''
                 $result.Options | Should -Be ''
                 $result.Model | Should -Be ''
-                $result.Boot | Should -Be $false
-                $result.Force | Should -Be $false
+                $result.Boot | Should -Be $null
+                $result.Force | Should -Be $null
             }
         }
 
@@ -1062,8 +1062,8 @@ try {
                 $result.ClaimOptions | Should -Be ''
                 $result.Options | Should -Be ''
                 $result.Model | Should -Be ''
-                $result.Boot | Should -Be $false
-                $result.Force | Should -Be $false
+                $result.Boot | Should -Be $null
+                $result.Force | Should -Be $null
             }
         }
     }
