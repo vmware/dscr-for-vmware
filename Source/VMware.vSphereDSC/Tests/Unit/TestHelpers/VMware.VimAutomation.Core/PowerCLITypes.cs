@@ -87552,6 +87552,34 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.DatastoreManagement
     using VMware.VimAutomation.ViCore.Types.V1.RelatedObject;
     using VMware.VimAutomation.ViCore.Types.V1.VirtualDevice;
 
+    public class DatastoreClusterImpl : StorageResourceImpl, DatastoreCluster, IEquatable<DatastoreClusterImpl>
+    {
+        public DrsAutomationLevel SdrsAutomationLevel { get; set; }
+
+        public bool IOLoadBalanceEnabled { get; set; }
+
+        public int? IOLatencyThresholdMillisecond { get; set; }
+
+        public int? SpaceUtilizationThresholdPercent { get; set; }
+
+        public object ExtensionData { get; set; }
+
+        public bool Equals(DatastoreClusterImpl datastoreClusterImpl)
+        {
+            return (datastoreClusterImpl != null && this.Uid == datastoreClusterImpl.Uid && this.Id == datastoreClusterImpl.Id && this.Name == datastoreClusterImpl.Name && this.SdrsAutomationLevel == datastoreClusterImpl.SdrsAutomationLevel && this.IOLoadBalanceEnabled == datastoreClusterImpl.IOLoadBalanceEnabled && this.IOLatencyThresholdMillisecond == datastoreClusterImpl.IOLatencyThresholdMillisecond && this.SpaceUtilizationThresholdPercent == datastoreClusterImpl.SpaceUtilizationThresholdPercent && ((this.ExtensionData == null && datastoreClusterImpl.ExtensionData == null) || (this.ExtensionData != null && this.ExtensionData.Equals(datastoreClusterImpl.ExtensionData))));
+        }
+
+        public override bool Equals(object datastoreClusterImpl)
+        {
+            return Equals(datastoreClusterImpl as DatastoreClusterImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Uid + "_" + Id + "_" + Name + "_" + SdrsAutomationLevel + "_" + IOLoadBalanceEnabled + "_" + IOLatencyThresholdMillisecond + "_" + SpaceUtilizationThresholdPercent + "_" + ExtensionData).GetHashCode();
+        }
+    }
+
     public class DatastoreFileImpl : DatastoreItemImpl, DatastoreFile, IEquatable<DatastoreFileImpl>
     {
         public long? Length { get; set; }
