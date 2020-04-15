@@ -117,10 +117,10 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     Checks if the specified Datastore should be modified.
     #>
     [bool] ShouldModifyDatastore($datastore) {
-        $shouldModifyDatastore = @()
-
-        $shouldModifyDatastore += ($null -ne $this.CongestionThresholdMillisecond -and $this.CongestionThresholdMillisecond -ne $datastore.CongestionThresholdMillisecond)
-        $shouldModifyDatastore += ($null -ne $this.StorageIOControlEnabled -and $this.StorageIOControlEnabled -ne $datastore.StorageIOControlEnabled)
+        $shouldModifyDatastore = @(
+            $this.ShouldUpdateDscResourceSetting('CongestionThresholdMillisecond', $datastore.CongestionThresholdMillisecond, $this.CongestionThresholdMillisecond),
+            $this.ShouldUpdateDscResourceSetting('StorageIOControlEnabled', $datastore.StorageIOControlEnabled, $this.StorageIOControlEnabled)
+        )
 
         return ($shouldModifyDatastore -Contains $true)
     }

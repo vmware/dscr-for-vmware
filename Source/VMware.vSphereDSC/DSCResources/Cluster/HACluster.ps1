@@ -107,16 +107,22 @@ class HACluster : DatacenterInventoryBaseDSC {
             $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
             $cluster = $this.GetInventoryItem($clusterLocation)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $cluster) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateCluster($cluster)
+                else {
+                    $result = !$this.ShouldUpdateCluster($cluster)
+                }
             }
             else {
-                return ($null -eq $cluster)
+                $result = ($null -eq $cluster)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -153,28 +159,13 @@ class HACluster : DatacenterInventoryBaseDSC {
     Checks if the Cluster should be updated.
     #>
     [bool] ShouldUpdateCluster($cluster) {
-        $shouldUpdateCluster = @()
-        $shouldUpdateCluster += ($null -ne $this.HAEnabled -and $this.HAEnabled -ne $cluster.HAEnabled)
-        $shouldUpdateCluster += ($null -ne $this.HAAdmissionControlEnabled -and $this.HAAdmissionControlEnabled -ne $cluster.HAAdmissionControlEnabled)
-        $shouldUpdateCluster += ($null -ne $this.HAFailoverLevel -and $this.HAFailoverLevel -ne $cluster.HAFailoverLevel)
-
-        if ($this.HAIsolationResponse -ne [HAIsolationResponse]::Unset) {
-            if ($null -ne $cluster.HAIsolationResponse) {
-                $shouldUpdateCluster += ($this.HAIsolationResponse.ToString() -ne $cluster.HAIsolationResponse.ToString())
-            }
-            else {
-                $shouldUpdateCluster += $true
-            }
-        }
-
-        if ($this.HARestartPriority -ne [HARestartPriority]::Unset) {
-            if ($null -ne $cluster.HARestartPriority) {
-                $shouldUpdateCluster += ($this.HARestartPriority.ToString() -ne $cluster.HARestartPriority.ToString())
-            }
-            else {
-                $shouldUpdateCluster += $true
-            }
-        }
+        $shouldUpdateCluster = @(
+            $this.ShouldUpdateDscResourceSetting('HAEnabled', $cluster.HAEnabled, $this.HAEnabled),
+            $this.ShouldUpdateDscResourceSetting('HAAdmissionControlEnabled', $cluster.HAAdmissionControlEnabled, $this.HAAdmissionControlEnabled),
+            $this.ShouldUpdateDscResourceSetting('HAFailoverLevel', $cluster.HAFailoverLevel, $this.HAFailoverLevel),
+            $this.ShouldUpdateDscResourceSetting('HAIsolationResponse', [string] $cluster.HAIsolationResponse, $this.HAIsolationResponse.ToString()),
+            $this.ShouldUpdateDscResourceSetting('HARestartPriority', [string] $cluster.HARestartPriority, $this.HARestartPriority.ToString())
+        )
 
         return ($shouldUpdateCluster -Contains $true)
     }
