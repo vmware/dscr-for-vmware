@@ -88,12 +88,17 @@ class VMHostVss : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
-                return ($null -eq $vss)
+                $result = ($null -eq $vss)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -131,11 +136,12 @@ class VMHostVss : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssTest = @()
-        $vssTest += ($vss.Name -eq $this.VssName)
-        $vssTest += ($null -eq $this.Mtu -or $vss.MTU -eq $this.MTU)
+        $vssTest = @(
+            $this.ShouldUpdateDscResourceSetting('VssName', $vss.Name, $this.VssName),
+            $this.ShouldUpdateDscResourceSetting('Mtu', $vss.Mtu, $this.Mtu)
+        )
 
-        return ($vssTest -notcontains $false)
+        return ($vssTest -NotContains $true)
     }
 
     <#

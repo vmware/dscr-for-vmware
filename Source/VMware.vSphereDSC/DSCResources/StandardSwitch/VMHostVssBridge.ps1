@@ -75,16 +75,21 @@ class VMHostVssBridge : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
                 $this.NicDevice = @()
                 $this.BeaconInterval = 0
                 $this.LinkDiscoveryProtocolProtocol = [LinkDiscoveryProtocolProtocol]::Unset
 
-                return ($null -eq $vss -or $this.Equals($vss))
+                $result = ($null -eq $vss -or $this.Equals($vss))
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -122,22 +127,22 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssBridgeTest = @()
+        $vssBridgeTest = @(
+            $this.ShouldUpdateArraySetting('NicDevice', $vss.Spec.Bridge.NicDevice, $this.NicDevice),
+            $this.ShouldUpdateDscResourceSetting('BeaconInterval', $vss.Spec.Bridge.Beacon.Interval, $this.BeaconInterval),
+            $this.ShouldUpdateDscResourceSetting(
+                'LinkDiscoveryProtocolProtocol',
+                [string] $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol,
+                $this.LinkDiscoveryProtocolProtocol.ToString()
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'LinkDiscoveryProtocolOperation',
+                [string] $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation,
+                $this.LinkDiscoveryProtocolOperation.ToString()
+            )
+        )
 
-        $vssBridgeTest += !$this.ShouldUpdateArraySetting($vss.Spec.Bridge.NicDevice, $this.NicDevice)
-        $vssBrdigeTest += ($null -eq $this.BeaconInterval -or $vss.Spec.Bridge.Beacon.Interval -eq $this.BeaconInterval)
-
-        if ($this.LinkDiscoveryProtocolOperation -ne [LinkDiscoveryProtocolOperation]::Unset) {
-            if ($null -eq $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation) { $vssBridgeTest += $false }
-            else { $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation.ToString() -eq $this.LinkDiscoveryProtocolOperation.ToString()) }
-        }
-
-        if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
-            if ($null -eq $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol) { $vssBridgeTest += $false }
-            else { $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol.ToString() -eq $this.LinkDiscoveryProtocolProtocol.ToString()) }
-        }
-
-        return ($vssBridgeTest -NotContains $false)
+        return ($vssBridgeTest -NotContains $true)
     }
 
     <#
@@ -158,7 +163,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
             if ($null -ne $this.BeaconInterval) { $vssBridgeArgs.BeaconInterval = $this.BeaconInterval }
             if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
                 $vssBridgeArgs.Add('LinkDiscoveryProtocolProtocol', $this.LinkDiscoveryProtocolProtocol.ToString())
-                $vssBridgeArgs.Add('LinkDiscoveryProtocolOperation', $this.LinkDiscoveryProtocolOperation.ToSTring())
+                $vssBridgeArgs.Add('LinkDiscoveryProtocolOperation', $this.LinkDiscoveryProtocolOperation.ToString())
             }
         }
 

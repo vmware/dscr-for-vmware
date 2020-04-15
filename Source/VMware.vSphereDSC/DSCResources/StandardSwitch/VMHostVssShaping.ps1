@@ -72,8 +72,9 @@ class VMHostVssShaping : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
                 $this.AverageBandwidth = 100000
@@ -81,8 +82,12 @@ class VMHostVssShaping : VMHostVssBaseDSC {
                 $this.Enabled = $false
                 $this.PeakBandwidth = 100000
 
-                return ($null -eq $vss -or $this.Equals($vss))
+                $result = ($null -eq $vss -or $this.Equals($vss))
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -120,13 +125,14 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssShapingTest = @()
-        $vssShapingTest += ($null -eq $this.AverageBandwidth -or $vss.Spec.Policy.ShapingPolicy.AverageBandwidth -eq $this.AverageBandwidth)
-        $vssShapingTest += ($null -eq $this.BurstSize -or $vss.Spec.Policy.ShapingPolicy.BurstSize -eq $this.BurstSize)
-        $vssShapingTest += ($null -eq $this.Enabled -or $vss.Spec.Policy.ShapingPolicy.Enabled -eq $this.Enabled)
-        $vssShapingTest += ($null -eq $this.PeakBandwidth -or $vss.Spec.Policy.ShapingPolicy.PeakBandwidth -eq $this.PeakBandwidth)
+        $vssShapingTest = @(
+            $this.ShouldUpdateDscResourceSetting('AverageBandwidth', $vss.Spec.Policy.ShapingPolicy.AverageBandwidth, $this.AverageBandwidth),
+            $this.ShouldUpdateDscResourceSetting('BurstSize', $vss.Spec.Policy.ShapingPolicy.BurstSize, $this.BurstSize),
+            $this.ShouldUpdateDscResourceSetting('Enabled', $vss.Spec.Policy.ShapingPolicy.Enabled, $this.Enabled),
+            $this.ShouldUpdateDscResourceSetting('PeakBandwidth', $vss.Spec.Policy.ShapingPolicy.PeakBandwidth, $this.PeakBandwidth)
+        )
 
-        return ($vssShapingTest -notcontains $false)
+        return ($vssShapingTest -NotContains $true)
     }
 
     <#

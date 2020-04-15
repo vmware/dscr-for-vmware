@@ -158,14 +158,20 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
             $this.RetrieveVMHost()
 
             $virtualPortGroup = $this.GetVirtualPortGroup()
+
+            $result = $null
             if ($null -eq $virtualPortGroup) {
                 # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                return $true
+                $result = $true
+            }
+            else {
+                $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+                $result = !$this.ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
             }
 
-            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+            $this.WriteDscResourceState($result)
 
-            return !$this.ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -220,58 +226,31 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
     <#
     .DESCRIPTION
 
-    Checks if the passed Nic array is in the desired state and if an update should be performed.
-    #>
-    [bool] ShouldUpdateNicArray($currentNicArray, $desiredNicArray) {
-        if ($null -eq $desiredNicArray -or $desiredNicArray.Length -eq 0) {
-            # The property is not specified or an empty Nic array is passed.
-            return $false
-        }
-        else {
-            $nicsToAdd = $desiredNicArray | Where-Object { $currentNicArray -NotContains $_ }
-            $nicsToRemove = $currentNicArray | Where-Object { $desiredNicArray -NotContains $_ }
-
-            if ($null -ne $nicsToAdd -or $null -ne $nicsToRemove) {
-                <#
-                The current Nic array does not contain at least one Nic from desired Nic array or
-                the desired Nic array is a subset of the current Nic array. In both cases
-                we should perform an update operation.
-                #>
-                return $true
-            }
-
-            # No need to perform an update operation.
-            return $false
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
     Checks if the Teaming Policy of the specified Virtual Port Group should be updated.
     #>
     [bool] ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy) {
-        $shouldUpdateVirtualPortGroupTeamingPolicy = @()
-
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.ActiveNic, $this.ActiveNic)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.StandbyNic, $this.StandbyNic)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.UnusedNic, $this.UnusedNic)
-
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.FailbackEnabled -and $this.FailbackEnabled -ne $virtualPortGroupTeamingPolicy.FailbackEnabled)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.NotifySwitches -and $this.NotifySwitches -ne $virtualPortGroupTeamingPolicy.NotifySwitches)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritFailback -and $this.InheritFailback -ne $virtualPortGroupTeamingPolicy.IsFailbackInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritFailoverOrder -and $this.InheritFailoverOrder -ne $virtualPortGroupTeamingPolicy.IsFailoverOrderInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritLoadBalancingPolicy -and $this.InheritLoadBalancingPolicy -ne $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritNetworkFailoverDetectionPolicy -and $this.InheritNetworkFailoverDetectionPolicy -ne $virtualPortGroupTeamingPolicy.IsNetworkFailoverDetectionInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritNotifySwitches -and $this.InheritNotifySwitches -ne $virtualPortGroupTeamingPolicy.IsNotifySwitchesInherited)
-
-        if ($this.LoadBalancingPolicy -ne [LoadBalancingPolicy]::Unset) {
-            $shouldUpdateVirtualPortGroupTeamingPolicy += ($this.LoadBalancingPolicy.ToString() -ne $virtualPortGroupTeamingPolicy.LoadBalancingPolicy.ToString())
-        }
-
-        if ($this.NetworkFailoverDetectionPolicy -ne [NetworkFailoverDetectionPolicy]::Unset) {
-            $shouldUpdateVirtualPortGroupTeamingPolicy += ($this.NetworkFailoverDetectionPolicy.ToString() -ne $virtualPortGroupTeamingPolicy.NetworkFailoverDetectionPolicy.ToString())
-        }
+        $shouldUpdateVirtualPortGroupTeamingPolicy = @(
+            $this.ShouldUpdateDscResourceSetting('FailbackEnabled', $virtualPortGroupTeamingPolicy.FailbackEnabled, $this.FailbackEnabled),
+            $this.ShouldUpdateDscResourceSetting('NotifySwitches', $virtualPortGroupTeamingPolicy.NotifySwitches, $this.NotifySwitches),
+            $this.ShouldUpdateDscResourceSetting('InheritFailback', $virtualPortGroupTeamingPolicy.IsFailbackInherited, $this.InheritFailback),
+            $this.ShouldUpdateDscResourceSetting('InheritFailoverOrder', $virtualPortGroupTeamingPolicy.IsFailoverOrderInherited, $this.InheritFailoverOrder),
+            $this.ShouldUpdateDscResourceSetting('InheritLoadBalancingPolicy', $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited, $this.InheritLoadBalancingPolicy),
+            $this.ShouldUpdateDscResourceSetting(
+                'InheritNetworkFailoverDetectionPolicy',
+                $virtualPortGroupTeamingPolicy.IsNetworkFailoverDetectionInherited,
+                $this.InheritNetworkFailoverDetectionPolicy
+            ),
+            $this.ShouldUpdateDscResourceSetting('InheritNotifySwitches', $virtualPortGroupTeamingPolicy.IsNotifySwitchesInherited, $this.InheritNotifySwitches),
+            $this.ShouldUpdateDscResourceSetting('LoadBalancingPolicy', [string] $virtualPortGroupTeamingPolicy.LoadBalancingPolicy, $this.LoadBalancingPolicy.ToString()),
+            $this.ShouldUpdateDscResourceSetting(
+                'NetworkFailoverDetectionPolicy',
+                [string] $virtualPortGroupTeamingPolicy.NetworkFailoverDetectionPolicy,
+                $this.NetworkFailoverDetectionPolicy.ToString()
+            ),
+            $this.ShouldUpdateArraySetting('ActiveNic', $virtualPortGroupTeamingPolicy.ActiveNic, $this.ActiveNic),
+            $this.ShouldUpdateArraySetting('StandbyNic', $virtualPortGroupTeamingPolicy.StandbyNic, $this.StandbyNic),
+            $this.ShouldUpdateArraySetting('UnusedNic', $virtualPortGroupTeamingPolicy.UnusedNic, $this.UnusedNic)
+        )
 
         return ($shouldUpdateVirtualPortGroupTeamingPolicy -Contains $true)
     }

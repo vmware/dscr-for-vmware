@@ -69,16 +69,22 @@ class VMHostVssNic : VMHostNicBaseDSC {
             $virtualSwitch = $this.GetVirtualSwitch()
             $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $vmHostNetworkAdapter) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                else {
+                    $result = !$this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                }
             }
             else {
-                return ($null -eq $vmHostNetworkAdapter)
+                $result = ($null -eq $vmHostNetworkAdapter)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()

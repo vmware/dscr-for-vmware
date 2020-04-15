@@ -89,8 +89,9 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
                 $this.CheckBeacon = $false
@@ -100,8 +101,12 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
                 $this.Policy = [NicTeamingPolicy]::Loadbalance_srcid
                 $this.RollingOrder = $false
 
-                return ($null -eq $vss -or $this.Equals($vss))
+                $result = ($null -eq $vss -or $this.Equals($vss))
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -139,17 +144,16 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssTeamingTest = @()
-        $vssTeamingTest += ($null -eq $this.CheckBeacon -or $vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
-        $vssTeamingTest += !$this.ShouldUpdateArraySetting($vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic, $this.ActiveNic)
-        $vssTeamingTest += !$this.ShouldUpdateArraySetting($vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic, $this.StandbyNic)
-        $vssTeamingTest += ($null -eq $this.NotifySwitches -or $vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
-        $vssTeamingTest += ($null -eq $this.RollingOrder -or $vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
+        $vssTeamingTest = @(
+            $this.ShouldUpdateDscResourceSetting('CheckBeacon', $vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon, $this.CheckBeacon),
+            $this.ShouldUpdateDscResourceSetting('NotifySwitches', $vss.Spec.Policy.NicTeaming.NotifySwitches, $this.NotifySwitches),
+            $this.ShouldUpdateDscResourceSetting('RollingOrder', $vss.Spec.Policy.NicTeaming.RollingOrder, $this.RollingOrder),
+            $this.ShouldUpdateDscResourceSetting('Policy', [string] $vss.Spec.Policy.NicTeaming.Policy, $this.Policy.ToString().ToLower()),
+            $this.ShouldUpdateArraySetting('ActiveNic', $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic, $this.ActiveNic),
+            $this.ShouldUpdateArraySetting('StandbyNic', $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic, $this.StandbyNic)
+        )
 
-        # The Network Adapter teaming policy should determine the Desired State only when it is specified.
-        if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq $this.Policy.ToString().ToLower()) }
-
-        return ($vssTeamingTest -notcontains $false)
+        return ($vssTeamingTest -NotContains $true)
     }
 
     <#
