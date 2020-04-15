@@ -117,7 +117,11 @@ class VMHostSyslog : VMHostBaseDSC {
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
-            return !$this.ShouldUpdateVMHostSyslog($vmHost)
+            $result = !$this.ShouldUpdateVMHostSyslog($vmHost)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -152,18 +156,18 @@ class VMHostSyslog : VMHostBaseDSC {
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
         $current = Get-VMHostSyslogConfig -EsxCLi $esxcli
 
-        $shouldUpdateVMHostSyslog = @()
-
-        $shouldUpdateVMHostSyslog += (![string]::IsNullOrEmpty($this.LogHost) -and $this.LogHost -ne $current.RemoteHost)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.CheckSslCerts -and $this.CheckSslCerts -ne $current.EnforceSSLCertificates)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DefaultTimeout -and $this.DefaultTimeout -ne $current.DefaultNetworkRetryTimeout)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.QueueDropMark -and $this.QueueDropMark -ne $current.MessageQueueDropMark)
-        $shouldUpdateVMHostSyslog += (![string]::IsNullOrEmpty($this.Logdir) -and $this.Logdir -ne $current.LocalLogOutput)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.LogdirUnique -and $this.LogdirUnique -ne [System.Convert]::ToBoolean($current.LogToUniqueSubdirectory))
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DefaultRotate -and $this.DefaultRotate -ne $current.LocalLoggingDefaultRotations)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DefaultSize -and $this.DefaultSize -ne $current.LocalLoggingDefaultRotationSize)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DropLogRotate -and $this.DropLogRotate -ne $current.DroppedLogFileRotations)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DropLogSize -and $this.DropLogSize -ne $current.DroppedLogFileRotationSize)
+        $shouldUpdateVMHostSyslog = @(
+            $this.ShouldUpdateDscResourceSetting('LogHost', [string] $current.RemoteHost, $this.LogHost),
+            $this.ShouldUpdateDscResourceSetting('CheckSslCerts', $current.EnforceSSLCertificates, $this.CheckSslCerts),
+            $this.ShouldUpdateDscResourceSetting('DefaultTimeout', $current.DefaultNetworkRetryTimeout, $this.DefaultTimeout),
+            $this.ShouldUpdateDscResourceSetting('QueueDropMark', $current.MessageQueueDropMark, $this.QueueDropMark),
+            $this.ShouldUpdateDscResourceSetting('Logdir', [string] $current.LocalLogOutput, $this.Logdir),
+            $this.ShouldUpdateDscResourceSetting('LogdirUnique', [System.Convert]::ToBoolean($current.LogToUniqueSubdirectory), $this.LogdirUnique),
+            $this.ShouldUpdateDscResourceSetting('DefaultRotate', $current.LocalLoggingDefaultRotations, $this.DefaultRotate),
+            $this.ShouldUpdateDscResourceSetting('DefaultSize', $current.LocalLoggingDefaultRotationSize, $this.DefaultSize),
+            $this.ShouldUpdateDscResourceSetting('DropLogRotate', $current.DroppedLogFileRotations, $this.DropLogRotate),
+            $this.ShouldUpdateDscResourceSetting('DropLogSize', $current.DroppedLogFileRotationSize, $this.DropLogSize)
+        )
 
         return ($shouldUpdateVMHostSyslog -contains $true)
     }

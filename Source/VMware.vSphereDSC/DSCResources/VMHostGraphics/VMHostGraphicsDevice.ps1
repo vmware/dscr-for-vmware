@@ -54,7 +54,15 @@ class VMHostGraphicsDevice : VMHostGraphicsBaseDSC {
             $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
             $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
 
-            return ($this.GraphicsType -eq $foundDevice.GraphicsType)
+            $result = !$this.ShouldUpdateDscResourceSetting(
+                'GraphicsType',
+                [string] $foundDevice.GraphicsType,
+                $this.GraphicsType.ToString()
+            )
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()

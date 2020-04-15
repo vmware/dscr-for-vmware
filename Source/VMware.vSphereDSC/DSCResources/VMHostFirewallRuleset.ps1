@@ -196,7 +196,7 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
     Checks if the current firewall ruleset state (enabled or disabled) is equal to the desired firewall ruleset state.
     #>
     [bool] ShouldModifyVMHostFirewallRulesetState($vmHostFirewallRuleset) {
-        return ($this.Enabled -ne $null -and $this.Enabled -ne $vmHostFirewallRuleset.Enabled)
+        return $this.ShouldUpdateDscResourceSetting('Enabled', $vmHostFirewallRuleset.Enabled, $this.Enabled)
     }
 
     <#
@@ -207,15 +207,24 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
     [bool] ShouldModifyVMHostFirewallRulesetAllowedIPAddressesList($vmHostFirewallRuleset) {
         $vmHostFirewallRulesetAllowedHosts = $vmHostFirewallRuleset.ExtensionData.AllowedHosts
 
-        $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList = @()
-        $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += ($null -ne $this.AllIP -and $this.AllIP -ne $vmHostFirewallRulesetAllowedHosts.AllIp)
+        $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList = @(
+            $this.ShouldUpdateDscResourceSetting('AllIP', $vmHostFirewallRulesetAllowedHosts.AllIp, $this.AllIP)
+        )
 
         if ($null -ne $this.IPAddresses) {
             $desiredIPAddresses = $this.IPAddresses -NotMatch '/'
             $desiredIPNetworks = $this.IPAddresses -Match '/'
 
-            $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += $this.ShouldUpdateArraySetting($vmHostFirewallRulesetAllowedHosts.IpAddress, $desiredIPAddresses)
-            $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += $this.ShouldUpdateArraySetting($this.ConvertHostFirewallRulesetIpNetworksToIPNetworks($vmHostFirewallRulesetAllowedHosts.IpNetwork), $desiredIPNetworks)
+            $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += $this.ShouldUpdateArraySetting(
+                'IPAddresses',
+                $vmHostFirewallRulesetAllowedHosts.IpAddress,
+                $desiredIPAddresses
+            )
+            $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += $this.ShouldUpdateArraySetting(
+                'IPNetworks',
+                $this.ConvertHostFirewallRulesetIpNetworksToIPNetworks($vmHostFirewallRulesetAllowedHosts.IpNetwork),
+                $desiredIPNetworks
+            )
         }
 
         return ($shouldModifyVMHostFirewallRulesetAllowedIPAddressesList -Contains $true)

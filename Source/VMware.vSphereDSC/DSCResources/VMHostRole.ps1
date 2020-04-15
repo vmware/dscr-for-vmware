@@ -106,7 +106,7 @@ class VMHostRole : BaseDSC {
                     $desiredPrivileges = $this.GetPrivileges()
                     $desiredPrivilegeIds = if ($desiredPrivileges.Length -eq 0) { $null } else { $desiredPrivileges.Id }
 
-                    $result = !$this.ShouldUpdateArraySetting($vmHostRole.PrivilegeList, $desiredPrivilegeIds)
+                    $result = !$this.ShouldUpdateArraySetting('PrivilegeList', $vmHostRole.PrivilegeList, $desiredPrivilegeIds)
                 }
             }
             else {

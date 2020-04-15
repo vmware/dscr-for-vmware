@@ -66,12 +66,17 @@ class VMHostAuthentication : VMHostBaseDSC {
             $vmHost = $this.GetVMHost()
             $vmHostAuthenticationInfo = $this.GetVMHostAuthenticationInfo($vmHost)
 
+            $result = $null
             if ($this.DomainAction -eq [DomainAction]::Join) {
-                return ($this.DomainName -eq $vmHostAuthenticationInfo.Domain)
+                $result = !$this.ShouldUpdateDscResourceSetting('DomainName', [string] $vmHostAuthenticationInfo.Domain, $this.DomainName)
             }
             else {
-                return ($null -eq $vmHostAuthenticationInfo.Domain)
+                $result = ($null -eq $vmHostAuthenticationInfo.Domain)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()

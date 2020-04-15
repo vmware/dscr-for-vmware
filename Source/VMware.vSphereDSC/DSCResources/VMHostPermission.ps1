@@ -424,10 +424,10 @@ class VMHostPermission : BaseDSC {
     from the current one or if the Propagate behaviour should be different.
     #>
     [bool] ShouldModifyVMHostPermission($vmHostPermission) {
-        $shouldModifyVMHostPermission = @()
-
-        $shouldModifyVMHostPermission += ($this.RoleName -ne $vmHostPermission.Role)
-        $shouldModifyVMHostPermission += ($null -ne $this.Propagate -and $this.Propagate -ne $vmHostPermission.Propagate)
+        $shouldModifyVMHostPermission = @(
+            $this.ShouldUpdateDscResourceSetting('RoleName', [string] $vmHostPermission.Role, $this.RoleName),
+            $this.ShouldUpdateDscResourceSetting('Propagate', $vmHostPermission.Propagate, $this.Propagate)
+        )
 
         return ($shouldModifyVMHostPermission -Contains $true)
     }

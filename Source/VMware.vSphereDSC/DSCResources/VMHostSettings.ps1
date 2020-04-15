@@ -72,7 +72,11 @@ class VMHostSettings : VMHostBaseDSC {
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
-            return !$this.ShouldUpdateVMHostSettings($vmHost)
+            $result = !$this.ShouldUpdateVMHostSettings($vmHost)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -100,21 +104,6 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Returns a boolean value indicating if the Advanced Setting value should be updated.
-    #>
-    [bool] ShouldUpdateSettingValue($desiredValue, $currentValue) {
-    	<#
-        Desired value equal to $null means that the setting value was not specified.
-        If it is specified we check if the setting value is not equal to the current value.
-        #>
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        return ($null -ne $desiredValue -and $desiredValue -ne $currentValue)
-    }
-
-    <#
-    .DESCRIPTION
-
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
     [bool] ShouldUpdateVMHostSettings($vmHost) {
@@ -123,31 +112,35 @@ class VMHostSettings : VMHostBaseDSC {
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
     	$currentMotd = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+        $currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	$shouldUpdateVMHostSettings = @()
-    	$shouldUpdateVMHostSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
-    	$shouldUpdateVMHostSettings += ($this.IssueClear -and ($currentIssue.Value -ne [string]::Empty)) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
+        $motdDesiredValue = if ($this.MotdClear) { [string]::Empty } else { $this.Motd }
+        $issueDesiredValue = if ($this.IssueClear) { [string]::Empty } else { $this.Issue }
+
+    	$shouldUpdateVMHostSettings = @(
+            $this.ShouldUpdateDscResourceSetting('Motd', $currentMotd.Value, $motdDesiredValue),
+            $this.ShouldUpdateDscResourceSetting('Issue', $currentIssue.Value, $issueDesiredValue)
+        )
 
         return ($shouldUpdateVMHostSettings -Contains $true)
     }
 
-  	<#
+    <#
     .DESCRIPTION
 
     Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
     #>
-  	[void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
+  	[void] SetAdvancedSetting($advancedSettingName, $advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
     	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	if ($clearValue) {
-      	    if ($this.ShouldUpdateSettingValue([string]::Empty, $advancedSettingCurrentValue)) {
-                  Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
+      	    if ($this.ShouldUpdateDscResourceSetting($advancedSettingName, $advancedSettingCurrentValue, [string]::Empty)) {
+                Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
       	    }
     	}
     	else {
-      	    if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
-                  Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
+      	    if ($this.ShouldUpdateDscResourceSetting($advancedSettingName, $advancedSettingCurrentValue, $advancedSettingDesiredValue)) {
+                Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
       	    }
     	}
     }
@@ -165,8 +158,8 @@ class VMHostSettings : VMHostBaseDSC {
     	$currentMotd = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
     	$currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	$this.SetAdvancedSetting($currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
-        $this.SetAdvancedSetting($currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
+    	$this.SetAdvancedSetting('Motd', $currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
+        $this.SetAdvancedSetting('Issue', $currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
     }
 
     <#
