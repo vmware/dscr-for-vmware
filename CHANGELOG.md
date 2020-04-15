@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.63 - 2020-04-15
+### Added
+- Added **DatastoreCluster** DSC Resource.
+- Added Unit Tests for **DatastoreCluster** DSC Resource.
+- Added Integration Tests for **DatastoreCluster** DSC Resource.
+- Added Documentation and example Configurations for **DatastoreCluster** DSC Resource.
+
+### Changed
+- Extended **TestUtils** with helper function for importing the **VMware.vSphereDSC** module.
+
 ## 2.1.0.62 - 2020-03-31
 ### Changed
 - Fixed bug with running Unit Tests locally.
