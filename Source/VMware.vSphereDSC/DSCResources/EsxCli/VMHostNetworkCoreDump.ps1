@@ -147,12 +147,12 @@ class VMHostNetworkCoreDump : EsxCliBaseDSC {
     Checks if the VMHost network coredump configuration should be modified.
     #>
     [bool] ShouldModifyVMHostNetworkCoreDumpConfiguration($esxCliGetMethodResult) {
-        $shouldModifyVMHostNetworkCoreDumpConfiguration = @()
-
-        $shouldModifyVMHostNetworkCoreDumpConfiguration += ($null -ne $this.Enable -and $this.Enable -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.Enabled))
-        $shouldModifyVMHostNetworkCoreDumpConfiguration += (![string]::IsNullOrEmpty($this.InterfaceName) -and $this.InterfaceName -ne $esxCliGetMethodResult.HostVNic)
-        $shouldModifyVMHostNetworkCoreDumpConfiguration += (![string]::IsNullOrEmpty($this.ServerIp) -and $this.ServerIp -ne $esxCliGetMethodResult.NetworkServerIP)
-        $shouldModifyVMHostNetworkCoreDumpConfiguration += ($null -ne $this.ServerPort -and $this.ServerPort -ne [long] $esxCliGetMethodResult.NetworkServerPort)
+        $shouldModifyVMHostNetworkCoreDumpConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting('Enable', [System.Convert]::ToBoolean($esxCliGetMethodResult.Enabled), $this.Enable),
+            $this.ShouldUpdateDscResourceSetting('InterfaceName', [string] $esxCliGetMethodResult.HostVNic, $this.InterfaceName),
+            $this.ShouldUpdateDscResourceSetting('ServerIp', [string] $esxCliGetMethodResult.NetworkServerIP, $this.ServerIp),
+            $this.ShouldUpdateDscResourceSetting('ServerPort', [long] $esxCliGetMethodResult.NetworkServerPort, $this.ServerPort)
+        )
 
         return ($shouldModifyVMHostNetworkCoreDumpConfiguration -Contains $true)
     }

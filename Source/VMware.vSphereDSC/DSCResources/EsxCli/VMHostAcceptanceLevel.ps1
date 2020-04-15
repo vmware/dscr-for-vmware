@@ -58,7 +58,7 @@ class VMHostAcceptanceLevel : EsxCliBaseDSC {
             $this.GetEsxCli($vmHost)
             $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
 
-            $result = ($this.Level.ToString() -eq $esxCliGetMethodResult)
+            $result = !$this.ShouldUpdateDscResourceSetting('Level', [string] $esxCliGetMethodResult, $this.Level.ToString())
 
             $this.WriteDscResourceState($result)
 

@@ -142,15 +142,19 @@ class VMHostSharedSwapSpace : EsxCliBaseDSC {
     Checks if the system-wide shared swap space configuration should be modified.
     #>
     [bool] ShouldModifySystemWideSharedSwapSpaceConfiguration($esxCliGetMethodResult) {
-        $shouldModifySystemWideSharedSwapSpaceConfiguration = @()
-
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.DatastoreEnabled -and $this.DatastoreEnabled -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.DatastoreEnabled))
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.DatastoreName -and $this.DatastoreName -ne $esxCliGetMethodResult.DatastoreName)
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.DatastoreOrder -and $this.DatastoreOrder -ne [long] $esxCliGetMethodResult.DatastoreOrder)
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostCacheEnabled -and $this.HostCacheEnabled -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.HostcacheEnabled))
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostCacheOrder -and $this.HostCacheOrder -ne [long] $esxCliGetMethodResult.HostcacheOrder)
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostLocalSwapEnabled -and $this.HostLocalSwapEnabled -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.HostlocalswapEnabled))
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostLocalSwapOrder -and $this.HostLocalSwapOrder -ne [long] $esxCliGetMethodResult.HostlocalswapOrder)
+        $shouldModifySystemWideSharedSwapSpaceConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting('DatastoreEnabled', [System.Convert]::ToBoolean($esxCliGetMethodResult.DatastoreEnabled), $this.DatastoreEnabled),
+            $this.ShouldUpdateDscResourceSetting('DatastoreName', [string] $esxCliGetMethodResult.DatastoreName, $this.DatastoreName),
+            $this.ShouldUpdateDscResourceSetting('DatastoreOrder', [long] $esxCliGetMethodResult.DatastoreOrder, $this.DatastoreOrder),
+            $this.ShouldUpdateDscResourceSetting('HostCacheEnabled', [System.Convert]::ToBoolean($esxCliGetMethodResult.HostcacheEnabled), $this.HostCacheEnabled),
+            $this.ShouldUpdateDscResourceSetting('HostCacheOrder', [long] $esxCliGetMethodResult.HostcacheOrder, $this.HostCacheOrder),
+            $this.ShouldUpdateDscResourceSetting('HostLocalSwapOrder', [long] $esxCliGetMethodResult.HostlocalswapOrder, $this.HostLocalSwapOrder),
+            $this.ShouldUpdateDscResourceSetting(
+                'HostLocalSwapEnabled',
+                [System.Convert]::ToBoolean($esxCliGetMethodResult.HostlocalswapEnabled),
+                $this.HostLocalSwapEnabled
+            )
+        )
 
         return ($shouldModifySystemWideSharedSwapSpaceConfiguration -Contains $true)
     }
