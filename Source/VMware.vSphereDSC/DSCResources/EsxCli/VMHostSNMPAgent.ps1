@@ -228,25 +228,25 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
     Checks if the VMHost SNMP Agent should be modified.
     #>
     [bool] ShouldModifyVMHostSNMPAgent($esxCliGetMethodResult) {
-        $shouldModifyVMHostSNMPAgent = @()
-
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Authentication) -and $this.Authentication -ne $esxCliGetMethodResult.authentication)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Communities) -and $this.Communities -ne $esxCliGetMethodResult.communities)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.Enable -and $this.Enable -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.enable))
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.EngineId) -and $this.EngineId -ne $esxCliGetMethodResult.engineid)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Hwsrc) -and $this.Hwsrc -ne $esxCliGetMethodResult.hwsrc)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.LargeStorage -and $this.LargeStorage -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.largestorage))
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.LogLevel) -and $this.LogLevel -ne $esxCliGetMethodResult.loglevel)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.NoTraps -and $this.NoTraps -ne [string] $esxCliGetMethodResult.notraps)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.Port -and $this.Port -ne [int] $esxCliGetMethodResult.port)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Privacy) -and $this.Privacy -ne $esxCliGetMethodResult.privacy)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.RemoteUsers) -and $this.RemoteUsers -ne $esxCliGetMethodResult.remoteusers)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.SysContact -and $this.SysContact -ne $esxCliGetMethodResult.syscontact)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.SysLocation -and $this.SysLocation -ne $esxCliGetMethodResult.syslocation)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Targets) -and $this.Targets -ne $esxCliGetMethodResult.targets)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Users) -and $this.Users -ne $esxCliGetMethodResult.users)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.V3Targets) -and $this.V3Targets -ne $esxCliGetMethodResult.v3targets)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.Reset -and $this.Reset)
+        $shouldModifyVMHostSNMPAgent = @(
+            $this.ShouldUpdateDscResourceSetting('Authentication', [string] $esxCliGetMethodResult.authentication, $this.Authentication),
+            $this.ShouldUpdateDscResourceSetting('Communities', [string] $esxCliGetMethodResult.communities, $this.Communities),
+            $this.ShouldUpdateDscResourceSetting('Enable', [System.Convert]::ToBoolean($esxCliGetMethodResult.enable), $this.Enable),
+            $this.ShouldUpdateDscResourceSetting('EngineId', [string] $esxCliGetMethodResult.engineid, $this.EngineId),
+            $this.ShouldUpdateDscResourceSetting('Hwsrc', [string] $esxCliGetMethodResult.hwsrc, $this.Hwsrc),
+            $this.ShouldUpdateDscResourceSetting('LargeStorage', [System.Convert]::ToBoolean($esxCliGetMethodResult.largestorage), $this.LargeStorage),
+            $this.ShouldUpdateDscResourceSetting('LogLevel', [string] $esxCliGetMethodResult.loglevel, $this.LogLevel),
+            $this.ShouldUpdateDscResourceSetting('NoTraps', [string] $esxCliGetMethodResult.notraps, $this.NoTraps),
+            $this.ShouldUpdateDscResourceSetting('Port', [int] $esxCliGetMethodResult.port, $this.Port),
+            $this.ShouldUpdateDscResourceSetting('Privacy', [string] $esxCliGetMethodResult.privacy, $this.Privacy),
+            $this.ShouldUpdateDscResourceSetting('RemoteUsers', [string] $esxCliGetMethodResult.remoteusers, $this.RemoteUsers),
+            $this.ShouldUpdateDscResourceSetting('SysContact', [string] $esxCliGetMethodResult.syscontact, $this.SysContact),
+            $this.ShouldUpdateDscResourceSetting('SysLocation', [string] $esxCliGetMethodResult.syslocation, $this.SysLocation),
+            $this.ShouldUpdateDscResourceSetting('Targets', [string] $esxCliGetMethodResult.targets, $this.Targets),
+            $this.ShouldUpdateDscResourceSetting('Users', [string] $esxCliGetMethodResult.users, $this.Users),
+            $this.ShouldUpdateDscResourceSetting('V3Targets', [string] $esxCliGetMethodResult.v3targets, $this.V3Targets),
+            $this.ShouldUpdateDscResourceSetting('Reset', $false, $this.Reset)
+        )
 
         return ($shouldModifyVMHostSNMPAgent -Contains $true)
     }
