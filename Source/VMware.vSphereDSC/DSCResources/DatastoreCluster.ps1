@@ -183,12 +183,28 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
     Checks if the specified Datastore Cluster configuration should be modified.
     #>
     [bool] ShouldModifyDatastoreCluster($datastoreCluster) {
-        $shouldModifyDatastoreCluster = @()
-
-        $shouldModifyDatastoreCluster += ($null -ne $this.IOLatencyThresholdMillisecond -and $this.IOLatencyThresholdMillisecond -ne $datastoreCluster.IOLatencyThresholdMillisecond)
-        $shouldModifyDatastoreCluster += ($null -ne $this.IOLoadBalanceEnabled -and $this.IOLoadBalanceEnabled -ne $datastoreCluster.IOLoadBalanceEnabled)
-        $shouldModifyDatastoreCluster += ($this.SdrsAutomationLevel -ne [DrsAutomationLevel]::Unset -and $this.SdrsAutomationLevel.ToString() -ne $datastoreCluster.SdrsAutomationLevel.ToString())
-        $shouldModifyDatastoreCluster += ($null -ne $this.SpaceUtilizationThresholdPercent -and $this.SpaceUtilizationThresholdPercent -ne $datastoreCluster.SpaceUtilizationThresholdPercent)
+        $shouldModifyDatastoreCluster = @(
+            $this.ShouldUpdateDscResourceSetting(
+                'IOLatencyThresholdMillisecond',
+                $datastoreCluster.IOLatencyThresholdMillisecond,
+                $this.IOLatencyThresholdMillisecond
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'IOLoadBalanceEnabled',
+                $datastoreCluster.IOLoadBalanceEnabled,
+                $this.IOLoadBalanceEnabled
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'SdrsAutomationLevel',
+                [string] $datastoreCluster.SdrsAutomationLevel,
+                $this.SdrsAutomationLevel.ToString()
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'SpaceUtilizationThresholdPercent',
+                $datastoreCluster.SpaceUtilizationThresholdPercent,
+                $this.SpaceUtilizationThresholdPercent
+            )
+        )
 
         return ($shouldModifyDatastoreCluster -Contains $true)
     }
