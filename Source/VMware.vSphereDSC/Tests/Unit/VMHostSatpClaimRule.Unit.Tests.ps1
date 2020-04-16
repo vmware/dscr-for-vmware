@@ -242,7 +242,7 @@ try {
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
-            It 'Should call Add-SATPClaimRule mock once with the passed EsxCli and SATP Args' -Skip {
+            It 'Should call Add-SATPClaimRule mock once with the passed EsxCli and SATP Args' {
                 # Act
                 $resource.Set()
 
@@ -444,7 +444,7 @@ try {
                                   -ModuleName $script:moduleName -Exactly 1 -Scope It
             }
 
-            It 'Should call Remove-SATPClaimRule mock once with the passed EsxCli and SATP Args' -Skip {
+            It 'Should call Remove-SATPClaimRule mock once with the passed EsxCli and SATP Args' {
                 # Act
                 $resource.Set()
 
