@@ -91533,7 +91533,7 @@ namespace VMware.VimAutomation.ViCore.Impl.V1.VM
         }
     }
 
-    public class UniversalVirtualMachineImpl : InventoryItemImpl, IEquatable<UniversalVirtualMachineImpl>
+    public class UniversalVirtualMachineImpl : InventoryItemImpl, VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine, IEquatable<UniversalVirtualMachineImpl>
     {
         public PowerState PowerState { get; set; }
 
