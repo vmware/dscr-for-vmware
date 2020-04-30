@@ -60,7 +60,7 @@ class DRSRule : BaseDSC {
     The Root Folders of the Datacenter are not part of the location.
     Empty location means that the Cluster is located in the Host Folder of the Datacenter.
     The Folder names in the location are separated by '/'.
-    Example Cluster location: 'Discovered Virtual Machines/My Ubuntu VMs'.
+    Example Cluster location: 'MyClusterFolderOne/MyClusterFolderTwo'.
     #>
     [DscProperty(Key)]
     [string] $ClusterLocation
