@@ -97,18 +97,20 @@ class DRSRule : BaseDSC {
     [DscProperty()]
     [nullable[bool]] $Enabled
 
+    <#
+    .DESCRIPTION
+
+    Specifies the instance of the 'InventoryUtil' class that is used
+    for Inventory operations.
+    #>
+    hidden [InventoryUtil] $InventoryUtil
+
     hidden [string] $CreateDrsRuleMessage = "Creating DRS Rule {0} for Cluster {1}."
     hidden [string] $ModifyDrsRuleMessage = "Modifying DRS rule {0} for Cluster {1}."
     hidden [string] $RemoveDrsRuleMessage = "Removing DRS rule {0} for Cluster {1}."
 
     hidden [string] $InvalidVMCountMessage = "At least 2 Virtual Machines should be specified."
-    hidden [string] $InvalidLocationMessage = "Location {0} is not a valid location inside Folder {1}."
 
-    hidden [string] $CouldNotRetrieveRootFolderMessage = "Could not retrieve Inventory Root Folder of vCenter Server {0}. For more information: {1}"
-    hidden [string] $CouldNotRetrieveHostFolderMessage = "Could not retrieve Host Folder of Datacenter {0}. For more information: {1}"
-    hidden [string] $CouldNotFindFolderMessage = "Could not find Folder {0} located in Folder {1}. For more information: {2}"
-    hidden [string] $CouldNotFindDatacenterMessage = "Could not find Datacenter {0} located in Folder {1}. For more information: {2}"
-    hidden [string] $CouldNotFindClusterMessage = "Could not find Cluster {0} located in Folder {1}."
     hidden [string] $CouldNotFindVMMessage = "Could not find Virtual Machine {0} in Cluster {1}."
     hidden [string] $CouldNotCreateDrsRuleMessage = "Could not create DRS rule {0} for Cluster {1}. For more information: {2}"
     hidden [string] $CouldNotModifyDrsRuleMessage = "Could not modify DRS rule {0} for Cluster {1}. For more information: {2}"
@@ -119,8 +121,17 @@ class DRSRule : BaseDSC {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
 
-            $datacenter = $this.GetDatacenter()
-            $cluster = $this.GetClusterInDatacenter($datacenter)
+            $this.InitInventoryUtil()
+            $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
+            $datacenterHostFolderName = [FolderType]::Host.ToString() + 'Folder'
+            $cluster = $this.InventoryUtil.GetInventoryItem(
+                $this.ClusterName,
+                $this.InventoryUtil.GetInventoryItemParent(
+                    $this.ClusterLocation,
+                    $datacenter,
+                    $datacenterHostFolderName
+                )
+            )
 
             $drsRule = $this.GetDrsRule($cluster)
             if ($this.Ensure -eq [Ensure]::Present) {
@@ -149,8 +160,17 @@ class DRSRule : BaseDSC {
             Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
 
-            $datacenter = $this.GetDatacenter()
-            $cluster = $this.GetClusterInDatacenter($datacenter)
+            $this.InitInventoryUtil()
+            $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
+            $datacenterHostFolderName = [FolderType]::Host.ToString() + 'Folder'
+            $cluster = $this.InventoryUtil.GetInventoryItem(
+                $this.ClusterName,
+                $this.InventoryUtil.GetInventoryItemParent(
+                    $this.ClusterLocation,
+                    $datacenter,
+                    $datacenterHostFolderName
+                )
+            )
 
             $drsRule = $this.GetDrsRule($cluster)
             $result = $null
@@ -184,8 +204,17 @@ class DRSRule : BaseDSC {
 
             $this.ConnectVIServer()
 
-            $datacenter = $this.GetDatacenter()
-            $cluster = $this.GetClusterInDatacenter($datacenter)
+            $this.InitInventoryUtil()
+            $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
+            $datacenterHostFolderName = [FolderType]::Host.ToString() + 'Folder'
+            $cluster = $this.InventoryUtil.GetInventoryItem(
+                $this.ClusterName,
+                $this.InventoryUtil.GetInventoryItemParent(
+                    $this.ClusterLocation,
+                    $datacenter,
+                    $datacenterHostFolderName
+                )
+            )
 
             $drsRule = $this.GetDrsRule($cluster)
 
@@ -204,321 +233,12 @@ class DRSRule : BaseDSC {
     <#
     .DESCRIPTION
 
-    Retrieves the Root Folder of the specified Inventory.
+    Initializes an instance of the 'InventoryUtil' class.
     #>
-    [PSObject] GetInventoryRootFolder() {
-        $getInventoryParams = @{
-            Server = $this.Connection
-            Id = $this.Connection.ExtensionData.Content.RootFolder
-            ErrorAction = 'Stop'
-            Verbose = $false
+    [void] InitInventoryUtil() {
+        if ($null -eq $this.InventoryUtil) {
+            $this.InventoryUtil = [InventoryUtil]::new($this.Connection, $this.Ensure)
         }
-
-        try {
-            return Get-Inventory @getInventoryParams
-        }
-        catch {
-            throw ($this.CouldNotRetrieveRootFolderMessage -f $this.Connection.Name, $_.Exception.Message)
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Host Folder of the specified Datacenter.
-    #>
-    [PSObject] GetHostFolderOfDatacenter($datacenter) {
-        $getInventoryParams = @{
-            Server = $this.Connection
-            Id = $datacenter.ExtensionData.HostFolder
-            ErrorAction = 'Stop'
-            Verbose = $false
-        }
-
-        try {
-            return Get-Inventory @getInventoryParams
-        }
-        catch {
-            throw ($this.CouldNotRetrieveHostFolderMessage -f $datacenter.Name, $_.Exception.Message)
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves all Folders with the specified name,
-    located inside the specified Folder.
-    #>
-    [array] GetFoldersByName($folderName, $folderLocation) {
-        $folders = $null
-        $getFolderParams = @{
-            Server = $this.Connection
-            Name = $folderName
-            Location = $folderLocation
-            ErrorAction = 'Stop'
-            Verbose = $false
-        }
-
-        try {
-            $folders = Get-Folder @getFolderParams
-        }
-        catch {
-            if ($this.Ensure -eq [Ensure]::Present) {
-                throw ($this.CouldNotFindFolderMessage -f $folderName, $folderLocation.Name, $_.Exception.Message)
-            }
-        }
-
-        return $folders
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Folder with the specified name, located in the specified Folder.
-    #>
-    [PSObject] GetFolder($folderName, $parentFolder) {
-        $folder = $null
-        $getFolderParams = @{
-            Server = $this.Connection
-            Name = $folderName
-            Location = $parentFolder
-            ErrorAction = 'Stop'
-            Verbose = $false
-        }
-
-        $whereObjectParams = @{
-            FilterScript = {
-                $_.ParentId -eq $parentFolder.Id
-            }
-        }
-
-        try {
-            $folder = Get-Folder @getFolderParams | Where-Object @whereObjectParams
-        }
-        catch {
-            if ($this.Ensure -eq [Ensure]::Present) {
-                throw ($this.CouldNotFindFolderMessage -f $folderName, $parentFolder.Name, $_.Exception.Message)
-            }
-        }
-
-        return $folder
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Datacenter with the specified name, located in the specified Folder.
-    #>
-    [PSObject] GetDatacenter($folder) {
-        $datacenter = $null
-        $getDatacenterParams = @{
-            Server = $this.Connection
-            Name = $this.DatacenterName
-            Location = $folder
-            ErrorAction = 'Stop'
-            Verbose = $false
-        }
-
-        $whereObjectParams = @{
-            FilterScript = {
-                $_.ParentFolderId -eq $folder.Id
-            }
-        }
-
-        try {
-            $datacenter = Get-Datacenter @getDatacenterParams | Where-Object @whereObjectParams
-        }
-        catch {
-            if ($this.Ensure -eq [Ensure]::Present) {
-                throw ($this.CouldNotFindDatacenterMessage -f $this.DatacenterName, $folder.Name, $_.Exception.Message)
-            }
-        }
-
-        return $datacenter
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Datacenter with the specified name, located in the specified Folder.
-    #>
-    [PSObject] GetDatacenter() {
-        $datacenter = $null
-        $inventoryRootFolder = $this.GetInventoryRootFolder()
-
-        <#
-            If empty Datacenter location is passed, the Datacenter should be located
-                in the Root Folder of the Inventory.
-            If Datacenter location without '/' is passed, the Datacenter should be located
-                in the Folder specified in the Datacenter location.
-            If Datacenter location with '/' is passed, the Datacenter should be located
-                in the Folder that is lastly specified in the Datacenter location.
-        #>
-        if ($this.DatacenterLocation -eq [string]::Empty) {
-            $datacenter = $this.GetDatacenter($inventoryRootFolder)
-        }
-        elseif ($this.DatacenterLocation -NotMatch '/') {
-            $folder = $this.GetFolder($this.DatacenterLocation, $inventoryRootFolder)
-            $datacenter = $this.GetDatacenter($folder)
-        }
-        else {
-            $folder = $null
-            $datacenterLocationItems = $this.DatacenterLocation -Split '/'
-
-            # The array needs to be reversed so we can retrieve the Folder where the Datacenter is located.
-            [array]::Reverse($datacenterLocationItems)
-
-            $datacenterLocationName = $datacenterLocationItems[0]
-            $foundDatacenterFolderLocations = $this.GetFoldersByName($datacenterLocationName, $inventoryRootFolder)
-
-            # The Folder where the Datacenter is located is already retrieved and it's not needed anymore.
-            $datacenterLocationItems = $datacenterLocationItems[1..($datacenterLocationItems.Length - 1)]
-
-            foreach ($foundDatacenterFolderLocation in $foundDatacenterFolderLocations) {
-                $currentDatacenterLocationItem = $foundDatacenterFolderLocation
-                $isDatacenterLocationValid = $true
-
-                foreach ($datacenterLocationItem in $datacenterLocationItems) {
-                    if ($currentDatacenterLocationItem.Parent.Name -ne $datacenterLocationItem) {
-                        $isDatacenterLocationValid = $false
-                        break
-                    }
-
-                    $currentDatacenterLocationItem = $currentDatacenterLocationItem.Parent
-                }
-
-                <#
-                    If the Datacenter location is valid, the first Datacenter location item
-                    should be located inside the Root Folder of the Inventory.
-                #>
-                if (
-                    $isDatacenterLocationValid -and
-                    $currentDatacenterLocationItem.ParentId -eq $inventoryRootFolder.Id
-                ) {
-                    $folder = $foundDatacenterFolderLocation
-                    break
-                }
-            }
-
-            if ($null -eq $folder -and $this.Ensure -eq [Ensure]::Present) {
-                throw ($this.InvalidLocationMessage -f $this.DatacenterLocation, $inventoryRootFolder.Name)
-            }
-
-            $datacenter = $this.GetDatacenter($folder)
-        }
-
-        return $datacenter
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Cluster with the specified name, located in the specified Folder.
-    #>
-    [PSObject] GetClusterInDatacenter($datacenter) {
-        # If the Datacenter doesn't exist, the Cluster doesn't exist as well.
-        if ($null -eq $datacenter) {
-            return $null
-        }
-
-        $cluster = $null
-        $datacenterHostFolder = $this.GetHostFolderOfDatacenter($datacenter)
-
-        <#
-            If empty Cluster location is passed, the Cluster should be located
-                in the Host Folder of the Datacenter.
-            If Cluster location without '/' is passed, the Cluster should be located
-                in the Folder specified in the Cluster location.
-            If Cluster location with '/' is passed, the Cluster should be located
-                in the Folder that is lastly specified in the Cluster location.
-        #>
-        if ($this.ClusterLocation -eq [string]::Empty) {
-            $cluster = $this.GetCluster($datacenterHostFolder)
-        }
-        elseif ($this.ClusterLocation -NotMatch '/') {
-            $folder = $this.GetFolder($this.ClusterLocation, $datacenterHostFolder)
-            $cluster = $this.GetCluster($folder)
-        }
-        else {
-            $folder = $null
-            $clusterLocationItems = $this.ClusterLocation -Split '/'
-
-            # The array needs to be reversed so we can retrieve the Folder where the Cluster is located.
-            [array]::Reverse($clusterLocationItems)
-
-            $clusterLocationName = $clusterLocationItems[0]
-            $foundClusterFolderLocations = $this.GetFoldersByName($clusterLocationName, $datacenterHostFolder)
-
-            # The Folder where the Cluster is located is already retrieved and it's not needed anymore.
-            $clusterLocationItems = $clusterLocationItems[1..($clusterLocationItems.Length - 1)]
-
-            foreach ($foundClusterFolderLocation in $foundClusterFolderLocations) {
-                $currentClusterLocationItem = $foundClusterFolderLocation
-                $isClusterLocationValid = $true
-
-                foreach ($clusterLocationItem in $clusterLocationItems) {
-                    if ($currentClusterLocationItem.Parent.Name -ne $clusterLocationItem) {
-                        $isClusterLocationValid = $false
-                        break
-                    }
-
-                    $currentClusterLocationItem = $currentClusterLocationItem.Parent
-                }
-
-                <#
-                    If the Cluster location is valid, the first Cluster location item
-                    should be located inside the Host Folder of the Datacenter.
-                #>
-                if (
-                    $isClusterLocationValid -and
-                    $currentClusterLocationItem.ParentId -eq $datacenterHostFolder.Id
-                ) {
-                    $folder = $foundClusterFolderLocation
-                    break
-                }
-            }
-
-            if ($null -eq $folder -and $this.Ensure -eq [Ensure]::Present) {
-                throw ($this.InvalidLocationMessage -f $this.ClusterLocation, $datacenterHostFolder.Name)
-            }
-
-            $cluster = $this.GetCluster($folder)
-        }
-
-        return $cluster
-    }
-
-    <#
-    .DESCRIPTION
-
-    Retrieves the Cluster with the specified name, located in the specified Folder.
-    #>
-    [PSObject] GetCluster($folder) {
-        $cluster = $null
-        $getClusterParams = @{
-            Server = $this.Connection
-            Name = $this.ClusterName
-            Location = $folder
-            ErrorAction = 'Stop'
-            Verbose = $false
-        }
-
-        $whereObjectParams = @{
-            FilterScript = {
-                $_.ParentId -eq $folder.Id
-            }
-        }
-
-        try {
-            $cluster = Get-Cluster @getClusterParams | Where-Object @whereObjectParams
-        }
-        catch {
-            if ($this.Ensure -eq [Ensure]::Present) {
-                throw ($this.CouldNotFindClusterMessage -f $this.ClusterName, $folder.Name)
-            }
-        }
-
-        return $cluster
     }
 
     <#

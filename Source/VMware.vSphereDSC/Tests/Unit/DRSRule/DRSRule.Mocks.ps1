@@ -76,7 +76,7 @@ function New-MocksForDRSRuleDscResource {
     Mock @getInventoryMockParamsForDatacenterHostFolder
 
     $getClusterMockParams = @{
-        CommandName = 'Get-Cluster'
+        CommandName = 'Get-Inventory'
         MockWith = { return $clusterMock }.GetNewClosure()
         ParameterFilter = {
             $Server -eq $script:VIServer -and
