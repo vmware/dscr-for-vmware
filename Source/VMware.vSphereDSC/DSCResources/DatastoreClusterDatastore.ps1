@@ -262,17 +262,18 @@ class DatastoreClusterDatastore : BaseDSC {
 
         try {
             Write-VerboseLog -Message $this.AddDatastoresToDatastoreClusterMessage -Arguments @(
-                $datastoresToAddToDatastoreCluster.Name -Join ', ',
+                ($datastoresToAddToDatastoreCluster.Name -Join ', '),
                 $datastoreCluster.Name
             )
             Move-Datastore @moveDatastoreParams
         }
         catch {
             throw (
-                $this.CouldNotAddDatastoresToDatastoreClusterMessage -f
-                $datastoresToAddToDatastoreCluster.Name -Join ', ',
-                $datastoreCluster.Name,
-                $_.Exception.Message
+                $this.CouldNotAddDatastoresToDatastoreClusterMessage -f @(
+                    ($datastoresToAddToDatastoreCluster.Name -Join ', '),
+                    $datastoreCluster.Name,
+                    $_.Exception.Message
+                )
             )
         }
     }
