@@ -86,7 +86,7 @@ class DatastoreClusterDatastore : BaseDSC {
             $this.InitInventoryUtil()
             $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
             $datacenterDatastoreFolderName = [FolderType]::Datastore.ToString() + 'Folder'
-            $datastoreCluster = $this.InventoryUtil.GetInventoryItem(
+            $datastoreCluster = $this.InventoryUtil.GetDatastoreCluster(
                 $this.DatastoreClusterName,
                 $this.InventoryUtil.GetInventoryItemParent(
                     $this.DatastoreClusterLocation,
@@ -114,7 +114,7 @@ class DatastoreClusterDatastore : BaseDSC {
             $this.InitInventoryUtil()
             $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
             $datacenterDatastoreFolderName = [FolderType]::Datastore.ToString() + 'Folder'
-            $datastoreCluster = $this.InventoryUtil.GetInventoryItem(
+            $datastoreCluster = $this.InventoryUtil.GetDatastoreCluster(
                 $this.DatastoreClusterName,
                 $this.InventoryUtil.GetInventoryItemParent(
                     $this.DatastoreClusterLocation,
@@ -147,7 +147,7 @@ class DatastoreClusterDatastore : BaseDSC {
             $this.InitInventoryUtil()
             $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
             $datacenterDatastoreFolderName = [FolderType]::Datastore.ToString() + 'Folder'
-            $datastoreCluster = $this.InventoryUtil.GetInventoryItem(
+            $datastoreCluster = $this.InventoryUtil.GetDatastoreCluster(
                 $this.DatastoreClusterName,
                 $this.InventoryUtil.GetInventoryItemParent(
                     $this.DatastoreClusterLocation,
