@@ -48,7 +48,7 @@ class DatastoreClusterDatastore : BaseDSC {
     <#
     .DESCRIPTION
 
-    Specifies the location of the Datastore Cluster with name specified in 'Name' key property in the Datacenter
+    Specifies the location of the Datastore Cluster with name specified in 'DatastoreClusterName' key property in the Datacenter
     specified in 'DatacenterName' key property. Location consists of 0 or more Folders.
     Empty location means that the Datastore Cluster is located in the Datastore Folder of the Datacenter.
     The Root Folders of the Datacenter are not part of the location. Folder names in the location are separated by '/'.
