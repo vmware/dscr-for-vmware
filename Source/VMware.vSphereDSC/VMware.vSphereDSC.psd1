@@ -20,7 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 RootModule = 'VMware.vSphereDSC.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.1.0.64'
+ModuleVersion = '2.1.0.65'
 
 # ID used to uniquely identify this module
 GUID = '664b57b4-bd8d-4a56-9984-278f7fe10cf8'
@@ -59,7 +59,7 @@ VariablesToExport = '*'
 AliasesToExport = @()
 
 # DSC resources to export from this module
-DscResourcesToExport = @('Datacenter', 'DatacenterFolder', 'DatastoreCluster', 'Folder', 'NfsUser', 'PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'vCenterVMHost', 'VDPortGroup', 'VDSwitch', 'VDSwitchVMHost', 'VMHostAccount', 'VMHostAdvancedSettings', 'VMHostAgentVM', 'VMHostAuthentication', 'VMHostCache', 'VMHostConfiguration', 'VMHostDnsSettings', 'VMHostFirewallRuleset', 'VMHostIScsiHba', 'VMHostIScsiHbaTarget', 'VMHostNtpSettings', 'VMHostPciPassthrough', 'VMHostPermission', 'VMHostPowerPolicy', 'VMHostRole', 'VMHostSatpClaimRule', 'VMHostScsiLun', 'VMHostScsiLunPath', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'NfsDatastore', 'VmfsDatastore', 'VMHostVssPortGroup', 'VMHostVssPortGroupSecurity', 'VMHostVssPortGroupShaping', 'VMHostVssPortGroupTeaming', 'VMHostAcceptanceLevel', 'VMHostDCUIKeyboard', 'VMHostNetworkCoreDump', 'VMHostSharedSwapSpace', 'VMHostSNMPAgent', 'VMHostSoftwareDevice', 'VMHostVMKernelActiveDumpFile', 'VMHostVMKernelActiveDumpPartition', 'VMHostVMKernelDumpFile', 'VMHostVMKernelModule', 'VMHostvSANNetworkConfiguration', 'VMHostVDSwitchMigration', 'VMHostVssMigration', 'VMHostPhysicalNic', 'VMHostVssNic', 'VMHostIPRoute', 'VMHostGraphics', 'VMHostGraphicsDevice', 'VMHostVss', 'VMHostVssBridge', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'DrsCluster', 'HACluster')
+DscResourcesToExport = @('Datacenter', 'DatacenterFolder', 'DatastoreCluster', 'DRSRule', 'Folder', 'NfsUser', 'PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'vCenterVMHost', 'VDPortGroup', 'VDSwitch', 'VDSwitchVMHost', 'VMHostAccount', 'VMHostAdvancedSettings', 'VMHostAgentVM', 'VMHostAuthentication', 'VMHostCache', 'VMHostConfiguration', 'VMHostDnsSettings', 'VMHostFirewallRuleset', 'VMHostIScsiHba', 'VMHostIScsiHbaTarget', 'VMHostNtpSettings', 'VMHostPciPassthrough', 'VMHostPermission', 'VMHostPowerPolicy', 'VMHostRole', 'VMHostSatpClaimRule', 'VMHostScsiLun', 'VMHostScsiLunPath', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'NfsDatastore', 'VmfsDatastore', 'VMHostVssPortGroup', 'VMHostVssPortGroupSecurity', 'VMHostVssPortGroupShaping', 'VMHostVssPortGroupTeaming', 'VMHostAcceptanceLevel', 'VMHostDCUIKeyboard', 'VMHostNetworkCoreDump', 'VMHostSharedSwapSpace', 'VMHostSNMPAgent', 'VMHostSoftwareDevice', 'VMHostVMKernelActiveDumpFile', 'VMHostVMKernelActiveDumpPartition', 'VMHostVMKernelDumpFile', 'VMHostVMKernelModule', 'VMHostvSANNetworkConfiguration', 'VMHostVDSwitchMigration', 'VMHostVssMigration', 'VMHostPhysicalNic', 'VMHostVssNic', 'VMHostIPRoute', 'VMHostGraphics', 'VMHostGraphicsDevice', 'VMHostVss', 'VMHostVssBridge', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'DrsCluster', 'HACluster')
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

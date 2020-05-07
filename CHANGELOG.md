@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.65 - 2020-05-07
+### Added
+- Introduced **InventoryUtil** class.
+- Added **DRSRule** DSC Resource.
+- Added Unit Tests for **DRSRule** DSC Resource.
+- Added Integration Tests for **DRSRule** DSC Resource.
+- Added Documentation and example Configurations for **DRSRule** DSC Resource.
+
 ## 2.1.0.64 - 2020-05-07
 ### Changed
 - Extended **BaseDSC** class with helper methods that determine if a DSC Resource is in a _desired state_.

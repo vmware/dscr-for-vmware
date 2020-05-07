@@ -37,6 +37,11 @@ enum DomainAction {
     Leave
 }
 
+enum DRSRuleType {
+    VMAffinity
+    VMAntiAffinity
+}
+
 enum Duplex {
     Full
     Half
@@ -1231,6 +1236,347 @@ class InventoryBaseDSC : BaseDSC {
         }
 
         return Get-Inventory -Server $this.Connection -Id $foundLocationItem.MoRef
+    }
+}
+
+class InventoryUtil {
+    InventoryUtil($viServer, $ensure) {
+        $this.VIServer = $viServer
+        $this.Ensure = $ensure
+    }
+
+    <#
+    .DESCRIPTION
+
+    Specifies the established connection to the vCenter Server system.
+    #>
+    [PSObject] $VIServer
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the Inventory Item that is exposed through a DSC Resource that uses the 'InventoryUtil' class
+    should be present or absent. It is used to determine the behaviour of the methods in the class
+    that retrieve Inventory Items.
+    #>
+    [Ensure] $Ensure
+
+    hidden [string] $InvalidLocationMessage = "Location {0} is not a valid location inside Folder {1}."
+
+    hidden [string] $CouldNotRetrieveRootFolderMessage = "Could not retrieve Inventory Root Folder of vCenter Server {0}. For more information: {1}"
+    hidden [string] $CouldNotRetrieveDatacenterRootFolderMessage = "Could not retrieve {0} of Datacenter {1}. For more information: {2}"
+    hidden [string] $CouldNotFindDatacenterMessage = "Could not find Datacenter {0} located in Folder {1}."
+    hidden [string] $CouldNotFindFolderMessage = "Could not find Folder {0} located in Folder {1}."
+    hidden [string] $CouldNotFindInventoryItemMessage = "Could not find Inventory Item {0} located in Inventory Item {1}."
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Datacenter with the specified name, located in the specified Folder.
+    #>
+    [PSObject] GetDatacenter($datacenterName, $datacenterLocation) {
+        $datacenter = $null
+        $inventoryRootFolder = $this.GetInventoryRootFolder()
+
+        <#
+            If empty Datacenter location is passed, the Datacenter should be located
+                in the Root Folder of the Inventory.
+            If Datacenter location without '/' is passed, the Datacenter should be located
+                in the Folder specified in the Datacenter location.
+            If Datacenter location with '/' is passed, the Datacenter should be located
+                in the Folder that is lastly specified in the Datacenter location.
+        #>
+        if ($datacenterLocation -eq [string]::Empty) {
+            $datacenter = $this.GetDatacenterInFolder($datacenterName, $inventoryRootFolder)
+        }
+        elseif ($datacenterLocation -NotMatch '/') {
+            $folder = $this.GetFolder($datacenterLocation, $inventoryRootFolder)
+            $datacenter = $this.GetDatacenterInFolder($datacenterName, $folder)
+        }
+        else {
+            $folder = $null
+            $datacenterLocationItems = $datacenterLocation -Split '/'
+
+            # The array needs to be reversed so we can retrieve the Folder where the Datacenter is located.
+            [array]::Reverse($datacenterLocationItems)
+
+            $datacenterLocationName = $datacenterLocationItems[0]
+            $foundDatacenterFolderLocations = $this.GetDatacenterFoldersByName($datacenterLocationName, $inventoryRootFolder)
+
+            # The Folder where the Datacenter is located is already retrieved and it's not needed anymore.
+            $datacenterLocationItems = $datacenterLocationItems[1..($datacenterLocationItems.Length - 1)]
+
+            foreach ($foundDatacenterFolderLocation in $foundDatacenterFolderLocations) {
+                $currentDatacenterLocationItem = $foundDatacenterFolderLocation
+                $isDatacenterLocationValid = $true
+
+                foreach ($datacenterLocationItem in $datacenterLocationItems) {
+                    if ($currentDatacenterLocationItem.Parent.Name -ne $datacenterLocationItem) {
+                        $isDatacenterLocationValid = $false
+                        break
+                    }
+
+                    $currentDatacenterLocationItem = $currentDatacenterLocationItem.Parent
+                }
+
+                <#
+                    If the Datacenter location is valid, the first Datacenter location item
+                    should be located inside the Root Folder of the Inventory.
+                #>
+                if (
+                    $isDatacenterLocationValid -and
+                    $currentDatacenterLocationItem.ParentId -eq $inventoryRootFolder.Id
+                ) {
+                    $folder = $foundDatacenterFolderLocation
+                    break
+                }
+            }
+
+            if ($null -eq $folder -and $this.Ensure -eq [Ensure]::Present) {
+                throw ($this.InvalidLocationMessage -f $datacenterLocation, $inventoryRootFolder.Name)
+            }
+
+            $datacenter = $this.GetDatacenterInFolder($datacenterName, $folder)
+        }
+
+        return $datacenter
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Parent of the Inventory Item located in the specified Datacenter.
+    #>
+    [PSObject] GetInventoryItemParent($inventoryItemLocation, $datacenter, $datacenterRootFolderName) {
+        # If the Datacenter doesn't exist, the Inventory Item Parent doesn't exist as well.
+        if ($null -eq $datacenter) {
+            return $null
+        }
+
+        $inventoryItemParent = $null
+        $datacenterRootFolder = $this.GetRootFolderOfDatacenter($datacenter, $datacenterRootFolderName)
+
+        <#
+            If empty Inventory Item location is passed, the Inventory Item Parent
+                in the Root Folder of the Datacenter.
+            If Inventory Item location without '/' is passed, the Inventory Item Parent
+                is the Inventory Item specified in the Inventory Item location.
+            If Inventory Item location with '/' is passed, the Inventory Item Parent
+                is the Inventory Item that is lastly specified in the Inventory Item location.
+        #>
+        if ($inventoryItemLocation -eq [string]::Empty) {
+            $inventoryItemParent = $datacenterRootFolder
+        }
+        elseif ($inventoryItemLocation -NotMatch '/') {
+            $inventoryItemParent = $this.GetInventoryItem($inventoryItemLocation, $datacenterRootFolder)
+        }
+        else {
+            $inventoryItemLocationItems = $inventoryItemLocation -Split '/'
+
+            # The array needs to be reversed so we can retrieve the name of the Parent of the Inventory Item.
+            [array]::Reverse($inventoryItemLocationItems)
+
+            $inventoryItemParentName = $inventoryItemLocationItems[0]
+            $foundInventoryItemLocations = $this.GetInventoryItemsByName($inventoryItemParentName, $datacenterRootFolder)
+
+            # The Parent name where the Inventory Item is located is already retrieved and it's not needed anymore.
+            $inventoryItemLocationItems = $inventoryItemLocationItems[1..($inventoryItemLocationItems.Length - 1)]
+
+            foreach ($foundInventoryItemLocation in $foundInventoryItemLocations) {
+                $currentInventoryItemLocationItem = $foundInventoryItemLocation
+                $isInventoryItemLocationValid = $true
+
+                foreach ($inventoryItemLocationItem in $inventoryItemLocationItems) {
+                    if ($currentInventoryItemLocationItem.Parent.Name -ne $inventoryItemLocationItem) {
+                        $isInventoryItemLocationValid = $false
+                        break
+                    }
+
+                    $currentInventoryItemLocationItem = $currentInventoryItemLocationItem.Parent
+                }
+
+                <#
+                    If the Inventory Item location is valid, the first Inventory Item location item
+                    should be located inside the corresponding Root Folder of the Datacenter.
+                #>
+                if (
+                    $isInventoryItemLocationValid -and
+                    $currentInventoryItemLocationItem.ParentId -eq $datacenterRootFolder.Id
+                ) {
+                    $inventoryItemParent = $foundInventoryItemLocation
+                    break
+                }
+            }
+
+            if ($null -eq $inventoryItemParent -and $this.Ensure -eq [Ensure]::Present) {
+                throw ($this.InvalidLocationMessage -f $inventoryItemLocation, $datacenterRootFolder.Name)
+            }
+        }
+
+        return $inventoryItemParent
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Root Folder of the specified Inventory.
+    #>
+    [PSObject] GetInventoryRootFolder() {
+        $getInventoryParams = @{
+            Server = $this.VIServer
+            Id = $this.VIServer.ExtensionData.Content.RootFolder
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            return Get-Inventory @getInventoryParams
+        }
+        catch {
+            throw ($this.CouldNotRetrieveRootFolderMessage -f $this.VIServer.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the specified Root Folder of the Datacenter.
+    #>
+    [PSObject] GetRootFolderOfDatacenter($datacenter, $datacenterRootFolderName) {
+        $getInventoryParams = @{
+            Server = $this.VIServer
+            Id = $datacenter.ExtensionData.$datacenterRootFolderName
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            return Get-Inventory @getInventoryParams
+        }
+        catch {
+            throw ($this.CouldNotRetrieveDatacenterRootFolderMessage -f $datacenterRootFolderName, $datacenter.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Datacenter with the specified name, located in the specified Folder.
+    #>
+    [PSObject] GetDatacenterInFolder($datacenterName, $folder) {
+        $getDatacenterParams = @{
+            Server = $this.VIServer
+            Name = $datacenterName
+            Location = $folder
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        $whereObjectParams = @{
+            FilterScript = {
+                $_.ParentFolderId -eq $folder.Id
+            }
+        }
+
+        $datacenter = Get-Datacenter @getDatacenterParams | Where-Object @whereObjectParams
+        if ($null -eq $datacenter -and $this.Ensure -eq [Ensure]::Present) {
+            throw ($this.CouldNotFindDatacenterMessage -f $datacenterName, $folder.Name)
+        }
+
+        return $datacenter
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Folder with the specified name, located in the specified Folder.
+    #>
+    [PSObject] GetFolder($folderName, $parentFolder) {
+        $getFolderParams = @{
+            Server = $this.VIServer
+            Name = $folderName
+            Location = $parentFolder
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        $whereObjectParams = @{
+            FilterScript = {
+                $_.ParentId -eq $parentFolder.Id
+            }
+        }
+
+        $folder = Get-Folder @getFolderParams | Where-Object @whereObjectParams
+        if ($null -eq $folder -and $this.Ensure -eq [Ensure]::Present) {
+            throw ($this.CouldNotFindFolderMessage -f $folderName, $parentFolder.Name)
+        }
+
+        return $folder
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves all Folders with the specified name of type Datacenter,
+    located inside the specified Folder.
+    #>
+    [PSObject] GetDatacenterFoldersByName($folderName, $folderLocation) {
+        $getFolderParams = @{
+            Server = $this.VIServer
+            Name = $folderName
+            Location = $folderLocation
+            Type = 'Datacenter'
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        return Get-Folder @getFolderParams
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves all Inventory Items with the specified name,
+    located inside the specified Inventory Item.
+    #>
+    [array] GetInventoryItemsByName($inventoryItemName, $inventoryItemLocation) {
+        $getInventoryParams = @{
+            Server = $this.VIServer
+            Name = $inventoryItemName
+            Location = $inventoryItemLocation
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        return Get-Inventory @getInventoryParams
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Inventory Item with the specified name, located in the specified Inventory Item.
+    #>
+    [PSObject] GetInventoryItem($inventoryItemName, $inventoryItemParent) {
+        $getInventoryParams = @{
+            Server = $this.VIServer
+            Name = $inventoryItemName
+            Location = $inventoryItemParent
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        $whereObjectParams = @{
+            FilterScript = {
+                $_.ParentId -eq $inventoryItemParent.Id
+            }
+        }
+
+        $inventoryItem = Get-Inventory @getInventoryParams | Where-Object @whereObjectParams
+        if ($null -eq $inventoryItem -and $this.Ensure -eq [Ensure]::Present) {
+            throw ($this.CouldNotFindInventoryItemMessage -f $inventoryItemName, $inventoryItemParent.Name)
+        }
+
+        return $inventoryItem
     }
 }
 
@@ -2687,6 +3033,416 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
             $result.IOLoadBalanceEnabled = $this.IOLoadBalanceEnabled
             $result.SdrsAutomationLevel = $this.SdrsAutomationLevel
             $result.SpaceUtilizationThresholdPercent = $this.SpaceUtilizationThresholdPercent
+        }
+    }
+}
+
+[DscResource()]
+class DRSRule : BaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the DRS rule.
+    #>
+    [DscProperty(Key)]
+    [string] $Name
+
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the Datacenter where the Cluster, for which the DRS rule applies, is located.
+    #>
+    [DscProperty(Key)]
+    [string] $DatacenterName
+
+    <#
+    .DESCRIPTION
+
+    Specifies the location of the Datacenter where the Cluster, for which the DRS rule applies, is located.
+    The Root Folder of the Inventory is not part of the location.
+    Empty location means that the Datacenter is located in the Root Folder of the Inventory.
+    The Folder names in the location are separated by '/'.
+    Example Datacenter location: 'MyDatacentersFolderOne/MyDatacentersFolderTwo'.
+    #>
+    [DscProperty(Key)]
+    [string] $DatacenterLocation
+
+    <#
+    .DESCRIPTION
+
+    Specifies the name of the Cluster for which the DRS rule applies.
+    #>
+    [DscProperty(Key)]
+    [string] $ClusterName
+
+    <#
+    .DESCRIPTION
+
+    Specifies the location of the Cluster, for which the DRS rule applies, located in the
+    Datacenter specified in 'DatacenterName' key property.
+    The Root Folders of the Datacenter are not part of the location.
+    Empty location means that the Cluster is located in the Host Folder of the Datacenter.
+    The Folder names in the location are separated by '/'.
+    Example Cluster location: 'MyClusterFolderOne/MyClusterFolderTwo'.
+    #>
+    [DscProperty(Key)]
+    [string] $ClusterLocation
+
+    <#
+    .DESCRIPTION
+
+    Specifies the type of the DRS rule - affinity or anti-affinity.
+    #>
+    [DscProperty(Key)]
+    [DRSRuleType] $DRSRuleType
+
+    <#
+    .DESCRIPTION
+
+    Specifies the names of the virtual machines that are referenced by the DRS rule.
+    #>
+    [DscProperty(Mandatory)]
+    [string[]] $VMNames
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the DRS rule should be present or absent.
+    #>
+    [DscProperty(Mandatory)]
+    [Ensure] $Ensure
+
+    <#
+    .DESCRIPTION
+
+    Specifies whether the DRS rule is enabled or disabled for the specified Cluster.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $Enabled
+
+    <#
+    .DESCRIPTION
+
+    Specifies the instance of the 'InventoryUtil' class that is used
+    for Inventory operations.
+    #>
+    hidden [InventoryUtil] $InventoryUtil
+
+    hidden [string] $CreateDrsRuleMessage = "Creating DRS Rule {0} for Cluster {1}."
+    hidden [string] $ModifyDrsRuleMessage = "Modifying DRS rule {0} for Cluster {1}."
+    hidden [string] $RemoveDrsRuleMessage = "Removing DRS rule {0} for Cluster {1}."
+
+    hidden [string] $InvalidVMCountMessage = "At least 2 Virtual Machines should be specified."
+
+    hidden [string] $CouldNotFindVMMessage = "Could not find Virtual Machine {0} in Cluster {1}."
+    hidden [string] $CouldNotCreateDrsRuleMessage = "Could not create DRS rule {0} for Cluster {1}. For more information: {2}"
+    hidden [string] $CouldNotModifyDrsRuleMessage = "Could not modify DRS rule {0} for Cluster {1}. For more information: {2}"
+    hidden [string] $CouldNotRemoveDrsRuleMessage = "Could not remove DRS rule {0} for Cluster {1}. For more information: {2}"
+
+    [void] Set() {
+        try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $this.InitInventoryUtil()
+            $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
+            $datacenterHostFolderName = [FolderType]::Host.ToString() + 'Folder'
+            $cluster = $this.InventoryUtil.GetInventoryItem(
+                $this.ClusterName,
+                $this.InventoryUtil.GetInventoryItemParent(
+                    $this.ClusterLocation,
+                    $datacenter,
+                    $datacenterHostFolderName
+                )
+            )
+
+            $drsRule = $this.GetDrsRule($cluster)
+            if ($this.Ensure -eq [Ensure]::Present) {
+                $virtualMachines = $this.GetVirtualMachines($cluster)
+                if ($null -eq $drsRule) {
+                    $this.NewDrsRule($cluster, $virtualMachines)
+                }
+                else {
+                    $this.ModifyDrsRule($drsRule, $virtualMachines)
+                }
+            }
+            else {
+                if ($null -ne $drsRule) {
+                    $this.RemoveDrsRule($drsRule)
+                }
+            }
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [bool] Test() {
+        try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
+
+            $this.InitInventoryUtil()
+            $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
+            $datacenterHostFolderName = [FolderType]::Host.ToString() + 'Folder'
+            $cluster = $this.InventoryUtil.GetInventoryItem(
+                $this.ClusterName,
+                $this.InventoryUtil.GetInventoryItemParent(
+                    $this.ClusterLocation,
+                    $datacenter,
+                    $datacenterHostFolderName
+                )
+            )
+
+            $drsRule = $this.GetDrsRule($cluster)
+            $result = $null
+
+            if ($this.Ensure -eq [Ensure]::Present) {
+                if ($null -eq $drsRule) {
+                    $result = $false
+                }
+                else {
+                    $result = !$this.ShouldModifyDrsRule($drsRule)
+                }
+            }
+            else {
+                $result = ($null -eq $drsRule)
+            }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [DRSRule] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [DRSRule]::new()
+
+            $this.ConnectVIServer()
+
+            $this.InitInventoryUtil()
+            $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
+            $datacenterHostFolderName = [FolderType]::Host.ToString() + 'Folder'
+            $cluster = $this.InventoryUtil.GetInventoryItem(
+                $this.ClusterName,
+                $this.InventoryUtil.GetInventoryItemParent(
+                    $this.ClusterLocation,
+                    $datacenter,
+                    $datacenterHostFolderName
+                )
+            )
+
+            $drsRule = $this.GetDrsRule($cluster)
+
+            $result.DatacenterName = $datacenter.Name
+            $result.ClusterName = $cluster.Name
+            $this.PopulateResult($result, $drsRule)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Initializes an instance of the 'InventoryUtil' class.
+    #>
+    [void] InitInventoryUtil() {
+        if ($null -eq $this.InventoryUtil) {
+            $this.InventoryUtil = [InventoryUtil]::new($this.Connection, $this.Ensure)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the DRS Rule with the speciifed name located in the specified Cluster.
+    #>
+    [PSObject] GetDrsRule($cluster) {
+        $getDrsRuleParams = @{
+            Server = $this.Connection
+            Name = $this.Name
+            Cluster = $cluster
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        return Get-DrsRule @getDrsRuleParams
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Virtual Machines with the specified names located in the specified Cluster.
+    #>
+    [array] GetVirtualMachines($cluster) {
+        $result = @()
+        if ($this.VMNames.Length -gt 0) {
+            $getVMParams = @{
+                Server = $this.Connection
+                Name = $this.VMNames
+                Location = $cluster
+                ErrorAction = 'SilentlyContinue'
+                Verbose = $false
+            }
+
+            $result = Get-VM @getVMParams
+        }
+
+        if ($result.Length -lt 2) {
+            throw $this.InvalidVMCountMessage
+        }
+
+        if ($this.VMNames.Length -gt $result.Length) {
+            $notFoundVMNames = $this.VMNames | Where-Object -FilterScript { $result.Name -NotContains $_ }
+            foreach ($notFoundVMName in $notFoundVMNames) {
+                Write-WarningLog -Message $this.CouldNotFindVMMessage -Arguments @($notFoundVMName, $cluster.Name)
+            }
+        }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the names of the Virtual Machines with the specified Ids.
+    #>
+    [string[]] GetVirtualMachineNames($vmIds) {
+        $getVMParams = @{
+            Server = $this.Connection
+            Id = $vmIds
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        return Get-VM @getVMParams | Select-Object -ExpandProperty Name
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the specified DRS rule should be modified.
+    #>
+    [bool] ShouldModifyDrsRule($drsRule) {
+        $shouldModifyDrsRule = @(
+            $this.ShouldUpdateDscResourceSetting('Enabled', $drsRule.Enabled, $this.Enabled),
+            $this.ShouldUpdateArraySetting('VMNames', $this.GetVirtualMachineNames($drsRule.VMIds), $this.VMNames)
+        )
+
+        return ($shouldModifyDrsRule -Contains $true)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new DRS rule with the specified name for the specified Cluster.
+    #>
+    [void] NewDrsRule($cluster, $virtualMachines) {
+        $newDrsRuleParams = @{
+            Server = $this.Connection
+            Name = $this.Name
+            Cluster = $cluster
+            KeepTogether = ($this.DRSRuleType -eq [DRSRuleType]::VMAffinity)
+            VM = $virtualMachines
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        if ($null -ne $this.Enabled) { $newDrsRuleParams.Enabled = $this.Enabled }
+
+        try {
+            Write-VerboseLog -Message $this.CreateDrsRuleMessage -Arguments @($this.Name, $cluster.Name)
+            New-DrsRule @newDrsRuleParams
+        }
+        catch {
+            throw ($this.CouldNotCreateDrsRuleMessage -f $this.Name, $cluster.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Modifies the specified DRS rule.
+    #>
+    [void] ModifyDrsRule($drsRule, $virtualMachines) {
+        $setDrsRuleParams = @{
+            Server = $this.Connection
+            Rule = $drsRule
+            VM = $virtualMachines
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        if ($null -ne $this.Enabled) { $setDrsRuleParams.Enabled = $this.Enabled }
+
+        try {
+            Write-VerboseLog -Message $this.ModifyDrsRuleMessage -Arguments @($drsRule.Name, $drsRule.Cluster.Name)
+            Set-DrsRule @setDrsRuleParams
+        }
+        catch {
+            throw ($this.CouldNotModifyDrsRuleMessage -f $drsRule.Name, $drsRule.Cluster.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Removes the specified DRS rule.
+    #>
+    [void] RemoveDrsRule($drsRule) {
+        $removeDrsRuleParams = @{
+            Rule = $drsRule
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            Write-VerboseLog -Message $this.RemoveDrsRuleMessage -Arguments @($drsRule.Name, $drsRule.Cluster.Name)
+            Remove-DrsRule @removeDrsRuleParams
+        }
+        catch {
+            throw ($this.CouldNotRemoveDrsRuleMessage -f $drsRule.Name, $drsRule.Cluster.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $drsRule) {
+        $result.Server = $this.Server
+        $result.DatacenterLocation = $this.DatacenterLocation
+        $result.ClusterLocation = $this.ClusterLocation
+
+        if ($null -ne $drsRule) {
+            $result.Name = $drsRule.Name
+            $result.DRSRuleType = [string] $drsRule.Type
+            $result.VMNames = $this.GetVirtualMachineNames($drsRule.VMIds)
+            $result.Ensure = [Ensure]::Present
+            $result.Enabled = $drsRule.Enabled
+        }
+        else {
+            $result.Name = $this.Name
+            $result.DRSRuleType = $this.DRSRuleType
+            $result.VMNames = $this.VMNames
+            $result.Ensure = [Ensure]::Absent
+            $result.Enabled = $this.Enabled
         }
     }
 }
