@@ -59,7 +59,11 @@ class VMHostPciPassthrough : VMHostRestartBaseDSC {
             $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
             $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
 
-            return ($this.Enabled -eq $pciDevice.PassthruEnabled)
+            $result = !$this.ShouldUpdateDscResourceSetting('Enabled', $pciDevice.PassthruEnabled, $this.Enabled)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()

@@ -110,16 +110,22 @@ class VDPortGroup : BaseDSC {
             $distributedSwitch = $this.GetDistributedSwitch()
             $distributedPortGroup = $this.GetDistributedPortGroup($distributedSwitch)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $distributedPortGroup) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateDistributedPortGroup($distributedPortGroup)
+                else {
+                    $result = !$this.ShouldUpdateDistributedPortGroup($distributedPortGroup)
+                }
             }
             else {
-                return ($null -eq $distributedPortGroup)
+                $result = ($null -eq $distributedPortGroup)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -203,30 +209,11 @@ class VDPortGroup : BaseDSC {
     Checks if the passed Distributed Port Group needs be modified based on the passed properties.
     #>
     [bool] ShouldUpdateDistributedPortGroup($distributedPortGroup) {
-        $shouldUpdateDistributedPortGroup = @()
-
-        <#
-        The VDPortGroup object does not contain information about ReferenceVDPortGroupName so the property is not
-        part of the Desired State of the Resource.
-        #>
-        if ($null -ne $this.Notes) {
-            <#
-            The server value for Notes property can be both $null and empty string. The DSC Resource will support only empty string value.
-            Null value means that the property was not passed in the Configuration.
-            #>
-            if ($this.Notes -eq [string]::Empty) {
-                $shouldUpdateDistributedPortGroup += ($null -ne $distributedPortGroup.Notes -and $distributedPortGroup.Notes -ne [string]::Empty)
-            }
-            else {
-                $shouldUpdateDistributedPortGroup += ($this.Notes -ne $distributedPortGroup.Notes)
-            }
-        }
-
-        $shouldUpdateDistributedPortGroup += ($null -ne $this.NumPorts -and $this.NumPorts -ne $distributedPortGroup.NumPorts)
-
-        if ($this.PortBinding -ne [PortBinding]::Unset) {
-            $shouldUpdateDistributedPortGroup += ($this.PortBinding.ToString() -ne $distributedPortGroup.PortBinding.ToString())
-        }
+        $shouldUpdateDistributedPortGroup = @(
+            $this.ShouldUpdateDscResourceSetting('NumPorts', $distributedPortGroup.NumPorts, $this.NumPorts),
+            $this.ShouldUpdateDscResourceSetting('PortBinding', [string] $distributedPortGroup.PortBinding, $this.PortBinding.ToString()),
+            $this.ShouldUpdateDscResourceSetting('Notes', [string] $distributedPortGroup.Notes, $this.Notes)
+        )
 
         return ($shouldUpdateDistributedPortGroup -Contains $true)
     }

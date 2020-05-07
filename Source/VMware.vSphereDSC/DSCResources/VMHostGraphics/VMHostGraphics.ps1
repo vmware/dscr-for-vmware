@@ -87,15 +87,20 @@ class VMHostGraphics : VMHostGraphicsBaseDSC {
     Checks if the Graphics Configuration needs to be updated with the desired values.
     #>
     [bool] ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager) {
-        if ($this.GraphicsType -ne $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType) {
-            return $true
-        }
-        elseif ($this.SharedPassthruAssignmentPolicy -ne $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy) {
-            return $true
-        }
-        else {
-            return $false
-        }
+        $shouldUpdateGraphicsConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting(
+                'GraphicsType',
+                [string] $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType,
+                $this.GraphicsType.ToString()
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'SharedPassthruAssignmentPolicy',
+                [string] $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy,
+                $this.SharedPassthruAssignmentPolicy.ToString()
+            )
+        )
+
+        return ($shouldUpdateGraphicsConfiguration -Contains $true)
     }
 
     <#

@@ -92,14 +92,20 @@ class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
             $this.RetrieveVMHost()
 
             $virtualPortGroup = $this.GetVirtualPortGroup()
+
+            $result = $null
             if ($null -eq $virtualPortGroup) {
                 # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                return $true
+                $result = $true
+            }
+            else {
+                $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+                $result = !$this.ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
             }
 
-            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+            $this.WriteDscResourceState($result)
 
-            return !$this.ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -157,14 +163,14 @@ class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
     Checks if the Security Policy of the specified Virtual Port Group should be updated.
     #>
     [bool] ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy) {
-        $shouldUpdateVirtualPortGroupSecurityPolicy = @()
-
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuous -and $this.AllowPromiscuous -ne $virtualPortGroupSecurityPolicy.AllowPromiscuous)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuousInherited -and $this.AllowPromiscuousInherited -ne $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmits -and $this.ForgedTransmits -ne $virtualPortGroupSecurityPolicy.ForgedTransmits)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmitsInherited -and $this.ForgedTransmitsInherited -ne $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChanges -and $this.MacChanges -ne $virtualPortGroupSecurityPolicy.MacChanges)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChangesInherited -and $this.MacChangesInherited -ne $virtualPortGroupSecurityPolicy.MacChangesInherited)
+        $shouldUpdateVirtualPortGroupSecurityPolicy = @(
+            $this.ShouldUpdateDscResourceSetting('AllowPromiscuous', $virtualPortGroupSecurityPolicy.AllowPromiscuous, $this.AllowPromiscuous),
+            $this.ShouldUpdateDscResourceSetting('AllowPromiscuousInherited', $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited, $this.AllowPromiscuousInherited),
+            $this.ShouldUpdateDscResourceSetting('ForgedTransmits', $virtualPortGroupSecurityPolicy.ForgedTransmits, $this.ForgedTransmits),
+            $this.ShouldUpdateDscResourceSetting('ForgedTransmitsInherited', $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited, $this.ForgedTransmitsInherited),
+            $this.ShouldUpdateDscResourceSetting('MacChanges', $virtualPortGroupSecurityPolicy.MacChanges, $this.MacChanges),
+            $this.ShouldUpdateDscResourceSetting('MacChangesInherited', $virtualPortGroupSecurityPolicy.MacChangesInherited, $this.MacChangesInherited)
+        )
 
         return ($shouldUpdateVirtualPortGroupSecurityPolicy -Contains $true)
     }

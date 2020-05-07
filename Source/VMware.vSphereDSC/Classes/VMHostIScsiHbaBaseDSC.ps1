@@ -97,20 +97,26 @@ class VMHostIScsiHbaBaseDSC : VMHostEntityBaseDSC {
     Checks if the CHAP settings should be modified based on the current authentication properties.
     #>
     [bool] ShouldModifyCHAPSettings($authenticationProperties, $inheritChap, $inheritMutualChap) {
-        $shouldModifyCHAPSettings = @()
-
-        $shouldModifyCHAPSettings += ($null -ne $inheritChap -and $inheritChap -ne $authenticationProperties.ChapInherited)
-        $shouldModifyCHAPSettings += ($this.ChapType -ne [ChapType]::Unset -and $this.ChapType.ToString() -ne $authenticationProperties.ChapType.ToString())
-        $shouldModifyCHAPSettings += ($null -ne $inheritMutualChap -and $inheritMutualChap -ne $authenticationProperties.MutualChapInherited)
-        $shouldModifyCHAPSettings += ($null -ne $this.MutualChapEnabled -and $this.MutualChapEnabled -ne $authenticationProperties.MutualChapEnabled)
-
-        # Force should determine the Desired State only when it is $true.
-        $shouldModifyCHAPSettings += ($null -ne $this.Force -and $this.Force)
+        $shouldModifyCHAPSettings = @(
+            $this.ShouldUpdateDscResourceSetting('InheritChap', $authenticationProperties.ChapInherited, $inheritChap),
+            $this.ShouldUpdateDscResourceSetting('ChapType', [string] $authenticationProperties.ChapType, $this.ChapType.ToString()),
+            $this.ShouldUpdateDscResourceSetting('InheritMutualChap', $authenticationProperties.MutualChapInherited, $inheritMutualChap),
+            $this.ShouldUpdateDscResourceSetting('MutualChapEnabled', $authenticationProperties.MutualChapEnabled, $this.MutualChapEnabled),
+            $this.ShouldUpdateDscResourceSetting('Force', $false, $this.Force)
+        )
 
         # CHAP and Mutual CHAP names should be ignored when determining the Desired State when CHAP type is 'Prohibited'.
         if ($this.ChapType -ne [ChapType]::Prohibited) {
-            $shouldModifyCHAPSettings += (![string]::IsNullOrEmpty($this.ChapName) -and $this.ChapName -ne [string] $authenticationProperties.ChapName)
-            $shouldModifyCHAPSettings += (![string]::IsNullOrEmpty($this.MutualChapName) -and $this.MutualChapName -ne [string] $authenticationProperties.MutualChapName)
+            $shouldModifyCHAPSettings += $this.ShouldUpdateDscResourceSetting(
+                'ChapName',
+                [string] $authenticationProperties.ChapName,
+                $this.ChapName
+            )
+            $shouldModifyCHAPSettings += $this.ShouldUpdateDscResourceSetting(
+                'MutualChapName',
+                [string] $authenticationProperties.MutualChapName,
+                $this.MutualChapName
+            )
         }
 
         return ($shouldModifyCHAPSettings -Contains $true)

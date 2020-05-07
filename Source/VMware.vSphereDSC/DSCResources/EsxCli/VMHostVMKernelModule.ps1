@@ -108,7 +108,7 @@ class VMHostVMKernelModule : EsxCliBaseDSC {
     #>
     [bool] ShouldModifyVMKernelModule($esxCliListMethodResult) {
         $vmKernelModule = $esxCliListMethodResult | Where-Object -FilterScript { $_.Name -eq $this.Module }
-        return ($this.Enabled -ne [System.Convert]::ToBoolean($vmKernelModule.IsEnabled))
+        return $this.ShouldUpdateDscResourceSetting('Enabled', [System.Convert]::ToBoolean($vmKernelModule.IsEnabled), $this.Enabled)
     }
 
     <#

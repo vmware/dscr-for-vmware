@@ -151,7 +151,9 @@ class VMHostScsiLunPath : VMHostEntityBaseDSC {
     Checks if the SCSI Lun path should be configured depending on the desired 'Active' and 'Preferred' values.
     #>
     [bool] ShouldConfigureScsiLunPath($scsiLunPath) {
-        $shouldConfigureScsiLunPath = @()
+        $shouldConfigureScsiLunPath = @(
+            $this.ShouldUpdateDscResourceSetting('Preferred', $scsiLunPath.Preferred, $this.Preferred)
+        )
 
         if ($null -ne $this.Active) {
             $currentScsiLunPathState = $scsiLunPath.State.ToString()
@@ -162,8 +164,6 @@ class VMHostScsiLunPath : VMHostEntityBaseDSC {
                 $shouldConfigureScsiLunPath += ($currentScsiLunPathState -eq $this.ActiveScsiLunPathState)
             }
         }
-
-        $shouldConfigureScsiLunPath += ($null -ne $this.Preferred -and $this.Preferred -ne $scsiLunPath.Preferred)
 
         return ($shouldConfigureScsiLunPath -Contains $true)
     }

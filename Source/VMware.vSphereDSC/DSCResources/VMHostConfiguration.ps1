@@ -357,17 +357,13 @@ class VMHostConfiguration : VMHostBaseDSC {
     Checks if the configuration of the specified VMHost should be modified.
     #>
     [bool] ShouldModifyVMHostConfiguration($vmHost) {
-        $shouldModifyVMHostConfiguration = @()
-
-        <#
-        Evacuate and VsanDataMigrationMode properties are not used when determining the Desired State because they are applicable only when
-        the desired 'State' of the VMHost is 'Maintenance' and the current one is not.
-        #>
-        $shouldModifyVMHostConfiguration += ($this.State -ne [VMHostState]::Unset -and $this.State.ToString() -ne $vmHost.ConnectionState.ToString())
-        $shouldModifyVMHostConfiguration += (![string]::IsNullOrEmpty($this.LicenseKey) -and $this.LicenseKey -ne $vmHost.LicenseKey)
-        $shouldModifyVMHostConfiguration += (![string]::IsNullOrEmpty($this.TimeZoneName) -and $this.TimeZoneName -ne $vmHost.TimeZone.Name)
-        $shouldModifyVMHostConfiguration += (![string]::IsNullOrEmpty($this.VMSwapfileDatastoreName) -and $this.VMSwapfileDatastoreName -ne $vmHost.VMSwapfileDatastore.Name)
-        $shouldModifyVMHostConfiguration += ($this.VMSwapfilePolicy -ne [VMSwapfilePolicy]::Unset -and $this.VMSwapfilePolicy.ToString() -ne $vmHost.VMSwapfilePolicy.ToString())
+        $shouldModifyVMHostConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting('State', [string] $vmHost.ConnectionState, $this.State.ToString()),
+            $this.ShouldUpdateDscResourceSetting('LicenseKey', [string] $vmHost.LicenseKey, $this.LicenseKey),
+            $this.ShouldUpdateDscResourceSetting('TimeZoneName', [string] $vmHost.TimeZone.Name, $this.TimeZoneName),
+            $this.ShouldUpdateDscResourceSetting('VMSwapfileDatastoreName', [string] $vmHost.VMSwapfileDatastore.Name, $this.VMSwapfileDatastoreName),
+            $this.ShouldUpdateDscResourceSetting('VMSwapfilePolicy', [string] $vmHost.VMSwapfilePolicy, $this.VMSwapfilePolicy.ToString())
+        )
 
         <#
         If the Host Profile name is specified and it is an empty string, the VMHost should not be associated with a Host Profile.

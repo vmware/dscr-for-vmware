@@ -137,7 +137,16 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
         #>
         $advancedSettingDesiredValue = $this.ConvertAdvancedSettingDesiredValueToCorrectType($advancedSetting)
 
-        return ($advancedSettingDesiredValue -ne $advancedSetting.Value)
+        $result = $advancedSettingDesiredValue -ne $advancedSetting.Value
+        if ($result) {
+            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @(
+                $advancedSetting.Name,
+                $advancedSetting.Value,
+                $advancedSettingDesiredValue
+            )
+        }
+
+        return $result
     }
 
     <#

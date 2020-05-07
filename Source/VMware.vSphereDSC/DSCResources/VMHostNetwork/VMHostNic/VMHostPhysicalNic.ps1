@@ -118,8 +118,9 @@ class VMHostPhysicalNic : VMHostEntityBaseDSC {
     Checks if the Physical Network Adapter should be updated.
     #>
     [bool] ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter) {
-        $shouldUpdatePhysicalNetworkAdapter = @()
-        $shouldUpdatePhysicalNetworkAdapter += ($null -ne $this.BitRatePerSecMb -and $this.BitRatePerSecMb -ne $physicalNetworkAdapter.BitRatePerSec)
+        $shouldUpdatePhysicalNetworkAdapter = @(
+            $this.ShouldUpdateDscResourceSetting('BitRatePerSecMb', $physicalNetworkAdapter.BitRatePerSec, $this.BitRatePerSecMb)
+        )
 
         <#
         The Duplex value on the server is stored as boolean indicating if the link is capable of full-duplex.

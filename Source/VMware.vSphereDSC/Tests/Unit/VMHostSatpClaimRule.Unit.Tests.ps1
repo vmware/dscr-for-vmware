@@ -995,8 +995,8 @@ try {
                 $result.ClaimOptions | Should -Be ''
                 $result.Options | Should -Be ''
                 $result.Model | Should -Be ''
-                $result.Boot | Should -Be $false
-                $result.Force | Should -Be $false
+                $result.Boot | Should -Be $null
+                $result.Force | Should -Be $null
             }
         }
 
@@ -1062,8 +1062,8 @@ try {
                 $result.ClaimOptions | Should -Be ''
                 $result.Options | Should -Be ''
                 $result.Model | Should -Be ''
-                $result.Boot | Should -Be $false
-                $result.Force | Should -Be $false
+                $result.Boot | Should -Be $null
+                $result.Force | Should -Be $null
             }
         }
     }

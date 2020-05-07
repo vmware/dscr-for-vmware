@@ -157,6 +157,12 @@ class VMHostAgentVM : VMHostBaseDSC {
             else {
                 $agentVmSettingAsViewObject = $this.$getAgentVmSettingAsViewObjectMethodName($esxAgentHostManager)
                 if ($agentVmSetting -ne $agentVmSettingAsViewObject.Name) {
+                    Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @(
+                        $agentVmSettingName,
+                        $agentVmSettingAsViewObject.Name,
+                        $agentVmSetting
+                    )
+
                     return $true
                 }
             }

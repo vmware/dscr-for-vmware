@@ -218,16 +218,24 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
     Checks if the SCSI device configuration should be modified.
     #>
     [bool] ShouldModifyScsiLunConfiguration($scsiLun) {
-        $shouldModifyScsiLunConfiguration = @()
-
-        $shouldModifyScsiLunConfiguration += ($this.MultipathPolicy -ne [MultipathPolicy]::Unset -and $this.MultipathPolicy.ToString() -ne $scsiLun.MultipathPolicy.ToString())
-        $shouldModifyScsiLunConfiguration += ($null -ne $this.IsLocal -and $this.IsLocal -ne $scsiLun.IsLocal)
-        $shouldModifyScsiLunConfiguration += ($null -ne $this.IsSsd -and $this.IsSsd -ne $scsiLun.IsSsd)
+        $shouldModifyScsiLunConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting('MultipathPolicy', [string] $scsiLun.MultipathPolicy, $this.MultipathPolicy.ToString()),
+            $this.ShouldUpdateDscResourceSetting('IsLocal', $scsiLun.IsLocal, $this.IsLocal),
+            $this.ShouldUpdateDscResourceSetting('IsSsd', $scsiLun.IsSsd, $this.IsSsd)
+        )
 
         # 'BlocksToSwitchPath' and 'CommandsToSwitchPath' properties should determine the Desired State only when the desired Multipath policy is 'Round Robin'.
         if ($this.MultipathPolicy -eq [MultipathPolicy]::RoundRobin) {
-            $shouldModifyScsiLunConfiguration += ($null -ne $this.BlocksToSwitchPath -and $this.BlocksToSwitchPath -ne [int] $scsiLun.BlocksToSwitchPath)
-            $shouldModifyScsiLunConfiguration += ($null -ne $this.CommandsToSwitchPath -and $this.CommandsToSwitchPath -ne [int] $scsiLun.CommandsToSwitchPath)
+            $shouldModifyScsiLunConfiguration += $this.ShouldUpdateDscResourceSetting(
+                'BlocksToSwitchPath',
+                [int] $scsiLun.BlocksToSwitchPath,
+                $this.BlocksToSwitchPath
+            )
+            $shouldModifyScsiLunConfiguration += $this.ShouldUpdateDscResourceSetting(
+                'CommandsToSwitchPath',
+                [int] $scsiLun.CommandsToSwitchPath,
+                $this.CommandsToSwitchPath
+            )
         }
 
         if (![string]::IsNullOrEmpty($this.PreferredScsiLunPathName) -and $this.MultipathPolicy -eq [MultipathPolicy]::Fixed) {

@@ -115,16 +115,22 @@ class DrsCluster : DatacenterInventoryBaseDSC {
             $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
             $cluster = $this.GetInventoryItem($clusterLocation)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $cluster) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateCluster($cluster)
+                else {
+                    $result = !$this.ShouldUpdateCluster($cluster)
+                }
             }
             else {
-                return ($null -eq $cluster)
+                $result = ($null -eq $cluster)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -158,44 +164,23 @@ class DrsCluster : DatacenterInventoryBaseDSC {
     <#
     .DESCRIPTION
 
-    Checks if the Cluster option should be updated.
-    #>
-    [bool] ShouldUpdateOptionValue($options, $key, $desiredValue) {
-        if ($null -ne $desiredValue) {
-            $currentValue = ($options | Where-Object { $_.Key -eq $key }).Value
-
-            if ($null -eq $currentValue) {
-                return $true
-            }
-            else {
-                return $desiredValue -ne $currentValue
-            }
-        }
-
-        return $false
-    }
-
-    <#
-    .DESCRIPTION
-
     Checks if the Cluster should be updated.
     #>
     [bool] ShouldUpdateCluster($cluster) {
         $drsConfig = $cluster.ExtensionData.ConfigurationEx.DrsConfig
 
-        $shouldUpdateCluster = @()
-        $shouldUpdateCluster += ($null -ne $this.DrsEnabled -and $this.DrsEnabled -ne $drsConfig.Enabled)
-        $shouldUpdateCluster += ($this.DrsAutomationLevel -ne [DrsAutomationLevel]::Unset -and $this.DrsAutomationLevel.ToString() -ne $drsConfig.DefaultVmBehavior)
-        $shouldUpdateCluster += ($null -ne $this.DrsMigrationThreshold -and $this.DrsMigrationThreshold -ne $drsConfig.VmotionRate)
+        $currentDrsDistributionOption = ($drsConfig.Option | Where-Object -FilterScript { $_.Key -eq $this.DrsDistributionSettingName }).Value
+        $currentMemoryLoadBalancingOption = ($drsConfig.Option | Where-Object -FilterScript { $_.Key -eq $this.MemoryLoadBalancingSettingName }).Value
+        $currentCPUOverCommitmentOption = ($drsConfig.Option | Where-Object -FilterScript { $_.Key -eq $this.CPUOverCommitmentSettingName }).Value
 
-        if ($null -ne $drsConfig.Option) {
-            $shouldUpdateCluster += $this.ShouldUpdateOptionValue($drsConfig.Option, $this.DrsDistributionSettingName, $this.DrsDistribution)
-            $shouldUpdateCluster += $this.ShouldUpdateOptionValue($drsConfig.Option, $this.MemoryLoadBalancingSettingName, $this.MemoryLoadBalancing)
-            $shouldUpdateCluster += $this.ShouldUpdateOptionValue($drsConfig.Option, $this.CPUOverCommitmentSettingName, $this.CPUOverCommitment)
-        }
-        else {
-            $shouldUpdateCluster += ($null -ne $this.DrsDistribution -or $null -ne $this.MemoryLoadBalancing -or $null -ne $this.CPUOverCommitment)
-        }
+        $shouldUpdateCluster = @(
+            $this.ShouldUpdateDscResourceSetting('DrsEnabled', $drsConfig.Enabled, $this.DrsEnabled),
+            $this.ShouldUpdateDscResourceSetting('DrsAutomationLevel', [string] $drsConfig.DefaultVmBehavior, $this.DrsAutomationLevel.ToString()),
+            $this.ShouldUpdateDscResourceSetting('DrsMigrationThreshold', $drsConfig.VmotionRate, $this.DrsMigrationThreshold),
+            $this.ShouldUpdateDscResourceSetting('DrsDistribution', $currentDrsDistributionOption, $this.DrsDistribution),
+            $this.ShouldUpdateDscResourceSetting('MemoryLoadBalancing', $currentMemoryLoadBalancingOption, $this.MemoryLoadBalancing),
+            $this.ShouldUpdateDscResourceSetting('CPUOverCommitment', $currentCPUOverCommitmentOption, $this.CPUOverCommitment)
+        )
 
         return ($shouldUpdateCluster -Contains $true)
     }

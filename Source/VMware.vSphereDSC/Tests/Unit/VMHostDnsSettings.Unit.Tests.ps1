@@ -301,7 +301,7 @@ try {
                 }
                 $vmHostMock = {
                     return [VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl] @{ ExtensionData = [VMware.Vim.HostSystem] @{ Config = [VMware.Vim.HostConfigInfo] @{ Network = [VMware.Vim.HostNetworkInfo] @{ DnsConfig `
-                         = [VMware.Vim.HostDnsConfig] @{ Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('search domain 1') } } } } }
+                         = [VMware.Vim.HostDnsConfig] @{ VirtualNicDevice = [string]::Empty; Dhcp = $false; DomainName = 'Domain Name'; HostName = 'Host Name'; Address = @('address 1', 'address 2'); SearchDomain = @('search domain 1') } } } } }
                 }
 
                 $script:resourceProperties.Address = @('address 2', 'address 1')

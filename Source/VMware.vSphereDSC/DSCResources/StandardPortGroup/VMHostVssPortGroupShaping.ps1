@@ -69,12 +69,19 @@ class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
             $this.RetrieveVMHost()
 
             $virtualPortGroup = $this.GetVirtualPortGroup()
+
+            $result = $null
             if ($null -eq $virtualPortGroup) {
                 # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                return $true
+                $result = $true
+            }
+            else {
+                $result = !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
             }
 
-            return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -115,12 +122,14 @@ class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
     Checks if the Shaping Policy of the specified Virtual Port Group should be updated.
     #>
     [bool] ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup) {
-        $shouldUpdateVirtualPortGroupShapingPolicy = @()
+        $shapingPolicy = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy
 
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.Enabled -and $this.Enabled -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.Enabled)
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.AverageBandwidth -and $this.AverageBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.AverageBandwidth)
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.PeakBandwidth -and $this.PeakBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.PeakBandwidth)
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.BurstSize -and $this.BurstSize -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.BurstSize)
+        $shouldUpdateVirtualPortGroupShapingPolicy = @(
+            $this.ShouldUpdateDscResourceSetting('Enabled', $shapingPolicy.Enabled, $this.Enabled),
+            $this.ShouldUpdateDscResourceSetting('AverageBandwidth', $shapingPolicy.AverageBandwidth, $this.AverageBandwidth),
+            $this.ShouldUpdateDscResourceSetting('PeakBandwidth', $shapingPolicy.PeakBandwidth, $this.PeakBandwidth),
+            $this.ShouldUpdateDscResourceSetting('BurstSize', $shapingPolicy.BurstSize, $this.BurstSize)
+        )
 
         return ($shouldUpdateVirtualPortGroupShapingPolicy -Contains $true)
     }

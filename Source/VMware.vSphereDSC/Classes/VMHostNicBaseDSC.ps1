@@ -178,7 +178,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
             return $false
         }
 
-        return $this.ShouldUpdateArraySetting($currentIPv6, $this.IPv6)
+        return $this.ShouldUpdateArraySetting('IPv6', $currentIPv6, $this.IPv6)
     }
 
     <#
@@ -187,22 +187,21 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     Checks if the passed VMKernel Network Adapter needs be updated based on the specified properties.
     #>
     [bool] ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter) {
-        $shouldUpdateVMHostNetworkAdapter = @()
-
-        $shouldUpdateVMHostNetworkAdapter += (![string]::IsNullOrEmpty($this.IP) -and $this.IP -ne $vmHostNetworkAdapter.IP)
-        $shouldUpdateVMHostNetworkAdapter += (![string]::IsNullOrEmpty($this.SubnetMask) -and $this.SubnetMask -ne $vmHostNetworkAdapter.SubnetMask)
-        $shouldUpdateVMHostNetworkAdapter += (![string]::IsNullOrEmpty($this.Mac) -and $this.Mac -ne $vmHostNetworkAdapter.Mac)
-
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Dhcp -and $this.Dhcp -ne $vmHostNetworkAdapter.DhcpEnabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.AutomaticIPv6 -and $this.AutomaticIPv6 -ne $vmHostNetworkAdapter.AutomaticIPv6)
-        $shouldUpdateVMHostNetworkAdapter += $this.ShouldUpdateIPv6($vmHostNetworkAdapter.IPv6)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6ThroughDhcp -and $this.IPv6ThroughDhcp -ne $vmHostNetworkAdapter.IPv6ThroughDhcp)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Mtu -and $this.Mtu -ne $vmHostNetworkAdapter.Mtu)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6Enabled -and $this.IPv6Enabled -ne $vmHostNetworkAdapter.IPv6Enabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.ManagementTrafficEnabled -and $this.ManagementTrafficEnabled -ne $vmHostNetworkAdapter.ManagementTrafficEnabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.FaultToleranceLoggingEnabled -and $this.FaultToleranceLoggingEnabled -ne $vmHostNetworkAdapter.FaultToleranceLoggingEnabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.VMotionEnabled -and $this.VMotionEnabled -ne $vmHostNetworkAdapter.VMotionEnabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.VsanTrafficEnabled -and $this.VsanTrafficEnabled -ne $vmHostNetworkAdapter.VsanTrafficEnabled)
+        $shouldUpdateVMHostNetworkAdapter = @(
+            $this.ShouldUpdateDscResourceSetting('IP', [string] $vmHostNetworkAdapter.IP, $this.IP),
+            $this.ShouldUpdateDscResourceSetting('SubnetMask', [string] $vmHostNetworkAdapter.SubnetMask, $this.SubnetMask),
+            $this.ShouldUpdateDscResourceSetting('Mac', [string] $vmHostNetworkAdapter.Mac, $this.Mac),
+            $this.ShouldUpdateDscResourceSetting('Dhcp', $vmHostNetworkAdapter.DhcpEnabled, $this.Dhcp),
+            $this.ShouldUpdateDscResourceSetting('AutomaticIPv6', $vmHostNetworkAdapter.AutomaticIPv6, $this.AutomaticIPv6),
+            $this.ShouldUpdateIPv6($vmHostNetworkAdapter.IPv6),
+            $this.ShouldUpdateDscResourceSetting('IPv6ThroughDhcp', $vmHostNetworkAdapter.IPv6ThroughDhcp, $this.IPv6ThroughDhcp),
+            $this.ShouldUpdateDscResourceSetting('Mtu', $vmHostNetworkAdapter.Mtu, $this.Mtu),
+            $this.ShouldUpdateDscResourceSetting('IPv6Enabled', $vmHostNetworkAdapter.IPv6Enabled, $this.IPv6Enabled),
+            $this.ShouldUpdateDscResourceSetting('ManagementTrafficEnabled', $vmHostNetworkAdapter.ManagementTrafficEnabled, $this.ManagementTrafficEnabled),
+            $this.ShouldUpdateDscResourceSetting('FaultToleranceLoggingEnabled', $vmHostNetworkAdapter.FaultToleranceLoggingEnabled, $this.FaultToleranceLoggingEnabled),
+            $this.ShouldUpdateDscResourceSetting('VMotionEnabled', $vmHostNetworkAdapter.VMotionEnabled, $this.VMotionEnabled),
+            $this.ShouldUpdateDscResourceSetting('VsanTrafficEnabled', $vmHostNetworkAdapter.VsanTrafficEnabled, $this.VsanTrafficEnabled)
+        )
 
         return ($shouldUpdateVMHostNetworkAdapter -Contains $true)
     }

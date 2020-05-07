@@ -73,16 +73,22 @@ class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
             $virtualSwitch = $this.GetVirtualSwitch()
             $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $portGroup) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateVirtualPortGroup($portGroup)
+                else {
+                    $result = !$this.ShouldUpdateDscResourceSetting('VLanId', $portGroup.VLanId, $this.VLanId)
+                }
             }
             else {
-                return ($null -eq $portGroup)
+                $result = ($null -eq $portGroup)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -159,19 +165,6 @@ class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
         if ($this.VLanId -lt 0 -or $this.VLanId -gt $this.VLanIdMaxValue) {
             throw "The passed VLanId value $($this.VLanId) is not valid. The valid values are in the following range: [0, $($this.VLanIdMaxValue)]."
         }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the VLanId is specified and needs to be updated.
-    #>
-    [bool] ShouldUpdateVirtualPortGroup($portGroup) {
-        if ($null -eq $this.VLanId) {
-            return $false
-        }
-
-        return ($this.VLanId -ne $portGroup.VLanId)
     }
 
     <#

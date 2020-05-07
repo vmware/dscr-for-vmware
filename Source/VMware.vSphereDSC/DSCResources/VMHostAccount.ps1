@@ -167,7 +167,7 @@ class VMHostAccount : BaseDSC {
             }
         }
 
-        return ($null -ne $this.Description -and $this.Description -ne $vmHostAccount.Description)
+        return $this.ShouldUpdateDscResourceSetting('Description', $vmHostAccount.Description, $this.Description)
     }
 
     <#

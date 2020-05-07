@@ -151,16 +151,22 @@ class VDSwitch : DatacenterInventoryBaseDSC {
             $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
             $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $distributedSwitch) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateDistributedSwitch($distributedSwitch)
+                else {
+                    $result = !$this.ShouldUpdateDistributedSwitch($distributedSwitch)
+                }
             }
             else {
-                return ($null -eq $distributedSwitch)
+                $result = ($null -eq $distributedSwitch)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -220,28 +226,25 @@ class VDSwitch : DatacenterInventoryBaseDSC {
     Checks if the passed Distributed Switch needs be updated based on the specified properties.
     #>
     [bool] ShouldUpdateDistributedSwitch($distributedSwitch) {
-        $shouldUpdateDistributedSwitch = @()
-
-        <#
-        The VDSwitch object does not contain information about ReferenceVDSwitchName and WithoutPortGroups so those properties are not
-        part of the Desired State of the Resource.
-        #>
-        $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.ContactDetails) -and $this.ContactDetails -ne $distributedSwitch.ContactDetails)
-        $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.ContactName) -and $this.ContactName -ne $distributedSwitch.ContactName)
-        $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.Notes) -and $this.Notes -ne $distributedSwitch.Notes)
-        $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.Version) -and $this.Version -ne $distributedSwitch.Version)
-
-        $shouldUpdateDistributedSwitch += ($null -ne $this.MaxPorts -and $this.MaxPorts -ne $distributedSwitch.MaxPorts)
-        $shouldUpdateDistributedSwitch += ($null -ne $this.Mtu -and $this.Mtu -ne $distributedSwitch.Mtu)
-        $shouldUpdateDistributedSwitch += ($null -ne $this.NumUplinkPorts -and $this.NumUplinkPorts -ne $distributedSwitch.NumUplinkPorts)
-
-        if ($this.LinkDiscoveryProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
-            $shouldUpdateDistributedSwitch += ($this.LinkDiscoveryProtocol.ToString() -ne $distributedSwitch.LinkDiscoveryProtocol.ToString())
-        }
-
-        if ($this.LinkDiscoveryProtocolOperation -ne [LinkDiscoveryProtocolOperation]::Unset) {
-            $shouldUpdateDistributedSwitch += ($this.LinkDiscoveryProtocolOperation.ToString() -ne $distributedSwitch.LinkDiscoveryProtocolOperation.ToString())
-        }
+        $shouldUpdateDistributedSwitch = @(
+            $this.ShouldUpdateDscResourceSetting('ContactDetails', [string] $distributedSwitch.ContactDetails, $this.ContactDetails),
+            $this.ShouldUpdateDscResourceSetting('ContactName', [string] $distributedSwitch.ContactName, $this.ContactName),
+            $this.ShouldUpdateDscResourceSetting('Notes', [string] $distributedSwitch.Notes, $this.Notes),
+            $this.ShouldUpdateDscResourceSetting('Version', [string] $distributedSwitch.Version, $this.Version),
+            $this.ShouldUpdateDscResourceSetting('MaxPorts', $distributedSwitch.MaxPorts, $this.MaxPorts),
+            $this.ShouldUpdateDscResourceSetting('Mtu', $distributedSwitch.Mtu, $this.Mtu),
+            $this.ShouldUpdateDscResourceSetting('NumUplinkPorts', $distributedSwitch.NumUplinkPorts, $this.NumUplinkPorts),
+            $this.ShouldUpdateDscResourceSetting(
+                'LinkDiscoveryProtocol',
+                [string] $distributedSwitch.LinkDiscoveryProtocol,
+                $this.LinkDiscoveryProtocol.ToString()
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'LinkDiscoveryProtocolOperation',
+                [string] $distributedSwitch.LinkDiscoveryProtocolOperation,
+                $this.LinkDiscoveryProtocolOperation.ToString()
+            )
+        )
 
         return ($shouldUpdateDistributedSwitch -Contains $true)
     }

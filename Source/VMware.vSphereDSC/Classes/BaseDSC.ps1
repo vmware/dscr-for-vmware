@@ -49,19 +49,26 @@ class BaseDSC {
     hidden [string] $GetMethodStartMessage = "Begin executing Get functionality for {0} DSC Resource."
     hidden [string] $GetMethodEndMessage = "End executing Get functionality for {0} DSC Resource."
 
+    hidden [string] $SettingIsNotInDesiredStateMessage = "Setting {0}: Current setting value [ {1} ] does not match desired setting value [ {2} ]."
+    hidden [string] $DscResourcesEnumDefaultValue = 'Unset'
+
     hidden [string] $vCenterProductId = 'vpx'
     hidden [string] $ESXiProductId = 'embeddedEsx'
 
     <#
     .DESCRIPTION
 
-    Imports the needed VMware Modules.
+    Imports the required modules where the used PowerCLI cmdlets reside.
     #>
     [void] ImportRequiredModules() {
+        <#
+            The Verbose logic here is needed to suppress the Verbose output of the Import-Module cmdlet
+            when importing the 'VMware.VimAutomation.Core' Module.
+        #>
         $savedVerbosePreference = $global:VerbosePreference
         $global:VerbosePreference = 'SilentlyContinue'
 
-        Import-Module -Name VMware.VimAutomation.Core
+        Import-Module -Name 'VMware.VimAutomation.Core'
 
         $global:VerbosePreference = $savedVerbosePreference
     }
@@ -69,7 +76,7 @@ class BaseDSC {
     <#
     .DESCRIPTION
 
-    Connects to the specified Server with the passed Credentials.
+    Connects to the specified vSphere Server with the passed Credentials.
     The method sets the Connection property to the established connection.
     If connection cannot be established, the method throws an exception.
     #>
@@ -78,10 +85,17 @@ class BaseDSC {
 
         if ($null -eq $this.Connection) {
             try {
-                $this.Connection = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction Stop
+                $connectVIServerParams = @{
+                    Server = $this.Server
+                    Credential = $this.Credential
+                    ErrorAction = 'Stop'
+                    Verbose = $false
+                }
+
+                $this.Connection = Connect-VIServer @connectVIServerParams
             }
             catch {
-                throw "Cannot establish connection to server $($this.Server). For more information: $($_.Exception.Message)"
+                throw "Cannot establish connection to vSphere Server $($this.Server). For more information: $($_.Exception.Message)"
             }
         }
     }
@@ -91,14 +105,17 @@ class BaseDSC {
 
     Checks if the passed array is in the desired state and if an update should be performed.
     #>
-    [bool] ShouldUpdateArraySetting($currentArray, $desiredArray) {
+    [bool] ShouldUpdateArraySetting($settingName, $currentArray, $desiredArray) {
+        $result = $null
+
         if ($null -eq $desiredArray) {
             # The property is not specified.
-            return $false
+            $result = $false
         }
         elseif ($desiredArray.Length -eq 0 -and $currentArray.Length -ne 0) {
             # Empty array specified as desired, but current is not an empty array, so update should be performed.
-            return $true
+            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+            $result = $true
         }
         else {
             $elementsToAdd = $desiredArray | Where-Object { $currentArray -NotContains $_ }
@@ -106,16 +123,45 @@ class BaseDSC {
 
             if ($null -ne $elementsToAdd -or $null -ne $elementsToRemove) {
                 <#
-                The current array does not contain at least one element from desired array or
-                the desired array is a subset of the current array. In both cases
-                we should perform an update operation.
+                    The current array does not contain at least one element from desired array or
+                    the desired array is a subset of the current array. In both cases
+                    we should perform an update operation.
                 #>
-                return $true
+                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+                $result = $true
             }
-
-            # No need to perform an update operation.
-            return $false
+            else {
+                # No need to perform an update operation.
+                $result = $false
+            }
         }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the passed setting is in the desired state and if an update should be performed.
+    #>
+    [bool] ShouldUpdateDscResourceSetting($settingName, $currentSetting, $desiredSetting) {
+        $result = $null
+
+        if ($this.$settingName -is [string]) {
+            $result = ($null -ne $desiredSetting -and $desiredSetting -ne [string] $currentSetting)
+        }
+        elseif ($this.$settingName -is [enum]) {
+            $result = ($desiredSetting -ne $this.DscResourcesEnumDefaultValue -and $desiredSetting -ne $currentSetting)
+        }
+        else {
+            $result = ($null -ne $desiredSetting -and $desiredSetting -ne $currentSetting)
+        }
+
+        if ($result) {
+            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, $currentSetting, $desiredSetting)
+        }
+
+        return $result
     }
 
     <#
@@ -188,14 +234,21 @@ class BaseDSC {
     <#
     .DESCRIPTION
 
-    Closes the last open connection to the specified Server.
+    Closes the last open connection to the specified vSphere Server.
     #>
     [void] DisconnectVIServer() {
         try {
-            Disconnect-VIServer -Server $this.Connection -Confirm:$false -ErrorAction Stop
+            $disconnectVIServerParams = @{
+                Server = $this.Connection
+                Confirm = $false
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+
+            Disconnect-VIServer @disconnectVIServerParams
         }
         catch {
-            throw "Cannot close Connection to Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
+            throw "Cannot close connection to vSphere Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
         }
     }
 }

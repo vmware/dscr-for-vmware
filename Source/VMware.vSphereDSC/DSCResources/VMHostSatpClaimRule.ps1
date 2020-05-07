@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class VMHostSatpClaimRule : VMHostBaseDSC {
+class VMHostSatpClaimRule : EsxCliBaseDSC {
     <#
     .DESCRIPTION
 
@@ -70,7 +70,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
     System default rule added at boot time.
     #>
     [DscProperty()]
-    [bool] $Boot
+    [nullable[bool]] $Boot
 
     <#
     .DESCRIPTION
@@ -134,54 +134,66 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
     Value, which ignores validity checks and install the rule anyway.
     #>
     [DscProperty()]
-    [bool] $Force
+    [nullable[bool]] $Force
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
-            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+
+            $this.GetEsxCli($vmHost)
+            $satpClaimRule = $this.GetSatpClaimRule()
             $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
             if ($this.Ensure -eq [Ensure]::Present) {
                 if (!$satpClaimRulePresent) {
-                    $this.AddSatpClaimRule($esxCli)
+                    $this.AddSatpClaimRule()
                 }
             }
             else {
                 if ($satpClaimRulePresent) {
-                    $this.RemoveSatpClaimRule($esxCli)
+                    $this.RemoveSatpClaimRule()
                 }
             }
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
-            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+
+            $this.GetEsxCli($vmHost)
+            $satpClaimRule = $this.GetSatpClaimRule()
             $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return $satpClaimRulePresent
+                $result = $satpClaimRulePresent
             }
             else {
-                return -not $satpClaimRulePresent
+                $result = -not $satpClaimRulePresent
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [VMHostSatpClaimRule] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [VMHostSatpClaimRule]::new()
 
             $result.Server = $this.Server
@@ -193,8 +205,9 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $result.Name = $vmHost.Name
-            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+
+            $this.GetEsxCli($vmHost)
+            $satpClaimRule = $this.GetSatpClaimRule()
             $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
             if (!$satpClaimRulePresent) {
@@ -212,6 +225,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
@@ -279,9 +293,9 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
     Returns the desired SatpClaimRule if the Rule is present on the server, otherwise returns $null.
     #>
-    [PSObject] GetSatpClaimRule($esxCli) {
+    [PSObject] GetSatpClaimRule() {
         $foundSatpClaimRule = $null
-        $satpClaimRules = Get-SATPClaimRules -EsxCli $esxCli
+        $satpClaimRules = Get-SATPClaimRules -EsxCli $this.EsxCli
 
         foreach ($satpClaimRule in $satpClaimRules) {
             if ($this.Equals($satpClaimRule)) {
@@ -321,7 +335,6 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
         $satpArgs.transport = $this.Transport
         $satpArgs.description = $this.Description
         $satpArgs.vendor = $this.Vendor
-        $satpArgs.boot = $this.Boot
         $satpArgs.type = $this.Type
         $satpArgs.device = $this.Device
         $satpArgs.driver = $this.Driver
@@ -329,6 +342,8 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
         $satpArgs.psp = $this.Psp
         $satpArgs.option = $this.Options
         $satpArgs.model = $this.Model
+
+        if ($null -ne $this.Boot) { $satpArgs.boot = $this.Boot }
     }
 
     <#
@@ -336,14 +351,14 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
     Installs the new SATP Claim Rule with the specified properties from the user.
     #>
-    [void] AddSatpClaimRule($esxCli) {
-        $satpArgs = Add-CreateArgs -EsxCli $esxCli
-        $satpArgs.force = $this.Force
+    [void] AddSatpClaimRule() {
+        $satpArgs = Add-CreateArgs -EsxCli $this.EsxCli
+        if ($null -ne $this.Force) { $satpArgs.force = $this.Force }
 
         $this.PopulateSatpArgs($satpArgs)
 
         try {
-            Add-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
+            Add-SATPClaimRule -EsxCli $this.EsxCli -SatpArgs $satpArgs
         }
         catch {
             throw "EsxCLI command for adding satp rule failed with the following exception: $($_.Exception.Message)"
@@ -355,13 +370,13 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
     Uninstalls the SATP Claim Rule with the specified properties from the user.
     #>
-    [void] RemoveSatpClaimRule($esxCli) {
-        $satpArgs = Remove-CreateArgs -EsxCli $esxCli
+    [void] RemoveSatpClaimRule() {
+        $satpArgs = Remove-CreateArgs -EsxCli $this.EsxCli
 
         $this.PopulateSatpArgs($satpArgs)
 
         try {
-            Remove-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
+            Remove-SATPClaimRule -EsxCli $this.EsxCli -SatpArgs $satpArgs
         }
         catch {
             throw "EsxCLI command for removing satp rule failed with the following exception: $($_.Exception.Message)"

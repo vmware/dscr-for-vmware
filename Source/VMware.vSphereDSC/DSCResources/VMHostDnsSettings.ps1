@@ -75,6 +75,7 @@ class VMHostDnsSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
@@ -82,24 +83,41 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
+
             $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
-            return $this.Equals($vmHostDnsConfig)
+            $result = !((
+                $this.ShouldUpdateDscResourceSetting('Dhcp', $vmHostDnsConfig.Dhcp, $this.Dhcp),
+                $this.ShouldUpdateDscResourceSetting('DomainName', $vmHostDnsConfig.DomainName, $this.DomainName),
+                $this.ShouldUpdateDscResourceSetting('HostName', $vmHostDnsConfig.HostName, $this.HostName),
+                $this.ShouldUpdateDscResourceSetting('Ipv6VirtualNicDevice', $vmHostDnsConfig.Ipv6VirtualNicDevice, $this.Ipv6VirtualNicDevice),
+                $this.ShouldUpdateDscResourceSetting('VirtualNicDevice', $vmHostDnsConfig.VirtualNicDevice, $this.VirtualNicDevice),
+                $this.ShouldUpdateArraySetting('Address', $vmHostDnsConfig.Address, $this.Address),
+                $this.ShouldUpdateArraySetting('SearchDomain', $vmHostDnsConfig.SearchDomain, $this.SearchDomain)
+            ) -Contains $true)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [VMHostDnsSettings] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [VMHostDnsSettings]::new()
 
             $this.ConnectVIServer()
@@ -120,54 +138,8 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the desired DNS array property is equal to the current DNS array property.
-    #>
-    [bool] AreDnsArrayPropertiesEqual($desiredArrayPropertyValue, $currentArrayPropertyValue) {
-        $valuesToAdd = $desiredArrayPropertyValue | Where-Object { $currentArrayPropertyValue -NotContains $_ }
-        $valuesToRemove = $currentArrayPropertyValue | Where-Object { $desiredArrayPropertyValue -NotContains $_ }
-
-        return ($null -eq $valuesToAdd -and $null -eq $valuesToRemove)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the desired DNS optional value is equal to the current DNS value from the server.
-    #>
-    [bool] AreDnsOptionalPropertiesEqual($desiredPropertyValue, $currentPropertyValue) {
-        if ([string]::IsNullOrEmpty($desiredPropertyValue) -and [string]::IsNullOrEmpty($currentPropertyValue)) {
-            return $true
-        }
-
-        return $desiredPropertyValue -eq $currentPropertyValue
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the current DNS Config is equal to the Desired DNS Config.
-    #>
-    [bool] Equals($vmHostDnsConfig) {
-        # Checks if desired Mandatory values are equal to current values from server.
-        if ($this.Dhcp -ne $vmHostDnsConfig.Dhcp -or $this.DomainName -ne $vmHostDnsConfig.DomainName -or $this.HostName -ne $vmHostDnsConfig.HostName) {
-            return $false
-        }
-
-        if (!$this.AreDnsArrayPropertiesEqual($this.Address, $vmHostDnsConfig.Address) -or !$this.AreDnsArrayPropertiesEqual($this.SearchDomain, $vmHostDnsConfig.SearchDomain)) {
-            return $false
-        }
-
-        if (!$this.AreDnsOptionalPropertiesEqual($this.Ipv6VirtualNicDevice, $vmHostDnsConfig.Ipv6VirtualNicDevice) -or !$this.AreDnsOptionalPropertiesEqual($this.VirtualNicDevice, $vmHostDnsConfig.VirtualNicDevice)) {
-            return $false
-        }
-
-        return $true
     }
 
     <#
@@ -187,7 +159,14 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
 
         $dnsConfig = New-DNSConfig @dnsConfigArgs
-        $networkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
+
+        $getViewParams = @{
+            Server = $this.Connection
+            Id = $vmHost.ExtensionData.ConfigManager.NetworkSystem
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+        $networkSystem = Get-View @getViewParams
 
         try {
             Update-DNSConfig -NetworkSystem $networkSystem -DnsConfig $dnsConfig

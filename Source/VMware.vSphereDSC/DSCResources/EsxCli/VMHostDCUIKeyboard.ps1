@@ -53,7 +53,7 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
             $this.GetEsxCli($vmHost)
             $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
 
-            $result = ($this.Layout -eq $esxCliGetMethodResult)
+            $result = !$this.ShouldUpdateDscResourceSetting('Layout', [string] $esxCliGetMethodResult, $this.Layout)
 
             $this.WriteDscResourceState($result)
 

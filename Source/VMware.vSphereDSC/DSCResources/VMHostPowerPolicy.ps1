@@ -43,7 +43,11 @@ class VMHostPowerPolicy : VMHostBaseDSC {
             $vmHost = $this.GetVMHost()
             $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
 
-            return ($this.PowerPolicy -eq $currentPowerPolicy.Key)
+            $result = !$this.ShouldUpdateDscResourceSetting('PowerPolicy', $currentPowerPolicy.Key, $this.PowerPolicy)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()

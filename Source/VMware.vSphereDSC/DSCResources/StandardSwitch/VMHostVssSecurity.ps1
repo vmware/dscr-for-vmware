@@ -67,16 +67,21 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
                 $this.AllowPromiscuous = $false
                 $this.ForgedTransmits = $true
                 $this.MacChanges = $true
 
-                return ($null -eq $vss -or $this.Equals($vss))
+                $result = ($null -eq $vss -or $this.Equals($vss))
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -114,12 +119,13 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssSecurityTest = @()
-        $vssSecurityTest += ($null -eq $this.AllowPromiscuous -or $vss.Spec.Policy.Security.AllowPromiscuous -eq $this.AllowPromiscuous)
-        $vssSecurityTest += ($null -eq $this.ForgedTransmits -or $vss.Spec.Policy.Security.ForgedTransmits -eq $this.ForgedTransmits)
-        $vssSecurityTest += ($null -eq $this.MacChanges -or $vss.Spec.Policy.Security.MacChanges -eq $this.MacChanges)
+        $vssSecurityTest = @(
+            $this.ShouldUpdateDscResourceSetting('AllowPromiscuous', $vss.Spec.Policy.Security.AllowPromiscuous, $this.AllowPromiscuous),
+            $this.ShouldUpdateDscResourceSetting('ForgedTransmits', $vss.Spec.Policy.Security.ForgedTransmits, $this.ForgedTransmits),
+            $this.ShouldUpdateDscResourceSetting('MacChanges', $vss.Spec.Policy.Security.MacChanges, $this.MacChanges)
+        )
 
-        return ($vssSecurityTest -notcontains $false)
+        return ($vssSecurityTest -NotContains $true)
     }
 
     <#

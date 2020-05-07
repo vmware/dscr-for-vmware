@@ -60,7 +60,9 @@ class vCenterStatistics : BaseDSC {
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
+
             $performanceManager = $this.GetPerformanceManager()
             $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
@@ -68,24 +70,38 @@ class vCenterStatistics : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
+
             $performanceManager = $this.GetPerformanceManager()
             $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
-            return $this.Equals($currentPerformanceInterval)
+            $result = !((
+                $this.ShouldUpdateDscResourceSetting('Level', $currentPerformanceInterval.Level, $this.Level),
+                $this.ShouldUpdateDscResourceSetting('Enabled', $currentPerformanceInterval.Enabled, $this.Enabled),
+                $this.ShouldUpdateDscResourceSetting('IntervalMinutes', $currentPerformanceInterval.SamplingPeriod / $this.SecondsInAMinute, $this.IntervalMinutes),
+                $this.ShouldUpdateDscResourceSetting('PeriodLength', $currentPerformanceInterval.Length / $this.Period, $this.PeriodLength)
+            ) -Contains $true)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [vCenterStatistics] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [vCenterStatistics]::new()
             $result.Server = $this.Server
             $result.Period = $this.Period
@@ -107,6 +123,7 @@ class vCenterStatistics : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
@@ -116,10 +133,14 @@ class vCenterStatistics : BaseDSC {
     Returns the Performance Manager for the specified vCenter.
     #>
     [PSObject] GetPerformanceManager() {
-        $vCenter = $this.Connection
-        $performanceManager = Get-View -Server $this.Connection -Id $vCenter.ExtensionData.Content.PerfManager
+        $getViewParams = @{
+            Server = $this.Connection
+            Id = $this.Connection.ExtensionData.Content.PerfManager
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
 
-        return $performanceManager
+        return Get-View @getViewParams
     }
 
     <#
@@ -131,33 +152,6 @@ class vCenterStatistics : BaseDSC {
         $currentPerformanceInterval = $performanceManager.HistoricalInterval | Where-Object { $_.Name -Match $this.Period }
 
         return $currentPerformanceInterval
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the desired and current values are equal.
-    #>
-    [bool] AreEqual($desiredValue, $currentValue) {
-        <#
-            Desired value equal to $null means the value is not specified and should be ignored when we check for equality.
-            So in this case we return $true. Otherwise we check if the Specified value is equal to the current value.
-        #>
-        return ($null -eq $desiredValue -or $desiredValue -eq $currentValue)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the Current Performance Interval is equal to the Desired Performance Interval.
-    #>
-    [bool] Equals($currentPerformanceInterval) {
-        $equalLevels = $this.AreEqual($this.Level, $currentPerformanceInterval.Level)
-        $equalEnabled = $this.AreEqual($this.Enabled, $currentPerformanceInterval.Enabled)
-        $equalIntervalMinutes = $this.AreEqual($this.IntervalMinutes, $currentPerformanceInterval.SamplingPeriod / $this.SecondsInAMinute)
-        $equalPeriodLength = $this.AreEqual($this.PeriodLength, $currentPerformanceInterval.Length / $this.Period)
-
-        return ($equalLevels -and $equalEnabled -and $equalIntervalMinutes -and $equalPeriodLength)
     }
 
     <#

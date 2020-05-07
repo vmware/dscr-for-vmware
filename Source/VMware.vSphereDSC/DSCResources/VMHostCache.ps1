@@ -152,7 +152,7 @@ class VMHostCache : VMHostBaseDSC {
         $foundDatastore = $this.GetDatastore($vmHost)
         $datastoreCacheInfo = $this.GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore)
 
-        return ($this.SwapSizeGB -ne $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize))
+        return $this.ShouldUpdateDscResourceSetting('SwapSizeGB', $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize), $this.SwapSizeGB)
     }
 
     <#

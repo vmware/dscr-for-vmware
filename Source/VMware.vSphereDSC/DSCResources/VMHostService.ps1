@@ -30,7 +30,7 @@ class VMHostService : VMHostBaseDSC {
     The state of the service after a VMHost reboot.
     #>
     [DscProperty()]
-    [ServicePolicy] $Policy
+    [ServicePolicy] $Policy = [ServicePolicy]::Unset
 
     <#
     .DESCRIPTION
@@ -38,7 +38,7 @@ class VMHostService : VMHostBaseDSC {
     The current state of the service.
     #>
     [DscProperty()]
-    [bool] $Running
+    [nullable[bool]] $Running
 
     <#
     .DESCRIPTION
@@ -85,7 +85,11 @@ class VMHostService : VMHostBaseDSC {
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
-            return !$this.ShouldUpdateVMHostService($vmHost)
+            $result = !$this.ShouldUpdateVMHostService($vmHost)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -120,9 +124,10 @@ class VMHostService : VMHostBaseDSC {
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
-        $shouldUpdateVMHostService = @()
-        $shouldUpdateVMHostService += ($this.Policy -ne [ServicePolicy]::Unset -and $this.Policy -ne $vmHostCurrentService.Policy)
-        $shouldUpdateVMHostService += $this.Running -ne $vmHostCurrentService.Running
+        $shouldUpdateVMHostService = @(
+            $this.ShouldUpdateDscResourceSetting('Policy', [string] $vmHostCurrentService.Policy, $this.Policy.ToString()),
+            $this.ShouldUpdateDscResourceSetting('Running', $vmHostCurrentService.Running, $this.Running)
+        )
 
         return ($shouldUpdateVMHostService -Contains $true)
     }
@@ -137,11 +142,11 @@ class VMHostService : VMHostBaseDSC {
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
-        if ($this.Policy -ne [ServicePolicy]::Unset -and $this.Policy -ne $vmHostCurrentService.Policy) {
+        if ($this.ShouldUpdateDscResourceSetting('Policy', [string] $vmHostCurrentService.Policy, $this.Policy.ToString())) {
             Set-VMHostService -HostService $vmHostCurrentService -Policy $this.Policy.ToString() -Confirm:$false
         }
 
-        if ($vmHostCurrentService.Running -ne $this.Running) {
+        if ($this.ShouldUpdateDscResourceSetting('Running', $vmHostCurrentService.Running, $this.Running)) {
             if ($vmHostCurrentService.Running) {
                 Stop-VMHostService -HostService $vmHostCurrentService -Confirm:$false
             }

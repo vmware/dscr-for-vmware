@@ -30,12 +30,13 @@ class VMHostNtpSettings : VMHostBaseDSC {
     Desired Policy of the VMHost 'ntpd' service activation.
     #>
     [DscProperty()]
-    [ServicePolicy] $NtpServicePolicy
+    [ServicePolicy] $NtpServicePolicy = [ServicePolicy]::Unset
 
-    hidden [string] $ServiceId = "ntpd"
+    hidden [string] $ServiceId = 'ntpd'
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
@@ -44,42 +45,46 @@ class VMHostNtpSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
+
             $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
-
-            $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
-            if ($shouldUpdateVMHostNtpServer) {
-                return $false
-            }
-
             $vmHostServices = $vmHost.ExtensionData.Config.Service
-            $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostServices)
-            if ($shouldUpdateVMHostNtpServicePolicy) {
-                return $false
-            }
+            $vmHostNtpService = $vmHostServices.Service | Where-Object -FilterScript { $_.Key -eq $this.ServiceId }
 
-            return $true
+            $result = !((
+                $this.ShouldUpdateArraySetting('NtpServer', $vmHostNtpConfig.Server, $this.NtpServer),
+                $this.ShouldUpdateDscResourceSetting('NtpServicePolicy', $vmHostNtpService.Policy.ToString(), $this.NtpServicePolicy.ToString())
+            ) -Contains $true)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [VMHostNtpSettings] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [VMHostNtpSettings]::new()
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
+
             $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
             $vmHostServices = $vmHost.ExtensionData.Config.Service
-            $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
+            $vmHostNtpService = $vmHostServices.Service | Where-Object -FilterScript { $_.Key -eq $this.ServiceId }
 
             $result.Name = $vmHost.Name
             $result.Server = $this.Server
@@ -90,58 +95,8 @@ class VMHostNtpSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the VMHost NTP Server should be updated.
-    #>
-    [bool] ShouldUpdateVMHostNtpServer($vmHostNtpConfig) {
-        $desiredVMHostNtpServer = $this.NtpServer
-        $currentVMHostNtpServer = $vmHostNtpConfig.Server
-
-        if ($null -eq $desiredVMHostNtpServer) {
-            # The property is not specified.
-            return $false
-        }
-        elseif ($desiredVMHostNtpServer.Length -eq 0 -and $currentVMHostNtpServer.Length -ne 0) {
-            # Empty array specified as desired, but current is not an empty array, so update VMHost NTP Server.
-            return $true
-        }
-        else {
-            $ntpServerToAdd = $desiredVMHostNtpServer | Where-Object { $currentVMHostNtpServer -NotContains $_ }
-            $ntpServerToRemove = $currentVMHostNtpServer | Where-Object { $desiredVMHostNtpServer -NotContains $_ }
-
-            if ($null -ne $ntpServerToAdd -or $null -ne $ntpServerToRemove) {
-                <#
-                The currentVMHostNtpServer does not contain at least one element from desiredVMHostNtpServer or
-                the desiredVMHostNtpServer is a subset of the currentVMHostNtpServer. In both cases
-                we should update VMHost NTP Server.
-                #>
-                return $true
-            }
-
-            # No need to update VMHost NTP Server.
-            return $false
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the VMHost 'ntpd' Service Policy should be updated.
-    #>
-    [bool] ShouldUpdateVMHostNtpServicePolicy($vmHostServices) {
-        if ($this.NtpServicePolicy -eq [ServicePolicy]::Unset) {
-            # The property is not specified.
-            return $false
-        }
-
-        $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
-
-        return $this.NtpServicePolicy -ne $vmHostNtpService.Policy
     }
 
     <#
@@ -151,14 +106,19 @@ class VMHostNtpSettings : VMHostBaseDSC {
     #>
     [void] UpdateVMHostNtpServer($vmHost) {
         $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
-        $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
-
-        if (!$shouldUpdateVMHostNtpServer) {
+        if (!$this.ShouldUpdateArraySetting('NtpServer', $vmHostNtpConfig.Server, $this.NtpServer)) {
             return
         }
 
         $dateTimeConfig = New-DateTimeConfig -NtpServer $this.NtpServer
-        $dateTimeSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.DateTimeSystem
+
+        $getViewParams = @{
+            Server = $this.Connection
+            Id = $vmHost.ExtensionData.ConfigManager.DateTimeSystem
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+        $dateTimeSystem = Get-View @getViewParams
 
         Update-DateTimeConfig -DateTimeSystem $dateTimeSystem -DateTimeConfig $dateTimeConfig
     }
@@ -169,13 +129,20 @@ class VMHostNtpSettings : VMHostBaseDSC {
     Updates the VMHost 'ntpd' Service Policy with the desired Service Policy.
     #>
     [void] UpdateVMHostNtpServicePolicy($vmHost) {
-        $vmHostService = $vmHost.ExtensionData.Config.Service
-        $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostService)
-        if (!$shouldUpdateVMHostNtpServicePolicy) {
+        $vmHostServices = $vmHost.ExtensionData.Config.Service
+        $vmHostNtpService = $vmHostServices.Service | Where-Object -FilterScript { $_.Key -eq $this.ServiceId }
+        if (!$this.ShouldUpdateDscResourceSetting('NtpServicePolicy', $vmHostNtpService.Policy.ToString(), $this.NtpServicePolicy.ToString())) {
             return
         }
 
-        $serviceSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.ServiceSystem
+        $getViewParams = @{
+            Server = $this.Connection
+            Id = $vmHost.ExtensionData.ConfigManager.ServiceSystem
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+        $serviceSystem = Get-View @getViewParams
+
         Update-ServicePolicy -ServiceSystem $serviceSystem -ServiceId $this.ServiceId -ServicePolicyValue $this.NtpServicePolicy.ToString().ToLower()
     }
 }
