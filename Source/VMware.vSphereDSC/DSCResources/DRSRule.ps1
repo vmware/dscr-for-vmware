@@ -314,11 +314,8 @@ class DRSRule : BaseDSC {
     #>
     [bool] ShouldModifyDrsRule($drsRule) {
         $shouldModifyDrsRule = @(
-            ($null -ne $this.Enabled -and $this.Enabled -ne $drsRule.Enabled),
-            $this.ShouldUpdateArraySetting(
-                $this.GetVirtualMachineNames($drsRule.VMIds),
-                $this.VMNames
-            )
+            $this.ShouldUpdateDscResourceSetting('Enabled', $drsRule.Enabled, $this.Enabled),
+            $this.ShouldUpdateArraySetting('VMNames', $this.GetVirtualMachineNames($drsRule.VMIds), $this.VMNames)
         )
 
         return ($shouldModifyDrsRule -Contains $true)
