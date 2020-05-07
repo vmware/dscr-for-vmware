@@ -277,19 +277,26 @@ class BaseDSC {
     hidden [string] $GetMethodStartMessage = "Begin executing Get functionality for {0} DSC Resource."
     hidden [string] $GetMethodEndMessage = "End executing Get functionality for {0} DSC Resource."
 
+    hidden [string] $SettingIsNotInDesiredStateMessage = "Setting {0}: Current setting value [ {1} ] does not match desired setting value [ {2} ]."
+    hidden [string] $DscResourcesEnumDefaultValue = 'Unset'
+
     hidden [string] $vCenterProductId = 'vpx'
     hidden [string] $ESXiProductId = 'embeddedEsx'
 
     <#
     .DESCRIPTION
 
-    Imports the needed VMware Modules.
+    Imports the required modules where the used PowerCLI cmdlets reside.
     #>
     [void] ImportRequiredModules() {
+        <#
+            The Verbose logic here is needed to suppress the Verbose output of the Import-Module cmdlet
+            when importing the 'VMware.VimAutomation.Core' Module.
+        #>
         $savedVerbosePreference = $global:VerbosePreference
         $global:VerbosePreference = 'SilentlyContinue'
 
-        Import-Module -Name VMware.VimAutomation.Core
+        Import-Module -Name 'VMware.VimAutomation.Core'
 
         $global:VerbosePreference = $savedVerbosePreference
     }
@@ -297,7 +304,7 @@ class BaseDSC {
     <#
     .DESCRIPTION
 
-    Connects to the specified Server with the passed Credentials.
+    Connects to the specified vSphere Server with the passed Credentials.
     The method sets the Connection property to the established connection.
     If connection cannot be established, the method throws an exception.
     #>
@@ -306,10 +313,17 @@ class BaseDSC {
 
         if ($null -eq $this.Connection) {
             try {
-                $this.Connection = Connect-VIServer -Server $this.Server -Credential $this.Credential -ErrorAction Stop
+                $connectVIServerParams = @{
+                    Server = $this.Server
+                    Credential = $this.Credential
+                    ErrorAction = 'Stop'
+                    Verbose = $false
+                }
+
+                $this.Connection = Connect-VIServer @connectVIServerParams
             }
             catch {
-                throw "Cannot establish connection to server $($this.Server). For more information: $($_.Exception.Message)"
+                throw "Cannot establish connection to vSphere Server $($this.Server). For more information: $($_.Exception.Message)"
             }
         }
     }
@@ -319,14 +333,17 @@ class BaseDSC {
 
     Checks if the passed array is in the desired state and if an update should be performed.
     #>
-    [bool] ShouldUpdateArraySetting($currentArray, $desiredArray) {
+    [bool] ShouldUpdateArraySetting($settingName, $currentArray, $desiredArray) {
+        $result = $null
+
         if ($null -eq $desiredArray) {
             # The property is not specified.
-            return $false
+            $result = $false
         }
         elseif ($desiredArray.Length -eq 0 -and $currentArray.Length -ne 0) {
             # Empty array specified as desired, but current is not an empty array, so update should be performed.
-            return $true
+            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+            $result = $true
         }
         else {
             $elementsToAdd = $desiredArray | Where-Object { $currentArray -NotContains $_ }
@@ -334,16 +351,45 @@ class BaseDSC {
 
             if ($null -ne $elementsToAdd -or $null -ne $elementsToRemove) {
                 <#
-                The current array does not contain at least one element from desired array or
-                the desired array is a subset of the current array. In both cases
-                we should perform an update operation.
+                    The current array does not contain at least one element from desired array or
+                    the desired array is a subset of the current array. In both cases
+                    we should perform an update operation.
                 #>
-                return $true
+                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+                $result = $true
             }
-
-            # No need to perform an update operation.
-            return $false
+            else {
+                # No need to perform an update operation.
+                $result = $false
+            }
         }
+
+        return $result
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the passed setting is in the desired state and if an update should be performed.
+    #>
+    [bool] ShouldUpdateDscResourceSetting($settingName, $currentSetting, $desiredSetting) {
+        $result = $null
+
+        if ($this.$settingName -is [string]) {
+            $result = ($null -ne $desiredSetting -and $desiredSetting -ne [string] $currentSetting)
+        }
+        elseif ($this.$settingName -is [enum]) {
+            $result = ($desiredSetting -ne $this.DscResourcesEnumDefaultValue -and $desiredSetting -ne $currentSetting)
+        }
+        else {
+            $result = ($null -ne $desiredSetting -and $desiredSetting -ne $currentSetting)
+        }
+
+        if ($result) {
+            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, $currentSetting, $desiredSetting)
+        }
+
+        return $result
     }
 
     <#
@@ -416,14 +462,21 @@ class BaseDSC {
     <#
     .DESCRIPTION
 
-    Closes the last open connection to the specified Server.
+    Closes the last open connection to the specified vSphere Server.
     #>
     [void] DisconnectVIServer() {
         try {
-            Disconnect-VIServer -Server $this.Connection -Confirm:$false -ErrorAction Stop
+            $disconnectVIServerParams = @{
+                Server = $this.Connection
+                Confirm = $false
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+
+            Disconnect-VIServer @disconnectVIServerParams
         }
         catch {
-            throw "Cannot close Connection to Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
+            throw "Cannot close connection to vSphere Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
         }
     }
 }
@@ -800,10 +853,10 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     Checks if the specified Datastore should be modified.
     #>
     [bool] ShouldModifyDatastore($datastore) {
-        $shouldModifyDatastore = @()
-
-        $shouldModifyDatastore += ($null -ne $this.CongestionThresholdMillisecond -and $this.CongestionThresholdMillisecond -ne $datastore.CongestionThresholdMillisecond)
-        $shouldModifyDatastore += ($null -ne $this.StorageIOControlEnabled -and $this.StorageIOControlEnabled -ne $datastore.StorageIOControlEnabled)
+        $shouldModifyDatastore = @(
+            $this.ShouldUpdateDscResourceSetting('CongestionThresholdMillisecond', $datastore.CongestionThresholdMillisecond, $this.CongestionThresholdMillisecond),
+            $this.ShouldUpdateDscResourceSetting('StorageIOControlEnabled', $datastore.StorageIOControlEnabled, $this.StorageIOControlEnabled)
+        )
 
         return ($shouldModifyDatastore -Contains $true)
     }
@@ -1416,20 +1469,26 @@ class VMHostIScsiHbaBaseDSC : VMHostEntityBaseDSC {
     Checks if the CHAP settings should be modified based on the current authentication properties.
     #>
     [bool] ShouldModifyCHAPSettings($authenticationProperties, $inheritChap, $inheritMutualChap) {
-        $shouldModifyCHAPSettings = @()
-
-        $shouldModifyCHAPSettings += ($null -ne $inheritChap -and $inheritChap -ne $authenticationProperties.ChapInherited)
-        $shouldModifyCHAPSettings += ($this.ChapType -ne [ChapType]::Unset -and $this.ChapType.ToString() -ne $authenticationProperties.ChapType.ToString())
-        $shouldModifyCHAPSettings += ($null -ne $inheritMutualChap -and $inheritMutualChap -ne $authenticationProperties.MutualChapInherited)
-        $shouldModifyCHAPSettings += ($null -ne $this.MutualChapEnabled -and $this.MutualChapEnabled -ne $authenticationProperties.MutualChapEnabled)
-
-        # Force should determine the Desired State only when it is $true.
-        $shouldModifyCHAPSettings += ($null -ne $this.Force -and $this.Force)
+        $shouldModifyCHAPSettings = @(
+            $this.ShouldUpdateDscResourceSetting('InheritChap', $authenticationProperties.ChapInherited, $inheritChap),
+            $this.ShouldUpdateDscResourceSetting('ChapType', [string] $authenticationProperties.ChapType, $this.ChapType.ToString()),
+            $this.ShouldUpdateDscResourceSetting('InheritMutualChap', $authenticationProperties.MutualChapInherited, $inheritMutualChap),
+            $this.ShouldUpdateDscResourceSetting('MutualChapEnabled', $authenticationProperties.MutualChapEnabled, $this.MutualChapEnabled),
+            $this.ShouldUpdateDscResourceSetting('Force', $false, $this.Force)
+        )
 
         # CHAP and Mutual CHAP names should be ignored when determining the Desired State when CHAP type is 'Prohibited'.
         if ($this.ChapType -ne [ChapType]::Prohibited) {
-            $shouldModifyCHAPSettings += (![string]::IsNullOrEmpty($this.ChapName) -and $this.ChapName -ne [string] $authenticationProperties.ChapName)
-            $shouldModifyCHAPSettings += (![string]::IsNullOrEmpty($this.MutualChapName) -and $this.MutualChapName -ne [string] $authenticationProperties.MutualChapName)
+            $shouldModifyCHAPSettings += $this.ShouldUpdateDscResourceSetting(
+                'ChapName',
+                [string] $authenticationProperties.ChapName,
+                $this.ChapName
+            )
+            $shouldModifyCHAPSettings += $this.ShouldUpdateDscResourceSetting(
+                'MutualChapName',
+                [string] $authenticationProperties.MutualChapName,
+                $this.MutualChapName
+            )
         }
 
         return ($shouldModifyCHAPSettings -Contains $true)
@@ -1755,7 +1814,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
             return $false
         }
 
-        return $this.ShouldUpdateArraySetting($currentIPv6, $this.IPv6)
+        return $this.ShouldUpdateArraySetting('IPv6', $currentIPv6, $this.IPv6)
     }
 
     <#
@@ -1764,22 +1823,21 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     Checks if the passed VMKernel Network Adapter needs be updated based on the specified properties.
     #>
     [bool] ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter) {
-        $shouldUpdateVMHostNetworkAdapter = @()
-
-        $shouldUpdateVMHostNetworkAdapter += (![string]::IsNullOrEmpty($this.IP) -and $this.IP -ne $vmHostNetworkAdapter.IP)
-        $shouldUpdateVMHostNetworkAdapter += (![string]::IsNullOrEmpty($this.SubnetMask) -and $this.SubnetMask -ne $vmHostNetworkAdapter.SubnetMask)
-        $shouldUpdateVMHostNetworkAdapter += (![string]::IsNullOrEmpty($this.Mac) -and $this.Mac -ne $vmHostNetworkAdapter.Mac)
-
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Dhcp -and $this.Dhcp -ne $vmHostNetworkAdapter.DhcpEnabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.AutomaticIPv6 -and $this.AutomaticIPv6 -ne $vmHostNetworkAdapter.AutomaticIPv6)
-        $shouldUpdateVMHostNetworkAdapter += $this.ShouldUpdateIPv6($vmHostNetworkAdapter.IPv6)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6ThroughDhcp -and $this.IPv6ThroughDhcp -ne $vmHostNetworkAdapter.IPv6ThroughDhcp)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.Mtu -and $this.Mtu -ne $vmHostNetworkAdapter.Mtu)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.IPv6Enabled -and $this.IPv6Enabled -ne $vmHostNetworkAdapter.IPv6Enabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.ManagementTrafficEnabled -and $this.ManagementTrafficEnabled -ne $vmHostNetworkAdapter.ManagementTrafficEnabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.FaultToleranceLoggingEnabled -and $this.FaultToleranceLoggingEnabled -ne $vmHostNetworkAdapter.FaultToleranceLoggingEnabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.VMotionEnabled -and $this.VMotionEnabled -ne $vmHostNetworkAdapter.VMotionEnabled)
-        $shouldUpdateVMHostNetworkAdapter += ($null -ne $this.VsanTrafficEnabled -and $this.VsanTrafficEnabled -ne $vmHostNetworkAdapter.VsanTrafficEnabled)
+        $shouldUpdateVMHostNetworkAdapter = @(
+            $this.ShouldUpdateDscResourceSetting('IP', [string] $vmHostNetworkAdapter.IP, $this.IP),
+            $this.ShouldUpdateDscResourceSetting('SubnetMask', [string] $vmHostNetworkAdapter.SubnetMask, $this.SubnetMask),
+            $this.ShouldUpdateDscResourceSetting('Mac', [string] $vmHostNetworkAdapter.Mac, $this.Mac),
+            $this.ShouldUpdateDscResourceSetting('Dhcp', $vmHostNetworkAdapter.DhcpEnabled, $this.Dhcp),
+            $this.ShouldUpdateDscResourceSetting('AutomaticIPv6', $vmHostNetworkAdapter.AutomaticIPv6, $this.AutomaticIPv6),
+            $this.ShouldUpdateIPv6($vmHostNetworkAdapter.IPv6),
+            $this.ShouldUpdateDscResourceSetting('IPv6ThroughDhcp', $vmHostNetworkAdapter.IPv6ThroughDhcp, $this.IPv6ThroughDhcp),
+            $this.ShouldUpdateDscResourceSetting('Mtu', $vmHostNetworkAdapter.Mtu, $this.Mtu),
+            $this.ShouldUpdateDscResourceSetting('IPv6Enabled', $vmHostNetworkAdapter.IPv6Enabled, $this.IPv6Enabled),
+            $this.ShouldUpdateDscResourceSetting('ManagementTrafficEnabled', $vmHostNetworkAdapter.ManagementTrafficEnabled, $this.ManagementTrafficEnabled),
+            $this.ShouldUpdateDscResourceSetting('FaultToleranceLoggingEnabled', $vmHostNetworkAdapter.FaultToleranceLoggingEnabled, $this.FaultToleranceLoggingEnabled),
+            $this.ShouldUpdateDscResourceSetting('VMotionEnabled', $vmHostNetworkAdapter.VMotionEnabled, $this.VMotionEnabled),
+            $this.ShouldUpdateDscResourceSetting('VsanTrafficEnabled', $vmHostNetworkAdapter.VsanTrafficEnabled, $this.VsanTrafficEnabled)
+        )
 
         return ($shouldUpdateVMHostNetworkAdapter -Contains $true)
     }
@@ -2502,12 +2560,28 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
     Checks if the specified Datastore Cluster configuration should be modified.
     #>
     [bool] ShouldModifyDatastoreCluster($datastoreCluster) {
-        $shouldModifyDatastoreCluster = @()
-
-        $shouldModifyDatastoreCluster += ($null -ne $this.IOLatencyThresholdMillisecond -and $this.IOLatencyThresholdMillisecond -ne $datastoreCluster.IOLatencyThresholdMillisecond)
-        $shouldModifyDatastoreCluster += ($null -ne $this.IOLoadBalanceEnabled -and $this.IOLoadBalanceEnabled -ne $datastoreCluster.IOLoadBalanceEnabled)
-        $shouldModifyDatastoreCluster += ($this.SdrsAutomationLevel -ne [DrsAutomationLevel]::Unset -and $this.SdrsAutomationLevel.ToString() -ne $datastoreCluster.SdrsAutomationLevel.ToString())
-        $shouldModifyDatastoreCluster += ($null -ne $this.SpaceUtilizationThresholdPercent -and $this.SpaceUtilizationThresholdPercent -ne $datastoreCluster.SpaceUtilizationThresholdPercent)
+        $shouldModifyDatastoreCluster = @(
+            $this.ShouldUpdateDscResourceSetting(
+                'IOLatencyThresholdMillisecond',
+                $datastoreCluster.IOLatencyThresholdMillisecond,
+                $this.IOLatencyThresholdMillisecond
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'IOLoadBalanceEnabled',
+                $datastoreCluster.IOLoadBalanceEnabled,
+                $this.IOLoadBalanceEnabled
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'SdrsAutomationLevel',
+                [string] $datastoreCluster.SdrsAutomationLevel,
+                $this.SdrsAutomationLevel.ToString()
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'SpaceUtilizationThresholdPercent',
+                $datastoreCluster.SpaceUtilizationThresholdPercent,
+                $this.SpaceUtilizationThresholdPercent
+            )
+        )
 
         return ($shouldModifyDatastoreCluster -Contains $true)
     }
@@ -3234,7 +3308,7 @@ class vCenterSettings : BaseDSC {
     Logging Level Advanced Setting value.
     #>
     [DscProperty()]
-    [LoggingLevel] $LoggingLevel
+    [LoggingLevel] $LoggingLevel = [LoggingLevel]::Unset
 
     <#
     .DESCRIPTION
@@ -3310,58 +3384,65 @@ class vCenterSettings : BaseDSC {
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
+
             $this.UpdatevCenterSettings($this.Connection)
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
-            return !$this.ShouldUpdatevCenterSettings($this.Connection)
-        }
-        finally {
-            $this.DisconnectVIServer()
-        }
-    }
 
-    [vCenterSettings] Get() {
-        try {
-            $result = [vCenterSettings]::new()
-            $result.Server = $this.Server
+            $result = !$this.ShouldUpdatevCenterSettings()
 
-            $this.ConnectVIServer()
-            $this.PopulateResult($this.Connection, $result)
+            $this.WriteDscResourceState($result)
 
             return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    [vCenterSettings] Get() {
+        try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $result = [vCenterSettings]::new()
+            $result.Server = $this.Server
+
+            $this.ConnectVIServer()
+            $this.PopulateResult($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     <#
     .DESCRIPTION
 
-    Returns a boolean value indicating if the Advanced Setting value should be updated.
+    Retrieves the advanced settings of the specified vCenter Server.
     #>
-    [bool] ShouldUpdateSettingValue($desiredValue, $currentValue) {
-        <#
-            LoggingLevel type properties should be updated only when Desired value is different than Unset.
-            Unset means that value was not specified for such type of property.
-        #>
-        if ($desiredValue -is [LoggingLevel] -and $desiredValue -eq [LoggingLevel]::Unset) {
-            return $false
+    [PSObject] GetvCenterAdvancedSettings() {
+        $getAdvancedSettingParams = @{
+            Server = $this.Connection
+            Entity = $this.Connection
+            ErrorAction = 'Stop'
+            Verbose = $false
         }
 
-        <#
-            Desired value equal to $null means that the setting value was not specified.
-            If it is specified we check if the setting value is not equal to the current value.
-        #>
-        return ($null -ne $desiredValue -and $desiredValue -ne $currentValue)
+        return Get-AdvancedSetting @getAdvancedSettingParams
     }
 
     <#
@@ -3369,8 +3450,8 @@ class vCenterSettings : BaseDSC {
 
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
-    [bool] ShouldUpdatevCenterSettings($vCenter) {
-        $vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
+    [bool] ShouldUpdatevCenterSettings() {
+        $vCenterCurrentAdvancedSettings = $this.GetvCenterAdvancedSettings()
 
     	$currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
     	$currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
@@ -3378,16 +3459,20 @@ class vCenterSettings : BaseDSC {
     	$currentTaskMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeEnabledSettingName }
     	$currentTaskMaxAge = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.TaskMaxAgeSettingName }
     	$currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+        $currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	$shouldUpdatevCenterSettings = @()
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.LoggingLevel, $currentLogLevel.Value)
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.EventMaxAgeEnabled, $currentEventMaxAgeEnabled.Value)
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.EventMaxAge, $currentEventMaxAge.Value)
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
-    	$shouldUpdatevCenterSettings += $this.ShouldUpdateSettingValue($this.TaskMaxAge, $currentTaskMaxAge.Value)
-    	$shouldUpdatevCenterSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
-        $shouldUpdatevCenterSettings += ($this.IssueClear -and ($currentIssue.Value -ne [string]::Empty)) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
+        $motdDesiredValue = if ($this.MotdClear) { [string]::Empty } else { $this.Motd }
+        $issueDesiredValue = if ($this.IssueClear) { [string]::Empty } else { $this.Issue }
+
+    	$shouldUpdatevCenterSettings = @(
+            $this.ShouldUpdateDscResourceSetting('LoggingLevel', [string] $currentLogLevel.Value, $this.LoggingLevel.ToString()),
+            $this.ShouldUpdateDscResourceSetting('EventMaxAgeEnabled', $currentEventMaxAgeEnabled.Value, $this.EventMaxAgeEnabled),
+            $this.ShouldUpdateDscResourceSetting('EventMaxAge', $currentEventMaxAge.Value, $this.EventMaxAge),
+            $this.ShouldUpdateDscResourceSetting('TaskMaxAgeEnabled', $currentTaskMaxAgeEnabled.Value, $this.TaskMaxAgeEnabled),
+            $this.ShouldUpdateDscResourceSetting('TaskMaxAge', $currentTaskMaxAge.Value, $this.TaskMaxAge),
+            $this.ShouldUpdateDscResourceSetting('Motd', $currentMotd.Value, $motdDesiredValue),
+            $this.ShouldUpdateDscResourceSetting('Issue', $currentIssue.Value, $issueDesiredValue)
+        )
 
     	return ($shouldUpdatevCenterSettings -Contains $true)
     }
@@ -3397,9 +3482,16 @@ class vCenterSettings : BaseDSC {
 
     Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
     #>
-   [void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue) {
-        if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
-            Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
+   [void] SetAdvancedSetting($advancedSettingName, $advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue) {
+        if ($this.ShouldUpdateDscResourceSetting($advancedSettingName, $advancedSettingCurrentValue, $advancedSettingDesiredValue)) {
+            $setAdvancedSettingParams = @{
+                AdvancedSetting = $advancedSetting
+                Value = $advancedSettingDesiredValue
+                Confirm = $false
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+            Set-AdvancedSetting @setAdvancedSettingParams
         }
     }
 
@@ -3410,18 +3502,23 @@ class vCenterSettings : BaseDSC {
     This handles Advanced Settings that have a "Clear" property.
     #>
 
-    [void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
+    [void] SetAdvancedSetting($advancedSettingName, $advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	if ($clearValue) {
-      	    if ($this.ShouldUpdateSettingValue([string]::Empty, $advancedSettingCurrentValue)) {
-                Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
+      	    if ($this.ShouldUpdateDscResourceSetting($advancedSettingName, $advancedSettingCurrentValue, [string]::Empty)) {
+                $setAdvancedSettingParams = @{
+                    AdvancedSetting = $advancedSetting
+                    Value = [string]::Empty
+                    Confirm = $false
+                    ErrorAction = 'Stop'
+                    Verbose = $false
+                }
+                Set-AdvancedSetting @setAdvancedSettingParams
       	    }
     	}
     	else {
-      	    if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
-                Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
-      	    }
+            $this.SetAdvancedSetting($advancedSettingName, $advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue)
     	}
   	}
 
@@ -3431,7 +3528,7 @@ class vCenterSettings : BaseDSC {
     Performs update on those Advanced Settings values that needs to be updated.
     #>
     [void] UpdatevCenterSettings($vCenter) {
-        $vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
+        $vCenterCurrentAdvancedSettings = $this.GetvCenterAdvancedSettings()
 
         $currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
         $currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
@@ -3441,13 +3538,13 @@ class vCenterSettings : BaseDSC {
     	$currentMotd = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
     	$currentIssue = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-        $this.SetAdvancedSetting($currentLogLevel, $this.LoggingLevel, $currentLogLevel.Value)
-        $this.SetAdvancedSetting($currentEventMaxAgeEnabled, $this.EventMaxAgeEnabled, $currentEventMaxAgeEnabled.Value)
-        $this.SetAdvancedSetting($currentEventMaxAge, $this.EventMaxAge, $currentEventMaxAge.Value)
-        $this.SetAdvancedSetting($currentTaskMaxAgeEnabled, $this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
-        $this.SetAdvancedSetting($currentTaskMaxAge, $this.TaskMaxAge, $currentTaskMaxAge.Value)
-    	$this.SetAdvancedSetting($currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
-    	$this.SetAdvancedSetting($currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
+        $this.SetAdvancedSetting('LoggingLevel', $currentLogLevel, $this.LoggingLevel.ToString(), $currentLogLevel.Value)
+        $this.SetAdvancedSetting('EventMaxAgeEnabled', $currentEventMaxAgeEnabled, $this.EventMaxAgeEnabled, $currentEventMaxAgeEnabled.Value)
+        $this.SetAdvancedSetting('EventMaxAge', $currentEventMaxAge, $this.EventMaxAge, $currentEventMaxAge.Value)
+        $this.SetAdvancedSetting('TaskMaxAgeEnabled', $currentTaskMaxAgeEnabled, $this.TaskMaxAgeEnabled, $currentTaskMaxAgeEnabled.Value)
+        $this.SetAdvancedSetting('TaskMaxAge', $currentTaskMaxAge, $this.TaskMaxAge, $currentTaskMaxAge.Value)
+    	$this.SetAdvancedSetting('Motd', $currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
+    	$this.SetAdvancedSetting('Issue', $currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
     }
 
     <#
@@ -3455,8 +3552,8 @@ class vCenterSettings : BaseDSC {
 
     Populates the result returned from the Get() method with the values of the advanced settings from the server.
     #>
-    [void] PopulateResult($vCenter, $result) {
-        $vCenterCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vCenter
+    [void] PopulateResult($result) {
+        $vCenterCurrentAdvancedSettings = $this.GetvCenterAdvancedSettings()
 
         $currentLogLevel = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.LogLevelSettingName }
         $currentEventMaxAgeEnabled = $vCenterCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.EventMaxAgeEnabledSettingName }
@@ -3522,7 +3619,9 @@ class vCenterStatistics : BaseDSC {
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
+
             $performanceManager = $this.GetPerformanceManager()
             $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
@@ -3530,24 +3629,38 @@ class vCenterStatistics : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
+
             $performanceManager = $this.GetPerformanceManager()
             $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
-            return $this.Equals($currentPerformanceInterval)
+            $result = !((
+                $this.ShouldUpdateDscResourceSetting('Level', $currentPerformanceInterval.Level, $this.Level),
+                $this.ShouldUpdateDscResourceSetting('Enabled', $currentPerformanceInterval.Enabled, $this.Enabled),
+                $this.ShouldUpdateDscResourceSetting('IntervalMinutes', $currentPerformanceInterval.SamplingPeriod / $this.SecondsInAMinute, $this.IntervalMinutes),
+                $this.ShouldUpdateDscResourceSetting('PeriodLength', $currentPerformanceInterval.Length / $this.Period, $this.PeriodLength)
+            ) -Contains $true)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [vCenterStatistics] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [vCenterStatistics]::new()
             $result.Server = $this.Server
             $result.Period = $this.Period
@@ -3569,6 +3682,7 @@ class vCenterStatistics : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
@@ -3578,10 +3692,14 @@ class vCenterStatistics : BaseDSC {
     Returns the Performance Manager for the specified vCenter.
     #>
     [PSObject] GetPerformanceManager() {
-        $vCenter = $this.Connection
-        $performanceManager = Get-View -Server $this.Connection -Id $vCenter.ExtensionData.Content.PerfManager
+        $getViewParams = @{
+            Server = $this.Connection
+            Id = $this.Connection.ExtensionData.Content.PerfManager
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
 
-        return $performanceManager
+        return Get-View @getViewParams
     }
 
     <#
@@ -3593,33 +3711,6 @@ class vCenterStatistics : BaseDSC {
         $currentPerformanceInterval = $performanceManager.HistoricalInterval | Where-Object { $_.Name -Match $this.Period }
 
         return $currentPerformanceInterval
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the desired and current values are equal.
-    #>
-    [bool] AreEqual($desiredValue, $currentValue) {
-        <#
-            Desired value equal to $null means the value is not specified and should be ignored when we check for equality.
-            So in this case we return $true. Otherwise we check if the Specified value is equal to the current value.
-        #>
-        return ($null -eq $desiredValue -or $desiredValue -eq $currentValue)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the Current Performance Interval is equal to the Desired Performance Interval.
-    #>
-    [bool] Equals($currentPerformanceInterval) {
-        $equalLevels = $this.AreEqual($this.Level, $currentPerformanceInterval.Level)
-        $equalEnabled = $this.AreEqual($this.Enabled, $currentPerformanceInterval.Enabled)
-        $equalIntervalMinutes = $this.AreEqual($this.IntervalMinutes, $currentPerformanceInterval.SamplingPeriod / $this.SecondsInAMinute)
-        $equalPeriodLength = $this.AreEqual($this.PeriodLength, $currentPerformanceInterval.Length / $this.Period)
-
-        return ($equalLevels -and $equalEnabled -and $equalIntervalMinutes -and $equalPeriodLength)
     }
 
     <#
@@ -4099,16 +4190,22 @@ class VDPortGroup : BaseDSC {
             $distributedSwitch = $this.GetDistributedSwitch()
             $distributedPortGroup = $this.GetDistributedPortGroup($distributedSwitch)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $distributedPortGroup) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateDistributedPortGroup($distributedPortGroup)
+                else {
+                    $result = !$this.ShouldUpdateDistributedPortGroup($distributedPortGroup)
+                }
             }
             else {
-                return ($null -eq $distributedPortGroup)
+                $result = ($null -eq $distributedPortGroup)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -4192,30 +4289,11 @@ class VDPortGroup : BaseDSC {
     Checks if the passed Distributed Port Group needs be modified based on the passed properties.
     #>
     [bool] ShouldUpdateDistributedPortGroup($distributedPortGroup) {
-        $shouldUpdateDistributedPortGroup = @()
-
-        <#
-        The VDPortGroup object does not contain information about ReferenceVDPortGroupName so the property is not
-        part of the Desired State of the Resource.
-        #>
-        if ($null -ne $this.Notes) {
-            <#
-            The server value for Notes property can be both $null and empty string. The DSC Resource will support only empty string value.
-            Null value means that the property was not passed in the Configuration.
-            #>
-            if ($this.Notes -eq [string]::Empty) {
-                $shouldUpdateDistributedPortGroup += ($null -ne $distributedPortGroup.Notes -and $distributedPortGroup.Notes -ne [string]::Empty)
-            }
-            else {
-                $shouldUpdateDistributedPortGroup += ($this.Notes -ne $distributedPortGroup.Notes)
-            }
-        }
-
-        $shouldUpdateDistributedPortGroup += ($null -ne $this.NumPorts -and $this.NumPorts -ne $distributedPortGroup.NumPorts)
-
-        if ($this.PortBinding -ne [PortBinding]::Unset) {
-            $shouldUpdateDistributedPortGroup += ($this.PortBinding.ToString() -ne $distributedPortGroup.PortBinding.ToString())
-        }
+        $shouldUpdateDistributedPortGroup = @(
+            $this.ShouldUpdateDscResourceSetting('NumPorts', $distributedPortGroup.NumPorts, $this.NumPorts),
+            $this.ShouldUpdateDscResourceSetting('PortBinding', [string] $distributedPortGroup.PortBinding, $this.PortBinding.ToString()),
+            $this.ShouldUpdateDscResourceSetting('Notes', [string] $distributedPortGroup.Notes, $this.Notes)
+        )
 
         return ($shouldUpdateDistributedPortGroup -Contains $true)
     }
@@ -4461,16 +4539,22 @@ class VDSwitch : DatacenterInventoryBaseDSC {
             $distributedSwitchLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
             $distributedSwitch = $this.GetDistributedSwitch($distributedSwitchLocation)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $distributedSwitch) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateDistributedSwitch($distributedSwitch)
+                else {
+                    $result = !$this.ShouldUpdateDistributedSwitch($distributedSwitch)
+                }
             }
             else {
-                return ($null -eq $distributedSwitch)
+                $result = ($null -eq $distributedSwitch)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -4530,28 +4614,25 @@ class VDSwitch : DatacenterInventoryBaseDSC {
     Checks if the passed Distributed Switch needs be updated based on the specified properties.
     #>
     [bool] ShouldUpdateDistributedSwitch($distributedSwitch) {
-        $shouldUpdateDistributedSwitch = @()
-
-        <#
-        The VDSwitch object does not contain information about ReferenceVDSwitchName and WithoutPortGroups so those properties are not
-        part of the Desired State of the Resource.
-        #>
-        $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.ContactDetails) -and $this.ContactDetails -ne $distributedSwitch.ContactDetails)
-        $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.ContactName) -and $this.ContactName -ne $distributedSwitch.ContactName)
-        $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.Notes) -and $this.Notes -ne $distributedSwitch.Notes)
-        $shouldUpdateDistributedSwitch += (![string]::IsNullOrEmpty($this.Version) -and $this.Version -ne $distributedSwitch.Version)
-
-        $shouldUpdateDistributedSwitch += ($null -ne $this.MaxPorts -and $this.MaxPorts -ne $distributedSwitch.MaxPorts)
-        $shouldUpdateDistributedSwitch += ($null -ne $this.Mtu -and $this.Mtu -ne $distributedSwitch.Mtu)
-        $shouldUpdateDistributedSwitch += ($null -ne $this.NumUplinkPorts -and $this.NumUplinkPorts -ne $distributedSwitch.NumUplinkPorts)
-
-        if ($this.LinkDiscoveryProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
-            $shouldUpdateDistributedSwitch += ($this.LinkDiscoveryProtocol.ToString() -ne $distributedSwitch.LinkDiscoveryProtocol.ToString())
-        }
-
-        if ($this.LinkDiscoveryProtocolOperation -ne [LinkDiscoveryProtocolOperation]::Unset) {
-            $shouldUpdateDistributedSwitch += ($this.LinkDiscoveryProtocolOperation.ToString() -ne $distributedSwitch.LinkDiscoveryProtocolOperation.ToString())
-        }
+        $shouldUpdateDistributedSwitch = @(
+            $this.ShouldUpdateDscResourceSetting('ContactDetails', [string] $distributedSwitch.ContactDetails, $this.ContactDetails),
+            $this.ShouldUpdateDscResourceSetting('ContactName', [string] $distributedSwitch.ContactName, $this.ContactName),
+            $this.ShouldUpdateDscResourceSetting('Notes', [string] $distributedSwitch.Notes, $this.Notes),
+            $this.ShouldUpdateDscResourceSetting('Version', [string] $distributedSwitch.Version, $this.Version),
+            $this.ShouldUpdateDscResourceSetting('MaxPorts', $distributedSwitch.MaxPorts, $this.MaxPorts),
+            $this.ShouldUpdateDscResourceSetting('Mtu', $distributedSwitch.Mtu, $this.Mtu),
+            $this.ShouldUpdateDscResourceSetting('NumUplinkPorts', $distributedSwitch.NumUplinkPorts, $this.NumUplinkPorts),
+            $this.ShouldUpdateDscResourceSetting(
+                'LinkDiscoveryProtocol',
+                [string] $distributedSwitch.LinkDiscoveryProtocol,
+                $this.LinkDiscoveryProtocol.ToString()
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'LinkDiscoveryProtocolOperation',
+                [string] $distributedSwitch.LinkDiscoveryProtocolOperation,
+                $this.LinkDiscoveryProtocolOperation.ToString()
+            )
+        )
 
         return ($shouldUpdateDistributedSwitch -Contains $true)
     }
@@ -5067,7 +5148,7 @@ class VMHostAccount : BaseDSC {
             }
         }
 
-        return ($null -ne $this.Description -and $this.Description -ne $vmHostAccount.Description)
+        return $this.ShouldUpdateDscResourceSetting('Description', $vmHostAccount.Description, $this.Description)
     }
 
     <#
@@ -5319,7 +5400,16 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
         #>
         $advancedSettingDesiredValue = $this.ConvertAdvancedSettingDesiredValueToCorrectType($advancedSetting)
 
-        return ($advancedSettingDesiredValue -ne $advancedSetting.Value)
+        $result = $advancedSettingDesiredValue -ne $advancedSetting.Value
+        if ($result) {
+            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @(
+                $advancedSetting.Name,
+                $advancedSetting.Value,
+                $advancedSettingDesiredValue
+            )
+        }
+
+        return $result
     }
 
     <#
@@ -5564,6 +5654,12 @@ class VMHostAgentVM : VMHostBaseDSC {
             else {
                 $agentVmSettingAsViewObject = $this.$getAgentVmSettingAsViewObjectMethodName($esxAgentHostManager)
                 if ($agentVmSetting -ne $agentVmSettingAsViewObject.Name) {
+                    Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @(
+                        $agentVmSettingName,
+                        $agentVmSettingAsViewObject.Name,
+                        $agentVmSetting
+                    )
+
                     return $true
                 }
             }
@@ -5740,12 +5836,17 @@ class VMHostAuthentication : VMHostBaseDSC {
             $vmHost = $this.GetVMHost()
             $vmHostAuthenticationInfo = $this.GetVMHostAuthenticationInfo($vmHost)
 
+            $result = $null
             if ($this.DomainAction -eq [DomainAction]::Join) {
-                return ($this.DomainName -eq $vmHostAuthenticationInfo.Domain)
+                $result = !$this.ShouldUpdateDscResourceSetting('DomainName', [string] $vmHostAuthenticationInfo.Domain, $this.DomainName)
             }
             else {
-                return ($null -eq $vmHostAuthenticationInfo.Domain)
+                $result = ($null -eq $vmHostAuthenticationInfo.Domain)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -5988,7 +6089,7 @@ class VMHostCache : VMHostBaseDSC {
         $foundDatastore = $this.GetDatastore($vmHost)
         $datastoreCacheInfo = $this.GetDatastoreCacheInfo($vmHostCacheConfigurationManager, $foundDatastore)
 
-        return ($this.SwapSizeGB -ne $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize))
+        return $this.ShouldUpdateDscResourceSetting('SwapSizeGB', $this.ConvertMBValueToGBValue($datastoreCacheInfo.SwapSize), $this.SwapSizeGB)
     }
 
     <#
@@ -6384,17 +6485,13 @@ class VMHostConfiguration : VMHostBaseDSC {
     Checks if the configuration of the specified VMHost should be modified.
     #>
     [bool] ShouldModifyVMHostConfiguration($vmHost) {
-        $shouldModifyVMHostConfiguration = @()
-
-        <#
-        Evacuate and VsanDataMigrationMode properties are not used when determining the Desired State because they are applicable only when
-        the desired 'State' of the VMHost is 'Maintenance' and the current one is not.
-        #>
-        $shouldModifyVMHostConfiguration += ($this.State -ne [VMHostState]::Unset -and $this.State.ToString() -ne $vmHost.ConnectionState.ToString())
-        $shouldModifyVMHostConfiguration += (![string]::IsNullOrEmpty($this.LicenseKey) -and $this.LicenseKey -ne $vmHost.LicenseKey)
-        $shouldModifyVMHostConfiguration += (![string]::IsNullOrEmpty($this.TimeZoneName) -and $this.TimeZoneName -ne $vmHost.TimeZone.Name)
-        $shouldModifyVMHostConfiguration += (![string]::IsNullOrEmpty($this.VMSwapfileDatastoreName) -and $this.VMSwapfileDatastoreName -ne $vmHost.VMSwapfileDatastore.Name)
-        $shouldModifyVMHostConfiguration += ($this.VMSwapfilePolicy -ne [VMSwapfilePolicy]::Unset -and $this.VMSwapfilePolicy.ToString() -ne $vmHost.VMSwapfilePolicy.ToString())
+        $shouldModifyVMHostConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting('State', [string] $vmHost.ConnectionState, $this.State.ToString()),
+            $this.ShouldUpdateDscResourceSetting('LicenseKey', [string] $vmHost.LicenseKey, $this.LicenseKey),
+            $this.ShouldUpdateDscResourceSetting('TimeZoneName', [string] $vmHost.TimeZone.Name, $this.TimeZoneName),
+            $this.ShouldUpdateDscResourceSetting('VMSwapfileDatastoreName', [string] $vmHost.VMSwapfileDatastore.Name, $this.VMSwapfileDatastoreName),
+            $this.ShouldUpdateDscResourceSetting('VMSwapfilePolicy', [string] $vmHost.VMSwapfilePolicy, $this.VMSwapfilePolicy.ToString())
+        )
 
         <#
         If the Host Profile name is specified and it is an empty string, the VMHost should not be associated with a Host Profile.
@@ -6641,6 +6738,7 @@ class VMHostDnsSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
@@ -6648,24 +6746,41 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
+
             $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
-            return $this.Equals($vmHostDnsConfig)
+            $result = !((
+                $this.ShouldUpdateDscResourceSetting('Dhcp', $vmHostDnsConfig.Dhcp, $this.Dhcp),
+                $this.ShouldUpdateDscResourceSetting('DomainName', $vmHostDnsConfig.DomainName, $this.DomainName),
+                $this.ShouldUpdateDscResourceSetting('HostName', $vmHostDnsConfig.HostName, $this.HostName),
+                $this.ShouldUpdateDscResourceSetting('Ipv6VirtualNicDevice', $vmHostDnsConfig.Ipv6VirtualNicDevice, $this.Ipv6VirtualNicDevice),
+                $this.ShouldUpdateDscResourceSetting('VirtualNicDevice', $vmHostDnsConfig.VirtualNicDevice, $this.VirtualNicDevice),
+                $this.ShouldUpdateArraySetting('Address', $vmHostDnsConfig.Address, $this.Address),
+                $this.ShouldUpdateArraySetting('SearchDomain', $vmHostDnsConfig.SearchDomain, $this.SearchDomain)
+            ) -Contains $true)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [VMHostDnsSettings] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [VMHostDnsSettings]::new()
 
             $this.ConnectVIServer()
@@ -6686,54 +6801,8 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the desired DNS array property is equal to the current DNS array property.
-    #>
-    [bool] AreDnsArrayPropertiesEqual($desiredArrayPropertyValue, $currentArrayPropertyValue) {
-        $valuesToAdd = $desiredArrayPropertyValue | Where-Object { $currentArrayPropertyValue -NotContains $_ }
-        $valuesToRemove = $currentArrayPropertyValue | Where-Object { $desiredArrayPropertyValue -NotContains $_ }
-
-        return ($null -eq $valuesToAdd -and $null -eq $valuesToRemove)
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the desired DNS optional value is equal to the current DNS value from the server.
-    #>
-    [bool] AreDnsOptionalPropertiesEqual($desiredPropertyValue, $currentPropertyValue) {
-        if ([string]::IsNullOrEmpty($desiredPropertyValue) -and [string]::IsNullOrEmpty($currentPropertyValue)) {
-            return $true
-        }
-
-        return $desiredPropertyValue -eq $currentPropertyValue
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the current DNS Config is equal to the Desired DNS Config.
-    #>
-    [bool] Equals($vmHostDnsConfig) {
-        # Checks if desired Mandatory values are equal to current values from server.
-        if ($this.Dhcp -ne $vmHostDnsConfig.Dhcp -or $this.DomainName -ne $vmHostDnsConfig.DomainName -or $this.HostName -ne $vmHostDnsConfig.HostName) {
-            return $false
-        }
-
-        if (!$this.AreDnsArrayPropertiesEqual($this.Address, $vmHostDnsConfig.Address) -or !$this.AreDnsArrayPropertiesEqual($this.SearchDomain, $vmHostDnsConfig.SearchDomain)) {
-            return $false
-        }
-
-        if (!$this.AreDnsOptionalPropertiesEqual($this.Ipv6VirtualNicDevice, $vmHostDnsConfig.Ipv6VirtualNicDevice) -or !$this.AreDnsOptionalPropertiesEqual($this.VirtualNicDevice, $vmHostDnsConfig.VirtualNicDevice)) {
-            return $false
-        }
-
-        return $true
     }
 
     <#
@@ -6753,7 +6822,14 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
 
         $dnsConfig = New-DNSConfig @dnsConfigArgs
-        $networkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem
+
+        $getViewParams = @{
+            Server = $this.Connection
+            Id = $vmHost.ExtensionData.ConfigManager.NetworkSystem
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+        $networkSystem = Get-View @getViewParams
 
         try {
             Update-DNSConfig -NetworkSystem $networkSystem -DnsConfig $dnsConfig
@@ -6946,7 +7022,7 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
     Checks if the current firewall ruleset state (enabled or disabled) is equal to the desired firewall ruleset state.
     #>
     [bool] ShouldModifyVMHostFirewallRulesetState($vmHostFirewallRuleset) {
-        return ($this.Enabled -ne $null -and $this.Enabled -ne $vmHostFirewallRuleset.Enabled)
+        return $this.ShouldUpdateDscResourceSetting('Enabled', $vmHostFirewallRuleset.Enabled, $this.Enabled)
     }
 
     <#
@@ -6957,15 +7033,24 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
     [bool] ShouldModifyVMHostFirewallRulesetAllowedIPAddressesList($vmHostFirewallRuleset) {
         $vmHostFirewallRulesetAllowedHosts = $vmHostFirewallRuleset.ExtensionData.AllowedHosts
 
-        $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList = @()
-        $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += ($null -ne $this.AllIP -and $this.AllIP -ne $vmHostFirewallRulesetAllowedHosts.AllIp)
+        $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList = @(
+            $this.ShouldUpdateDscResourceSetting('AllIP', $vmHostFirewallRulesetAllowedHosts.AllIp, $this.AllIP)
+        )
 
         if ($null -ne $this.IPAddresses) {
             $desiredIPAddresses = $this.IPAddresses -NotMatch '/'
             $desiredIPNetworks = $this.IPAddresses -Match '/'
 
-            $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += $this.ShouldUpdateArraySetting($vmHostFirewallRulesetAllowedHosts.IpAddress, $desiredIPAddresses)
-            $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += $this.ShouldUpdateArraySetting($this.ConvertHostFirewallRulesetIpNetworksToIPNetworks($vmHostFirewallRulesetAllowedHosts.IpNetwork), $desiredIPNetworks)
+            $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += $this.ShouldUpdateArraySetting(
+                'IPAddresses',
+                $vmHostFirewallRulesetAllowedHosts.IpAddress,
+                $desiredIPAddresses
+            )
+            $shouldModifyVMHostFirewallRulesetAllowedIPAddressesList += $this.ShouldUpdateArraySetting(
+                'IPNetworks',
+                $this.ConvertHostFirewallRulesetIpNetworksToIPNetworks($vmHostFirewallRulesetAllowedHosts.IpNetwork),
+                $desiredIPNetworks
+            )
         }
 
         return ($shouldModifyVMHostFirewallRulesetAllowedIPAddressesList -Contains $true)
@@ -7468,12 +7553,13 @@ class VMHostNtpSettings : VMHostBaseDSC {
     Desired Policy of the VMHost 'ntpd' service activation.
     #>
     [DscProperty()]
-    [ServicePolicy] $NtpServicePolicy
+    [ServicePolicy] $NtpServicePolicy = [ServicePolicy]::Unset
 
-    hidden [string] $ServiceId = "ntpd"
+    hidden [string] $ServiceId = 'ntpd'
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
@@ -7482,42 +7568,46 @@ class VMHostNtpSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
+
             $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
-
-            $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
-            if ($shouldUpdateVMHostNtpServer) {
-                return $false
-            }
-
             $vmHostServices = $vmHost.ExtensionData.Config.Service
-            $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostServices)
-            if ($shouldUpdateVMHostNtpServicePolicy) {
-                return $false
-            }
+            $vmHostNtpService = $vmHostServices.Service | Where-Object -FilterScript { $_.Key -eq $this.ServiceId }
 
-            return $true
+            $result = !((
+                $this.ShouldUpdateArraySetting('NtpServer', $vmHostNtpConfig.Server, $this.NtpServer),
+                $this.ShouldUpdateDscResourceSetting('NtpServicePolicy', $vmHostNtpService.Policy.ToString(), $this.NtpServicePolicy.ToString())
+            ) -Contains $true)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [VMHostNtpSettings] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [VMHostNtpSettings]::new()
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
+
             $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
             $vmHostServices = $vmHost.ExtensionData.Config.Service
-            $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
+            $vmHostNtpService = $vmHostServices.Service | Where-Object -FilterScript { $_.Key -eq $this.ServiceId }
 
             $result.Name = $vmHost.Name
             $result.Server = $this.Server
@@ -7528,58 +7618,8 @@ class VMHostNtpSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the VMHost NTP Server should be updated.
-    #>
-    [bool] ShouldUpdateVMHostNtpServer($vmHostNtpConfig) {
-        $desiredVMHostNtpServer = $this.NtpServer
-        $currentVMHostNtpServer = $vmHostNtpConfig.Server
-
-        if ($null -eq $desiredVMHostNtpServer) {
-            # The property is not specified.
-            return $false
-        }
-        elseif ($desiredVMHostNtpServer.Length -eq 0 -and $currentVMHostNtpServer.Length -ne 0) {
-            # Empty array specified as desired, but current is not an empty array, so update VMHost NTP Server.
-            return $true
-        }
-        else {
-            $ntpServerToAdd = $desiredVMHostNtpServer | Where-Object { $currentVMHostNtpServer -NotContains $_ }
-            $ntpServerToRemove = $currentVMHostNtpServer | Where-Object { $desiredVMHostNtpServer -NotContains $_ }
-
-            if ($null -ne $ntpServerToAdd -or $null -ne $ntpServerToRemove) {
-                <#
-                The currentVMHostNtpServer does not contain at least one element from desiredVMHostNtpServer or
-                the desiredVMHostNtpServer is a subset of the currentVMHostNtpServer. In both cases
-                we should update VMHost NTP Server.
-                #>
-                return $true
-            }
-
-            # No need to update VMHost NTP Server.
-            return $false
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Returns a boolean value indicating if the VMHost 'ntpd' Service Policy should be updated.
-    #>
-    [bool] ShouldUpdateVMHostNtpServicePolicy($vmHostServices) {
-        if ($this.NtpServicePolicy -eq [ServicePolicy]::Unset) {
-            # The property is not specified.
-            return $false
-        }
-
-        $vmHostNtpService = $vmHostServices.Service | Where-Object { $_.Key -eq $this.ServiceId }
-
-        return $this.NtpServicePolicy -ne $vmHostNtpService.Policy
     }
 
     <#
@@ -7589,14 +7629,19 @@ class VMHostNtpSettings : VMHostBaseDSC {
     #>
     [void] UpdateVMHostNtpServer($vmHost) {
         $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
-        $shouldUpdateVMHostNtpServer = $this.ShouldUpdateVMHostNtpServer($vmHostNtpConfig)
-
-        if (!$shouldUpdateVMHostNtpServer) {
+        if (!$this.ShouldUpdateArraySetting('NtpServer', $vmHostNtpConfig.Server, $this.NtpServer)) {
             return
         }
 
         $dateTimeConfig = New-DateTimeConfig -NtpServer $this.NtpServer
-        $dateTimeSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.DateTimeSystem
+
+        $getViewParams = @{
+            Server = $this.Connection
+            Id = $vmHost.ExtensionData.ConfigManager.DateTimeSystem
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+        $dateTimeSystem = Get-View @getViewParams
 
         Update-DateTimeConfig -DateTimeSystem $dateTimeSystem -DateTimeConfig $dateTimeConfig
     }
@@ -7607,13 +7652,20 @@ class VMHostNtpSettings : VMHostBaseDSC {
     Updates the VMHost 'ntpd' Service Policy with the desired Service Policy.
     #>
     [void] UpdateVMHostNtpServicePolicy($vmHost) {
-        $vmHostService = $vmHost.ExtensionData.Config.Service
-        $shouldUpdateVMHostNtpServicePolicy = $this.ShouldUpdateVMHostNtpServicePolicy($vmHostService)
-        if (!$shouldUpdateVMHostNtpServicePolicy) {
+        $vmHostServices = $vmHost.ExtensionData.Config.Service
+        $vmHostNtpService = $vmHostServices.Service | Where-Object -FilterScript { $_.Key -eq $this.ServiceId }
+        if (!$this.ShouldUpdateDscResourceSetting('NtpServicePolicy', $vmHostNtpService.Policy.ToString(), $this.NtpServicePolicy.ToString())) {
             return
         }
 
-        $serviceSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.ServiceSystem
+        $getViewParams = @{
+            Server = $this.Connection
+            Id = $vmHost.ExtensionData.ConfigManager.ServiceSystem
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+        $serviceSystem = Get-View @getViewParams
+
         Update-ServicePolicy -ServiceSystem $serviceSystem -ServiceId $this.ServiceId -ServicePolicyValue $this.NtpServicePolicy.ToString().ToLower()
     }
 }
@@ -7663,7 +7715,11 @@ class VMHostPciPassthrough : VMHostRestartBaseDSC {
             $pciDevice = $this.GetPCIDevice($vmHostPciPassthruSystem)
             $this.EnsurePCIDeviceIsPassthruCapable($pciDevice)
 
-            return ($this.Enabled -eq $pciDevice.PassthruEnabled)
+            $result = !$this.ShouldUpdateDscResourceSetting('Enabled', $pciDevice.PassthruEnabled, $this.Enabled)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -8164,10 +8220,10 @@ class VMHostPermission : BaseDSC {
     from the current one or if the Propagate behaviour should be different.
     #>
     [bool] ShouldModifyVMHostPermission($vmHostPermission) {
-        $shouldModifyVMHostPermission = @()
-
-        $shouldModifyVMHostPermission += ($this.RoleName -ne $vmHostPermission.Role)
-        $shouldModifyVMHostPermission += ($null -ne $this.Propagate -and $this.Propagate -ne $vmHostPermission.Propagate)
+        $shouldModifyVMHostPermission = @(
+            $this.ShouldUpdateDscResourceSetting('RoleName', [string] $vmHostPermission.Role, $this.RoleName),
+            $this.ShouldUpdateDscResourceSetting('Propagate', $vmHostPermission.Propagate, $this.Propagate)
+        )
 
         return ($shouldModifyVMHostPermission -Contains $true)
     }
@@ -8306,7 +8362,11 @@ class VMHostPowerPolicy : VMHostBaseDSC {
             $vmHost = $this.GetVMHost()
             $currentPowerPolicy = $vmHost.ExtensionData.Config.PowerSystemInfo.CurrentPolicy
 
-            return ($this.PowerPolicy -eq $currentPowerPolicy.Key)
+            $result = !$this.ShouldUpdateDscResourceSetting('PowerPolicy', $currentPowerPolicy.Key, $this.PowerPolicy)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -8454,7 +8514,7 @@ class VMHostRole : BaseDSC {
                     $desiredPrivileges = $this.GetPrivileges()
                     $desiredPrivilegeIds = if ($desiredPrivileges.Length -eq 0) { $null } else { $desiredPrivileges.Id }
 
-                    $result = !$this.ShouldUpdateArraySetting($vmHostRole.PrivilegeList, $desiredPrivilegeIds)
+                    $result = !$this.ShouldUpdateArraySetting('PrivilegeList', $vmHostRole.PrivilegeList, $desiredPrivilegeIds)
                 }
             }
             else {
@@ -8681,7 +8741,7 @@ class VMHostRole : BaseDSC {
 }
 
 [DscResource()]
-class VMHostSatpClaimRule : VMHostBaseDSC {
+class VMHostSatpClaimRule : EsxCliBaseDSC {
     <#
     .DESCRIPTION
 
@@ -8736,7 +8796,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
     System default rule added at boot time.
     #>
     [DscProperty()]
-    [bool] $Boot
+    [nullable[bool]] $Boot
 
     <#
     .DESCRIPTION
@@ -8800,54 +8860,66 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
     Value, which ignores validity checks and install the rule anyway.
     #>
     [DscProperty()]
-    [bool] $Force
+    [nullable[bool]] $Force
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
-            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+
+            $this.GetEsxCli($vmHost)
+            $satpClaimRule = $this.GetSatpClaimRule()
             $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
             if ($this.Ensure -eq [Ensure]::Present) {
                 if (!$satpClaimRulePresent) {
-                    $this.AddSatpClaimRule($esxCli)
+                    $this.AddSatpClaimRule()
                 }
             }
             else {
                 if ($satpClaimRulePresent) {
-                    $this.RemoveSatpClaimRule($esxCli)
+                    $this.RemoveSatpClaimRule()
                 }
             }
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
-            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+
+            $this.GetEsxCli($vmHost)
+            $satpClaimRule = $this.GetSatpClaimRule()
             $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return $satpClaimRulePresent
+                $result = $satpClaimRulePresent
             }
             else {
-                return -not $satpClaimRulePresent
+                $result = -not $satpClaimRulePresent
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [VMHostSatpClaimRule] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [VMHostSatpClaimRule]::new()
 
             $result.Server = $this.Server
@@ -8859,8 +8931,9 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $result.Name = $vmHost.Name
-            $esxCli = Get-EsxCli -Server $this.Connection -VMHost $vmHost -V2
-            $satpClaimRule = $this.GetSatpClaimRule($esxCli)
+
+            $this.GetEsxCli($vmHost)
+            $satpClaimRule = $this.GetSatpClaimRule()
             $satpClaimRulePresent = ($null -ne $satpClaimRule)
 
             if (!$satpClaimRulePresent) {
@@ -8878,6 +8951,7 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
@@ -8945,9 +9019,9 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
     Returns the desired SatpClaimRule if the Rule is present on the server, otherwise returns $null.
     #>
-    [PSObject] GetSatpClaimRule($esxCli) {
+    [PSObject] GetSatpClaimRule() {
         $foundSatpClaimRule = $null
-        $satpClaimRules = Get-SATPClaimRules -EsxCli $esxCli
+        $satpClaimRules = Get-SATPClaimRules -EsxCli $this.EsxCli
 
         foreach ($satpClaimRule in $satpClaimRules) {
             if ($this.Equals($satpClaimRule)) {
@@ -8987,7 +9061,6 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
         $satpArgs.transport = $this.Transport
         $satpArgs.description = $this.Description
         $satpArgs.vendor = $this.Vendor
-        $satpArgs.boot = $this.Boot
         $satpArgs.type = $this.Type
         $satpArgs.device = $this.Device
         $satpArgs.driver = $this.Driver
@@ -8995,6 +9068,8 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
         $satpArgs.psp = $this.Psp
         $satpArgs.option = $this.Options
         $satpArgs.model = $this.Model
+
+        if ($null -ne $this.Boot) { $satpArgs.boot = $this.Boot }
     }
 
     <#
@@ -9002,14 +9077,14 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
     Installs the new SATP Claim Rule with the specified properties from the user.
     #>
-    [void] AddSatpClaimRule($esxCli) {
-        $satpArgs = Add-CreateArgs -EsxCli $esxCli
-        $satpArgs.force = $this.Force
+    [void] AddSatpClaimRule() {
+        $satpArgs = Add-CreateArgs -EsxCli $this.EsxCli
+        if ($null -ne $this.Force) { $satpArgs.force = $this.Force }
 
         $this.PopulateSatpArgs($satpArgs)
 
         try {
-            Add-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
+            Add-SATPClaimRule -EsxCli $this.EsxCli -SatpArgs $satpArgs
         }
         catch {
             throw "EsxCLI command for adding satp rule failed with the following exception: $($_.Exception.Message)"
@@ -9021,13 +9096,13 @@ class VMHostSatpClaimRule : VMHostBaseDSC {
 
     Uninstalls the SATP Claim Rule with the specified properties from the user.
     #>
-    [void] RemoveSatpClaimRule($esxCli) {
-        $satpArgs = Remove-CreateArgs -EsxCli $esxCli
+    [void] RemoveSatpClaimRule() {
+        $satpArgs = Remove-CreateArgs -EsxCli $this.EsxCli
 
         $this.PopulateSatpArgs($satpArgs)
 
         try {
-            Remove-SATPClaimRule -EsxCli $esxCli -SatpArgs $satpArgs
+            Remove-SATPClaimRule -EsxCli $this.EsxCli -SatpArgs $satpArgs
         }
         catch {
             throw "EsxCLI command for removing satp rule failed with the following exception: $($_.Exception.Message)"
@@ -9239,16 +9314,24 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
     Checks if the SCSI device configuration should be modified.
     #>
     [bool] ShouldModifyScsiLunConfiguration($scsiLun) {
-        $shouldModifyScsiLunConfiguration = @()
-
-        $shouldModifyScsiLunConfiguration += ($this.MultipathPolicy -ne [MultipathPolicy]::Unset -and $this.MultipathPolicy.ToString() -ne $scsiLun.MultipathPolicy.ToString())
-        $shouldModifyScsiLunConfiguration += ($null -ne $this.IsLocal -and $this.IsLocal -ne $scsiLun.IsLocal)
-        $shouldModifyScsiLunConfiguration += ($null -ne $this.IsSsd -and $this.IsSsd -ne $scsiLun.IsSsd)
+        $shouldModifyScsiLunConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting('MultipathPolicy', [string] $scsiLun.MultipathPolicy, $this.MultipathPolicy.ToString()),
+            $this.ShouldUpdateDscResourceSetting('IsLocal', $scsiLun.IsLocal, $this.IsLocal),
+            $this.ShouldUpdateDscResourceSetting('IsSsd', $scsiLun.IsSsd, $this.IsSsd)
+        )
 
         # 'BlocksToSwitchPath' and 'CommandsToSwitchPath' properties should determine the Desired State only when the desired Multipath policy is 'Round Robin'.
         if ($this.MultipathPolicy -eq [MultipathPolicy]::RoundRobin) {
-            $shouldModifyScsiLunConfiguration += ($null -ne $this.BlocksToSwitchPath -and $this.BlocksToSwitchPath -ne [int] $scsiLun.BlocksToSwitchPath)
-            $shouldModifyScsiLunConfiguration += ($null -ne $this.CommandsToSwitchPath -and $this.CommandsToSwitchPath -ne [int] $scsiLun.CommandsToSwitchPath)
+            $shouldModifyScsiLunConfiguration += $this.ShouldUpdateDscResourceSetting(
+                'BlocksToSwitchPath',
+                [int] $scsiLun.BlocksToSwitchPath,
+                $this.BlocksToSwitchPath
+            )
+            $shouldModifyScsiLunConfiguration += $this.ShouldUpdateDscResourceSetting(
+                'CommandsToSwitchPath',
+                [int] $scsiLun.CommandsToSwitchPath,
+                $this.CommandsToSwitchPath
+            )
         }
 
         if (![string]::IsNullOrEmpty($this.PreferredScsiLunPathName) -and $this.MultipathPolicy -eq [MultipathPolicy]::Fixed) {
@@ -9468,7 +9551,9 @@ class VMHostScsiLunPath : VMHostEntityBaseDSC {
     Checks if the SCSI Lun path should be configured depending on the desired 'Active' and 'Preferred' values.
     #>
     [bool] ShouldConfigureScsiLunPath($scsiLunPath) {
-        $shouldConfigureScsiLunPath = @()
+        $shouldConfigureScsiLunPath = @(
+            $this.ShouldUpdateDscResourceSetting('Preferred', $scsiLunPath.Preferred, $this.Preferred)
+        )
 
         if ($null -ne $this.Active) {
             $currentScsiLunPathState = $scsiLunPath.State.ToString()
@@ -9479,8 +9564,6 @@ class VMHostScsiLunPath : VMHostEntityBaseDSC {
                 $shouldConfigureScsiLunPath += ($currentScsiLunPathState -eq $this.ActiveScsiLunPathState)
             }
         }
-
-        $shouldConfigureScsiLunPath += ($null -ne $this.Preferred -and $this.Preferred -ne $scsiLunPath.Preferred)
 
         return ($shouldConfigureScsiLunPath -Contains $true)
     }
@@ -9541,7 +9624,7 @@ class VMHostService : VMHostBaseDSC {
     The state of the service after a VMHost reboot.
     #>
     [DscProperty()]
-    [ServicePolicy] $Policy
+    [ServicePolicy] $Policy = [ServicePolicy]::Unset
 
     <#
     .DESCRIPTION
@@ -9549,7 +9632,7 @@ class VMHostService : VMHostBaseDSC {
     The current state of the service.
     #>
     [DscProperty()]
-    [bool] $Running
+    [nullable[bool]] $Running
 
     <#
     .DESCRIPTION
@@ -9596,7 +9679,11 @@ class VMHostService : VMHostBaseDSC {
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
-            return !$this.ShouldUpdateVMHostService($vmHost)
+            $result = !$this.ShouldUpdateVMHostService($vmHost)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -9631,9 +9718,10 @@ class VMHostService : VMHostBaseDSC {
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
-        $shouldUpdateVMHostService = @()
-        $shouldUpdateVMHostService += ($this.Policy -ne [ServicePolicy]::Unset -and $this.Policy -ne $vmHostCurrentService.Policy)
-        $shouldUpdateVMHostService += $this.Running -ne $vmHostCurrentService.Running
+        $shouldUpdateVMHostService = @(
+            $this.ShouldUpdateDscResourceSetting('Policy', [string] $vmHostCurrentService.Policy, $this.Policy.ToString()),
+            $this.ShouldUpdateDscResourceSetting('Running', $vmHostCurrentService.Running, $this.Running)
+        )
 
         return ($shouldUpdateVMHostService -Contains $true)
     }
@@ -9648,11 +9736,11 @@ class VMHostService : VMHostBaseDSC {
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
-        if ($this.Policy -ne [ServicePolicy]::Unset -and $this.Policy -ne $vmHostCurrentService.Policy) {
+        if ($this.ShouldUpdateDscResourceSetting('Policy', [string] $vmHostCurrentService.Policy, $this.Policy.ToString())) {
             Set-VMHostService -HostService $vmHostCurrentService -Policy $this.Policy.ToString() -Confirm:$false
         }
 
-        if ($vmHostCurrentService.Running -ne $this.Running) {
+        if ($this.ShouldUpdateDscResourceSetting('Running', $vmHostCurrentService.Running, $this.Running)) {
             if ($vmHostCurrentService.Running) {
                 Stop-VMHostService -HostService $vmHostCurrentService -Confirm:$false
             }
@@ -9740,7 +9828,11 @@ class VMHostSettings : VMHostBaseDSC {
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
-            return !$this.ShouldUpdateVMHostSettings($vmHost)
+            $result = !$this.ShouldUpdateVMHostSettings($vmHost)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -9768,21 +9860,6 @@ class VMHostSettings : VMHostBaseDSC {
     <#
     .DESCRIPTION
 
-    Returns a boolean value indicating if the Advanced Setting value should be updated.
-    #>
-    [bool] ShouldUpdateSettingValue($desiredValue, $currentValue) {
-    	<#
-        Desired value equal to $null means that the setting value was not specified.
-        If it is specified we check if the setting value is not equal to the current value.
-        #>
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        return ($null -ne $desiredValue -and $desiredValue -ne $currentValue)
-    }
-
-    <#
-    .DESCRIPTION
-
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
     [bool] ShouldUpdateVMHostSettings($vmHost) {
@@ -9791,31 +9868,35 @@ class VMHostSettings : VMHostBaseDSC {
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
     	$currentMotd = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
-    	$currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
+        $currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	$shouldUpdateVMHostSettings = @()
-    	$shouldUpdateVMHostSettings += ($this.MotdClear -and ($currentMotd.Value -ne [string]::Empty)) -or (-not $this.MotdClear -and ($this.Motd -ne $currentMotd.Value))
-    	$shouldUpdateVMHostSettings += ($this.IssueClear -and ($currentIssue.Value -ne [string]::Empty)) -or (-not $this.IssueClear -and ($this.Issue -ne $currentIssue.Value))
+        $motdDesiredValue = if ($this.MotdClear) { [string]::Empty } else { $this.Motd }
+        $issueDesiredValue = if ($this.IssueClear) { [string]::Empty } else { $this.Issue }
+
+    	$shouldUpdateVMHostSettings = @(
+            $this.ShouldUpdateDscResourceSetting('Motd', $currentMotd.Value, $motdDesiredValue),
+            $this.ShouldUpdateDscResourceSetting('Issue', $currentIssue.Value, $issueDesiredValue)
+        )
 
         return ($shouldUpdateVMHostSettings -Contains $true)
     }
 
-  	<#
+    <#
     .DESCRIPTION
 
     Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
     #>
-  	[void] SetAdvancedSetting($advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
+  	[void] SetAdvancedSetting($advancedSettingName, $advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
     	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
     	if ($clearValue) {
-      	    if ($this.ShouldUpdateSettingValue([string]::Empty, $advancedSettingCurrentValue)) {
-                  Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
+      	    if ($this.ShouldUpdateDscResourceSetting($advancedSettingName, $advancedSettingCurrentValue, [string]::Empty)) {
+                Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value [string]::Empty -Confirm:$false
       	    }
     	}
     	else {
-      	    if ($this.ShouldUpdateSettingValue($advancedSettingDesiredValue, $advancedSettingCurrentValue)) {
-                  Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
+      	    if ($this.ShouldUpdateDscResourceSetting($advancedSettingName, $advancedSettingCurrentValue, $advancedSettingDesiredValue)) {
+                Set-AdvancedSetting -AdvancedSetting $advancedSetting -Value $advancedSettingDesiredValue -Confirm:$false
       	    }
     	}
     }
@@ -9833,8 +9914,8 @@ class VMHostSettings : VMHostBaseDSC {
     	$currentMotd = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.MotdSettingName }
     	$currentIssue = $vmHostCurrentAdvancedSettings | Where-Object { $_.Name -eq $this.IssueSettingName }
 
-    	$this.SetAdvancedSetting($currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
-        $this.SetAdvancedSetting($currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
+    	$this.SetAdvancedSetting('Motd', $currentMotd, $this.Motd, $currentMotd.Value, $this.MotdClear)
+        $this.SetAdvancedSetting('Issue', $currentIssue, $this.Issue, $currentIssue.Value, $this.IssueClear)
     }
 
     <#
@@ -9959,7 +10040,11 @@ class VMHostSyslog : VMHostBaseDSC {
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
-            return !$this.ShouldUpdateVMHostSyslog($vmHost)
+            $result = !$this.ShouldUpdateVMHostSyslog($vmHost)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -9994,18 +10079,18 @@ class VMHostSyslog : VMHostBaseDSC {
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
         $current = Get-VMHostSyslogConfig -EsxCLi $esxcli
 
-        $shouldUpdateVMHostSyslog = @()
-
-        $shouldUpdateVMHostSyslog += (![string]::IsNullOrEmpty($this.LogHost) -and $this.LogHost -ne $current.RemoteHost)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.CheckSslCerts -and $this.CheckSslCerts -ne $current.EnforceSSLCertificates)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DefaultTimeout -and $this.DefaultTimeout -ne $current.DefaultNetworkRetryTimeout)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.QueueDropMark -and $this.QueueDropMark -ne $current.MessageQueueDropMark)
-        $shouldUpdateVMHostSyslog += (![string]::IsNullOrEmpty($this.Logdir) -and $this.Logdir -ne $current.LocalLogOutput)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.LogdirUnique -and $this.LogdirUnique -ne [System.Convert]::ToBoolean($current.LogToUniqueSubdirectory))
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DefaultRotate -and $this.DefaultRotate -ne $current.LocalLoggingDefaultRotations)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DefaultSize -and $this.DefaultSize -ne $current.LocalLoggingDefaultRotationSize)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DropLogRotate -and $this.DropLogRotate -ne $current.DroppedLogFileRotations)
-        $shouldUpdateVMHostSyslog += ($null -ne $this.DropLogSize -and $this.DropLogSize -ne $current.DroppedLogFileRotationSize)
+        $shouldUpdateVMHostSyslog = @(
+            $this.ShouldUpdateDscResourceSetting('LogHost', [string] $current.RemoteHost, $this.LogHost),
+            $this.ShouldUpdateDscResourceSetting('CheckSslCerts', $current.EnforceSSLCertificates, $this.CheckSslCerts),
+            $this.ShouldUpdateDscResourceSetting('DefaultTimeout', $current.DefaultNetworkRetryTimeout, $this.DefaultTimeout),
+            $this.ShouldUpdateDscResourceSetting('QueueDropMark', $current.MessageQueueDropMark, $this.QueueDropMark),
+            $this.ShouldUpdateDscResourceSetting('Logdir', [string] $current.LocalLogOutput, $this.Logdir),
+            $this.ShouldUpdateDscResourceSetting('LogdirUnique', [System.Convert]::ToBoolean($current.LogToUniqueSubdirectory), $this.LogdirUnique),
+            $this.ShouldUpdateDscResourceSetting('DefaultRotate', $current.LocalLoggingDefaultRotations, $this.DefaultRotate),
+            $this.ShouldUpdateDscResourceSetting('DefaultSize', $current.LocalLoggingDefaultRotationSize, $this.DefaultSize),
+            $this.ShouldUpdateDscResourceSetting('DropLogRotate', $current.DroppedLogFileRotations, $this.DropLogRotate),
+            $this.ShouldUpdateDscResourceSetting('DropLogSize', $current.DroppedLogFileRotationSize, $this.DropLogSize)
+        )
 
         return ($shouldUpdateVMHostSyslog -contains $true)
     }
@@ -10102,6 +10187,7 @@ class VMHostTpsSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
 
@@ -10109,31 +10195,39 @@ class VMHostTpsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
-            $shouldUpdateTpsSettings = $this.ShouldUpdateTpsSettings($vmHost)
 
-            return !$shouldUpdateTpsSettings
+            $result = !$this.ShouldUpdateTpsSettings($vmHost)
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [VMHostTpsSettings] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [VMHostTpsSettings]::new()
             $result.Server = $this.Server
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $result.Name = $vmHost.Name
-            $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+
+            $tpsSettings = $this.GetTpsAdvancedSettings($vmHost)
 
             $vmHostTpsSettingsDscResourcePropertyNames = $this.GetType().GetProperties().Name
             foreach ($tpsSetting in $tpsSettings) {
@@ -10147,7 +10241,25 @@ class VMHostTpsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Tps advanced settings for the specified VMHost from the server.
+    #>
+    [PSObject] GetTpsAdvancedSettings($vmHost) {
+        $getAdvancedSettingParams = @{
+            Server = $this.Connection
+            Entity = $vmHost
+            Name = $this.TpsSettingsName
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        return Get-AdvancedSetting @getAdvancedSettingParams
     }
 
     <#
@@ -10156,12 +10268,13 @@ class VMHostTpsSettings : VMHostBaseDSC {
     Returns a boolean value, indicating if update operation should be performed on at least one of the TPS Settings.
     #>
     [bool] ShouldUpdateTpsSettings($vmHost) {
-        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+        $tpsSettings = $this.GetTpsAdvancedSettings($vmHost)
 
         foreach ($tpsSetting in $tpsSettings) {
             $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
 
             if ($null -ne $this.$tpsSettingName -and $this.$tpsSettingName -ne $tpsSetting.Value) {
+                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($tpsSettingName, $tpsSetting.Value, $this.$tpsSettingName)
                 return $true
             }
         }
@@ -10175,7 +10288,7 @@ class VMHostTpsSettings : VMHostBaseDSC {
     Updates the needed TPS Settings with the specified values.
     #>
     [void] UpdateTpsSettings($vmHost) {
-        $tpsSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost -Name $this.TpsSettingsName
+        $tpsSettings = $this.GetTpsAdvancedSettings($vmHost)
 
         foreach ($tpsSetting in $tpsSettings) {
             $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
@@ -10184,7 +10297,14 @@ class VMHostTpsSettings : VMHostBaseDSC {
                 continue
             }
 
-            Set-AdvancedSetting -AdvancedSetting $tpsSetting -Value $this.$tpsSettingName -Confirm:$false
+            $setAdvancedSettingParams = @{
+                AdvancedSetting = $tpsSetting
+                Value = $this.$tpsSettingName
+                Confirm = $false
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+            Set-AdvancedSetting @setAdvancedSettingParams
         }
     }
 }
@@ -10518,16 +10638,22 @@ class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
             $virtualSwitch = $this.GetVirtualSwitch()
             $portGroup = $this.GetVirtualPortGroup($virtualSwitch)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $portGroup) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateVirtualPortGroup($portGroup)
+                else {
+                    $result = !$this.ShouldUpdateDscResourceSetting('VLanId', $portGroup.VLanId, $this.VLanId)
+                }
             }
             else {
-                return ($null -eq $portGroup)
+                $result = ($null -eq $portGroup)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -10604,19 +10730,6 @@ class VMHostVssPortGroup : VMHostVssPortGroupBaseDSC {
         if ($this.VLanId -lt 0 -or $this.VLanId -gt $this.VLanIdMaxValue) {
             throw "The passed VLanId value $($this.VLanId) is not valid. The valid values are in the following range: [0, $($this.VLanIdMaxValue)]."
         }
-    }
-
-    <#
-    .DESCRIPTION
-
-    Checks if the VLanId is specified and needs to be updated.
-    #>
-    [bool] ShouldUpdateVirtualPortGroup($portGroup) {
-        if ($null -eq $this.VLanId) {
-            return $false
-        }
-
-        return ($this.VLanId -ne $portGroup.VLanId)
     }
 
     <#
@@ -10788,14 +10901,20 @@ class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
             $this.RetrieveVMHost()
 
             $virtualPortGroup = $this.GetVirtualPortGroup()
+
+            $result = $null
             if ($null -eq $virtualPortGroup) {
                 # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                return $true
+                $result = $true
+            }
+            else {
+                $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+                $result = !$this.ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
             }
 
-            $virtualPortGroupSecurityPolicy = $this.GetVirtualPortGroupSecurityPolicy($virtualPortGroup)
+            $this.WriteDscResourceState($result)
 
-            return !$this.ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy)
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -10853,14 +10972,14 @@ class VMHostVssPortGroupSecurity : VMHostVssPortGroupBaseDSC {
     Checks if the Security Policy of the specified Virtual Port Group should be updated.
     #>
     [bool] ShouldUpdateVirtualPortGroupSecurityPolicy($virtualPortGroupSecurityPolicy) {
-        $shouldUpdateVirtualPortGroupSecurityPolicy = @()
-
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuous -and $this.AllowPromiscuous -ne $virtualPortGroupSecurityPolicy.AllowPromiscuous)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.AllowPromiscuousInherited -and $this.AllowPromiscuousInherited -ne $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmits -and $this.ForgedTransmits -ne $virtualPortGroupSecurityPolicy.ForgedTransmits)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.ForgedTransmitsInherited -and $this.ForgedTransmitsInherited -ne $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChanges -and $this.MacChanges -ne $virtualPortGroupSecurityPolicy.MacChanges)
-        $shouldUpdateVirtualPortGroupSecurityPolicy += ($null -ne $this.MacChangesInherited -and $this.MacChangesInherited -ne $virtualPortGroupSecurityPolicy.MacChangesInherited)
+        $shouldUpdateVirtualPortGroupSecurityPolicy = @(
+            $this.ShouldUpdateDscResourceSetting('AllowPromiscuous', $virtualPortGroupSecurityPolicy.AllowPromiscuous, $this.AllowPromiscuous),
+            $this.ShouldUpdateDscResourceSetting('AllowPromiscuousInherited', $virtualPortGroupSecurityPolicy.AllowPromiscuousInherited, $this.AllowPromiscuousInherited),
+            $this.ShouldUpdateDscResourceSetting('ForgedTransmits', $virtualPortGroupSecurityPolicy.ForgedTransmits, $this.ForgedTransmits),
+            $this.ShouldUpdateDscResourceSetting('ForgedTransmitsInherited', $virtualPortGroupSecurityPolicy.ForgedTransmitsInherited, $this.ForgedTransmitsInherited),
+            $this.ShouldUpdateDscResourceSetting('MacChanges', $virtualPortGroupSecurityPolicy.MacChanges, $this.MacChanges),
+            $this.ShouldUpdateDscResourceSetting('MacChangesInherited', $virtualPortGroupSecurityPolicy.MacChangesInherited, $this.MacChangesInherited)
+        )
 
         return ($shouldUpdateVirtualPortGroupSecurityPolicy -Contains $true)
     }
@@ -10956,12 +11075,19 @@ class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
             $this.RetrieveVMHost()
 
             $virtualPortGroup = $this.GetVirtualPortGroup()
+
+            $result = $null
             if ($null -eq $virtualPortGroup) {
                 # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                return $true
+                $result = $true
+            }
+            else {
+                $result = !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
             }
 
-            return !$this.ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup)
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -11002,12 +11128,14 @@ class VMHostVssPortGroupShaping : VMHostVssPortGroupBaseDSC {
     Checks if the Shaping Policy of the specified Virtual Port Group should be updated.
     #>
     [bool] ShouldUpdateVirtualPortGroupShapingPolicy($virtualPortGroup) {
-        $shouldUpdateVirtualPortGroupShapingPolicy = @()
+        $shapingPolicy = $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy
 
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.Enabled -and $this.Enabled -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.Enabled)
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.AverageBandwidth -and $this.AverageBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.AverageBandwidth)
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.PeakBandwidth -and $this.PeakBandwidth -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.PeakBandwidth)
-        $shouldUpdateVirtualPortGroupShapingPolicy += ($null -ne $this.BurstSize -and $this.BurstSize -ne $virtualPortGroup.ExtensionData.Spec.Policy.ShapingPolicy.BurstSize)
+        $shouldUpdateVirtualPortGroupShapingPolicy = @(
+            $this.ShouldUpdateDscResourceSetting('Enabled', $shapingPolicy.Enabled, $this.Enabled),
+            $this.ShouldUpdateDscResourceSetting('AverageBandwidth', $shapingPolicy.AverageBandwidth, $this.AverageBandwidth),
+            $this.ShouldUpdateDscResourceSetting('PeakBandwidth', $shapingPolicy.PeakBandwidth, $this.PeakBandwidth),
+            $this.ShouldUpdateDscResourceSetting('BurstSize', $shapingPolicy.BurstSize, $this.BurstSize)
+        )
 
         return ($shouldUpdateVirtualPortGroupShapingPolicy -Contains $true)
     }
@@ -11197,14 +11325,20 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
             $this.RetrieveVMHost()
 
             $virtualPortGroup = $this.GetVirtualPortGroup()
+
+            $result = $null
             if ($null -eq $virtualPortGroup) {
                 # If the Port Group is $null, it means that Ensure is 'Absent' and the Port Group does not exist.
-                return $true
+                $result = $true
+            }
+            else {
+                $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+                $result = !$this.ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
             }
 
-            $virtualPortGroupTeamingPolicy = $this.GetVirtualPortGroupTeamingPolicy($virtualPortGroup)
+            $this.WriteDscResourceState($result)
 
-            return !$this.ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy)
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -11259,58 +11393,31 @@ class VMHostVssPortGroupTeaming : VMHostVssPortGroupBaseDSC {
     <#
     .DESCRIPTION
 
-    Checks if the passed Nic array is in the desired state and if an update should be performed.
-    #>
-    [bool] ShouldUpdateNicArray($currentNicArray, $desiredNicArray) {
-        if ($null -eq $desiredNicArray -or $desiredNicArray.Length -eq 0) {
-            # The property is not specified or an empty Nic array is passed.
-            return $false
-        }
-        else {
-            $nicsToAdd = $desiredNicArray | Where-Object { $currentNicArray -NotContains $_ }
-            $nicsToRemove = $currentNicArray | Where-Object { $desiredNicArray -NotContains $_ }
-
-            if ($null -ne $nicsToAdd -or $null -ne $nicsToRemove) {
-                <#
-                The current Nic array does not contain at least one Nic from desired Nic array or
-                the desired Nic array is a subset of the current Nic array. In both cases
-                we should perform an update operation.
-                #>
-                return $true
-            }
-
-            # No need to perform an update operation.
-            return $false
-        }
-    }
-
-    <#
-    .DESCRIPTION
-
     Checks if the Teaming Policy of the specified Virtual Port Group should be updated.
     #>
     [bool] ShouldUpdateVirtualPortGroupTeamingPolicy($virtualPortGroupTeamingPolicy) {
-        $shouldUpdateVirtualPortGroupTeamingPolicy = @()
-
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.ActiveNic, $this.ActiveNic)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.StandbyNic, $this.StandbyNic)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += $this.ShouldUpdateNicArray($virtualPortGroupTeamingPolicy.UnusedNic, $this.UnusedNic)
-
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.FailbackEnabled -and $this.FailbackEnabled -ne $virtualPortGroupTeamingPolicy.FailbackEnabled)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.NotifySwitches -and $this.NotifySwitches -ne $virtualPortGroupTeamingPolicy.NotifySwitches)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritFailback -and $this.InheritFailback -ne $virtualPortGroupTeamingPolicy.IsFailbackInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritFailoverOrder -and $this.InheritFailoverOrder -ne $virtualPortGroupTeamingPolicy.IsFailoverOrderInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritLoadBalancingPolicy -and $this.InheritLoadBalancingPolicy -ne $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritNetworkFailoverDetectionPolicy -and $this.InheritNetworkFailoverDetectionPolicy -ne $virtualPortGroupTeamingPolicy.IsNetworkFailoverDetectionInherited)
-        $shouldUpdateVirtualPortGroupTeamingPolicy += ($null -ne $this.InheritNotifySwitches -and $this.InheritNotifySwitches -ne $virtualPortGroupTeamingPolicy.IsNotifySwitchesInherited)
-
-        if ($this.LoadBalancingPolicy -ne [LoadBalancingPolicy]::Unset) {
-            $shouldUpdateVirtualPortGroupTeamingPolicy += ($this.LoadBalancingPolicy.ToString() -ne $virtualPortGroupTeamingPolicy.LoadBalancingPolicy.ToString())
-        }
-
-        if ($this.NetworkFailoverDetectionPolicy -ne [NetworkFailoverDetectionPolicy]::Unset) {
-            $shouldUpdateVirtualPortGroupTeamingPolicy += ($this.NetworkFailoverDetectionPolicy.ToString() -ne $virtualPortGroupTeamingPolicy.NetworkFailoverDetectionPolicy.ToString())
-        }
+        $shouldUpdateVirtualPortGroupTeamingPolicy = @(
+            $this.ShouldUpdateDscResourceSetting('FailbackEnabled', $virtualPortGroupTeamingPolicy.FailbackEnabled, $this.FailbackEnabled),
+            $this.ShouldUpdateDscResourceSetting('NotifySwitches', $virtualPortGroupTeamingPolicy.NotifySwitches, $this.NotifySwitches),
+            $this.ShouldUpdateDscResourceSetting('InheritFailback', $virtualPortGroupTeamingPolicy.IsFailbackInherited, $this.InheritFailback),
+            $this.ShouldUpdateDscResourceSetting('InheritFailoverOrder', $virtualPortGroupTeamingPolicy.IsFailoverOrderInherited, $this.InheritFailoverOrder),
+            $this.ShouldUpdateDscResourceSetting('InheritLoadBalancingPolicy', $virtualPortGroupTeamingPolicy.IsLoadBalancingInherited, $this.InheritLoadBalancingPolicy),
+            $this.ShouldUpdateDscResourceSetting(
+                'InheritNetworkFailoverDetectionPolicy',
+                $virtualPortGroupTeamingPolicy.IsNetworkFailoverDetectionInherited,
+                $this.InheritNetworkFailoverDetectionPolicy
+            ),
+            $this.ShouldUpdateDscResourceSetting('InheritNotifySwitches', $virtualPortGroupTeamingPolicy.IsNotifySwitchesInherited, $this.InheritNotifySwitches),
+            $this.ShouldUpdateDscResourceSetting('LoadBalancingPolicy', [string] $virtualPortGroupTeamingPolicy.LoadBalancingPolicy, $this.LoadBalancingPolicy.ToString()),
+            $this.ShouldUpdateDscResourceSetting(
+                'NetworkFailoverDetectionPolicy',
+                [string] $virtualPortGroupTeamingPolicy.NetworkFailoverDetectionPolicy,
+                $this.NetworkFailoverDetectionPolicy.ToString()
+            ),
+            $this.ShouldUpdateArraySetting('ActiveNic', $virtualPortGroupTeamingPolicy.ActiveNic, $this.ActiveNic),
+            $this.ShouldUpdateArraySetting('StandbyNic', $virtualPortGroupTeamingPolicy.StandbyNic, $this.StandbyNic),
+            $this.ShouldUpdateArraySetting('UnusedNic', $virtualPortGroupTeamingPolicy.UnusedNic, $this.UnusedNic)
+        )
 
         return ($shouldUpdateVirtualPortGroupTeamingPolicy -Contains $true)
     }
@@ -11441,7 +11548,7 @@ class VMHostAcceptanceLevel : EsxCliBaseDSC {
             $this.GetEsxCli($vmHost)
             $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
 
-            $result = ($this.Level.ToString() -eq $esxCliGetMethodResult)
+            $result = !$this.ShouldUpdateDscResourceSetting('Level', [string] $esxCliGetMethodResult, $this.Level.ToString())
 
             $this.WriteDscResourceState($result)
 
@@ -11527,7 +11634,7 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
             $this.GetEsxCli($vmHost)
             $esxCliGetMethodResult = $this.ExecuteEsxCliRetrievalMethod($this.EsxCliGetMethodName)
 
-            $result = ($this.Layout -eq $esxCliGetMethodResult)
+            $result = !$this.ShouldUpdateDscResourceSetting('Layout', [string] $esxCliGetMethodResult, $this.Layout)
 
             $this.WriteDscResourceState($result)
 
@@ -11706,12 +11813,12 @@ class VMHostNetworkCoreDump : EsxCliBaseDSC {
     Checks if the VMHost network coredump configuration should be modified.
     #>
     [bool] ShouldModifyVMHostNetworkCoreDumpConfiguration($esxCliGetMethodResult) {
-        $shouldModifyVMHostNetworkCoreDumpConfiguration = @()
-
-        $shouldModifyVMHostNetworkCoreDumpConfiguration += ($null -ne $this.Enable -and $this.Enable -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.Enabled))
-        $shouldModifyVMHostNetworkCoreDumpConfiguration += (![string]::IsNullOrEmpty($this.InterfaceName) -and $this.InterfaceName -ne $esxCliGetMethodResult.HostVNic)
-        $shouldModifyVMHostNetworkCoreDumpConfiguration += (![string]::IsNullOrEmpty($this.ServerIp) -and $this.ServerIp -ne $esxCliGetMethodResult.NetworkServerIP)
-        $shouldModifyVMHostNetworkCoreDumpConfiguration += ($null -ne $this.ServerPort -and $this.ServerPort -ne [long] $esxCliGetMethodResult.NetworkServerPort)
+        $shouldModifyVMHostNetworkCoreDumpConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting('Enable', [System.Convert]::ToBoolean($esxCliGetMethodResult.Enabled), $this.Enable),
+            $this.ShouldUpdateDscResourceSetting('InterfaceName', [string] $esxCliGetMethodResult.HostVNic, $this.InterfaceName),
+            $this.ShouldUpdateDscResourceSetting('ServerIp', [string] $esxCliGetMethodResult.NetworkServerIP, $this.ServerIp),
+            $this.ShouldUpdateDscResourceSetting('ServerPort', [long] $esxCliGetMethodResult.NetworkServerPort, $this.ServerPort)
+        )
 
         return ($shouldModifyVMHostNetworkCoreDumpConfiguration -Contains $true)
     }
@@ -11862,15 +11969,19 @@ class VMHostSharedSwapSpace : EsxCliBaseDSC {
     Checks if the system-wide shared swap space configuration should be modified.
     #>
     [bool] ShouldModifySystemWideSharedSwapSpaceConfiguration($esxCliGetMethodResult) {
-        $shouldModifySystemWideSharedSwapSpaceConfiguration = @()
-
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.DatastoreEnabled -and $this.DatastoreEnabled -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.DatastoreEnabled))
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.DatastoreName -and $this.DatastoreName -ne $esxCliGetMethodResult.DatastoreName)
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.DatastoreOrder -and $this.DatastoreOrder -ne [long] $esxCliGetMethodResult.DatastoreOrder)
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostCacheEnabled -and $this.HostCacheEnabled -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.HostcacheEnabled))
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostCacheOrder -and $this.HostCacheOrder -ne [long] $esxCliGetMethodResult.HostcacheOrder)
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostLocalSwapEnabled -and $this.HostLocalSwapEnabled -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.HostlocalswapEnabled))
-        $shouldModifySystemWideSharedSwapSpaceConfiguration += ($null -ne $this.HostLocalSwapOrder -and $this.HostLocalSwapOrder -ne [long] $esxCliGetMethodResult.HostlocalswapOrder)
+        $shouldModifySystemWideSharedSwapSpaceConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting('DatastoreEnabled', [System.Convert]::ToBoolean($esxCliGetMethodResult.DatastoreEnabled), $this.DatastoreEnabled),
+            $this.ShouldUpdateDscResourceSetting('DatastoreName', [string] $esxCliGetMethodResult.DatastoreName, $this.DatastoreName),
+            $this.ShouldUpdateDscResourceSetting('DatastoreOrder', [long] $esxCliGetMethodResult.DatastoreOrder, $this.DatastoreOrder),
+            $this.ShouldUpdateDscResourceSetting('HostCacheEnabled', [System.Convert]::ToBoolean($esxCliGetMethodResult.HostcacheEnabled), $this.HostCacheEnabled),
+            $this.ShouldUpdateDscResourceSetting('HostCacheOrder', [long] $esxCliGetMethodResult.HostcacheOrder, $this.HostCacheOrder),
+            $this.ShouldUpdateDscResourceSetting('HostLocalSwapOrder', [long] $esxCliGetMethodResult.HostlocalswapOrder, $this.HostLocalSwapOrder),
+            $this.ShouldUpdateDscResourceSetting(
+                'HostLocalSwapEnabled',
+                [System.Convert]::ToBoolean($esxCliGetMethodResult.HostlocalswapEnabled),
+                $this.HostLocalSwapEnabled
+            )
+        )
 
         return ($shouldModifySystemWideSharedSwapSpaceConfiguration -Contains $true)
     }
@@ -12110,25 +12221,25 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
     Checks if the VMHost SNMP Agent should be modified.
     #>
     [bool] ShouldModifyVMHostSNMPAgent($esxCliGetMethodResult) {
-        $shouldModifyVMHostSNMPAgent = @()
-
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Authentication) -and $this.Authentication -ne $esxCliGetMethodResult.authentication)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Communities) -and $this.Communities -ne $esxCliGetMethodResult.communities)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.Enable -and $this.Enable -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.enable))
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.EngineId) -and $this.EngineId -ne $esxCliGetMethodResult.engineid)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Hwsrc) -and $this.Hwsrc -ne $esxCliGetMethodResult.hwsrc)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.LargeStorage -and $this.LargeStorage -ne [System.Convert]::ToBoolean($esxCliGetMethodResult.largestorage))
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.LogLevel) -and $this.LogLevel -ne $esxCliGetMethodResult.loglevel)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.NoTraps -and $this.NoTraps -ne [string] $esxCliGetMethodResult.notraps)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.Port -and $this.Port -ne [int] $esxCliGetMethodResult.port)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Privacy) -and $this.Privacy -ne $esxCliGetMethodResult.privacy)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.RemoteUsers) -and $this.RemoteUsers -ne $esxCliGetMethodResult.remoteusers)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.SysContact -and $this.SysContact -ne $esxCliGetMethodResult.syscontact)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.SysLocation -and $this.SysLocation -ne $esxCliGetMethodResult.syslocation)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Targets) -and $this.Targets -ne $esxCliGetMethodResult.targets)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.Users) -and $this.Users -ne $esxCliGetMethodResult.users)
-        $shouldModifyVMHostSNMPAgent += (![string]::IsNullOrEmpty($this.V3Targets) -and $this.V3Targets -ne $esxCliGetMethodResult.v3targets)
-        $shouldModifyVMHostSNMPAgent += ($null -ne $this.Reset -and $this.Reset)
+        $shouldModifyVMHostSNMPAgent = @(
+            $this.ShouldUpdateDscResourceSetting('Authentication', [string] $esxCliGetMethodResult.authentication, $this.Authentication),
+            $this.ShouldUpdateDscResourceSetting('Communities', [string] $esxCliGetMethodResult.communities, $this.Communities),
+            $this.ShouldUpdateDscResourceSetting('Enable', [System.Convert]::ToBoolean($esxCliGetMethodResult.enable), $this.Enable),
+            $this.ShouldUpdateDscResourceSetting('EngineId', [string] $esxCliGetMethodResult.engineid, $this.EngineId),
+            $this.ShouldUpdateDscResourceSetting('Hwsrc', [string] $esxCliGetMethodResult.hwsrc, $this.Hwsrc),
+            $this.ShouldUpdateDscResourceSetting('LargeStorage', [System.Convert]::ToBoolean($esxCliGetMethodResult.largestorage), $this.LargeStorage),
+            $this.ShouldUpdateDscResourceSetting('LogLevel', [string] $esxCliGetMethodResult.loglevel, $this.LogLevel),
+            $this.ShouldUpdateDscResourceSetting('NoTraps', [string] $esxCliGetMethodResult.notraps, $this.NoTraps),
+            $this.ShouldUpdateDscResourceSetting('Port', [int] $esxCliGetMethodResult.port, $this.Port),
+            $this.ShouldUpdateDscResourceSetting('Privacy', [string] $esxCliGetMethodResult.privacy, $this.Privacy),
+            $this.ShouldUpdateDscResourceSetting('RemoteUsers', [string] $esxCliGetMethodResult.remoteusers, $this.RemoteUsers),
+            $this.ShouldUpdateDscResourceSetting('SysContact', [string] $esxCliGetMethodResult.syscontact, $this.SysContact),
+            $this.ShouldUpdateDscResourceSetting('SysLocation', [string] $esxCliGetMethodResult.syslocation, $this.SysLocation),
+            $this.ShouldUpdateDscResourceSetting('Targets', [string] $esxCliGetMethodResult.targets, $this.Targets),
+            $this.ShouldUpdateDscResourceSetting('Users', [string] $esxCliGetMethodResult.users, $this.Users),
+            $this.ShouldUpdateDscResourceSetting('V3Targets', [string] $esxCliGetMethodResult.v3targets, $this.V3Targets),
+            $this.ShouldUpdateDscResourceSetting('Reset', $false, $this.Reset)
+        )
 
         return ($shouldModifyVMHostSNMPAgent -Contains $true)
     }
@@ -12877,7 +12988,7 @@ class VMHostVMKernelModule : EsxCliBaseDSC {
     #>
     [bool] ShouldModifyVMKernelModule($esxCliListMethodResult) {
         $vmKernelModule = $esxCliListMethodResult | Where-Object -FilterScript { $_.Name -eq $this.Module }
-        return ($this.Enabled -ne [System.Convert]::ToBoolean($vmKernelModule.IsEnabled))
+        return $this.ShouldUpdateDscResourceSetting('Enabled', [System.Convert]::ToBoolean($vmKernelModule.IsEnabled), $this.Enabled)
     }
 
     <#
@@ -14026,8 +14137,9 @@ class VMHostPhysicalNic : VMHostEntityBaseDSC {
     Checks if the Physical Network Adapter should be updated.
     #>
     [bool] ShouldUpdatePhysicalNetworkAdapter($physicalNetworkAdapter) {
-        $shouldUpdatePhysicalNetworkAdapter = @()
-        $shouldUpdatePhysicalNetworkAdapter += ($null -ne $this.BitRatePerSecMb -and $this.BitRatePerSecMb -ne $physicalNetworkAdapter.BitRatePerSec)
+        $shouldUpdatePhysicalNetworkAdapter = @(
+            $this.ShouldUpdateDscResourceSetting('BitRatePerSecMb', $physicalNetworkAdapter.BitRatePerSec, $this.BitRatePerSecMb)
+        )
 
         <#
         The Duplex value on the server is stored as boolean indicating if the link is capable of full-duplex.
@@ -14163,16 +14275,22 @@ class VMHostVssNic : VMHostNicBaseDSC {
             $virtualSwitch = $this.GetVirtualSwitch()
             $vmHostNetworkAdapter = $this.GetVMHostNetworkAdapter($virtualSwitch)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $vmHostNetworkAdapter) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                else {
+                    $result = !$this.ShouldUpdateVMHostNetworkAdapter($vmHostNetworkAdapter)
+                }
             }
             else {
-                return ($null -eq $vmHostNetworkAdapter)
+                $result = ($null -eq $vmHostNetworkAdapter)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -14488,15 +14606,20 @@ class VMHostGraphics : VMHostGraphicsBaseDSC {
     Checks if the Graphics Configuration needs to be updated with the desired values.
     #>
     [bool] ShouldUpdateGraphicsConfiguration($vmHostGraphicsManager) {
-        if ($this.GraphicsType -ne $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType) {
-            return $true
-        }
-        elseif ($this.SharedPassthruAssignmentPolicy -ne $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy) {
-            return $true
-        }
-        else {
-            return $false
-        }
+        $shouldUpdateGraphicsConfiguration = @(
+            $this.ShouldUpdateDscResourceSetting(
+                'GraphicsType',
+                [string] $vmHostGraphicsManager.GraphicsConfig.HostDefaultGraphicsType,
+                $this.GraphicsType.ToString()
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'SharedPassthruAssignmentPolicy',
+                [string] $vmHostGraphicsManager.GraphicsConfig.SharedPassthruAssignmentPolicy,
+                $this.SharedPassthruAssignmentPolicy.ToString()
+            )
+        )
+
+        return ($shouldUpdateGraphicsConfiguration -Contains $true)
     }
 
     <#
@@ -14559,7 +14682,15 @@ class VMHostGraphicsDevice : VMHostGraphicsBaseDSC {
             $vmHostGraphicsManager = $this.GetVMHostGraphicsManager($vmHost)
             $foundDevice = $this.GetGraphicsDevice($vmHostGraphicsManager)
 
-            return ($this.GraphicsType -eq $foundDevice.GraphicsType)
+            $result = !$this.ShouldUpdateDscResourceSetting(
+                'GraphicsType',
+                [string] $foundDevice.GraphicsType,
+                $this.GraphicsType.ToString()
+            )
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -14704,12 +14835,17 @@ class VMHostVss : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
-                return ($null -eq $vss)
+                $result = ($null -eq $vss)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -14747,11 +14883,12 @@ class VMHostVss : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssTest = @()
-        $vssTest += ($vss.Name -eq $this.VssName)
-        $vssTest += ($null -eq $this.Mtu -or $vss.MTU -eq $this.MTU)
+        $vssTest = @(
+            $this.ShouldUpdateDscResourceSetting('VssName', $vss.Name, $this.VssName),
+            $this.ShouldUpdateDscResourceSetting('Mtu', $vss.Mtu, $this.Mtu)
+        )
 
-        return ($vssTest -notcontains $false)
+        return ($vssTest -NotContains $true)
     }
 
     <#
@@ -14881,16 +15018,21 @@ class VMHostVssBridge : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
                 $this.NicDevice = @()
                 $this.BeaconInterval = 0
                 $this.LinkDiscoveryProtocolProtocol = [LinkDiscoveryProtocolProtocol]::Unset
 
-                return ($null -eq $vss -or $this.Equals($vss))
+                $result = ($null -eq $vss -or $this.Equals($vss))
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -14928,22 +15070,22 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssBridgeTest = @()
+        $vssBridgeTest = @(
+            $this.ShouldUpdateArraySetting('NicDevice', $vss.Spec.Bridge.NicDevice, $this.NicDevice),
+            $this.ShouldUpdateDscResourceSetting('BeaconInterval', $vss.Spec.Bridge.Beacon.Interval, $this.BeaconInterval),
+            $this.ShouldUpdateDscResourceSetting(
+                'LinkDiscoveryProtocolProtocol',
+                [string] $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol,
+                $this.LinkDiscoveryProtocolProtocol.ToString()
+            ),
+            $this.ShouldUpdateDscResourceSetting(
+                'LinkDiscoveryProtocolOperation',
+                [string] $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation,
+                $this.LinkDiscoveryProtocolOperation.ToString()
+            )
+        )
 
-        $vssBridgeTest += !$this.ShouldUpdateArraySetting($vss.Spec.Bridge.NicDevice, $this.NicDevice)
-        $vssBrdigeTest += ($null -eq $this.BeaconInterval -or $vss.Spec.Bridge.Beacon.Interval -eq $this.BeaconInterval)
-
-        if ($this.LinkDiscoveryProtocolOperation -ne [LinkDiscoveryProtocolOperation]::Unset) {
-            if ($null -eq $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation) { $vssBridgeTest += $false }
-            else { $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Operation.ToString() -eq $this.LinkDiscoveryProtocolOperation.ToString()) }
-        }
-
-        if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
-            if ($null -eq $vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol) { $vssBridgeTest += $false }
-            else { $vssBridgeTest += ($vss.Spec.Bridge.LinkDiscoveryProtocolConfig.Protocol.ToString() -eq $this.LinkDiscoveryProtocolProtocol.ToString()) }
-        }
-
-        return ($vssBridgeTest -NotContains $false)
+        return ($vssBridgeTest -NotContains $true)
     }
 
     <#
@@ -14964,7 +15106,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
             if ($null -ne $this.BeaconInterval) { $vssBridgeArgs.BeaconInterval = $this.BeaconInterval }
             if ($this.LinkDiscoveryProtocolProtocol -ne [LinkDiscoveryProtocolProtocol]::Unset) {
                 $vssBridgeArgs.Add('LinkDiscoveryProtocolProtocol', $this.LinkDiscoveryProtocolProtocol.ToString())
-                $vssBridgeArgs.Add('LinkDiscoveryProtocolOperation', $this.LinkDiscoveryProtocolOperation.ToSTring())
+                $vssBridgeArgs.Add('LinkDiscoveryProtocolOperation', $this.LinkDiscoveryProtocolOperation.ToString())
             }
         }
 
@@ -15071,16 +15213,21 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
                 $this.AllowPromiscuous = $false
                 $this.ForgedTransmits = $true
                 $this.MacChanges = $true
 
-                return ($null -eq $vss -or $this.Equals($vss))
+                $result = ($null -eq $vss -or $this.Equals($vss))
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -15118,12 +15265,13 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssSecurityTest = @()
-        $vssSecurityTest += ($null -eq $this.AllowPromiscuous -or $vss.Spec.Policy.Security.AllowPromiscuous -eq $this.AllowPromiscuous)
-        $vssSecurityTest += ($null -eq $this.ForgedTransmits -or $vss.Spec.Policy.Security.ForgedTransmits -eq $this.ForgedTransmits)
-        $vssSecurityTest += ($null -eq $this.MacChanges -or $vss.Spec.Policy.Security.MacChanges -eq $this.MacChanges)
+        $vssSecurityTest = @(
+            $this.ShouldUpdateDscResourceSetting('AllowPromiscuous', $vss.Spec.Policy.Security.AllowPromiscuous, $this.AllowPromiscuous),
+            $this.ShouldUpdateDscResourceSetting('ForgedTransmits', $vss.Spec.Policy.Security.ForgedTransmits, $this.ForgedTransmits),
+            $this.ShouldUpdateDscResourceSetting('MacChanges', $vss.Spec.Policy.Security.MacChanges, $this.MacChanges)
+        )
 
-        return ($vssSecurityTest -notcontains $false)
+        return ($vssSecurityTest -NotContains $true)
     }
 
     <#
@@ -15246,8 +15394,9 @@ class VMHostVssShaping : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
                 $this.AverageBandwidth = 100000
@@ -15255,8 +15404,12 @@ class VMHostVssShaping : VMHostVssBaseDSC {
                 $this.Enabled = $false
                 $this.PeakBandwidth = 100000
 
-                return ($null -eq $vss -or $this.Equals($vss))
+                $result = ($null -eq $vss -or $this.Equals($vss))
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -15294,13 +15447,14 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssShapingTest = @()
-        $vssShapingTest += ($null -eq $this.AverageBandwidth -or $vss.Spec.Policy.ShapingPolicy.AverageBandwidth -eq $this.AverageBandwidth)
-        $vssShapingTest += ($null -eq $this.BurstSize -or $vss.Spec.Policy.ShapingPolicy.BurstSize -eq $this.BurstSize)
-        $vssShapingTest += ($null -eq $this.Enabled -or $vss.Spec.Policy.ShapingPolicy.Enabled -eq $this.Enabled)
-        $vssShapingTest += ($null -eq $this.PeakBandwidth -or $vss.Spec.Policy.ShapingPolicy.PeakBandwidth -eq $this.PeakBandwidth)
+        $vssShapingTest = @(
+            $this.ShouldUpdateDscResourceSetting('AverageBandwidth', $vss.Spec.Policy.ShapingPolicy.AverageBandwidth, $this.AverageBandwidth),
+            $this.ShouldUpdateDscResourceSetting('BurstSize', $vss.Spec.Policy.ShapingPolicy.BurstSize, $this.BurstSize),
+            $this.ShouldUpdateDscResourceSetting('Enabled', $vss.Spec.Policy.ShapingPolicy.Enabled, $this.Enabled),
+            $this.ShouldUpdateDscResourceSetting('PeakBandwidth', $vss.Spec.Policy.ShapingPolicy.PeakBandwidth, $this.PeakBandwidth)
+        )
 
-        return ($vssShapingTest -notcontains $false)
+        return ($vssShapingTest -NotContains $true)
     }
 
     <#
@@ -15444,8 +15598,9 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
-                return ($null -ne $vss -and $this.Equals($vss))
+                $result = ($null -ne $vss -and $this.Equals($vss))
             }
             else {
                 $this.CheckBeacon = $false
@@ -15455,8 +15610,12 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
                 $this.Policy = [NicTeamingPolicy]::Loadbalance_srcid
                 $this.RollingOrder = $false
 
-                return ($null -eq $vss -or $this.Equals($vss))
+                $result = ($null -eq $vss -or $this.Equals($vss))
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -15494,17 +15653,16 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
-        $vssTeamingTest = @()
-        $vssTeamingTest += ($null -eq $this.CheckBeacon -or $vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon -eq $this.CheckBeacon)
-        $vssTeamingTest += !$this.ShouldUpdateArraySetting($vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic, $this.ActiveNic)
-        $vssTeamingTest += !$this.ShouldUpdateArraySetting($vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic, $this.StandbyNic)
-        $vssTeamingTest += ($null -eq $this.NotifySwitches -or $vss.Spec.Policy.NicTeaming.NotifySwitches -eq $this.NotifySwitches)
-        $vssTeamingTest += ($null -eq $this.RollingOrder -or $vss.Spec.Policy.NicTeaming.RollingOrder -eq $this.RollingOrder)
+        $vssTeamingTest = @(
+            $this.ShouldUpdateDscResourceSetting('CheckBeacon', $vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon, $this.CheckBeacon),
+            $this.ShouldUpdateDscResourceSetting('NotifySwitches', $vss.Spec.Policy.NicTeaming.NotifySwitches, $this.NotifySwitches),
+            $this.ShouldUpdateDscResourceSetting('RollingOrder', $vss.Spec.Policy.NicTeaming.RollingOrder, $this.RollingOrder),
+            $this.ShouldUpdateDscResourceSetting('Policy', [string] $vss.Spec.Policy.NicTeaming.Policy, $this.Policy.ToString().ToLower()),
+            $this.ShouldUpdateArraySetting('ActiveNic', $vss.Spec.Policy.NicTeaming.NicOrder.ActiveNic, $this.ActiveNic),
+            $this.ShouldUpdateArraySetting('StandbyNic', $vss.Spec.Policy.NicTeaming.NicOrder.StandbyNic, $this.StandbyNic)
+        )
 
-        # The Network Adapter teaming policy should determine the Desired State only when it is specified.
-        if ($this.Policy -ne [NicTeamingPolicy]::Unset) { $vssTeamingTest += ($vss.Spec.Policy.NicTeaming.Policy -eq $this.Policy.ToString().ToLower()) }
-
-        return ($vssTeamingTest -notcontains $false)
+        return ($vssTeamingTest -NotContains $true)
     }
 
     <#
@@ -15683,16 +15841,22 @@ class DrsCluster : DatacenterInventoryBaseDSC {
             $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
             $cluster = $this.GetInventoryItem($clusterLocation)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $cluster) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateCluster($cluster)
+                else {
+                    $result = !$this.ShouldUpdateCluster($cluster)
+                }
             }
             else {
-                return ($null -eq $cluster)
+                $result = ($null -eq $cluster)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -15726,44 +15890,23 @@ class DrsCluster : DatacenterInventoryBaseDSC {
     <#
     .DESCRIPTION
 
-    Checks if the Cluster option should be updated.
-    #>
-    [bool] ShouldUpdateOptionValue($options, $key, $desiredValue) {
-        if ($null -ne $desiredValue) {
-            $currentValue = ($options | Where-Object { $_.Key -eq $key }).Value
-
-            if ($null -eq $currentValue) {
-                return $true
-            }
-            else {
-                return $desiredValue -ne $currentValue
-            }
-        }
-
-        return $false
-    }
-
-    <#
-    .DESCRIPTION
-
     Checks if the Cluster should be updated.
     #>
     [bool] ShouldUpdateCluster($cluster) {
         $drsConfig = $cluster.ExtensionData.ConfigurationEx.DrsConfig
 
-        $shouldUpdateCluster = @()
-        $shouldUpdateCluster += ($null -ne $this.DrsEnabled -and $this.DrsEnabled -ne $drsConfig.Enabled)
-        $shouldUpdateCluster += ($this.DrsAutomationLevel -ne [DrsAutomationLevel]::Unset -and $this.DrsAutomationLevel.ToString() -ne $drsConfig.DefaultVmBehavior)
-        $shouldUpdateCluster += ($null -ne $this.DrsMigrationThreshold -and $this.DrsMigrationThreshold -ne $drsConfig.VmotionRate)
+        $currentDrsDistributionOption = ($drsConfig.Option | Where-Object -FilterScript { $_.Key -eq $this.DrsDistributionSettingName }).Value
+        $currentMemoryLoadBalancingOption = ($drsConfig.Option | Where-Object -FilterScript { $_.Key -eq $this.MemoryLoadBalancingSettingName }).Value
+        $currentCPUOverCommitmentOption = ($drsConfig.Option | Where-Object -FilterScript { $_.Key -eq $this.CPUOverCommitmentSettingName }).Value
 
-        if ($null -ne $drsConfig.Option) {
-            $shouldUpdateCluster += $this.ShouldUpdateOptionValue($drsConfig.Option, $this.DrsDistributionSettingName, $this.DrsDistribution)
-            $shouldUpdateCluster += $this.ShouldUpdateOptionValue($drsConfig.Option, $this.MemoryLoadBalancingSettingName, $this.MemoryLoadBalancing)
-            $shouldUpdateCluster += $this.ShouldUpdateOptionValue($drsConfig.Option, $this.CPUOverCommitmentSettingName, $this.CPUOverCommitment)
-        }
-        else {
-            $shouldUpdateCluster += ($null -ne $this.DrsDistribution -or $null -ne $this.MemoryLoadBalancing -or $null -ne $this.CPUOverCommitment)
-        }
+        $shouldUpdateCluster = @(
+            $this.ShouldUpdateDscResourceSetting('DrsEnabled', $drsConfig.Enabled, $this.DrsEnabled),
+            $this.ShouldUpdateDscResourceSetting('DrsAutomationLevel', [string] $drsConfig.DefaultVmBehavior, $this.DrsAutomationLevel.ToString()),
+            $this.ShouldUpdateDscResourceSetting('DrsMigrationThreshold', $drsConfig.VmotionRate, $this.DrsMigrationThreshold),
+            $this.ShouldUpdateDscResourceSetting('DrsDistribution', $currentDrsDistributionOption, $this.DrsDistribution),
+            $this.ShouldUpdateDscResourceSetting('MemoryLoadBalancing', $currentMemoryLoadBalancingOption, $this.MemoryLoadBalancing),
+            $this.ShouldUpdateDscResourceSetting('CPUOverCommitment', $currentCPUOverCommitmentOption, $this.CPUOverCommitment)
+        )
 
         return ($shouldUpdateCluster -Contains $true)
     }
@@ -16022,16 +16165,22 @@ class HACluster : DatacenterInventoryBaseDSC {
             $clusterLocation = $this.GetInventoryItemLocationInDatacenter($datacenter, $datacenterFolderName)
             $cluster = $this.GetInventoryItem($clusterLocation)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $cluster) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateCluster($cluster)
+                else {
+                    $result = !$this.ShouldUpdateCluster($cluster)
+                }
             }
             else {
-                return ($null -eq $cluster)
+                $result = ($null -eq $cluster)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
@@ -16068,28 +16217,13 @@ class HACluster : DatacenterInventoryBaseDSC {
     Checks if the Cluster should be updated.
     #>
     [bool] ShouldUpdateCluster($cluster) {
-        $shouldUpdateCluster = @()
-        $shouldUpdateCluster += ($null -ne $this.HAEnabled -and $this.HAEnabled -ne $cluster.HAEnabled)
-        $shouldUpdateCluster += ($null -ne $this.HAAdmissionControlEnabled -and $this.HAAdmissionControlEnabled -ne $cluster.HAAdmissionControlEnabled)
-        $shouldUpdateCluster += ($null -ne $this.HAFailoverLevel -and $this.HAFailoverLevel -ne $cluster.HAFailoverLevel)
-
-        if ($this.HAIsolationResponse -ne [HAIsolationResponse]::Unset) {
-            if ($null -ne $cluster.HAIsolationResponse) {
-                $shouldUpdateCluster += ($this.HAIsolationResponse.ToString() -ne $cluster.HAIsolationResponse.ToString())
-            }
-            else {
-                $shouldUpdateCluster += $true
-            }
-        }
-
-        if ($this.HARestartPriority -ne [HARestartPriority]::Unset) {
-            if ($null -ne $cluster.HARestartPriority) {
-                $shouldUpdateCluster += ($this.HARestartPriority.ToString() -ne $cluster.HARestartPriority.ToString())
-            }
-            else {
-                $shouldUpdateCluster += $true
-            }
-        }
+        $shouldUpdateCluster = @(
+            $this.ShouldUpdateDscResourceSetting('HAEnabled', $cluster.HAEnabled, $this.HAEnabled),
+            $this.ShouldUpdateDscResourceSetting('HAAdmissionControlEnabled', $cluster.HAAdmissionControlEnabled, $this.HAAdmissionControlEnabled),
+            $this.ShouldUpdateDscResourceSetting('HAFailoverLevel', $cluster.HAFailoverLevel, $this.HAFailoverLevel),
+            $this.ShouldUpdateDscResourceSetting('HAIsolationResponse', [string] $cluster.HAIsolationResponse, $this.HAIsolationResponse.ToString()),
+            $this.ShouldUpdateDscResourceSetting('HARestartPriority', [string] $cluster.HARestartPriority, $this.HARestartPriority.ToString())
+        )
 
         return ($shouldUpdateCluster -Contains $true)
     }

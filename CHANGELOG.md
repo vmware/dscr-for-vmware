@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.64 - 2020-05-07
+### Changed
+- Extended **BaseDSC** class with helper methods that determine if a DSC Resource is in a _desired state_.
+- Refactored the **Test()** method of each DSC Resource in the **VMware.vSphereDSC** module to use the helper methods from the **BaseDSC** class.
+
 ## 2.1.0.63 - 2020-04-15
 ### Added
 - Added **DatastoreCluster** DSC Resource.
