@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.66 - 2020-05-13
+### Added
+- Added **DatastoreClusterAddDatastore** DSC Resource.
+- Added Unit Tests for **DatastoreClusterAddDatastore** DSC Resource.
+- Added Integration Tests for **DatastoreClusterAddDatastore** DSC Resource.
+- Added Documentation and example Configurations for **DatastoreClusterAddDatastore** DSC Resource.
+
+### Changed
+- Extended **InventoryUtil** class with **GetDatastoreCluster()**.
+
 ## 2.1.0.65 - 2020-05-07
 ### Added
 - Introduced **InventoryUtil** class.
