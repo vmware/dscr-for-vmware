@@ -27,15 +27,15 @@ Invoke-TestSetup
 
 try {
     InModuleScope -ModuleName $script:ModuleName {
-        $script:DscResourceName = 'DatastoreClusterDatastore'
+        $script:DscResourceName = 'DatastoreClusterAddDatastore'
 
-        . (Join-Path -Path $PSScriptRoot -ChildPath 'DatastoreClusterDatastore.Mocks.Data.ps1')
-        . (Join-Path -Path $PSScriptRoot -ChildPath 'DatastoreClusterDatastore.Mocks.ps1')
+        . (Join-Path -Path $PSScriptRoot -ChildPath 'DatastoreClusterAddDatastore.Mocks.Data.ps1')
+        . (Join-Path -Path $PSScriptRoot -ChildPath 'DatastoreClusterAddDatastore.Mocks.ps1')
 
         Describe "$script:DscResourceName\Set" -Tag 'Set' {
             BeforeAll {
                 # Arrange
-                New-MocksForDatastoreClusterDatastoreDscResource
+                New-MocksForDatastoreClusterAddDatastoreDscResource
             }
 
             Context 'When error occurs while adding Datastores to Datastore Cluster' {
@@ -105,7 +105,7 @@ try {
         Describe "$script:DscResourceName\Test" -Tag 'Test' {
             BeforeAll {
                 # Arrange
-                New-MocksForDatastoreClusterDatastoreDscResource
+                New-MocksForDatastoreClusterAddDatastoreDscResource
             }
 
             Context 'When Datastores should be added to Datastore Cluster' {
@@ -154,7 +154,7 @@ try {
         Describe "$script:DscResourceName\Get" -Tag 'Get' {
             BeforeAll {
                 # Arrange
-                New-MocksForDatastoreClusterDatastoreDscResource
+                New-MocksForDatastoreClusterAddDatastoreDscResource
 
                 $dscResourceProperties = New-MocksInGet
                 $dscResource = New-Object -TypeName $script:DscResourceName -Property $dscResourceProperties

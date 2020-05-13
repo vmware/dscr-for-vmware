@@ -1,4 +1,4 @@
-# DatastoreClusterDatastore
+# DatastoreClusterAddDatastore
 
 ## Parameters
 
@@ -23,7 +23,7 @@ The resource is used to add Datastores to the specified Datastore Cluster.
 Adds Datastores **DscDatastoreOne** and **DscDatastoreTwo** to Datastore Cluster **DscDatastoreCluster** located in Datacenter **Datacenter**.
 
 ```powershell
-Configuration DatastoreClusterDatastore_AddDatastoresToDatastoreCluster_Config {
+Configuration DatastoreClusterAddDatastore_AddDatastoresToDatastoreCluster_Config {
     Param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -39,7 +39,7 @@ Configuration DatastoreClusterDatastore_AddDatastoresToDatastoreCluster_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node localhost {
-        DatastoreClusterDatastore DatastoreClusterDatastore {
+        DatastoreClusterAddDatastore DatastoreClusterAddDatastore {
             Server = $Server
             Credential = $Credential
             DatacenterName = 'Datacenter'

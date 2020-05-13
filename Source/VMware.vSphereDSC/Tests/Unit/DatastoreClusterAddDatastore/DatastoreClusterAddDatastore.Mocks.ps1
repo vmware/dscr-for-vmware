@@ -14,10 +14,10 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-function New-DatastoreClusterDatastoreDscResourceProperties {
+function New-DatastoreClusterAddDatastoreDscResourceProperties {
     [OutputType([System.Collections.Hashtable])]
 
-    $DatastoreClusterDatastoreDscResourceProperties = @{
+    $DatastoreClusterAddDatastoreDscResourceProperties = @{
         Server = $script:Constants.VIServer
         Credential = $script:Credential
         DatacenterName = $script:Constants.DatacenterName
@@ -26,10 +26,10 @@ function New-DatastoreClusterDatastoreDscResourceProperties {
         DatastoreClusterLocation = [string]::Empty
     }
 
-    $DatastoreClusterDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties
 }
 
-function New-MocksForDatastoreClusterDatastoreDscResource {
+function New-MocksForDatastoreClusterAddDatastoreDscResource {
     $viServerMock = $script:VIServer
     $inventoryRootFolderMock = $script:InventoryRootFolder
     $datacenterMock = $script:Datacenter
@@ -89,8 +89,8 @@ function New-MocksForDatastoreClusterDatastoreDscResource {
 function New-MocksWhenErrorOccursWhileAddingDatastoresToDatastoreCluster {
     [OutputType([System.Collections.Hashtable])]
 
-    $DatastoreClusterDatastoreDscResourceProperties = New-DatastoreClusterDatastoreDscResourceProperties
-    $DatastoreClusterDatastoreDscResourceProperties.DatastoreNames = $script:Constants.DatastoreNames
+    $DatastoreClusterAddDatastoreDscResourceProperties = New-DatastoreClusterAddDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties.DatastoreNames = $script:Constants.DatastoreNames
 
     $datastoresMock = $script:Datastores
 
@@ -108,14 +108,14 @@ function New-MocksWhenErrorOccursWhileAddingDatastoresToDatastoreCluster {
 
     Mock -CommandName 'Move-Datastore' -MockWith { throw }.GetNewClosure() -Verifiable
 
-    $DatastoreClusterDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties
 }
 
 function New-MocksWhenNoErrorOccursWhileAddingDatastoresToDatastoreCluster {
     [OutputType([System.Collections.Hashtable])]
 
-    $DatastoreClusterDatastoreDscResourceProperties = New-DatastoreClusterDatastoreDscResourceProperties
-    $DatastoreClusterDatastoreDscResourceProperties.DatastoreNames = $script:Constants.DatastoreNames
+    $DatastoreClusterAddDatastoreDscResourceProperties = New-DatastoreClusterAddDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties.DatastoreNames = $script:Constants.DatastoreNames
 
     $datastoresMock = $script:Datastores
 
@@ -133,14 +133,14 @@ function New-MocksWhenNoErrorOccursWhileAddingDatastoresToDatastoreCluster {
 
     Mock -CommandName 'Move-Datastore' -MockWith { return $null }.GetNewClosure() -Verifiable
 
-    $DatastoreClusterDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties
 }
 
 function New-MocksWhenDatastoresShouldBeAddedToDatastoreCluster {
     [OutputType([System.Collections.Hashtable])]
 
-    $DatastoreClusterDatastoreDscResourceProperties = New-DatastoreClusterDatastoreDscResourceProperties
-    $DatastoreClusterDatastoreDscResourceProperties.DatastoreNames = $script:Constants.DatastoreNames
+    $DatastoreClusterAddDatastoreDscResourceProperties = New-DatastoreClusterAddDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties.DatastoreNames = $script:Constants.DatastoreNames
 
     $datastoresMock = $script:Datastores
 
@@ -156,14 +156,14 @@ function New-MocksWhenDatastoresShouldBeAddedToDatastoreCluster {
     }
     Mock @getDatastoreMockParams
 
-    $DatastoreClusterDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties
 }
 
 function New-MocksWhenDatastoresShouldNotBeAddedToDatastoreCluster {
     [OutputType([System.Collections.Hashtable])]
 
-    $DatastoreClusterDatastoreDscResourceProperties = New-DatastoreClusterDatastoreDscResourceProperties
-    $DatastoreClusterDatastoreDscResourceProperties.DatastoreNames = @($script:Constants.DatastoreThreeName)
+    $DatastoreClusterAddDatastoreDscResourceProperties = New-DatastoreClusterAddDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties.DatastoreNames = @($script:Constants.DatastoreThreeName)
 
     $datastoresMock = @($script:DatastoreThree)
 
@@ -179,13 +179,13 @@ function New-MocksWhenDatastoresShouldNotBeAddedToDatastoreCluster {
     }
     Mock @getDatastoreMockParams
 
-    $DatastoreClusterDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties
 }
 
 function New-MocksInGet {
     [OutputType([System.Collections.Hashtable])]
 
-    $DatastoreClusterDatastoreDscResourceProperties = New-DatastoreClusterDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties = New-DatastoreClusterAddDatastoreDscResourceProperties
 
     $datastoresMock = $script:Datastores
 
@@ -200,5 +200,5 @@ function New-MocksInGet {
     }
     Mock @getDatastoreMockParams
 
-    $DatastoreClusterDatastoreDscResourceProperties
+    $DatastoreClusterAddDatastoreDscResourceProperties
 }

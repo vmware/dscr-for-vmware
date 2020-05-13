@@ -36,7 +36,7 @@ Param(
 )
 
 <#
-    The DatastoreClusterDatastore DSC Resource Integration Tests require a vCenter Server with at
+    The DatastoreClusterAddDatastore DSC Resource Integration Tests require a vCenter Server with at
     least one Datacenter and at least one VMHost located in that Datacenter.
 #>
 
@@ -52,7 +52,7 @@ $newObjectParamsForCredential = @{
 }
 $script:Credential = New-Object @newObjectParamsForCredential
 
-$script:DscResourceName = 'DatastoreClusterDatastore'
+$script:DscResourceName = 'DatastoreClusterAddDatastore'
 $script:ConfigurationsPath = Join-Path -Path $PSScriptRoot -ChildPath "$($script:DscResourceName)_Config.ps1"
 
 . "$PSScriptRoot\$script:DscResourceName.Integration.Tests.Helpers.ps1"
@@ -70,7 +70,7 @@ $script:ConfigurationData = @{
             VmfsDatastoreDscResourceIds = @('[VmfsDatastore]VmfsDatastoreOne', '[VmfsDatastore]VmfsDatastoreTwo')
             VmfsDatastoreOneDscResourceName = 'VmfsDatastoreOne'
             VmfsDatastoreTwoDscResourceName = 'VmfsDatastoreTwo'
-            DatastoreClusterDatastoreDscResourceName = 'DatastoreClusterDatastore'
+            DatastoreClusterAddDatastoreDscResourceName = 'DatastoreClusterAddDatastore'
             DatastoreClusterName = 'DscDatastoreCluster'
             DatastoreClusterLocation = [string]::Empty
             DatacenterName = $script:Datacenter.Name
@@ -187,16 +187,16 @@ Describe "$($script:DscResourceName)_Integration" {
             }
 
             # Act
-            $DatastoreClusterDatastoreDscResource = Get-DscConfiguration -Verbose:$true -ErrorAction Stop | Where-Object @whereObjectParams
+            $DatastoreClusterAddDatastoreDscResource = Get-DscConfiguration -Verbose:$true -ErrorAction Stop | Where-Object @whereObjectParams
 
             # Assert
-            $DatastoreClusterDatastoreDscResource.Server | Should -Be $script:ConfigurationData.AllNodes.Server
-            $DatastoreClusterDatastoreDscResource.DatacenterName | Should -Be $script:ConfigurationData.AllNodes.DatacenterName
-            $DatastoreClusterDatastoreDscResource.DatacenterLocation | Should -Be $script:ConfigurationData.AllNodes.DatacenterLocation
-            $DatastoreClusterDatastoreDscResource.DatastoreClusterName | Should -Be $script:ConfigurationData.AllNodes.DatastoreClusterName
-            $DatastoreClusterDatastoreDscResource.DatastoreClusterLocation | Should -Be $script:ConfigurationData.AllNodes.DatastoreClusterLocation
+            $DatastoreClusterAddDatastoreDscResource.Server | Should -Be $script:ConfigurationData.AllNodes.Server
+            $DatastoreClusterAddDatastoreDscResource.DatacenterName | Should -Be $script:ConfigurationData.AllNodes.DatacenterName
+            $DatastoreClusterAddDatastoreDscResource.DatacenterLocation | Should -Be $script:ConfigurationData.AllNodes.DatacenterLocation
+            $DatastoreClusterAddDatastoreDscResource.DatastoreClusterName | Should -Be $script:ConfigurationData.AllNodes.DatastoreClusterName
+            $DatastoreClusterAddDatastoreDscResource.DatastoreClusterLocation | Should -Be $script:ConfigurationData.AllNodes.DatastoreClusterLocation
 
-            $actualDatastoreNames = $DatastoreClusterDatastoreDscResource.DatastoreNames | Sort-Object
+            $actualDatastoreNames = $DatastoreClusterAddDatastoreDscResource.DatastoreNames | Sort-Object
             $expectedDatastoreNames = $script:ConfigurationData.AllNodes.VmfsDatastoreNames | Sort-Object
             $actualDatastoreNames | Should -Be $expectedDatastoreNames
         }

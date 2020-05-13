@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 [DscResource()]
-class DatastoreClusterDatastore : BaseDSC {
+class DatastoreClusterAddDatastore : BaseDSC {
     <#
     .DESCRIPTION
 
@@ -137,10 +137,10 @@ class DatastoreClusterDatastore : BaseDSC {
         }
     }
 
-    [DatastoreClusterDatastore] Get() {
+    [DatastoreClusterAddDatastore] Get() {
         try {
             Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [DatastoreClusterDatastore]::new()
+            $result = [DatastoreClusterAddDatastore]::new()
 
             $this.ConnectVIServer()
 

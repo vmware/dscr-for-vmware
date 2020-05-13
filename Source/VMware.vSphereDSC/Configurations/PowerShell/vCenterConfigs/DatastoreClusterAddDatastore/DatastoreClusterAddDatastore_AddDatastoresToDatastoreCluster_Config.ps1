@@ -57,11 +57,11 @@ $script:ConfigurationData = @{
 Adds Datastores 'DscDatastoreOne' and 'DscDatastoreTwo' to
 Datastore Cluster 'DscDatastoreCluster' located in Datacenter 'Datacenter'.
 #>
-Configuration DatastoreClusterDatastore_AddDatastoresToDatastoreCluster_Config {
+Configuration DatastoreClusterAddDatastore_AddDatastoresToDatastoreCluster_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
     Node $AllNodes.NodeName {
-        DatastoreClusterDatastore DatastoreClusterDatastore {
+        DatastoreClusterAddDatastore DatastoreClusterAddDatastore {
             Server = $AllNodes.Server
             Credential = $AllNodes.Credential
             DatacenterName = 'Datacenter'
@@ -73,4 +73,4 @@ Configuration DatastoreClusterDatastore_AddDatastoresToDatastoreCluster_Config {
     }
 }
 
-DatastoreClusterDatastore_AddDatastoresToDatastoreCluster_Config -ConfigurationData $script:ConfigurationData
+DatastoreClusterAddDatastore_AddDatastoresToDatastoreCluster_Config -ConfigurationData $script:ConfigurationData
