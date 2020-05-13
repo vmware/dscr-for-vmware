@@ -43,6 +43,7 @@ class InventoryUtil {
     hidden [string] $CouldNotFindDatacenterMessage = "Could not find Datacenter {0} located in Folder {1}."
     hidden [string] $CouldNotFindFolderMessage = "Could not find Folder {0} located in Folder {1}."
     hidden [string] $CouldNotFindInventoryItemMessage = "Could not find Inventory Item {0} located in Inventory Item {1}."
+    hidden [string] $CouldNotFindDatastoreClusterMessage = "Could not find Datastore Cluster {0} located in Folder {1}."
 
     <#
     .DESCRIPTION
@@ -352,5 +353,37 @@ class InventoryUtil {
         }
 
         return $inventoryItem
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the Datastore Cluster with the specified name located in the specified Folder.
+    #>
+    [PSObject] GetDatastoreCluster($datastoreClusterName, $folder) {
+        $getDatastoreClusterParams = @{
+            Server = $this.VIServer
+            Name = $datastoreClusterName
+            Location = $folder
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        $whereObjectParams = @{
+            FilterScript = {
+                $_.ExtensionData.Parent -eq $folder.ExtensionData.MoRef
+            }
+        }
+
+        <#
+            Multiple Datastore Clusters with the same name can be present in a Datacenter. So we need to filter
+            by the direct Parent Folder of the Datastore Cluster to retrieve the desired one.
+        #>
+        $datastoreCluster = Get-DatastoreCluster @getDatastoreClusterParams | Where-Object @whereObjectParams
+        if ($null -eq $datastoreCluster -and $this.Ensure -eq [Ensure]::Present) {
+            throw ($this.CouldNotFindDatastoreClusterMessage -f $datastoreClusterName, $folder.Name)
+        }
+
+        return $datastoreCluster
     }
 }
