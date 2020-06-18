@@ -40,7 +40,7 @@ class InventoryUtil {
 
     hidden [string] $CouldNotRetrieveRootFolderMessage = "Could not retrieve Inventory Root Folder of vCenter Server {0}. For more information: {1}"
     hidden [string] $CouldNotRetrieveDatacenterRootFolderMessage = "Could not retrieve {0} of Datacenter {1}. For more information: {2}"
-    hidden [string] $CouldNotRetrieveVDSwitchMessage = "Could not retrieve VDSwitch {0}. For more information: {2}"
+    hidden [string] $CouldNotRetrieveVDSwitchMessage = "Could not retrieve VDSwitch {0}. For more information: {1}"
     hidden [string] $CouldNotFindDatacenterMessage = "Could not find Datacenter {0} located in Folder {1}."
     hidden [string] $CouldNotFindFolderMessage = "Could not find Folder {0} located in Folder {1}."
     hidden [string] $CouldNotFindInventoryItemMessage = "Could not find Inventory Item {0} located in Inventory Item {1}."
