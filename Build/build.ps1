@@ -347,7 +347,7 @@ $script:PsdContent | Out-File -FilePath $script:PsdPath -Encoding Default
 Register-PSRepository -Default -ErrorAction SilentlyContinue
 
 # Installs Pester.
-Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck
+Install-Module -Name Pester -RequiredVersion 4.10.1 -Scope CurrentUser -Force -SkipPublisherCheck
 
 # Runs all unit tests in the module.
 $script:ModuleFolderPath = (Get-Module $script:ModuleName -ListAvailable).ModuleBase
