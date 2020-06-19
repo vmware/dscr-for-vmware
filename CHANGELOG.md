@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.67 - 2020-06-19
+### Added
+- Added **VMHostVdsNic** DSC Resource.
+- Added Unit Tests for **VMHostVdsNic** DSC Resource.
+- Added Integration Tests for **VMHostVdsNic** DSC Resource.
+- Added Documentation and example Configurations for **VMHostVdsNic** DSC Resource.
+
+### Changed
+- Extended **InventoryUtil** class with **GetVDSwitch()**.
+- Updated the build procedure to install the latest **Pester v4** released version.
+
 ## 2.1.0.66 - 2020-05-13
 ### Added
 - Added **DatastoreClusterAddDatastore** DSC Resource.
