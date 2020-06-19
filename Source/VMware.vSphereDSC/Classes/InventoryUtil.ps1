@@ -40,6 +40,7 @@ class InventoryUtil {
 
     hidden [string] $CouldNotRetrieveRootFolderMessage = "Could not retrieve Inventory Root Folder of vCenter Server {0}. For more information: {1}"
     hidden [string] $CouldNotRetrieveDatacenterRootFolderMessage = "Could not retrieve {0} of Datacenter {1}. For more information: {2}"
+    hidden [string] $CouldNotRetrieveVDSwitchMessage = "Could not retrieve VDSwitch {0}. For more information: {1}"
     hidden [string] $CouldNotFindDatacenterMessage = "Could not find Datacenter {0} located in Folder {1}."
     hidden [string] $CouldNotFindFolderMessage = "Could not find Folder {0} located in Folder {1}."
     hidden [string] $CouldNotFindInventoryItemMessage = "Could not find Inventory Item {0} located in Inventory Item {1}."
@@ -385,5 +386,44 @@ class InventoryUtil {
         }
 
         return $datastoreCluster
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the VDSwitch with the specified name from the server if it exists.
+    If the VDSwitch does not exist and Ensure is set to 'Absent', $null is returned.
+    Otherwise the method throws an exception.
+    #>
+    [PSObject] GetVDSwitch($vdSwitchName) {
+        <#
+            The Verbose logic here is needed to suppress the Verbose output of the Import-Module cmdlet
+            when importing the 'VMware.VimAutomation.Vds' Module.
+        #>
+        $savedVerbosePreference = $global:VerbosePreference
+        $global:VerbosePreference = 'SilentlyContinue'
+
+        $getVDSwitchParams = @{
+            Server = $this.VIServer
+            Name = $vdSwitchName
+            Verbose = $false
+        }
+
+        if ($this.Ensure -eq [Ensure]::Absent) {
+            $getVDSwitchParams.ErrorAction = 'SilentlyContinue'
+        }
+        else {
+            $getVDSwitchParams.ErrorAction = 'Stop'
+        }
+
+        try {
+            return Get-VDSwitch @getVDSwitchParams
+        }
+        catch {
+            throw ($this.CouldNotRetrieveVDSwitchMessage -f $vdSwitchName, $_.Exception.Message)
+        }
+        finally {
+            $global:VerbosePreference = $savedVerbosePreference
+        }
     }
 }
