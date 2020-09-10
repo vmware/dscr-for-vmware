@@ -41,22 +41,10 @@ Description = 'This PowerShell module contains DSC Resources for vSphere.'
 PowerShellVersion = '5.1'
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @(
-@{ "ModuleName" = "VMware.VimAutomation.Vds"; "ModuleVersion" = "11.2.0.12483615" },
-@{ "ModuleName" = "VMware.VimAutomation.Storage"; "ModuleVersion" = "11.5.0.14901686" }
-)
-
-# Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @()
-
-# Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+RequiredModules = @()
 
 # Variables to export from this module
 VariablesToExport = '*'
-
-# Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
 
 # DSC resources to export from this module
 DscResourcesToExport = @('Datacenter', 'DatacenterFolder', 'DatastoreCluster', 'DatastoreClusterAddDatastore', 'DRSRule', 'Folder', 'NfsUser', 'PowerCLISettings', 'vCenterSettings', 'vCenterStatistics', 'vCenterVMHost', 'VDPortGroup', 'VDSwitch', 'VDSwitchVMHost', 'VMHostAccount', 'VMHostAdvancedSettings', 'VMHostAgentVM', 'VMHostAuthentication', 'VMHostCache', 'VMHostConfiguration', 'VMHostDnsSettings', 'VMHostFirewallRuleset', 'VMHostIScsiHba', 'VMHostIScsiHbaTarget', 'VMHostNtpSettings', 'VMHostPciPassthrough', 'VMHostPermission', 'VMHostPowerPolicy', 'VMHostRole', 'VMHostSatpClaimRule', 'VMHostScsiLun', 'VMHostScsiLunPath', 'VMHostService', 'VMHostSettings', 'VMHostSyslog', 'VMHostTpsSettings', 'NfsDatastore', 'VmfsDatastore', 'VMHostVssPortGroup', 'VMHostVssPortGroupSecurity', 'VMHostVssPortGroupShaping', 'VMHostVssPortGroupTeaming', 'VMHostAcceptanceLevel', 'VMHostDCUIKeyboard', 'VMHostNetworkCoreDump', 'VMHostSharedSwapSpace', 'VMHostSNMPAgent', 'VMHostSoftwareDevice', 'VMHostVMKernelActiveDumpFile', 'VMHostVMKernelActiveDumpPartition', 'VMHostVMKernelDumpFile', 'VMHostVMKernelModule', 'VMHostvSANNetworkConfiguration', 'VMHostVDSwitchMigration', 'VMHostVssMigration', 'VMHostPhysicalNic', 'VMHostVdsNic', 'VMHostVssNic', 'VMHostIPRoute', 'VMHostGraphics', 'VMHostGraphicsDevice', 'VMHostVss', 'VMHostVssBridge', 'VMHostVssSecurity', 'VMHostVssShaping', 'VMHostVssTeaming', 'DrsCluster', 'HACluster')
