@@ -43,6 +43,8 @@ There are two ways to install the VMware.vSphereDSC Module: Download it from the
 
 ```powershell
  Install-Module -Name VMware.vSphereDSC
+ Install-Module -Name VMware.VimAutomation.Vds -RequiredVersion 11.2.0.12483615
+ Install-Module -Name VMware.VimAutomation.Storage -RequiredVersion 11.5.0.14901686
 ```
 
 ### Download it from [Releases](https://github.com/vmware/dscr-for-vmware/releases)

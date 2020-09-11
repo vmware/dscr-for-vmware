@@ -41,7 +41,10 @@ Description = 'This PowerShell module contains DSC Resources for vSphere.'
 PowerShellVersion = '5.1'
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @()
+RequiredModules = @(
+    @{ "ModuleName" = "VMware.VimAutomation.Vds"; "ModuleVersion" = "11.2.0.12483615" },
+    @{ "ModuleName" = "VMware.VimAutomation.Storage"; "ModuleVersion" = "11.5.0.14901686" }
+)
 
 # Variables to export from this module
 VariablesToExport = '*'
