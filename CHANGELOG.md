@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.68 - 2020-09-14
+### Changed
+- Updated **VMware.vSphereDSC** module manifest contents by removing **FunctionsToExport**, **CmdletsToExport** and **AliasesToExport**.
+
+### Removed
+- Removed the required **PowerCLI** modules that are dependencies of the **VMware.vSphereDSC** module from RequiredModules.ps1
+
 ## 2.1.0.67 - 2020-06-19
 ### Added
 - Added **VMHostVdsNic** DSC Resource.
