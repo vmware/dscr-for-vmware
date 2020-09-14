@@ -15,9 +15,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    The required modules are removed due to an issue with using the module in multiple runspaces.
-    View the installation section in Readme for installing dependencies
-#> 
+    The RequiredModules were added to enable installing the module with all needed dependencies.
+    We are facing problems with Invoke-DSCResource cmdlet on PowerShell 7.0 related to PowerCLI inability to work in multiple PowerShell runspaces. 
+    Removing RequiredModules is a workaround of this PowerCLI bug that allows vSphere.DSC Resources to be invoked with PS7.0 Invoke-DSCResource.
+    The disadvantage though is PowerCLI has to be installed separately as a prerequisite.
+#>
 RequiredModules = @(
     #@{ "ModuleName" = "VMware.VimAutomation.Vds"; "ModuleVersion" = "11.2.0.12483615" },
     #@{ "ModuleName" = "VMware.VimAutomation.Storage"; "ModuleVersion" = "11.5.0.14901686" }
