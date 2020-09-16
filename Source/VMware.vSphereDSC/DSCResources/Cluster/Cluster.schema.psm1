@@ -124,7 +124,8 @@ Configuration Cluster {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $haClusterProperties -NullableProperties $nullableHAClusterProperties
-    New-DscResourceBlock -ResourceName 'HACluster' -Properties $haClusterProperties
+    $resBlock = New-DscResourceBlock -ResourceName 'HACluster' -Properties $haClusterProperties
+	$resBlock.Invoke($haClusterProperties)
 
     # Constructs DrsCluster Resource Block.
     $nullableDrsClusterProperties = @{
@@ -146,5 +147,6 @@ Configuration Cluster {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $drsClusterProperties -NullableProperties $nullableDrsClusterProperties
-    New-DscResourceBlock -ResourceName 'DrsCluster' -Properties $drsClusterProperties
+    $resBlock = New-DscResourceBlock -ResourceName 'DrsCluster' -Properties $drsClusterProperties
+	$resBlock.Invoke($drsClusterProperties)
 }
