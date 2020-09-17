@@ -161,8 +161,8 @@ Configuration StandardPortGroup {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssPortGroupProperties -NullableProperties $nullableVMHostVssPortGroupProperties
-    $resBlock = New-DscResourceBlock -ResourceName 'VMHostVssPortGroup' -Properties $vmHostVssPortGroupProperties
-	$resBlock.Invoke($vmHostVssPortGroupProperties)
+    $dscResourceBlock = New-DscResourceBlock -ResourceName 'VMHostVssPortGroup' -Properties $vmHostVssPortGroupProperties
+    $dscResourceBlock.Invoke($vmHostVssPortGroupProperties)
 
     # Constructs VMHostVssPortGroupShaping Resource Block.
     $nullableVMHostVssPortGroupShapingProperties = @{
@@ -181,8 +181,8 @@ Configuration StandardPortGroup {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssPortGroupShapingProperties -NullableProperties $nullableVMHostVssPortGroupShapingProperties
-    $resBlock = New-DscResourceBlock -ResourceName 'VMHostVssPortGroupShaping' -Properties $vmHostVssPortGroupShapingProperties
-	$resBlock.Invoke($vmHostVssPortGroupShapingProperties)
+    $dscResourceBlock = New-DscResourceBlock -ResourceName 'VMHostVssPortGroupShaping' -Properties $vmHostVssPortGroupShapingProperties
+    $dscResourceBlock.Invoke($vmHostVssPortGroupShapingProperties)
 
     # Constructs VMHostVssPortGroupSecurity Resource Block.
     $nullableVMHostVssPortGroupSecurityProperties = @{
@@ -203,8 +203,8 @@ Configuration StandardPortGroup {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssPortGroupSecurityProperties -NullableProperties $nullableVMHostVssPortGroupSecurityProperties
-    $resBlock = New-DscResourceBlock -ResourceName 'VMHostVssPortGroupSecurity' -Properties $vmHostVssPortGroupSecurityProperties
-	$resBlock.Invoke($vmHostVssPortGroupSecurityProperties)
+    $dscResourceBlock = New-DscResourceBlock -ResourceName 'VMHostVssPortGroupSecurity' -Properties $vmHostVssPortGroupSecurityProperties
+    $dscResourceBlock.Invoke($vmHostVssPortGroupSecurityProperties)
 
     # Constructs VMHostVssPortGroupTeaming Resource Block.
     $nullableVMHostVssPortGroupTeamingProperties = @{
@@ -231,6 +231,6 @@ Configuration StandardPortGroup {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssPortGroupTeamingProperties -NullableProperties $nullableVMHostVssPortGroupTeamingProperties
-    $resBlock = New-DscResourceBlock -ResourceName 'VMHostVssPortGroupTeaming' -Properties $vmHostVssPortGroupTeamingProperties
-	$resBlock.Invoke($vmHostVssPortGroupTeamingProperties)
+    $dscResourceBlock = New-DscResourceBlock -ResourceName 'VMHostVssPortGroupTeaming' -Properties $vmHostVssPortGroupTeamingProperties
+    $dscResourceBlock.Invoke($vmHostVssPortGroupTeamingProperties)
 }

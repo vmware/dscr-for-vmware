@@ -136,8 +136,8 @@ Configuration StandardSwitch {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssProperties -NullableProperties $nullableVMHostVssProperties
-    $resBlock = New-DscResourceBlock -ResourceName 'VMHostVss' -Properties $vmHostVssProperties
-	$resBlock.Invoke($vmHostVssProperties)
+    $dscResourceBlock = New-DscResourceBlock -ResourceName 'VMHostVss' -Properties $vmHostVssProperties
+    $dscResourceBlock.Invoke($vmHostVssProperties)
 
     # Constructs VMHostVssBridge Resource Block.
     $nullableVMHostVssBridgeProperties = @{
@@ -156,8 +156,8 @@ Configuration StandardSwitch {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssBridgeProperties -NullableProperties $nullableVMHostVssBridgeProperties
-    $resBlock = New-DscResourceBlock -ResourceName 'VMHostVssBridge' -Properties $vmHostVssBridgeProperties
-	$resBlock.Invoke($vmHostVssBridgeProperties)
+    $dscResourceBlock = New-DscResourceBlock -ResourceName 'VMHostVssBridge' -Properties $vmHostVssBridgeProperties
+    $dscResourceBlock.Invoke($vmHostVssBridgeProperties)
 
     # Constructs VMHostVssShaping Resource Block.
     $nullableVMHostVssShapingProperties = @{
@@ -176,8 +176,8 @@ Configuration StandardSwitch {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssShapingProperties -NullableProperties $nullableVMHostVssShapingProperties
-    $resBlock = New-DscResourceBlock -ResourceName 'VMHostVssShaping' -Properties $vmHostVssShapingProperties
-	$resBlock.Invoke($vmHostVssShapingProperties)
+    $dscResourceBlock = New-DscResourceBlock -ResourceName 'VMHostVssShaping' -Properties $vmHostVssShapingProperties
+    $dscResourceBlock.Invoke($vmHostVssShapingProperties)
 
     # Constructs VMHostVssSecurity Resource Block.
     $nullableVMHostVssSecurityProperties = @{
@@ -195,8 +195,8 @@ Configuration StandardSwitch {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssSecurityProperties -NullableProperties $nullableVMHostVssSecurityProperties
-    $resBlock = New-DscResourceBlock -ResourceName 'VMHostVssSecurity' -Properties $vmHostVssSecurityProperties
-	$resBlock.Invoke($vmHostVssSecurityProperties)
+    $dscResourceBlock = New-DscResourceBlock -ResourceName 'VMHostVssSecurity' -Properties $vmHostVssSecurityProperties
+    $dscResourceBlock.Invoke($vmHostVssSecurityProperties)
 
     # Constructs VMHostVssTeaming Resource Block.
     $nullableVMHostVssTeamingProperties = @{
@@ -217,6 +217,6 @@ Configuration StandardSwitch {
     }
 
     Push-NullablePropertiesToDscResourceBlock -ResourceBlockProperties $vmHostVssTeamingProperties -NullableProperties $nullableVMHostVssTeamingProperties
-    $resBlock = New-DscResourceBlock -ResourceName 'VMHostVssTeaming' -Properties $vmHostVssTeamingProperties
-	$resBlock.Invoke($vmHostVssTeamingProperties)
+    $dscResourceBlock = New-DscResourceBlock -ResourceName 'VMHostVssTeaming' -Properties $vmHostVssTeamingProperties
+    $dscResourceBlock.Invoke($vmHostVssTeamingProperties)
 }

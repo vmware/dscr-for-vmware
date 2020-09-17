@@ -75,7 +75,12 @@ function New-DscResourceBlock {
 
     $stringBuilder.AppendLine("}") | Out-Null
 
-	# the scriptBlock gets returned so that it can be invoked in the caller's scope
+    <#
+        The scriptBlock gets returned so that it can be invoked in the caller's scope.
+        The earlier implementation of the scriptBlock getting invoked in this function
+        was causing problems with custom defined functions for the DSC Resources,
+        because they and other script variables can't be seen in this scope.
+    #>
     [ScriptBlock]::Create($stringBuilder.ToString())
 }
 
