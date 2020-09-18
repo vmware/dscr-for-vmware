@@ -60,22 +60,28 @@ function New-DscResourceBlock {
 
     $stringBuilder = [System.Text.StringBuilder]::new()
 
-    $stringBuilder.AppendLine("Param(")
-    $stringBuilder.AppendLine("    [Parameter(Mandatory = `$true)]")
-    $stringBuilder.AppendLine("    [hashtable]")
-    $stringBuilder.AppendLine("    `$Parameters")
-    $stringBuilder.AppendLine(")")
+    $stringBuilder.AppendLine("Param(") | Out-Null
+    $stringBuilder.AppendLine("    [Parameter(Mandatory = `$true)]") | Out-Null
+    $stringBuilder.AppendLine("    [hashtable]") | Out-Null
+    $stringBuilder.AppendLine("    `$Parameters") | Out-Null
+    $stringBuilder.AppendLine(")") | Out-Null
 
-    $stringBuilder.Append([System.Environment]::NewLine)
-    $stringBuilder.AppendLine("$ResourceName $ResourceName {")
+    $stringBuilder.Append([System.Environment]::NewLine) | Out-Null
+    $stringBuilder.AppendLine("$ResourceName $ResourceName {") | Out-Null
 
     foreach($propertyName in $Properties.Keys) {
-        $stringBuilder.AppendLine("    $propertyName = `$Parameters['$propertyName']")
+        $stringBuilder.AppendLine("    $propertyName = `$Parameters['$propertyName']") | Out-Null
     }
 
-    $stringBuilder.AppendLine("}")
+    $stringBuilder.AppendLine("}") | Out-Null
 
-    [ScriptBlock]::Create($stringBuilder.ToString()).Invoke($Properties)
+    <#
+        The scriptBlock gets returned so that it can be invoked in the caller's scope.
+        The earlier implementation of the scriptBlock getting invoked in this function
+        was causing problems with custom defined functions for the DSC Resources,
+        because they and other script variables can't be seen in this scope.
+    #>
+    [ScriptBlock]::Create($stringBuilder.ToString())
 }
 
 <#
