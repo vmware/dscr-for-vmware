@@ -20,7 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 RootModule = 'VMware.vSphereDSC.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.1.0.68'
+ModuleVersion = '2.1.0.69'
 
 # ID used to uniquely identify this module
 GUID = '664b57b4-bd8d-4a56-9984-278f7fe10cf8'
@@ -41,6 +41,12 @@ Description = 'This PowerShell module contains DSC Resources for vSphere.'
 PowerShellVersion = '5.1'
 
 # Modules that must be imported into the global environment prior to importing this module
+<#
+    The RequiredModules were added to enable installing the module with all needed dependencies.
+    We are facing problems with Invoke-DSCResource cmdlet on PowerShell 7.0 related to PowerCLI inability to work in multiple PowerShell runspaces. 
+    Removing RequiredModules is a workaround of this PowerCLI bug that allows vSphere.DSC Resources to be invoked with PS7.0 Invoke-DSCResource.
+    The disadvantage though is PowerCLI has to be installed separately as a prerequisite.
+#>
 <#
     The RequiredModules were added to enable installing the module with all needed dependencies.
     We are facing problems with Invoke-DSCResource cmdlet on PowerShell 7.0 related to PowerCLI inability to work in multiple PowerShell runspaces. 

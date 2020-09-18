@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.69 - 2020-09-18
+### Changed
+- Changed the implementation of the **New-DscResourceBlock()** in **VMware.vSphereDSC.CompositeResourcesHelper.ps1** to return the created **DscResourceBlock** instead of invoking it inside the function.
+
 ## 2.1.0.68 - 2020-09-14
 ### Changed
 - Updated **VMware.vSphereDSC** module manifest contents by removing **FunctionsToExport**, **CmdletsToExport** and **AliasesToExport**.
