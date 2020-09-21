@@ -40,19 +40,13 @@ Description = 'This PowerShell module contains DSC Resources for vSphere.'
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.1'
 
+<#
+    The RequiredModules were added to enable installing the module with all needed dependencies.
+    We are facing problems with Invoke-DSCResource cmdlet on PowerShell 7.0 related to PowerCLI inability to work in multiple PowerShell runspaces. 
+    Removing RequiredModules is a workaround of this PowerCLI bug that allows vSphere.DSC Resources to be invoked with PS7.0 Invoke-DSCResource.
+    The disadvantage though is PowerCLI has to be installed separately as a prerequisite.
+#>
 # Modules that must be imported into the global environment prior to importing this module
-<#
-    The RequiredModules were added to enable installing the module with all needed dependencies.
-    We are facing problems with Invoke-DSCResource cmdlet on PowerShell 7.0 related to PowerCLI inability to work in multiple PowerShell runspaces. 
-    Removing RequiredModules is a workaround of this PowerCLI bug that allows vSphere.DSC Resources to be invoked with PS7.0 Invoke-DSCResource.
-    The disadvantage though is PowerCLI has to be installed separately as a prerequisite.
-#>
-<#
-    The RequiredModules were added to enable installing the module with all needed dependencies.
-    We are facing problems with Invoke-DSCResource cmdlet on PowerShell 7.0 related to PowerCLI inability to work in multiple PowerShell runspaces. 
-    Removing RequiredModules is a workaround of this PowerCLI bug that allows vSphere.DSC Resources to be invoked with PS7.0 Invoke-DSCResource.
-    The disadvantage though is PowerCLI has to be installed separately as a prerequisite.
-#>
 RequiredModules = @(
     #@{ "ModuleName" = "VMware.VimAutomation.Vds"; "ModuleVersion" = "11.2.0.12483615" },
     #@{ "ModuleName" = "VMware.VimAutomation.Storage"; "ModuleVersion" = "11.5.0.14901686" }
