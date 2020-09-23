@@ -625,6 +625,7 @@ try {
 
                 $vmHostAccountMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostAccountScriptBlock))
                 $viServerForESXiHostMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:viServerForESXiHostScriptBlock))
+                $rolePermissionMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rolePermissionScriptBlock))
 
                 Mock -CommandName Get-VMHostAccount -MockWith $vmHostAccountMock -ModuleName $script:moduleName
                 Mock -CommandName Connect-VIServer -MockWith $viServerForESXiHostMock `
@@ -632,6 +633,7 @@ try {
                                                                       $Password -eq $script:constants.AccountPassword } `
                                                    -ModuleName $script:moduleName
                 Mock -CommandName Disconnect-VIServer -MockWith { return $null } -ModuleName $script:moduleName
+                Mock -CommandName Get-VIPermission -MockWith $rolePermissionMock -ModuleName $script:moduleName
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
             }
@@ -753,8 +755,10 @@ try {
                 $script:resourceProperties.Description = $script:constants.Description
 
                 $vmHostAccountMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:vmHostAccountScriptBlock))
+                $rolePermissionMock = [ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($script:rolePermissionScriptBlock))
 
                 Mock -CommandName Get-VMHostAccount -MockWith $vmHostAccountMock -ModuleName $script:moduleName
+                Mock -CommandName Get-VIPermission -MockWith $rolePermissionMock -ModuleName $script:moduleName
 
                 $resource = New-Object -TypeName $script:resourceName -Property $script:resourceProperties
             }
@@ -851,12 +855,12 @@ try {
                 $script:resourceProperties.Remove('Password')
             }
 
-            It 'Should return $true' {
+            It 'Should return $false' {
                 # Act
                 $result = $resource.Test()
 
                 # Assert
-                $result | Should -Be $true
+                $result | Should -Be $false
             }
         }
 

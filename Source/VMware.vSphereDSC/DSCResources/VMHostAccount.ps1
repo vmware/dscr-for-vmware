@@ -188,7 +188,7 @@ class VMHostAccount : BaseDSC {
         #>
         if ($null -ne $this.AccountPassword) {
             $connectVIServerParams = @{
-                Server = $this.Connection
+                Server = $this.Server
                 User = $this.Id
                 Password = $this.AccountPassword
                 ErrorAction = 'SilentlyContinue'
