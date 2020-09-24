@@ -61,7 +61,9 @@ class VMHostAccount : BaseDSC {
 
     [void] Set() {
         try {
+            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
             $vmHostAccount = $this.GetVMHostAccount()
 
@@ -81,33 +83,45 @@ class VMHostAccount : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [bool] Test() {
         try {
+            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
             $vmHostAccount = $this.GetVMHostAccount()
 
+            $result = $null
+
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $vmHostAccount) {
-                    return $false
+                    $result = $false
                 }
-
-                return !$this.ShouldUpdateVMHostAccount($vmHostAccount) -or !$this.ShouldCreateAcountPermission($vmHostAccount)
+                else {
+                    $result = if ($this.ShouldUpdateVMHostAccount($vmHostAccount) -or $this.ShouldCreateAcountPermission($vmHostAccount)) { $false } else { $true }
+                }
             }
             else {
-                return ($null -eq $vmHostAccount)
+                $result = ($null -eq $vmHostAccount)
             }
+
+            $this.WriteDscResourceState($result)
+
+            return $result
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
     [VMHostAccount] Get() {
         try {
+            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
             $result = [VMHostAccount]::new()
             $result.Server = $this.Server
 
@@ -121,6 +135,7 @@ class VMHostAccount : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
         }
     }
 
@@ -130,7 +145,14 @@ class VMHostAccount : BaseDSC {
     Returns the VMHost Account if it exists, otherwise returns $null.
     #>
     [PSObject] GetVMHostAccount() {
-        return Get-VMHostAccount -Server $this.Connection -Id $this.Id -ErrorAction SilentlyContinue
+        $getVMHostAccountParams = @{
+            Server = $this.Connection
+            Id = $this.Id
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        return Get-VMHostAccount @getVMHostAccountParams
     }
 
     <#
@@ -139,7 +161,15 @@ class VMHostAccount : BaseDSC {
     Checks if a new Permission with the passed Role needs to be created for the specified VMHost Account.
     #>
     [bool] ShouldCreateAcountPermission($vmHostAccount) {
-        $existingPermission = Get-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -ErrorAction SilentlyContinue
+        $getVIPermissionParams = @{
+            Server = $this.Connection
+            Entity = $this.Server
+            Principal = $vmHostAccount
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        $existingPermission = Get-VIPermission @getVIPermissionParams
 
         return ($null -eq $existingPermission)
     }
@@ -157,13 +187,28 @@ class VMHostAccount : BaseDSC {
         the desired Password is not equal to the current Password of the Account.
         #>
         if ($null -ne $this.AccountPassword) {
-            $hostConnection = Connect-VIServer -Server $this.Server -User $this.Id -Password $this.AccountPassword -ErrorAction SilentlyContinue
+            $connectVIServerParams = @{
+                Server = $this.Server
+                User = $this.Id
+                Password = $this.AccountPassword
+                ErrorAction = 'SilentlyContinue'
+                Verbose = $false
+            }
+
+            $hostConnection = Connect-VIServer @connectVIServerParams
 
             if ($null -eq $hostConnection) {
                 return $true
             }
             else {
-                Disconnect-VIServer -Server $hostConnection -Confirm:$false
+                $disconnectVIServerParams = @{
+                    Server = $hostConnection
+                    ErrorAction = 'SilentlyContinue'
+                    Verbose = $false
+                    Confirm = $false
+                }
+
+                Disconnect-VIServer @disconnectVIServerParams
             }
         }
 
@@ -192,6 +237,7 @@ class VMHostAccount : BaseDSC {
         $vmHostAccountParams.Server = $this.Connection
         $vmHostAccountParams.Confirm = $false
         $vmHostAccountParams.ErrorAction = 'Stop'
+        $vmHostAccountParams.Verbose = $false
 
         $this.PopulateVMHostAccountParams($vmHostAccountParams, $this.AccountPasswordParameterName, $this.AccountPassword)
         $this.PopulateVMHostAccountParams($vmHostAccountParams, $this.DescriptionParameterName, $this.Description)
@@ -205,13 +251,28 @@ class VMHostAccount : BaseDSC {
     Creates a new Permission with the passed Role for the specified VMHost Account.
     #>
     [void] CreateAccountPermission($vmHostAccount) {
-        $accountRole = Get-VIRole -Server $this.Connection -Name $this.Role -ErrorAction SilentlyContinue
+        $getVIRoleParams = @{
+            Server = $this.Connection
+            Name = $this.Role
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+
+        $accountRole = Get-VIRole @getVIRoleParams
         if ($null -eq $accountRole) {
             throw "The passed role $($this.Role) is not present on the server."
         }
 
         try {
-            New-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -Role $accountRole -ErrorAction Stop
+            $newVIPermissionParams = @{
+                Server = $this.Connection
+                Entity = $this.Server
+                Principal = $vmHostAccount
+                Role = $accountRole
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+            New-VIPermission @newVIPermissionParams
         }
         catch {
             throw "Cannot assign role $($this.Role) to account $($vmHostAccount.Name). For more information: $($_.Exception.Message)"
@@ -266,7 +327,15 @@ class VMHostAccount : BaseDSC {
     #>
     [void] RemoveVMHostAccount($vmHostAccount) {
         try {
-            $vmHostAccount | Remove-VMHostAccount -Server $this.Connection -Confirm:$false -ErrorAction Stop
+            $removeVMHostAccountParams = @{
+                Server = $this.Connection
+                HostAccount = $vmHostAccount
+                ErrorAction = 'Stop'
+                Verbose = $false
+                Confirm = $false
+            }
+
+            Remove-VMHostAccount @removeVMHostAccountParams
         }
         catch {
             throw "Cannot remove VMHost Account $($this.Id). For more information: $($_.Exception.Message)"
@@ -280,7 +349,15 @@ class VMHostAccount : BaseDSC {
     #>
     [void] PopulateResult($vmHostAccount, $result) {
         if ($null -ne $vmHostAccount) {
-            $permission = Get-VIPermission -Server $this.Connection -Entity $this.Server -Principal $vmHostAccount -ErrorAction SilentlyContinue
+            $getVIPermissionParams = @{
+                Server = $this.Connection
+                Entity = $this.Server
+                Principal = $vmHostAccount
+                ErrorAction = 'SilentlyContinue'
+                Verbose = $false
+            }
+
+            $permission = Get-VIPermission @getVIPermissionParams
 
             $result.Id = $vmHostAccount.Id
             $result.Ensure = [Ensure]::Present
