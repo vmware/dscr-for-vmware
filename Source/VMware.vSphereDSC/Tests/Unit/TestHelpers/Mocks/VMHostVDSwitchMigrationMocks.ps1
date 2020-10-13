@@ -23,6 +23,7 @@ function New-VMHostVDSwitchMigrationProperties {
         Credential = $script:credential
         VMHostName = $script:constants.VMHostAddedToDistributedSwitchOneName
         VdsName = $script:constants.DistributedSwitchName
+        MigratePhysicalNicsOnly = $true
     }
 
     $vmHostVDSwitchMigrationProperties
