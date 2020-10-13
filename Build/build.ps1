@@ -331,16 +331,16 @@ function Update-RequiredModules {
 
 <#
     .Synopsis
-    Runs the unit tests of the specified module.
+    Runs the unit tests for the specified module.
 
     .Description
-    Runs the unit tests of the specified module. The tests are searched in a Tests\Unit path in the module directory.
-    The code coverage result of the tests gets updated in the ReadMe document. 
+    Runs the unit tests for the specified module. The tests should be located in a Tests\Unit location in the modules directory.
+    The code coverage result of the tests gets updated in the README.md document. 
 
     .Parameter ModuleName
     Name of the module whose unit tests should be run
 #>
-function Start-UnitTests {
+function Invoke-UnitTests {
     [CmdletBinding()]
     [OutputType([void])]
     Param (
@@ -376,7 +376,7 @@ function Start-UnitTests {
 <#
     .Description
     Start the building process for the VMware.PSDesiredStateConfiguration module and
-    retunrs the updated module version
+    returns the updated module version
 #>
 function Start-PsDesiredStateConfigurationBuild {
     [CmdletBinding()]
@@ -390,7 +390,7 @@ function Start-PsDesiredStateConfigurationBuild {
     $buildModuleFilePath = Join-Path -Path $moduleRoot -ChildPath "$moduleName.build.ps1"
     . $buildModuleFilePath
 
-    Start-UnitTests $moduleName
+    Invoke-UnitTests $moduleName
 
     $psdPath = Join-Path -Path $moduleRoot -ChildPath "$($moduleName).psd1"
 
@@ -401,9 +401,9 @@ function Start-PsDesiredStateConfigurationBuild {
 <#
     .Description
     Start the building process for the VMware.vSphereDsc module and
-    retunrs the updated module version
+    returns the updated module version
 #>
-function Start-VsphereDscBuild {
+function Start-vSphereDSCBuild {
     [CmdletBinding()]
     [OutputType([string])]
     Param()
@@ -424,7 +424,7 @@ function Start-VsphereDscBuild {
     $psdContent = Update-RequiredModules -ModuleManifestContent $psdContent -RequiredModules $emptyRequiredModulesArray
     $psdContent | Out-File -FilePath $psdPath -Encoding Default
 
-    Start-UnitTests $ModuleName
+    Invoke-UnitTests $ModuleName
 
     if ($env:TRAVIS_EVENT_TYPE -eq 'push' -and $env:TRAVIS_BRANCH -eq 'master') {
         # Retrieving the 'RequiredModules' array from the RequiredModules file.
@@ -543,7 +543,7 @@ Install-Module -Name Pester -RequiredVersion 4.10.1 -Scope CurrentUser -Force -S
 
 $psdscModuleVersion = Start-PsDesiredStateConfigurationBuild
 
-$vSpheremoduleVersion = Start-VsphereDscBuild
+$vSpheremoduleVersion = Start-vSphereDSCBuild
 
 $moduleNameToVersion = @{
     'VMware.vSphereDSC' = $vSpheremoduleVersion
