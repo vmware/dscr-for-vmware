@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.1.0.72 - 2020-10-13
+### Added
+- Added new **MigratePhysicalNicsOnly** parameter to **VMHostVDSwitchMigration** DSC Resource.
+
+### Changed
+- Fixed the bug with migrating Physical Network Adapters to VDSwitch. The Physical Network Adapters should be migrated with the VMKernel Network Adapters to avoid connectivity loss for the ESXi during the migration.
+
 ## 2.1.0.71 - 2020-09-24
 ### Changed
 - Fixed the bug with determiting the desired state, when the **ESXi** account password should be changed.
