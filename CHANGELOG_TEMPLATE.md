@@ -1,4 +1,4 @@
-## Module Version - Date in the following format: yyyy-mm-dd
+## Module Name Module Version - Date in the following format: yyyy-mm-dd
 ### Added
 - Description of the new things added for this version. For example new DSC Resources, new Unit and Integration Tests, TestSetup, Configurations, Documentation and so on.
 
