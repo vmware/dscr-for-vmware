@@ -7,7 +7,7 @@ The following table describes the required dependencies for running VMware.vSphe
 
  **Required dependency**   | **Minimum version**
 -------------------------- | -------------------
-`PowerShell`               | 5.1 (Core is supported)
+`PowerShell`               | 5.1 or 7.0
 `PowerCLI`                 | 10.1.1
 
 For information on how to install PowerShell, please visit [Installing Windows PowerShell](https://docs.microsoft.com/en-us/skypeforbusiness/set-up-your-computer-for-windows-powershell/download-and-install-windows-powershell-5-1).
