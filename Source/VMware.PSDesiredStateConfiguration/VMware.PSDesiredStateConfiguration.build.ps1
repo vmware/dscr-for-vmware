@@ -58,7 +58,7 @@ $scriptPaths = @(
 )
 
 # license with comment brackets
-$licensePath = (Join-Path (Split-Path (Split-Path $PSScriptRoot)) 'LICENSE.TXT')
+$licensePath = (Join-Path (Split-Path (Split-Path $PSScriptRoot)) 'LICENSE.txt')
 $license = Get-Content $licensePath -Raw
 $license = $license.Trim()
 $license = "<`#" + [System.Environment]::NewLine + $license + [System.Environment]::NewLine + "`#>"
@@ -68,7 +68,6 @@ Get-ChildItem -Filter '*.ps1' -Path $scriptPaths -Recurse | ForEach-Object {
     EnsureLicenseInFile $_ $license
 }
 
-<#
 # add required dsc resource path to the modules path for the unit tests
 $moduleRoot = $PSScriptRoot
 
@@ -81,4 +80,3 @@ $env:PSModulePath += ":$configPath"
 $psd1Path = Join-Path $PSScriptRoot 'VMware.PSDesiredStateConfiguration.psd1'
 
 Update-ModuleVersion $psd1Path
-#>
