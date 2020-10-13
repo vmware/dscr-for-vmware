@@ -11,6 +11,7 @@
 | **PhysicalNicNames** | Mandatory | string[] | The names of the Physical Network Adapters that should be part of the vSphere Distributed Switch. ||
 | **VMKernelNicNames** | Optional | string[] | The names of the VMKernel Network Adapters that should be part of the vSphere Distributed Switch. ||
 | **PortGroupNames** | Optional | string[] | The names of the Port Groups to which the specified VMKernel Network Adapters should be attached. Accepts either one Port Group or the same number of Port Groups as the number of VMKernel Network Adapters specified. If one Port Group is specified, all Adapters are attached to that Port Group. If the same number of Port Groups as the number of VMKernel Network Adapters are specified, the first Adapter is attached to the first Port Group, the second Adapter to the second Port Group, and so on. ||
+| **MigratePhysicalNicsOnly** | Optional | bool | Specifies whether the user wants to migrate only the Physical Network Adapters when no VMKernel Network Adapters are specified. Migrating a Physical Network Adapter that takes care of the Management traffic without a VMKernel Network Adapter could result in an ESXi network connectivity loss. ||
 
 ## Description
 
@@ -20,7 +21,7 @@ The resource is used to migrate Physical Network Adapters and VMKernel Network A
 
 ### Example 1
 
-Migrates Physical Network Adapters **vmnic0** and **vmnic1** to vSphere Distributed Switch **MyVDSwitch**.
+Migrates Physical Network Adapters **vmnic0** and **vmnic1** to vSphere Distributed Switch **MyVDSwitch**. The **MigratePhysicalNicsOnly** parameter is specified to ensure that the user allows the migration to occur without passing any VMKernel Network Adapters which can result in an ESXi network connectivity loss.
 
 ```powershell
 Configuration VMHostVDSwitchMigration_MigratePhysicalNics_Config {
@@ -50,6 +51,7 @@ Configuration VMHostVDSwitchMigration_MigratePhysicalNics_Config {
             VMHostName = $VMHostName
             VdsName = 'MyVDSwitch'
             PhysicalNicNames = @('vmnic0', 'vmnic1')
+            MigratePhysicalNicsOnly = $true
         }
     }
 }

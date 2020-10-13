@@ -36,11 +36,24 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     [DscProperty()]
     [string[]] $PortGroupNames
 
+    <#
+    .DESCRIPTION
+
+    Specifies whether the user wants to migrate only the Physical Network
+    Adapters when no VMKernel Network Adapters are specified. Migrating a
+    Physical Network Adapter that takes care of the Management traffic without a
+    VMKernel Network Adapter could result in an ESXi network connectivity loss.
+    #>
+    [DscProperty()]
+    [nullable[bool]] $MigratePhysicalNicsOnly
+
     hidden [string] $RetrieveVDSwitchMessage = "Retrieving VDSwitch {0} from vCenter {1}."
     hidden [string] $CreateVDPortGroupMessage = "Creating VDPortGroup {0} on VDSwitch {1}."
     hidden [string] $AddVDSwitchToVMHostMessage = "Adding VDSwitch {0} to VMHost {1}."
     hidden [string] $AddPhysicalNicsToVDSwitchMessage = "Migrating Physical Network Adapters {0} to VDSwitch {1}."
     hidden [string] $AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage = "Migrating Physical Network Adapters {0} and VMKernel Network Adapters {1} to VDSwitch {2}."
+
+    hidden [string] $MigratePhysicalNicsOnlyNotSpecified = "When migrating Physical Network Adapters without VMKernel Network Adapters, the MigratePhysicalNicsOnly parameter should be specified in order for the migration to occur."
 
     hidden [string] $CouldNotRetrieveVDSwitchMessage = "Could not retrieve VDSwitch {0}. For more information: {1}"
     hidden [string] $CouldNotCreateVDPortGroupMessage = "Could not create VDPortGroup {0} on VDSwitch {1}. For more information: {2}"
@@ -384,6 +397,11 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     Adds the Physical Network Adapters to the specified Distributed Switch.
     #>
     [void] AddPhysicalNetworkAdaptersToDistributedSwitch($physicalNetworkAdapters, $distributedSwitch) {
+        if ($null -eq $this.MigratePhysicalNicsOnly -or !$this.MigratePhysicalNicsOnly) {
+            Write-WarningLog -Message $this.MigratePhysicalNicsOnlyNotSpecified
+            return
+        }
+
         try {
             Write-VerboseLog -Message $this.AddPhysicalNicsToVDSwitchMessage -Arguments @(
                 ($physicalNetworkAdapters.Name -Join ', '),
