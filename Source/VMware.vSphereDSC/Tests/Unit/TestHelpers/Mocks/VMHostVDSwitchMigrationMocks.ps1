@@ -23,6 +23,7 @@ function New-VMHostVDSwitchMigrationProperties {
         Credential = $script:credential
         VMHostName = $script:constants.VMHostAddedToDistributedSwitchOneName
         VdsName = $script:constants.DistributedSwitchName
+        MigratePhysicalNicsOnly = $true
     }
 
     $vmHostVDSwitchMigrationProperties
@@ -128,8 +129,7 @@ function New-MocksWhenTwoConnectedAndOneDisconnectedPhysicalNetworkAdaptersArePa
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterOneMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.ConnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterTwoMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.ConnectedPhysicalNetworkAdapterTwoName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
     Mock -CommandName Get-VMHostNetworkAdapter -MockWith { return $physicalNetworkAdapterThreeMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DisconnectedPhysicalNetworkAdapterOneName -and $VMHost -eq $script:vmHostAddedToDistributedSwitchOne -and $Physical } -Verifiable
-    Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $DistributedSwitch -eq $script:distributedSwitch -and [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] @($script:connectedPhysicalNetworkAdapterOne)) -and !$Confirm } -Verifiable
-    Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { throw }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $DistributedSwitch -eq $script:distributedSwitch -and [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)) -and !$Confirm } -Verifiable
+    Mock -CommandName Add-VDSwitchPhysicalNetworkAdapter -MockWith { throw }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $DistributedSwitch -eq $script:distributedSwitch -and [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] @($script:connectedPhysicalNetworkAdapterOne, $script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)) -and !$Confirm } -Verifiable
 
     $vmHostVDSwitchMigrationProperties
 }
