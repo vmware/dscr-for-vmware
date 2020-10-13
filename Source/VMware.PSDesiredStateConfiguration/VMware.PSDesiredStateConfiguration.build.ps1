@@ -57,13 +57,13 @@ function Update-ModuleVersion {
         [string] $FilePath
     )
 
+    $fileContent = Get-Content $filePath -Raw
     $moduleVersionPattern = "(?<=ModuleVersion = ')(\d*.\d*.\d*.\d*)"
     $moduleVersionMatch = $FileContent | Select-String -Pattern $moduleVersionPattern
+
     [System.Version] $currentVersion = $moduleVersionMatch.Matches[0].Value
 
     $newVersion = (New-Object -TypeName 'System.Version' $currentVersion.Major, $currentVersion.Minor, $currentVersion.Build, ($currentVersion.Revision + 1)).ToString()
-
-    $fileContent = Get-Content $filePath -Raw
 
     ($fileContent -replace $moduleVersionPattern, $newVersion) | Out-File $FilePath
 }
