@@ -30,6 +30,9 @@ class VMHostEntityBaseDSC : BaseDSC {
     #>
     hidden [PSObject] $VMHost
 
+    hidden [string] $RetrieveVMHostMessage = "Retrieving VMHost {0} from vCenter {1}."
+    hidden [string] $CouldNotRetrieveVMHostMessage = "Could not retrieve VMHost {0} from vCenter {1}. For more information: {2}"
+
     <#
     .DESCRIPTION
 
@@ -38,10 +41,17 @@ class VMHostEntityBaseDSC : BaseDSC {
     #>
     [void] RetrieveVMHost() {
         try {
-            $this.VMHost = Get-VMHost -Server $this.Connection -Name $this.VMHostName -ErrorAction Stop
+            Write-VerboseLog -Message $this.RetrieveVMHostMessage -Arguments @($this.VMHostName, $this.Connection.Name)
+            $getVMHostParams = @{
+                Server = $this.Connection
+                Name = $this.VMHostName
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+            $this.VMHost = Get-VMHost @getVMHostParams
         }
         catch {
-            throw "VMHost with name $($this.VMHostName) was not found. For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRetrieveVMHostMessage -f $this.VMHostName, $this.Connection.Name, $_.Exception.Message)
         }
     }
 }
