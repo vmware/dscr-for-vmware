@@ -17,8 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    .Description
-    This graph is used to sort Resources by their 'DependsOn' key in the 'Property' property
+.Description
+This graph is used to sort Resources by their 'DependsOn' key in the 'Property' property
 #>
 class VmwDscResourceGraph {
     [System.Collections.Specialized.OrderedDictionary] 
@@ -33,9 +33,9 @@ class VmwDscResourceGraph {
     }
 
     <#
-        .Description
-        Sorts the resources in the graph so that
-        the resources get ordered based on their dependencies
+    .Description
+    Sorts the resources in the graph so that
+    the resources get ordered based on their dependencies
     #>
     [System.Array] TopologicalSort() {
         # bool array for keeping track of visited resources
@@ -63,8 +63,8 @@ class VmwDscResourceGraph {
     }
 
     <#
-        .Description
-        Uses DFS in order to traverse the graph
+    .Description
+    Uses DFS in order to traverse the graph
     #>
     [void] hidden TopologicalSortUtil(
     [string] $ResKey,
@@ -91,8 +91,8 @@ class VmwDscResourceGraph {
     }
 
     <#
-        .Description
-        Fills $Edges ordered dictionary from $Resources ordered dictionary
+    .Description
+    Fills $Edges ordered dictionary from $Resources ordered dictionary
     #>
     [void] hidden FillEdges() {
         # adjecency list representing dependencies between resources

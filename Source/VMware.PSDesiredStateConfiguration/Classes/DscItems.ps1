@@ -17,8 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    .Description
-    Class that defines a dsc configuration
+.Description
+Class that defines a dsc configuration
 #>
 class VmwDscConfiguration {
     [ValidateNotNullOrEmpty()]
@@ -33,8 +33,8 @@ class VmwDscConfiguration {
 }
 
 <#
-    .Description
-    Class that defines a dsc resource
+.Description
+Class that defines a dsc resource
 #>
 class VmwDscResource {
     [ValidateNotNullOrEmpty()]

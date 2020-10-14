@@ -20,38 +20,38 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 $Script:NestedConfigPostFix = '___Configuration___Func'
 
 <#
-    .Description
-    Compiles a dsc configuration into an object with the name of the configuration and an array of dsc resources
-    
-    .Example
-    Compiling a basic configuration
+.Description
+Compiles a dsc configuration into an object with the name of the configuration and an array of dsc resources
 
-    Configuration Test
+.Example
+Compiling a basic configuration
+
+Configuration Test
+{
+    Import-DscResource -ModuleName MyDscResource
+
+    CustomResource myResource
     {
-        Import-DscResource -ModuleName MyDscResource
-
-        CustomResource myResource
-        {
-            Field = "Test field"
-            Ensure = "Present"
-        }
+        Field = "Test field"
+        Ensure = "Present"
     }
+}
 
-    New-VmwDscConfiguration Test will output
-    [VmwDscConfiguration]@{
-        InstanceName = 'Test'
-        Resource = @(
-            [VmwDscResource]@{
-                InstanceName = 'myResource'
-                ResourceType = 'CustomResource'
-                ModuleName = 'MyDscResource'
-                Property = @{
-                    Field = "Test field"
-                    Ensure = "Present"
-                }
+New-VmwDscConfiguration Test will output
+[VmwDscConfiguration]@{
+    InstanceName = 'Test'
+    Resource = @(
+        [VmwDscResource]@{
+            InstanceName = 'myResource'
+            ResourceType = 'CustomResource'
+            ModuleName = 'MyDscResource'
+            Property = @{
+                Field = "Test field"
+                Ensure = "Present"
             }
-        )
-    }
+        }
+    )
+}
 #>
 function New-VmwDscConfiguration {
     [CmdletBinding()]
@@ -98,9 +98,9 @@ function New-VmwDscConfiguration {
 }
 
 <#
-    .Description
-    Parses and then invokes the configuration with parameters and configuration data
-    to produce an array of Dsc Resources
+.Description
+Parses and then invokes the configuration with parameters and configuration data
+to produce an array of Dsc Resources
 #>
 function GetResourcesFromConfiguration {
     [OutputType([VmwDscResource[]])]
@@ -153,8 +153,8 @@ function GetResourcesFromConfiguration {
 }
 
 <#
-    .Description
-    Invokes the parsed configuration scriptblock and returns an array of resources 
+.Description
+Invokes the parsed configuration scriptblock and returns an array of resources 
 #>
 function InvokeConfiguration {
     [OutputType([VmwDscResource[]])]
@@ -210,8 +210,8 @@ function InvokeConfiguration {
 }
 
 <#
-    .Description
-    Checks for duplicate resource id's and orders dsc resources based on their dependencies
+.Description
+Checks for duplicate resource id's and orders dsc resources based on their dependencies
 #>
 function ParseDscResource {
     [OutputType([VmwDscResource[]])]
@@ -260,9 +260,9 @@ function ParseDscResource {
 }
 
 <#
-    .Description
-    Parses the configuration scriptblock ast inside a configuration command.
-    Adds function definitions for found resources and nested configurations
+.Description
+Parses the configuration scriptblock ast inside a configuration command.
+Adds function definitions for found resources and nested configurations
 #>
 function ParseConfigurationBlock {
     [OutputType([ScriptBlock])]
@@ -331,8 +331,8 @@ function ParseConfigurationBlock {
 }
 
 <#
-    .Description
-    Parses and invokes nested configurations and composite resources
+.Description
+Parses and invokes nested configurations and composite resources
 #>
 function InvokeNestedConfiguration {
     [OutputType([VmwDscResource])]
@@ -403,11 +403,11 @@ function InvokeNestedConfiguration {
 }
 
 <#
-    .Description
-    Function used define Node logic
+.Description
+Function used define Node logic
 
-    .Notes
-    Currently skips the node and only runs the script body within it
+.Notes
+Currently skips the node and only runs the script body within it
 #>
 function VmwNode {
     param (
@@ -426,20 +426,20 @@ function VmwNode {
 }
 
 <#
-    .Synopsis
-    Checks if configuration data is in valid format
+.Synopsis
+Checks if configuration data is in valid format
 
-    .Description
-    The Configuration data is valid if it's in the following format: 
-    1. Is a hashtable
-    2. Has a collection AllNodes
-    3. Allnodes is an collection of Hashtable
-    4. Each element of Allnodes has NodeName
-    5. Node Names are unique for each node
+.Description
+The Configuration data is valid if it's in the following format: 
+1. Is a hashtable
+2. Has a collection AllNodes
+3. Allnodes is an collection of Hashtable
+4. Each element of Allnodes has NodeName
+5. Node Names are unique for each node
 
-    .Notes
-    This logic will be used when Node functionality becomes supported.
-    The requirements of the configurationData are based on Powershell PSDesiredStateConfiguration
+.Notes
+This logic will be used when Node functionality becomes supported.
+The requirements of the configurationData are based on Powershell PSDesiredStateConfiguration
 #>
 function IsConfigurationDataValid {
     [OutputType([bool])]
@@ -510,12 +510,12 @@ function IsConfigurationDataValid {
 }
 
 <#
-    .Synopsis
-    This function is used for Import-DscResource definition
-    .Description
-    This function is used as a Import-DscResource substite.
-    It finds the dsc resource that match the search creteria of resource name, module name and version.
-    The found resource get inserted into a hashtable with key: resource name and value: module of resource
+.Synopsis
+This function is used for Import-DscResource definition
+.Description
+This function is used as a Import-DscResource substite.
+It finds the dsc resource that match the search creteria of resource name, module name and version.
+The found resource get inserted into a hashtable with key: resource name and value: module of resource
 #>
 function ImportDscResource {
     [OutputType([void])]
@@ -567,8 +567,8 @@ function ImportDscResource {
 }
 
 <#
-    .Description
-    Sets functions for invoking regular and composite dsc resource
+.Description
+Sets functions for invoking regular and composite dsc resource
 #>
 function SetResourceHandlerFuncs {
     [OutputType([void])]
@@ -593,13 +593,13 @@ function SetResourceHandlerFuncs {
 }
 
 <#
-    .Synopsis
-    This function is used for Resource function definitions
-    .Description
-    This function is used to create the needed function definitons of the Resources in a dsc configuration.
-    The scriptblock gets parsed into a hashtable, because it contains the properties of the resource (ex. DependsOn, Ensure...).
-    The type of the resource gets found out during runtime by looking up the function name in the PSCallStack.
-    Outputs an object with the parameters, resource name, resource type and module name
+.Synopsis
+This function is used for Resource function definitions
+.Description
+This function is used to create the needed function definitons of the Resources in a dsc configuration.
+The scriptblock gets parsed into a hashtable, because it contains the properties of the resource (ex. DependsOn, Ensure...).
+The type of the resource gets found out during runtime by looking up the function name in the PSCallStack.
+Outputs an object with the parameters, resource name, resource type and module name
 #>
 function GetDscResourceData {
     [OutputType([VmwDscResource])]
@@ -644,23 +644,23 @@ function GetDscResourceData {
 }
 
 <#
-    .Description
-    Replaces the first found opening bracket after SearchString
-    and replaces it with StringToReplace in StringToChange
-    .Example
-    ReplaceBracketWith -StringToChange @"
-    TestResource test 
-    {
+.Description
+Replaces the first found opening bracket after SearchString
+and replaces it with StringToReplace in StringToChange
+.Example
+ReplaceBracketWith -StringToChange @"
+TestResource test 
+{
 
-    }
+}
 "@ `
-    -SearchString 'TestResource test' `
-    -StringToReplaceWith '{'
+-SearchString 'TestResource test' `
+-StringToReplaceWith '{'
 
-    Outputs 
-    TestResource test {
-        
-    }
+Outputs 
+TestResource test {
+    
+}
 #> 
 function ReplaceBracketWith {
     [OutputType([string])]

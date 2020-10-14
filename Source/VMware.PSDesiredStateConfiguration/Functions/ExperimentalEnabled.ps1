@@ -17,9 +17,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    .Description
-    Checks if required Experimental feature is enabled for powershell core users.
-    Windows powershell users do not require the feature to be turned on.
+.Description
+Checks if required Experimental feature is enabled for powershell core users.
+Windows powershell users do not require the feature to be turned on.
 #>
 function CheckForExperimentalFeature {
     if ($PSVersionTable['PsEdition'] -eq 'Core') {

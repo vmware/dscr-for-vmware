@@ -17,8 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    .Description
-    Checks if file contains the required license
+.Description
+Checks if file contains the required license
 #>
 function EnsureLicenseInFile {
     param (
@@ -47,8 +47,8 @@ function EnsureLicenseInFile {
 }
 
 <#
-    .Description
-    Updates the version of the module
+.Description
+Updates the version of the module
 #>
 function Update-ModuleVersion {
     [CmdletBinding()]

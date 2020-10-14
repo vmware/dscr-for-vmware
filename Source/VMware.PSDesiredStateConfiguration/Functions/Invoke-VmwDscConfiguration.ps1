@@ -17,8 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    .Description
-    Invokes the dsc resources of a configuration with 'Get' Dsc method
+.Description
+Invokes the dsc resources of a configuration with 'Get' Dsc method
 #>
 function Get-VmwDscConfiguration {
     [CmdletBinding()]
@@ -39,8 +39,8 @@ function Get-VmwDscConfiguration {
 }
 
 <#
-    .Description
-    Invokes the dsc resources of a configuration with 'Set' Dsc method
+.Description
+Invokes the dsc resources of a configuration with 'Set' Dsc method
 #>
 function Start-VmwDscConfiguration {
     [CmdletBinding()]
@@ -61,10 +61,10 @@ function Start-VmwDscConfiguration {
 }
 
 <#
-    .Description
-    Invokes the resources of a configuration with 'Test' Dsc method.
-    Returns a boolean result that shows if the current state is desired.
-    Use Detailed switch to return an object with state flag and information on resources and their state
+.Description
+Invokes the resources of a configuration with 'Test' Dsc method.
+Returns a boolean result that shows if the current state is desired.
+Use Detailed switch to return an object with state flag and information on resources and their state
 #>
 function Test-VmwDscConfiguration {
     [CmdletBinding()]
@@ -101,8 +101,8 @@ function Test-VmwDscConfiguration {
 }
 
 <#
-    .Description
-    Invokes an array of dsc resource with the given method  
+.Description
+Invokes an array of dsc resource with the given method  
 #>
 function Invoke-VmwDscResources {
     param (
@@ -145,8 +145,8 @@ function Invoke-VmwDscResources {
 }
 
 <#
-    .Description
-    Utility function wraper for invoking dsc resources
+.Description
+Utility function wraper for invoking dsc resources
 #>
 function InvokeDscResourceUtil {
     param (

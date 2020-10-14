@@ -165,14 +165,14 @@ The path to the file containing the Code Coverage badge.
 function Update-CodeCoveragePercentInTextFile {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory = $false)]
-        [int] $CodeCoveragePercent = 0,
-
         [Parameter(Mandatory = $true)]
         [string] $TextFilePath,
 
         [Parameter(Mandatory = $true)]
-        [string] $ModuleName
+        [string] $ModuleName,
+
+        [Parameter(Mandatory = $false)]
+        [int] $CodeCoveragePercent = 0
     )
 
     if ($CodeCoveragePercent -lt 90) {
@@ -330,15 +330,15 @@ function Update-RequiredModules {
 }
 
 <#
-    .Synopsis
-    Runs the unit tests for the specified module.
+.Synopsis
+Runs the unit tests for the specified module.
 
-    .Description
-    Runs the unit tests for the specified module. The tests should be located in a Tests\Unit location in the modules directory.
-    The code coverage result of the tests gets updated in the README.md document. 
+.Description
+Runs the unit tests for the specified module. The tests should be located in a Tests\Unit location in the modules directory.
+The code coverage result of the tests gets updated in the README.md document. 
 
-    .Parameter ModuleName
-    Name of the module whose unit tests should be run
+.Parameter ModuleName
+Name of the module whose unit tests should be run
 #>
 function Invoke-UnitTests {
     [CmdletBinding()]
@@ -374,16 +374,16 @@ function Invoke-UnitTests {
 }
 
 <#
-    .Description
-    Start the building process for the VMware.PSDesiredStateConfiguration module and
-    returns the updated module version
+.Description
+Start the building process for the VMware.PSDesiredStateConfiguration module and
+returns the updated module version
 #>
-function Start-PsDesiredStateConfigurationBuild {
+function Start-PSDesiredStateConfigurationBuild {
     [CmdletBinding()]
     [OutputType([string])]
     Param()
 
-    Write-Host 'VMware.PsDesiredStateConfiguration build started'
+    Write-Host 'VMware.PSDesiredStateConfiguration build started'
 
     $moduleName = 'VMware.PSDesiredStateConfiguration'
     $moduleRoot = Join-Path -Path $script:SourceRoot -ChildPath $moduleName
@@ -399,16 +399,16 @@ function Start-PsDesiredStateConfigurationBuild {
 }
 
 <#
-    .Description
-    Start the building process for the VMware.vSphereDsc module and
-    returns the updated module version
+.Description
+Start the building process for the VMware.vSphereDsc module and
+returns the updated module version
 #>
 function Start-vSphereDSCBuild {
     [CmdletBinding()]
     [OutputType([string])]
     Param()
 
-    Write-Host 'VMware.VsphereDsc build started'
+    Write-Host 'VMware.vSphereDSC build started'
 
     # Updating the content of the psm1 and psd1 files via the build module file.
     $moduleName = 'VMware.vSphereDSC'
@@ -442,11 +442,11 @@ function Start-vSphereDSCBuild {
 }
 
 <#
-    .Synopsis
-    Finds in what modules changes have occured
+.Synopsis
+Finds in what modules changes have occured
 
-    .Description
-    Finds in what modules changes have occured by finding the differences in commit history
+.Description
+Finds in what modules changes have occured by finding the differences in commit history
 #>
 function Find-ChangedModules {
     [CmdletBinding()]
@@ -496,8 +496,8 @@ function Find-ChangedModules {
 }
 
 <#
-    .Description
-    Checks if the changed files are contained in the module
+.Description
+Checks if the changed files are contained in the module
 #>
 function Find-ChangedModulesUtil {
     [OutputType([bool])]
@@ -541,7 +541,7 @@ Register-PSRepository -Default -ErrorAction SilentlyContinue
 # Installs Pester.
 Install-Module -Name Pester -RequiredVersion 4.10.1 -Scope CurrentUser -Force -SkipPublisherCheck
 
-$psdscModuleVersion = Start-PsDesiredStateConfigurationBuild
+$psdscModuleVersion = Start-PSDesiredStateConfigurationBuild
 
 $vSpheremoduleVersion = Start-vSphereDSCBuild
 

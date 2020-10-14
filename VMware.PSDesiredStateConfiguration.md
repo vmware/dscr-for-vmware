@@ -1,10 +1,12 @@
 ## Getting Started
 
-**VMware.PSDesiredStateConfiguration** provides commands to compile and execute **DSC Configuration** without using the DSC Local Configuration Manager. Compiled configuration is stored in memory as PS Object. Set, Get, Test-... cmdlets use Invoke-DSCResource cmdlet of PSDesiredStateConfiguration module to execute/run/process the compiled configuration. This solution allows cross platform support on MacOS and Linux. This module is also designed to work with the existing **DSC Resources** in **VMware.vSphereDSC**.
+**VMware.PSDesiredStateConfiguration** provides a set of commands to compile and execute **DSC Configuration** without using the DSC Local Configuration Manager. Compiled DSC Configurations are stored in memory as PowerShell objects.
+Set, Get, Test-... cmdlets use **Invoke-DSCResource** cmdlet from the **PSDesiredStateConfiguration** module to execute/run/process the compiled configuration.
+This solution allows cross platform support on MacOS and Linux. This module is also designed to work with the existing **DSC Resources** in the **VMware.vSphereDSC** module.
 
 ## Requirements
 
-The following table describes the required dependencies for running VMware.vSphereDSC Resources.
+The following table describes the required dependencies for running VMware.PSDesiredStateConfiguration Resources.
 
  **Required dependency**   | **Minimum version**
 -------------------------- | -------------------
@@ -14,8 +16,8 @@ This module also has additional requirements depending on which version of Power
 
 #### PowerShell 7.0 requirements
 ---
-**VMware.PSDesiredStateConfiguration** uses the **Invoke-DscResource** cmdlet from **PSDesiredStateConfiguration** module to process individual DSC Resources. In **PowerShell 7.0** the **Invoke-DscResource** cmdlet is a experimental feature.
-The Invoke-DscResource cmdlet and it must be enabled with the following command.
+**VMware.PSDesiredStateConfiguration** uses the **Invoke-DscResource** cmdlet from the **PSDesiredStateConfiguration** module to process individual DSC Resources. In **PowerShell 7.0** the **Invoke-DscResource** cmdlet is an experimental feature.
+The Invoke-DscResource cmdlet and it can be enabled with the following command:
 ```
 Enable-ExperimentalFeature PSDesiredStateConfiguration.InvokeDscResource
 ```
@@ -48,9 +50,9 @@ For information on how to enable it read here: [WinRM guide](https://docs.micros
     Get-Module -Name 'VMware.PSDesiredStateConfiguration'
    ```
 
-## Use Overview
+## Overview
 VMware.PSDesiredStateConfiguration works with ps1 configuration files and the general flow is as follow:
-- Compile ps1 DSC configuration and transforms given configuration to a configuration object. The object contains the name of the configuration and an array of sorted DSC Resource by dependencies. Each Resource contains **InstanceName** for name of the resource given in the configuration, **ResourceType** which display the type of resource,  **ModuleName** which displays the module of the resource, **Property** which is a hashtable of properties which are unique to the given resource. Example Configuration object from a given configuration:
+- Compiles a DSC Configuration defined in a PowerShell script file (ps1) and transforms the given DSC Configuration to a configuration object. The object contains the name of the configuration and an array of DSC Resources. Each DSC Resource object contains an **InstanceName** for name of the DSC Resource given in the configuration, a **ResourceType** which display the type of the DSC Resource, a  **ModuleName** which displays the module of the DSC Resource and a **Property** which is a hashtable of properties which are unique for a given DSC Resource. Example Configuration object from a given configuration:
     ```
     Configuration Test
     {
@@ -87,9 +89,66 @@ VMware.PSDesiredStateConfiguration works with ps1 configuration files and the ge
 This cmdlet creates a VmwDscConfiguration object which contains information about the configuration. This object is then used with the other cmdlets in order to perform the three main DSC operations(GET, SET, TEST).
 
 ##### Parameters
-- **ConfigName** - Name of the Configuration to be compied as string
+##### Mandatory
+- **ConfigName** - Name of the Configuration to be compiled as string
+##### Optional
 - **CustomParams** - Represents a hashtable of parameters that are used for the Configuration.
 - **ConfigurationData** - Hashtable of values that are to be used as variables during the configuration execution
+
+#### Examples with the optional parameters
+##### CustomParams example:
+
+The following DSC Configuration depends on a parameter:
+```
+Configuration ConfigurationDataRequired {
+    Param(
+        $SomeValue
+    )
+    Import-DscResource MyResource
+    
+    MyResource res {
+        requredKey = $SomeValue
+    }
+}
+```
+
+In order to supply the required parameter of the DSC Configuration we use the **$CustomParams** parameter.
+
+```
+$newVmwDscConfigParams = @{
+    ConfigName = 'ConfigurationDataRequired'
+    CustomParams = @{
+        someValue = 'sample value'
+    }
+}
+
+$config = New-VmwDscConfiguration @vmwDscConfigParams
+```
+
+##### ConfigurationData example:
+In the following DSC Configuration there is a variable **$someValue** that is used, but it does not have a value assigned to it.
+```
+Configuration ConfigurationDataRequired {
+    Import-DscResource MyResource
+    
+    MyResource res {
+        requredKey = $someValue
+    }
+}
+```
+In order to assign a value to it we must define it in the **ConfigurationData** parameter. This will supply the necessary value to the variable during the compilation of the DSC Configuration.
+```
+$newVmwDscConfigParams = @{
+    ConfigName = 'ConfigurationDataRequired'
+    ConfigurationData = @{
+        someValue = 'sample value'
+    }
+}
+
+$config = New-VmwDscConfiguration @vmwDscConfigParams
+```
+
+---
 ---
 #### Start,Test,Get-VmwDscConfiguration
 These cmdlets work with the PowerShell object created by **New-VmwDscConfiguration** and apply the Set, Test, Get **DSC methods** to the compiled configuration.
@@ -100,9 +159,9 @@ These cmdlets work with the PowerShell object created by **New-VmwDscConfigurati
 ---
 ### Examples
 
-##### Example with [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) from vSphereDsc module
+##### Example with [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) from the vSphereDSC module
 
-1. Use the following vSphereDsc Configuration
+1. Use the following vSphereDSC Configuration
     ```
     Configuration VMHostNtpSettings_Config {
         Import-DscResource -ModuleName VMware.vSphereDSC
