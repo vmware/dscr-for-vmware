@@ -1,7 +1,7 @@
 ## Getting Started
 
 **VMware.PSDesiredStateConfiguration** provides a set of commands to compile and execute **DSC Configuration** without using the DSC Local Configuration Manager. Compiled DSC Configurations are stored in memory as PowerShell objects.
-Set, Get, Test-... cmdlets use **Invoke-DSCResource** cmdlet from the **PSDesiredStateConfiguration** module to execute/run/process the compiled configuration.
+**Start-VmwDscConfiguration**, **Get-VmwDscConfiguration**, **Test-VmwDscConfiguration** cmdlets use **Invoke-DSCResource** cmdlet from the **PSDesiredStateConfiguration** module to execute the compiled configuration.
 This solution allows cross platform support on MacOS and Linux. This module is also designed to work with the existing **DSC Resources** in the **VMware.vSphereDSC** module.
 
 ## Requirements
@@ -17,12 +17,12 @@ This module also has additional requirements depending on which version of Power
 #### PowerShell 7.0 requirements
 ---
 **VMware.PSDesiredStateConfiguration** uses the **Invoke-DscResource** cmdlet from the **PSDesiredStateConfiguration** module to process individual DSC Resources. In **PowerShell 7.0** the **Invoke-DscResource** cmdlet is an experimental feature.
-The Invoke-DscResource cmdlet and it can be enabled with the following command:
+The **Invoke-DscResource** cmdlet and it can be enabled with the following command:
 ```
 Enable-ExperimentalFeature PSDesiredStateConfiguration.InvokeDscResource
 ```
  After executing the command you must restart your powershell session. The command needs to be run only once and the cmdlet will be usable.
- To check if the Invoke-DscResource cmdlet has been enabled correctly run the following command
+ To check if the **Invoke-DscResource** cmdlet has been enabled correctly run the following command
 ```
 Get-Module 'PSDesiredStateConfiguration' -ListAvailable | Select-Object -ExpandProperty ExportedCommands
 ```
