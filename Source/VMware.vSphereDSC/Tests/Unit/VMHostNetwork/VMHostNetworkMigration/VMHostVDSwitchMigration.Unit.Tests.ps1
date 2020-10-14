@@ -59,7 +59,7 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should throw the correct error when one disconnected Physical Network Adapter is passed and Server error occurs during migration' {
                     # Act && Assert
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapter $script:disconnectedPhysicalNetworkAdapterOne to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $($script:disconnectedPhysicalNetworkAdapterOne.Name) to VDSwitch $($script:distributedSwitch.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -125,7 +125,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $vmHostPhysicalNetworkAdaptersToMigrate = @($script:disconnectedPhysicalNetworkAdapterOne, $script:disconnectedPhysicalNetworkAdapterTwo)
 
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $vmHostPhysicalNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $($vmHostPhysicalNetworkAdaptersToMigrate.Name -Join ', ') to VDSwitch $($script:distributedSwitch.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -188,10 +188,10 @@ InModuleScope -ModuleName $script:moduleName {
 
                 It 'Should throw the correct error when two connected and one disconnected Physical Network Adapters are passed and Server error occurs during migration' {
                     # Act && Assert
-                    $vmHostPhysicalNetworkAdaptersToMigrate = @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
+                    $vmHostPhysicalNetworkAdaptersToMigrate = @($script:connectedPhysicalNetworkAdapterOne, $script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
 
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $vmHostPhysicalNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $($vmHostPhysicalNetworkAdaptersToMigrate.Name -Join ', ') to VDSwitch $($script:distributedSwitch.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -210,35 +210,12 @@ InModuleScope -ModuleName $script:moduleName {
                     Assert-VerifiableMock
                 }
 
-                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch and the first connected Physical Network Adapter once' {
+                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch and the Physical Network Adapters once' {
                     # Act
                     $resource.Set()
 
                     # Assert
-                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterOne)
-
-                    $assertMockCalledParams = @{
-                        CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
-                        ParameterFilter = {
-                            $Server -eq $script:viServer -and
-                            $DistributedSwitch -eq $script:distributedSwitch -and
-                            [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
-                            !$Confirm
-                        }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch and the second connected and first disconnected Physical Network Adapters once' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
+                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterOne, $script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
 
                     $assertMockCalledParams = @{
                         CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
@@ -278,9 +255,10 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should throw the correct error when one disconnected Physical Network Adapter, two VMKernel Network Adapters and one Port Group are passed and Server error occurs during migration' {
                     # Act && Assert
                     $vmHostPhysicalNetworkAdaptersToMigrate = @($script:disconnectedPhysicalNetworkAdapterOne)
+                    $vmHostVMKernlNetworkAdaptersToMigrate = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
 
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapter $vmHostPhysicalNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $($vmHostPhysicalNetworkAdaptersToMigrate.Name) and VMKernel Network Adapters $($vmHostVMKernlNetworkAdaptersToMigrate.Name -Join ', ') to VDSwitch $($script:distributedSwitch.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -306,7 +284,6 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne)
                     $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
-                    $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName)
 
                     $assertMockCalledParams = @{
                         CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
@@ -315,7 +292,6 @@ InModuleScope -ModuleName $script:moduleName {
                             $DistributedSwitch -eq $script:distributedSwitch -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostVirtualNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.HostVirtualNic[]] $expectedVMHostVirtualNic) -and
-                            [System.Linq.Enumerable]::SequenceEqual($VirtualNicPortgroup, [string[]] $expectedVirtualNicPortgroup) -and
                             !$Confirm
                         }
                         Exactly = $true
@@ -349,7 +325,6 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne)
                     $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
-                    $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
                     $assertMockCalledParams = @{
                         CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
@@ -358,7 +333,6 @@ InModuleScope -ModuleName $script:moduleName {
                             $DistributedSwitch -eq $script:distributedSwitch -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostVirtualNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.HostVirtualNic[]] $expectedVMHostVirtualNic) -and
-                            [System.Linq.Enumerable]::SequenceEqual($VirtualNicPortgroup, [string[]] $expectedVirtualNicPortgroup) -and
                             !$Confirm
                         }
                         Exactly = $true
@@ -394,7 +368,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $vmKernelNetworkAdaptersToMigrate = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
 
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $vmHostPhysicalNetworkAdaptersToMigrate and $vmKernelNetworkAdaptersToMigrate to Distributed Switch $($script:distributedSwitch.Name). For more information: ScriptHalted"
+                    { $resource.Set() } | Should -Throw "Could not migrate Physical Network Adapters $($vmHostPhysicalNetworkAdaptersToMigrate.Name -Join ', ') and VMKernel Network Adapters $($vmKernelNetworkAdaptersToMigrate.Name -Join ', ') to VDSwitch $($script:distributedSwitch.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -420,7 +394,6 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne, $script:disconnectedPhysicalNetworkAdapterTwo)
                     $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
-                    $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName)
 
                     $assertMockCalledParams = @{
                         CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
@@ -429,7 +402,6 @@ InModuleScope -ModuleName $script:moduleName {
                             $DistributedSwitch -eq $script:distributedSwitch -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostVirtualNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.HostVirtualNic[]] $expectedVMHostVirtualNic) -and
-                            [System.Linq.Enumerable]::SequenceEqual($VirtualNicPortgroup, [string[]] $expectedVirtualNicPortgroup) -and
                             !$Confirm
                         }
                         Exactly = $true
@@ -463,7 +435,6 @@ InModuleScope -ModuleName $script:moduleName {
                     # Assert
                     $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne, $script:disconnectedPhysicalNetworkAdapterTwo)
                     $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
-                    $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
                     $assertMockCalledParams = @{
                         CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
@@ -472,7 +443,6 @@ InModuleScope -ModuleName $script:moduleName {
                             $DistributedSwitch -eq $script:distributedSwitch -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostVirtualNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.HostVirtualNic[]] $expectedVMHostVirtualNic) -and
-                            [System.Linq.Enumerable]::SequenceEqual($VirtualNicPortgroup, [string[]] $expectedVirtualNicPortgroup) -and
                             !$Confirm
                         }
                         Exactly = $true
@@ -499,37 +469,13 @@ InModuleScope -ModuleName $script:moduleName {
                     Assert-VerifiableMock
                 }
 
-                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch and the first connected Physical Network Adapter once' {
+                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch, the two connected and first disconnected Physical Network Adapters, the two VMKernel Network Adapters and the Port Group once' {
                     # Act
                     $resource.Set()
 
                     # Assert
-                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterOne)
-
-                    $assertMockCalledParams = @{
-                        CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
-                        ParameterFilter = {
-                            $Server -eq $script:viServer -and
-                            $DistributedSwitch -eq $script:distributedSwitch -and
-                            [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
-                            !$Confirm
-                        }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch, the second connected and first disconnected Physical Network Adapters, the two VMKernel Network Adapters and the Port Group once' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
+                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterOne, $script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
                     $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
-                    $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName)
 
                     $assertMockCalledParams = @{
                         CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
@@ -538,7 +484,6 @@ InModuleScope -ModuleName $script:moduleName {
                             $DistributedSwitch -eq $script:distributedSwitch -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostVirtualNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.HostVirtualNic[]] $expectedVMHostVirtualNic) -and
-                            [System.Linq.Enumerable]::SequenceEqual($VirtualNicPortgroup, [string[]] $expectedVirtualNicPortgroup) -and
                             !$Confirm
                         }
                         Exactly = $true
@@ -565,37 +510,13 @@ InModuleScope -ModuleName $script:moduleName {
                     Assert-VerifiableMock
                 }
 
-                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch and the first connected Physical Network Adapter once' {
+                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch, the two connected and first disconnected Physical Network Adapters, the two VMKernel Network Adapters and the two Port Groups once' {
                     # Act
                     $resource.Set()
 
                     # Assert
-                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterOne)
-
-                    $assertMockCalledParams = @{
-                        CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
-                        ParameterFilter = {
-                            $Server -eq $script:viServer -and
-                            $DistributedSwitch -eq $script:distributedSwitch -and
-                            [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
-                            !$Confirm
-                        }
-                        Exactly = $true
-                        Times = 1
-                        Scope = 'It'
-                    }
-
-                    Assert-MockCalled @assertMockCalledParams
-                }
-
-                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch, the second connected and first disconnected Physical Network Adapters, the two VMKernel Network Adapters and the two Port Groups once' {
-                    # Act
-                    $resource.Set()
-
-                    # Assert
-                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
+                    $expectedVMHostPhysicalNic = @($script:connectedPhysicalNetworkAdapterOne, $script:connectedPhysicalNetworkAdapterTwo, $script:disconnectedPhysicalNetworkAdapterOne)
                     $expectedVMHostVirtualNic = @($script:vmKernelNetworkAdapterOne, $script:vmKernelNetworkAdapterTwo)
-                    $expectedVirtualNicPortgroup = @($script:constants.PortGroupOneName, $script:constants.PortGroupTwoName)
 
                     $assertMockCalledParams = @{
                         CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
@@ -604,7 +525,6 @@ InModuleScope -ModuleName $script:moduleName {
                             $DistributedSwitch -eq $script:distributedSwitch -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
                             [System.Linq.Enumerable]::SequenceEqual($VMHostVirtualNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.HostVirtualNic[]] $expectedVMHostVirtualNic) -and
-                            [System.Linq.Enumerable]::SequenceEqual($VirtualNicPortgroup, [string[]] $expectedVirtualNicPortgroup) -and
                             !$Confirm
                         }
                         Exactly = $true

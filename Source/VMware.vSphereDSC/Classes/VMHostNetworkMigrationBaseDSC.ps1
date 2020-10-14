@@ -31,6 +31,12 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
     [DscProperty()]
     [string[]] $VMKernelNicNames
 
+    hidden [string] $RetrievePhysicalNicMessage = "Retrieving Physical Network Adapter {0} from VMHost {1}."
+    hidden [string] $RetrieveVMKernelNicMessage = "Retrieving VMKernel Network Adapter {0} from VMHost {1}."
+
+    hidden [string] $CouldNotFindPhysicalNicMessage = "Physical Network Adapter {0} was not found on VMHost {1} and will be ignored."
+    hidden [string] $CouldNotFindVMKernelNicMessage = "VMKernel Network Adapter {0} was not found on VMHost {1}."
+
     <#
     .DESCRIPTION
 
@@ -41,9 +47,19 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
         $physicalNetworkAdapters = @()
 
         foreach ($physicalNetworkAdapterName in $this.PhysicalNicNames) {
-            $physicalNetworkAdapter = Get-VMHostNetworkAdapter -Server $this.Connection -Name $physicalNetworkAdapterName -VMHost $this.VMHost -Physical -ErrorAction SilentlyContinue
+            Write-VerboseLog -Message $this.RetrievePhysicalNicMessage -Arguments @($physicalNetworkAdapterName, $this.VMHost.Name)
+            $getVMHostNetworkAdapterParams = @{
+                Server = $this.Connection
+                Name = $physicalNetworkAdapterName
+                VMHost = $this.VMHost
+                Physical = $true
+                ErrorAction = 'SilentlyContinue'
+                Verbose = $false
+            }
+
+            $physicalNetworkAdapter = Get-VMHostNetworkAdapter @getVMHostNetworkAdapterParams
             if ($null -eq $physicalNetworkAdapter) {
-                Write-WarningLog -Message "The passed Physical Network Adapter {0} was not found and it will be ignored." -Arguments @($physicalNetworkAdapterName)
+                Write-WarningLog -Message $this.CouldNotFindPhysicalNicMessage -Arguments @($physicalNetworkAdapterName, $this.VMHost.Name)
             }
             else {
                 $physicalNetworkAdapters += $physicalNetworkAdapter
@@ -63,12 +79,14 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
         $vmKernelNetworkAdapters = @()
 
         foreach ($vmKernelNetworkAdapterName in $this.VMKernelNicNames) {
+            Write-VerboseLog -Message $this.RetrieveVMKernelNicMessage -Arguments @($vmKernelNetworkAdapterName, $this.VMHost.Name)
             $getVMHostNetworkAdapterParams = @{
                 Server = $this.Connection
                 Name = $vmKernelNetworkAdapterName
                 VMHost = $this.VMHost
                 VMKernel = $true
                 ErrorAction = 'Stop'
+                Verbose = $false
             }
 
             try {
@@ -81,7 +99,7 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
                 Network Adapters and Port Groups will not work: The first Adapter should be attached to the first Port Group,
                 the second Adapter should be attached to the second Port Group, and so on.
                 #>
-                throw "The passed VMKernel Network Adapter $($vmKernelNetworkAdapterName) was not found."
+                throw ($this.CouldNotFindVMKernelNicMessage -f $vmKernelNetworkAdapterName, $this.VMHost.Name)
             }
         }
 

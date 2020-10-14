@@ -55,7 +55,9 @@ $script:configurationData = @{
 
 Migrates Physical Network Adapters 'vmnic0' and 'vmnic1' to vSphere Distributed Switch 'MyVDSwitch'.
 If the specified VMHost is not part of vSphere Distributed Switch 'MyVDSwitch', the DSC Resource adds it to
-'MyVDSwitch' before the migration occurs.
+'MyVDSwitch' before the migration occurs. The 'MigratePhysicalNicsOnly' parameter is specified to ensure that
+the user allows the migration to occur without passing any VMKernel Network Adapters which can result in an
+ESXi network connectivity loss.
 #>
 Configuration VMHostVDSwitchMigration_MigratePhysicalNics_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
@@ -67,6 +69,7 @@ Configuration VMHostVDSwitchMigration_MigratePhysicalNics_Config {
             VMHostName = $AllNodes.VMHostName
             VdsName = 'MyVDSwitch'
             PhysicalNicNames = @('vmnic0', 'vmnic1')
+            MigratePhysicalNicsOnly = $true
         }
     }
 }
