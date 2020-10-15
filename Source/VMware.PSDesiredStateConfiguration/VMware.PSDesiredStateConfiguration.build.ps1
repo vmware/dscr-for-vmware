@@ -91,7 +91,7 @@ $moduleRoot = $PSScriptRoot
 
 $configPath = Join-Path (Join-Path (Join-Path $moduleRoot 'Tests') 'Required Dsc Resources') 'MyDscResource'
 
-$env:PSModulePath += ":$configPath"
+$env:PSModulePath = $env:PSModulePath + "$([System.IO.Path]::PathSeparator)$configPath"
 
 # update version in psd1
 

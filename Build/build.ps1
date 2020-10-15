@@ -353,24 +353,35 @@ function Invoke-UnitTests {
     # Runs all unit tests in the module.
     $moduleFolderPath = (Get-Module $ModuleName -ListAvailable).ModuleBase
     $unitTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Unit'
-    $moduleUnitTestsResult = Invoke-Pester -Path "$unitTestsFolderPath\*" `
-                -CodeCoverage @{ Path = "$ModuleFolderPath\$ModuleName.psm1" } `
-                -PassThru `
-                -EnableExit
 
-    # Gets the coverage percent from the unit tests that were ran.
-    $numberOfCommandsAnalyzed = $moduleUnitTestsResult.CodeCoverage.NumberOfCommandsAnalyzed
-    $numberOfCommandsMissed = $moduleUnitTestsResult.CodeCoverage.NumberOfCommandsMissed
-
-    $coveragePercent = [math]::Floor(100 - (($numberOfCommandsMissed / $numberOfCommandsAnalyzed) * 100))
-
-    $updateCodeCoveragePercentInTextFileParams = @{
-        CodeCoveragePercent = $coveragePercent
-        TextFilePath = $Script:ReadMePath
-        ModuleName = $ModuleName
+    $invokePesterSplatParams = @{
+        Path = "$unitTestsFolderPath\*"
+        PassThru = $true
+        EnableExit = $true
     }
 
-    Update-CodeCoveragePercentInTextFile @updateCodeCoveragePercentInTextFileParams
+    Invoke-Pester @invokePesterSplatParams
+    
+    <#
+        .Notes
+        The code coverage logic is disabled for the time being due to a bug in powershell
+        which increases the time for the tests to execute by a lot.
+        bug link: https://github.com/pester/Pester/issues/1318
+
+        # Gets the coverage percent from the unit tests that were ran.
+        $numberOfCommandsAnalyzed = $moduleUnitTestsResult.CodeCoverage.NumberOfCommandsAnalyzed
+        $numberOfCommandsMissed = $moduleUnitTestsResult.CodeCoverage.NumberOfCommandsMissed
+
+        $coveragePercent = [math]::Floor(100 - (($numberOfCommandsMissed / $numberOfCommandsAnalyzed) * 100))
+
+        $updateCodeCoveragePercentInTextFileParams = @{
+            CodeCoveragePercent = $coveragePercent
+            TextFilePath = $Script:ReadMePath
+            ModuleName = $ModuleName
+        }
+
+        Update-CodeCoveragePercentInTextFile @updateCodeCoveragePercentInTextFileParams
+    #>
 }
 
 <#
@@ -512,6 +523,11 @@ function Find-ChangedModulesUtil {
     )
 
     $os = $PSVersionTable['OS']
+
+    # null check because the OS key is not present on PowerShell 5.1
+    if ([string]::IsNullOrEmpty($os)) {
+        $os = 'Microsoft Windows'
+    }
     
     foreach ($changedFile in $ChangedFiles) {
         if ($os.Contains('Microsoft Windows')) {
@@ -533,7 +549,7 @@ $script:SourceRoot = Join-Path -Path $script:ProjectRoot -ChildPath 'Source'
 $script:ReadMePath = Join-Path -Path $script:ProjectRoot -ChildPath 'README.md'
 $Script:ChangelogDocumentPath = Join-Path -Path $Script:ProjectRoot -ChildPath 'CHANGELOG.md'
 
-$env:PSModulePath = $env:PSModulePath + ":$script:SourceRoot"
+$env:PSModulePath = $env:PSModulePath + "$([System.IO.Path]::PathSeparator)$script:SourceRoot"
 
 # Registeres default PSRepository.
 Register-PSRepository -Default -ErrorAction SilentlyContinue
