@@ -561,10 +561,10 @@ $Script:ChangelogDocumentPath = Join-Path -Path $Script:ProjectRoot -ChildPath '
 $env:PSModulePath = $env:PSModulePath + "$([System.IO.Path]::PathSeparator)$script:SourceRoot"
 
 # Registeres default PSRepository.
-#Register-PSRepository -Default -ErrorAction SilentlyContinue
+Register-PSRepository -Default -ErrorAction SilentlyContinue
 
 # Installs Pester.
-#Install-Module -Name Pester -RequiredVersion 4.10.1 -Scope CurrentUser -Force -SkipPublisherCheck
+Install-Module -Name Pester -RequiredVersion 4.10.1 -Scope CurrentUser -Force -SkipPublisherCheck
 
 $psdscModuleVersion = Start-PSDesiredStateConfigurationBuild
 
