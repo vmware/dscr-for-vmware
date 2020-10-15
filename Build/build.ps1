@@ -335,10 +335,17 @@ Runs the unit tests for the specified module.
 
 .Description
 Runs the unit tests for the specified module. The tests should be located in a Tests\Unit location in the modules directory.
-The code coverage result of the tests gets updated in the README.md document. 
+The code coverage result of the tests gets updated in the README.md document.
+
+.Notes
+The code coverage logic leads to the unit tests running slower.
+Bug link: https://github.com/pester/Pester/issues/1318
 
 .Parameter ModuleName
 Name of the module whose unit tests should be run
+
+.Parameter DisableCodeCoverage
+Disables code coverage for the unit tests
 #>
 function Invoke-UnitTests {
     [CmdletBinding()]
@@ -347,7 +354,10 @@ function Invoke-UnitTests {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $ModuleName
+        $ModuleName,
+
+        [switch]
+        $DisableCodeCoverage
     )
 
     # Runs all unit tests in the module.
@@ -360,18 +370,17 @@ function Invoke-UnitTests {
         EnableExit = $true
     }
 
-    Invoke-Pester @invokePesterSplatParams
-    
-    <#
-        .Notes
-        The code coverage logic is disabled for the time being due to a bug in powershell
-        which increases the time for the tests to execute by a lot.
-        bug link: https://github.com/pester/Pester/issues/1318
+    if($DisableCodeCoverage) {
+        Invoke-Pester @invokePesterSplatParams
+    } else {
+        $invokePesterSplatParams['CodeCoverage'] = @{ Path = "$ModuleFolderPath\$ModuleName.psm1" }
 
-        # Gets the coverage percent from the unit tests that were ran.
+        Invoke-Pester @invokePesterSplatParams
+
         $numberOfCommandsAnalyzed = $moduleUnitTestsResult.CodeCoverage.NumberOfCommandsAnalyzed
         $numberOfCommandsMissed = $moduleUnitTestsResult.CodeCoverage.NumberOfCommandsMissed
 
+        # Gets the coverage percent from the unit tests that were ran.
         $coveragePercent = [math]::Floor(100 - (($numberOfCommandsMissed / $numberOfCommandsAnalyzed) * 100))
 
         $updateCodeCoveragePercentInTextFileParams = @{
@@ -381,7 +390,7 @@ function Invoke-UnitTests {
         }
 
         Update-CodeCoveragePercentInTextFile @updateCodeCoveragePercentInTextFileParams
-    #>
+    }
 }
 
 <#
