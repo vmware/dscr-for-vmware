@@ -330,70 +330,6 @@ function Update-RequiredModules {
 }
 
 <#
-.Synopsis
-Runs the unit tests for the specified module.
-
-.Description
-Runs the unit tests for the specified module. The tests should be located in a Tests\Unit location in the modules directory.
-The code coverage result of the tests gets updated in the README.md document.
-
-.Notes
-The code coverage logic leads to the unit tests running slower.
-Bug link: https://github.com/pester/Pester/issues/1318
-
-.Parameter ModuleName
-Name of the module whose unit tests should be run
-
-.Parameter DisableCodeCoverage
-Disables code coverage for the unit tests
-#>
-function Invoke-UnitTests {
-    [CmdletBinding()]
-    [OutputType([void])]
-    Param (
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $ModuleName,
-
-        [switch]
-        $DisableCodeCoverage
-    )
-
-    # Runs all unit tests in the module.
-    $moduleFolderPath = (Get-Module $ModuleName -ListAvailable).ModuleBase
-    $unitTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Unit'
-
-    $invokePesterSplatParams = @{
-        Path = "$unitTestsFolderPath\*"
-        PassThru = $true
-        EnableExit = $true
-    }
-
-    if($DisableCodeCoverage) {
-        Invoke-Pester @invokePesterSplatParams
-    } else {
-        $invokePesterSplatParams['CodeCoverage'] = @{ Path = "$ModuleFolderPath\$ModuleName.psm1" }
-
-        $moduleUnitTestsResult = Invoke-Pester @invokePesterSplatParams
-
-        $numberOfCommandsAnalyzed = $moduleUnitTestsResult.CodeCoverage.NumberOfCommandsAnalyzed
-        $numberOfCommandsMissed = $moduleUnitTestsResult.CodeCoverage.NumberOfCommandsMissed
-
-        # Gets the coverage percent from the unit tests that were ran.
-        $coveragePercent = [math]::Floor(100 - (($numberOfCommandsMissed / $numberOfCommandsAnalyzed) * 100))
-
-        $updateCodeCoveragePercentInTextFileParams = @{
-            CodeCoveragePercent = $coveragePercent
-            TextFilePath = $Script:ReadMePath
-            ModuleName = $ModuleName
-        }
-
-        Update-CodeCoveragePercentInTextFile @updateCodeCoveragePercentInTextFileParams
-    }
-}
-
-<#
 .Description
 Start the building process for the VMware.PSDesiredStateConfiguration module and
 returns the updated module version
@@ -405,12 +341,24 @@ function Start-PSDesiredStateConfigurationBuild {
 
     Write-Host 'VMware.PSDesiredStateConfiguration build started'
 
+    # run the specific module build file
     $moduleName = 'VMware.PSDesiredStateConfiguration'
     $moduleRoot = Join-Path -Path $script:SourceRoot -ChildPath $moduleName
     $buildModuleFilePath = Join-Path -Path $moduleRoot -ChildPath "$moduleName.build.ps1"
     . $buildModuleFilePath
 
-    Invoke-UnitTests $moduleName
+    # get code coverage result from shared travis workspace file
+    $coveragePath = Join-Path $env:TRAVIS_BUILD_DIR $env:PSDS_CODECOVERAGE_RESULTFILE
+    $coveragePercent = Get-Content $coveragePath -Raw
+    $coveragePercent = $coveragePercent -as [int]
+
+    $updateCodeCoveragePercentInTextFileParams = @{
+        CodeCoveragePercent = $coveragePercent
+        TextFilePath = $Script:ReadMePath
+        ModuleName = $ModuleName
+    }
+
+    Update-CodeCoveragePercentInTextFile @updateCodeCoveragePercentInTextFileParams 
 
     $psdPath = Join-Path -Path $moduleRoot -ChildPath "$($moduleName).psd1"
 
@@ -444,7 +392,17 @@ function Start-vSphereDSCBuild {
     $psdContent = Update-RequiredModules -ModuleManifestContent $psdContent -RequiredModules $emptyRequiredModulesArray
     $psdContent | Out-File -FilePath $psdPath -Encoding Default
 
-    Invoke-UnitTests $ModuleName
+    # run tests and calculate coverage percent
+    $coveragePercent = Invoke-UnitTests $ModuleName
+
+    $updateCodeCoveragePercentInTextFileParams = @{
+        CodeCoveragePercent = $coveragePercent
+        TextFilePath = $Script:ReadMePath
+        ModuleName = $ModuleName
+    }
+
+    # update coverage in README.md
+    Update-CodeCoveragePercentInTextFile @updateCodeCoveragePercentInTextFileParams
 
     if ($env:TRAVIS_EVENT_TYPE -eq 'push' -and $env:TRAVIS_BRANCH -eq 'master') {
         # Retrieving the 'RequiredModules' array from the RequiredModules file.
@@ -551,20 +509,8 @@ function Find-ChangedModulesUtil {
     return $false
 }
 
-$script:ProjectRoot = (Get-Item -Path $PSScriptRoot).Parent.FullName
-
-# Adds the Source directory from the repository to the list of modules directories.
-$script:SourceRoot = Join-Path -Path $script:ProjectRoot -ChildPath 'Source'
-$script:ReadMePath = Join-Path -Path $script:ProjectRoot -ChildPath 'README.md'
-$Script:ChangelogDocumentPath = Join-Path -Path $Script:ProjectRoot -ChildPath 'CHANGELOG.md'
-
-$env:PSModulePath = $env:PSModulePath + "$([System.IO.Path]::PathSeparator)$script:SourceRoot"
-
-# Registeres default PSRepository.
-Register-PSRepository -Default -ErrorAction SilentlyContinue
-
-# Installs Pester.
-Install-Module -Name Pester -RequiredVersion 4.10.1 -Scope CurrentUser -Force -SkipPublisherCheck
+# add common functions, script variables and perform common logic
+. (Join-Path $PSScriptRoot 'common.ps1')
 
 $psdscModuleVersion = Start-PSDesiredStateConfigurationBuild
 
