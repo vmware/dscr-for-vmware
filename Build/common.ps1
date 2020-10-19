@@ -80,7 +80,7 @@ $script:SourceRoot = Join-Path -Path $script:ProjectRoot -ChildPath 'Source'
 $script:ReadMePath = Join-Path -Path $script:ProjectRoot -ChildPath 'README.md'
 $Script:ChangelogDocumentPath = Join-Path -Path $Script:ProjectRoot -ChildPath 'CHANGELOG.md'
 
-$env:PSModulePath = $env:PSModulePath + "$([System.IO.Path]::PathSeparator)$script:SourceRoot"
+$env:PSModulePath += "$([System.IO.Path]::PathSeparator)$script:SourceRoot"
 
 # Registeres default PSRepository.
 Register-PSRepository -Default -ErrorAction SilentlyContinue

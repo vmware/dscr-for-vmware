@@ -86,13 +86,6 @@ Get-ChildItem -Filter '*.ps1' -Path $scriptPaths -Recurse | ForEach-Object {
     EnsureLicenseInFile $_ $license
 }
 
-# add required dsc resource path to the modules path for the unit tests
-$moduleRoot = $PSScriptRoot
-
-$configPath = Join-Path (Join-Path (Join-Path $moduleRoot 'Tests') 'Required Dsc Resources') 'MyDscResource'
-
-$env:PSModulePath = $env:PSModulePath + "$([System.IO.Path]::PathSeparator)$configPath"
-
 # update version in psd1
 
 $psd1Path = Join-Path $PSScriptRoot 'VMware.PSDesiredStateConfiguration.psd1'

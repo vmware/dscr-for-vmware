@@ -349,8 +349,7 @@ function Start-PSDesiredStateConfigurationBuild {
 
     # get code coverage result from shared travis workspace file
     $coveragePath = Join-Path $env:TRAVIS_BUILD_DIR $env:PSDS_CODECOVERAGE_RESULTFILE
-    $coveragePercent = Get-Content $coveragePath -Raw
-    $coveragePercent = $coveragePercent -as [int]
+    $coveragePercent = [int] (Get-Content $coveragePath -Raw)
 
     $updateCodeCoveragePercentInTextFileParams = @{
         CodeCoveragePercent = $coveragePercent
