@@ -1,33 +1,33 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## 2.1.0.72 - 2020-10-13
+## VMware.vSphereDSC 2.1.0.72 - 2020-10-13
 ### Added
 - Added new **MigratePhysicalNicsOnly** parameter to **VMHostVDSwitchMigration** DSC Resource.
 
 ### Changed
 - Fixed the bug with migrating Physical Network Adapters to VDSwitch. The Physical Network Adapters should be migrated with the VMKernel Network Adapters to avoid connectivity loss for the ESXi during the migration.
 
-## 2.1.0.71 - 2020-09-24
+## VMware.vSphereDSC 2.1.0.71 - 2020-09-24
 ### Changed
 - Fixed the bug with determiting the desired state, when the **ESXi** account password should be changed.
 
-## 2.1.0.70 - 2020-09-23
+## VMware.vSphereDSC 2.1.0.70 - 2020-09-23
 ### Changed
 - Moved comment section, explaining the dependencies of the **VMware.vSphereDSC** module from **RequiredModules.ps1** to **VMware.vSphereDSC.psd1**.
 
-## 2.1.0.69 - 2020-09-18
+## VMware.vSphereDSC 2.1.0.69 - 2020-09-18
 ### Changed
 - Changed the implementation of the **New-DscResourceBlock()** in **VMware.vSphereDSC.CompositeResourcesHelper.ps1** to return the created **DscResourceBlock** instead of invoking it inside the function.
 
-## 2.1.0.68 - 2020-09-14
+## VMware.vSphereDSC 2.1.0.68 - 2020-09-14
 ### Changed
 - Updated **VMware.vSphereDSC** module manifest contents by removing **FunctionsToExport**, **CmdletsToExport** and **AliasesToExport**.
 
 ### Removed
 - Removed the required **PowerCLI** modules that are dependencies of the **VMware.vSphereDSC** module from RequiredModules.ps1
 
-## 2.1.0.67 - 2020-06-19
+## VMware.vSphereDSC 2.1.0.67 - 2020-06-19
 ### Added
 - Added **VMHostVdsNic** DSC Resource.
 - Added Unit Tests for **VMHostVdsNic** DSC Resource.
@@ -38,7 +38,7 @@ All notable changes to this project will be documented in this file.
 - Extended **InventoryUtil** class with **GetVDSwitch()**.
 - Updated the build procedure to install the latest **Pester v4** released version.
 
-## 2.1.0.66 - 2020-05-13
+## VMware.vSphereDSC 2.1.0.66 - 2020-05-13
 ### Added
 - Added **DatastoreClusterAddDatastore** DSC Resource.
 - Added Unit Tests for **DatastoreClusterAddDatastore** DSC Resource.
@@ -48,7 +48,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Extended **InventoryUtil** class with **GetDatastoreCluster()**.
 
-## 2.1.0.65 - 2020-05-07
+## VMware.vSphereDSC 2.1.0.65 - 2020-05-07
 ### Added
 - Introduced **InventoryUtil** class.
 - Added **DRSRule** DSC Resource.
@@ -56,12 +56,12 @@ All notable changes to this project will be documented in this file.
 - Added Integration Tests for **DRSRule** DSC Resource.
 - Added Documentation and example Configurations for **DRSRule** DSC Resource.
 
-## 2.1.0.64 - 2020-05-07
+## VMware.vSphereDSC 2.1.0.64 - 2020-05-07
 ### Changed
 - Extended **BaseDSC** class with helper methods that determine if a DSC Resource is in a _desired state_.
 - Refactored the **Test()** method of each DSC Resource in the **VMware.vSphereDSC** module to use the helper methods from the **BaseDSC** class.
 
-## 2.1.0.63 - 2020-04-15
+## VMware.vSphereDSC 2.1.0.63 - 2020-04-15
 ### Added
 - Added **DatastoreCluster** DSC Resource.
 - Added Unit Tests for **DatastoreCluster** DSC Resource.
@@ -71,23 +71,23 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Extended **TestUtils** with helper function for importing the **VMware.vSphereDSC** module.
 
-## 2.1.0.62 - 2020-03-31
+## VMware.vSphereDSC 2.1.0.62 - 2020-03-31
 ### Changed
 - Fixed bug with running Unit Tests locally.
 
-## 2.1.0.61 - 2020-03-19
+## VMware.vSphereDSC 2.1.0.61 - 2020-03-19
 ### Added
 - Added support for specifying which VMHost DSC Resources to export in ExportVMHostConfiguration script.
 
-## 2.1.0.60 - 2020-03-19
+## VMware.vSphereDSC 2.1.0.60 - 2020-03-19
 ### Changed
 - Fixed bugs with multiple dependencies for StandardSwitch, VMHostDnsSettings and VMHostPermission DSC Resources in ExportVMHostConfiguration script.
 
-## 2.1.0.59 - 2020-03-19
+## VMware.vSphereDSC 2.1.0.59 - 2020-03-19
 ### Added
 - Added example DSC Configurations for VMHost Authentication, Storage and Network.
 
-## 2.1.0.58 - 2020-03-06
+## VMware.vSphereDSC 2.1.0.58 - 2020-03-06
 ### Added
 - **NfsDatastore**: DSC Resource that is used to create, update and delete NFS Datastores on the VMHost.
 - **NfsUser**: DSC Resource that is used to create, change the password and delete Nfs Users on the VMHost.
@@ -135,11 +135,11 @@ All notable changes to this project will be documented in this file.
 - **VmfsDatastore**: DSC Resource that is used to create, update and delete VMFS Datastores on the VMHost.
 - **vCenterVMHost**: DSC Resource that is used to add, move to another location or remove VMHosts on the vCenter Server.
 
-## 2.0.0.58 - 2020-03-06
+## VMware.vSphereDSC 2.0.0.58 - 2020-03-06
 ### Added
 - Added VMware.VimAutomation.Storage as dependency of VMware.vSphereDSC.
 
-## 2.0.0.57 - 2020-03-05
+## VMware.vSphereDSC 2.0.0.57 - 2020-03-05
 ### Added
 - Added **VMware.VimAutomation.Vds** as dependency in module manifest.
 
@@ -147,7 +147,7 @@ All notable changes to this project will be documented in this file.
 - Updated README.md section for available DSC Resources.
 - Fixed bug with Tps setting not exposed in VMHostTpsSettings DSC Resource.
 
-## 2.0.0.56 - 2020-02-27
+## VMware.vSphereDSC 2.0.0.56 - 2020-02-27
 ### Added
 - Added a script that exports the VMHost state as a DSC Configuration.
 
@@ -157,11 +157,11 @@ All notable changes to this project will be documented in this file.
 - Fixed bug with nullable NoTraps property of VMHostSNMPAgent DSC Resource.
 - Fixed bug with nullable properties for VMHostSyslog DSC Resource.
 
-## 2.0.0.55 - 2020-02-27
+## VMware.vSphereDSC 2.0.0.55 - 2020-02-27
 ### Changed
 - Fixed bugs with nullable properties for all Standard Switch DSC Resources.
 
-## 2.0.0.54 - 2020-02-14
+## VMware.vSphereDSC 2.0.0.54 - 2020-02-14
 ### Added
 - Introduced VMHostRestartBaseDSC class.
 
@@ -172,7 +172,7 @@ All notable changes to this project will be documented in this file.
 - Fixed bug for creating Datastores when connected to vCenter Server when there is existing Datastore with the same name.
 - Updated License.txt.
 
-## 2.0.0.53 - 2020-02-12
+## VMware.vSphereDSC 2.0.0.53 - 2020-02-12
 ### Added
 - Introduced VMHostIScsiHbaBaseDSC class.
 - Added VMHostIScsiHba DSC Resource.
@@ -185,54 +185,54 @@ All notable changes to this project will be documented in this file.
 - Added Documentation and example Configurations for VMHostIScsiHba DSC Resource.
 - Added Documentation and example Configurations for VMHostIScsiHbaTarget DSC Resource.
 
-## 2.0.0.52 - 2020-02-12
+## VMware.vSphereDSC 2.0.0.52 - 2020-02-12
 ### Added
 - Added StandardSwitch Composite DSC Resource.
 - Added Documentation and example Configuration for StandardSwitch Composite DSC Resource.
 
-## 2.0.0.51 - 2020-02-12
+## VMware.vSphereDSC 2.0.0.51 - 2020-02-12
 ### Added
 - Added VMHostFirewallRuleset DSC Resource.
 - Added Unit Tests for VMHostFirewallRuleset DSC Resource.
 - Added Integration Tests for VMHostFirewallRuleset DSC Resource.
 - Added Documentation and example Configuration for VMHostFirewallRuleset DSC Resource.
 
-## 2.0.0.50 - 2020-02-12
+## VMware.vSphereDSC 2.0.0.50 - 2020-02-12
 ### Added
 - Added VMHostScsiLun DSC Resource.
 - Added Unit Tests for VMHostScsiLun DSC Resource.
 - Added Integration Tests for VMHostScsiLun DSC Resource.
 - Added Documentation and example Configurations for VMHostScsiLun DSC Resource.
 
-## 2.0.0.49 - 2020-02-11
+## VMware.vSphereDSC 2.0.0.49 - 2020-02-11
 ### Added
 - Added VMHostScsiLunPath DSC Resource.
 - Added Unit Tests for VMHostScsiLunPath DSC Resource.
 - Added Integration Tests for VMHostScsiLunPath DSC Resource.
 - Added Documentation and example Configuration for VMHostScsiLunPath DSC Resource.
 
-## 2.0.0.48 - 2020-02-11
+## VMware.vSphereDSC 2.0.0.48 - 2020-02-11
 ### Added
 - Added VMHostvSANNetworkConfiguration DSC Resource.
 - Added Unit Tests for VMHostvSANNetworkConfiguration DSC Resource.
 - Added Integration Tests for VMHostvSANNetworkConfiguration DSC Resource.
 - Added Documentation and example Configurations for VMHostvSANNetworkConfiguration DSC Resource.
 
-## 2.0.0.47 - 2020-02-11
+## VMware.vSphereDSC 2.0.0.47 - 2020-02-11
 ### Added
 - Added VMHostAcceptanceLevel DSC Resource.
 - Added Unit Tests for VMHostAcceptanceLevel DSC Resource.
 - Added Integration Tests for VMHostAcceptanceLevel DSC Resource.
 - Added Documentation and example Configuration for VMHostAcceptanceLevel DSC Resource.
 
-## 2.0.0.46 - 2020-02-11
+## VMware.vSphereDSC 2.0.0.46 - 2020-02-11
 ### Added
 - Added VMHostNetworkCoreDump DSC Resource.
 - Added Unit Tests for VMHostNetworkCoreDump DSC Resource.
 - Added Integration Tests for VMHostNetworkCoreDump DSC Resource.
 - Added Documentation and example Configuration for VMHostNetworkCoreDump DSC Resource.
 
-## 2.0.0.45 - 2020-02-11
+## VMware.vSphereDSC 2.0.0.45 - 2020-02-11
 ### Added
 - Added VMHostVMKernelModule DSC Resource.
 - Added VMHostSNMPAgent DSC Resource.
@@ -251,7 +251,7 @@ All notable changes to this project will be documented in this file.
 - Added Documentation and example Configurations for VMHostSoftwareDevice DSC Resource.
 - Added Documentation and example Configuration for VMHostSharedSwapSpace DSC Resource.
 
-## 2.0.0.44 - 2020-02-11
+## VMware.vSphereDSC 2.0.0.44 - 2020-02-11
 ### Added
 - Added VMHostVMKernelActiveDumpPartition DSC Resource.
 - Added VMHostVMKernelDumpFile DSC Resource.
@@ -272,47 +272,47 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Removed NoPersist property from VMHostDCUIKeyboard DSC Resource.
 
-## 2.0.0.43 - 2020-02-11
+## VMware.vSphereDSC 2.0.0.43 - 2020-02-11
 ### Added
 - Added VMHostIPRoute DSC Resource.
 - Added Unit Tests for VMHostIPRoute DSC Resource.
 - Added Integration Tests for VMHostIPRoute DSC Resource.
 - Added Documentation and example Configurations for VMHostIPRoute DSC Resource.
 
-## 2.0.0.42 - 2020-01-09
+## VMware.vSphereDSC 2.0.0.42 - 2020-01-09
 ### Added
 - Added VMHostDCUIKeyboard DSC Resource.
 - Added Unit Tests for VMHostDCUIKeyboard DSC Resource.
 - Added Integration Tests for VMHostDCUIKeyboard DSC Resource.
 - Added Documentation and example Configuration for VMHostDCUIKeyboard DSC Resource.
 
-## 2.0.0.41 - 2020-01-08
+## VMware.vSphereDSC 2.0.0.41 - 2020-01-08
 ### Added
 - Introduced EsxCliBaseDSC class.
 - Added Unit Tests for EsxCliBaseDSC class.
 
-## 2.0.0.40 - 2020-01-08
+## VMware.vSphereDSC 2.0.0.40 - 2020-01-08
 ### Added
 - Added VMHostConfiguration DSC Resource.
 - Added Unit Tests for VMHostConfiguration DSC Resource.
 - Added Integration Tests for VMHostConfiguration DSC Resource.
 - Added Documentation and example Configurations for VMHostConfiguration DSC Resource.
 
-## 2.0.0.39 - 2020-01-08
+## VMware.vSphereDSC 2.0.0.39 - 2020-01-08
 ### Added
 - Added vCenterVMHost DSC Resource.
 - Added Unit Tests for vCenterVMHost DSC Resource.
 - Added Integration Tests for vCenterVMHost DSC Resource.
 - Added Documentation and example Configurations for vCenterVMHost DSC Resource.
 
-## 2.0.0.38 - 2020-01-08
+## VMware.vSphereDSC 2.0.0.38 - 2020-01-08
 ### Added
 - Added NfsUser DSC Resource.
 - Added Unit Tests for NfsUser DSC Resource.
 - Added Integration Tests for NfsUser DSC Resource.
 - Added Documentation and example Configurations for NfsUser DSC Resource.
 
-## 2.0.0.37 - 2019-12-05
+## VMware.vSphereDSC 2.0.0.37 - 2019-12-05
 ### Added
 - Introduced DatastoreBaseDSC class.
 - Added VmfsDatastore and NfsDatastore DSC Resources.
@@ -320,14 +320,14 @@ All notable changes to this project will be documented in this file.
 - Added Integration Tests for VmfsDatastore and NfsDatastore DSC Resources.
 - Added Documentation and example Configurations for VmfsDatastore and NfsDatastore DSC Resources.
 
-## 2.0.0.36 - 2019-12-05
+## VMware.vSphereDSC 2.0.0.36 - 2019-12-05
 ### Added
 - Added VMHostPermission DSC Resource.
 - Added Unit Tests for VMHostPermission DSC Resource.
 - Added Integration Tests for VMHostPermission DSC Resource.
 - Added Documentation and example Configurations for VMHostPermission DSC Resource.
 
-## 2.0.0.35 - 2019-12-04
+## VMware.vSphereDSC 2.0.0.35 - 2019-12-04
 ### Added
 - Added VMHostRole DSC Resource.
 - Added Unit Tests for VMHostRole DSC Resource.
@@ -337,7 +337,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Moved EnsureConnectionIsESXi method from VMHostAccount DSC Resource to BaseDSC class and added WriteDscResourceState method to BaseDSC class.
 
-## 2.0.0.34 - 2019-11-15
+## VMware.vSphereDSC 2.0.0.34 - 2019-11-15
 ### Added
 - Introduced VMHostNetworkMigrationBaseDSC class.
 - Added VMHostVssMigration DSC Resource.
@@ -351,14 +351,14 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Removed filtration of Physical Network Adapters in VMHostVDSwitchMigration DSC Resource.
 
-## 2.0.0.33 - 2019-11-15
+## VMware.vSphereDSC 2.0.0.33 - 2019-11-15
 ### Added
 - Added VMHostAuthentication DSC Resource.
 - Added Unit Tests for VMHostAuthentication DSC Resource.
 - Added Integration Tests for VMHostAuthentication DSC Resource.
 - Added Documentation and example Configurations for VMHostAuthentication DSC Resource.
 
-## 2.0.0.32 - 2019-11-15
+## VMware.vSphereDSC 2.0.0.32 - 2019-11-15
 ### Added
 - Added VMware.vSphereDSC.CompositeResourcesHelper script with utility functions for Composite DSC Resources.
 - Added StandardPortGroup Composite DSC Resource.
@@ -368,7 +368,7 @@ All notable changes to this project will be documented in this file.
 - Refactored Cluster Composite DSC Resource to use the utility functions from VMware.vSphereDSC.CompositeResourcesHelper script.
 - Rename MakeNicActive, MakeNicStandby and MakeNicUnused properties of VMHostVssPortGroupTeaming DSC Resource to ActiveNic, StandbyNic and UnusedNic.
 
-## 2.0.0.31 - 2019-11-15
+## VMware.vSphereDSC 2.0.0.31 - 2019-11-15
 ### Added
 - Added VMHostVDSwitchMigration DSC Resource.
 - Added Unit Tests for VMHostVDSwitchMigration DSC Resource.
@@ -378,14 +378,14 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Modified description of properties in VMHostVssNic DSC Resource Documentation.
 
-## 2.0.0.30 - 2019-10-30
+## VMware.vSphereDSC 2.0.0.30 - 2019-10-30
 ### Added
 - Added VDSwitchVMHost DSC Resource.
 - Added Unit Tests for VDSwitchVMHost DSC Resource.
 - Added Integration Tests for VDSwitchVMHost DSC Resource.
 - Added Documentation and example Configuration for VDSwitchVMHost DSC Resource.
 
-## 2.0.0.29 - 2019-10-30
+## VMware.vSphereDSC 2.0.0.29 - 2019-10-30
 ### Added
 - Added VDPortGroup DSC Resource.
 - Added Unit Tests for VDPortGroup DSC Resource.
@@ -395,22 +395,22 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Changed ReferenceVDSwitch property of VDSwitch DSC Resource to ReferenceVDSwitchName.
 
-## 2.0.0.28 - 2019-10-21
+## VMware.vSphereDSC 2.0.0.28 - 2019-10-21
 ### Changed
 - Changed **DefaultRotateSize** to **DefaultSize** in VMHostSyslog DSC Resource Documentation.
 
-## 2.0.0.27 - 2019-10-21
+## VMware.vSphereDSC 2.0.0.27 - 2019-10-21
 ### Changed
 - Fixed spacing around **Description** in all DSC Resources Documentation.
 
-## 2.0.0.26 - 2019-10-18
+## VMware.vSphereDSC 2.0.0.26 - 2019-10-18
 ### Added
 - Added Tips & Tricks page from Wiki to Documentation.
 
 ### Changed
 - Extend README.md with how to install VMware.vSphereDSC Module from PowerShell Gallery.
 
-## 2.0.0.25 - 2019-10-09
+## VMware.vSphereDSC 2.0.0.25 - 2019-10-09
 ### Added
 - Added DisconnectVIServer logic in BaseDSC class.
 - Added Unit Tests for DisconnectVIServer() in BaseDSC class.
@@ -419,14 +419,14 @@ All notable changes to this project will be documented in this file.
 - Refactored all existing DSC Resources to use DisconnectVIServer() from BaseDSC.
 - Updated CODING_GUIDELINES section for creating new DSC Resources.
 
-## 2.0.0.24 - 2019-10-02
+## VMware.vSphereDSC 2.0.0.24 - 2019-10-02
 ### Added
 - Added VDSwitch DSC Resource.
 - Added Unit Tests for VDSwitch DSC Resource.
 - Added Integration Tests for VDSwitch DSC Resource.
 - Added Documentation and example Configuration for VDSwitch DSC Resource.
 
-## 2.0.0.23 - 2019-10-01
+## VMware.vSphereDSC 2.0.0.23 - 2019-10-01
 ### Added
 - Added Unit Tests for BaseDSC class.
 - Added VMHostNicBaseDSC class.
@@ -439,28 +439,28 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Extended BaseDSC class with ShouldUpdateArrayProperty method.
 
-## 2.0.0.22 - 2019-10-01
+## VMware.vSphereDSC 2.0.0.22 - 2019-10-01
 ### Added
 - Added VMHostPhysicalNic DSC Resource.
 - Added Unit Tests for VMHostPhysicalNic DSC Resource.
 - Added Integration Tests for VMHostPhysicalNic DSC Resource.
 - Added Documentation and example Configuration for VMHostPhysicalNic DSC Resource.
 
-## 2.0.0.21 - 2019-10-01
+## VMware.vSphereDSC 2.0.0.21 - 2019-10-01
 ### Added
 - Added VMHostVssPortGroupShaping DSC Resource.
 - Added Unit Tests for VMHostVssPortGroupShaping DSC Resource.
 - Added Integration Tests for VMHostVssPortGroupShaping DSC Resource.
 - Added Documentation and example Configuration for VMHostVssPortGroupShaping DSC Resource.
 
-## 2.0.0.20 - 2019-10-01
+## VMware.vSphereDSC 2.0.0.20 - 2019-10-01
 ### Added
 - Added VMHostVssPortGroupTeaming DSC Resource.
 - Added Unit Tests for VMHostVssPortGroupTeaming DSC Resource.
 - Added Integration Tests for VMHostVssPortGroupTeaming DSC Resource.
 - Added Documentation and example Configuration for VMHostVssPortGroupTeaming DSC Resource.
 
-## 2.0.0.19 - 2019-10-01
+## VMware.vSphereDSC 2.0.0.19 - 2019-10-01
 ### Added
 - Added VMHostVssPortGroupBaseDSC class.
 - Added VMHostVssPortGroupSecurity DSC Resource.
@@ -468,7 +468,7 @@ All notable changes to this project will be documented in this file.
 - Added Integration Tests for VMHostVssPortGroupSecurity DSC Resource.
 - Added Documentation and example Configuration for VMHostVssPortGroupSecurity DSC Resource.
 
-## 2.0.0.18 - 2019-09-30
+## VMware.vSphereDSC 2.0.0.18 - 2019-09-30
 ### Added
 - Added VMHostEntityBaseDSC class.
 - Added VMHostVssPortGroup DSC Resource.
@@ -476,7 +476,7 @@ All notable changes to this project will be documented in this file.
 - Added Integration Tests for VMHostVssPortGroup DSC Resource.
 - Added Documentation and example Configuration for VMHostVssPortGroup DSC Resource.
 
-## 2.0.0.17 - 2019-09-03
+## VMware.vSphereDSC 2.0.0.17 - 2019-09-03
 ### Added
 - VMware.vSphereDSC.Logging module is introduced.
 - Added Write-VerboseLog and Write-WarningLog functions to Logging module.
@@ -484,7 +484,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Changed logging mechanism from Write-Verbose to Write-VerboseLog and Write-Warning to Write-WarningLog.
 
-## 2.0.0.16 - 2019-09-03
+## VMware.vSphereDSC 2.0.0.16 - 2019-09-03
 ### Added
 - Added VMHostCache DSC Resource.
 - Added Unit Tests for VMHostCache DSC Resource.
@@ -492,14 +492,14 @@ All notable changes to this project will be documented in this file.
 - Added Documentation and example Configuration for VMHostCache DSC Resource.
 - Added missing TaskImpl type to PowerCLITypes.
 
-## 2.0.0.15 - 2019-08-30
+## VMware.vSphereDSC 2.0.0.15 - 2019-08-30
 ### Added
 - Added VMHostPowerPolicy DSC Resource.
 - Added Unit Tests for VMHostPowerPolicy DSC Resource.
 - Added Integration Tests for VMHostPowerPolicy DSC Resource.
 - Added Documentation and example Configuration for VMHostPowerPolicy DSC Resource.
 
-## 2.0.0.14 - 2019-08-30
+## VMware.vSphereDSC 2.0.0.14 - 2019-08-30
 ### Added
 - Added VMHostGraphics DSC Resource.
 - Added Unit Tests for VMHostGraphics DSC Resource.
@@ -510,7 +510,7 @@ All notable changes to this project will be documented in this file.
 - Added Integration Tests for VMHostGraphicsDevice DSC Resource.
 - Added Documentation and example Configuration for VMHostGraphicsDevice DSC Resource.
 
-## 2.0.0.13 - 2019-08-30
+## VMware.vSphereDSC 2.0.0.13 - 2019-08-30
 ### Added
 - Added VMHostPciPassthrough DSC Resource.
 - Added Unit Tests for VMHostPciPassthrough DSC Resource.
@@ -521,23 +521,23 @@ All notable changes to this project will be documented in this file.
 - Extended VMHostBaseDSC with method for restarting the specified VMHost.
 - Introduced RestartTimeoutMinutes optional parameter for VMHostBaseDSC.
 
-## 2.0.0.12 - 2019-08-28
+## VMware.vSphereDSC 2.0.0.12 - 2019-08-28
 ### Changed
 - The Id property was changed from 'Mandatory' to 'Key' for VMHostAccount Resource.
 
-## 2.0.0.11 - 2019-08-28
+## VMware.vSphereDSC 2.0.0.11 - 2019-08-28
 ### Changed
 - The RuleName property was changed from 'Mandatory' to 'Key' for VMHostSatpClaimRule Resource.
 
-## 2.0.0.10 - 2019-08-28
+## VMware.vSphereDSC 2.0.0.10 - 2019-08-28
 ### Changed
 - The Key property was changed from 'Mandatory' to 'Key' for VMHostService Resource.
 
-## 2.0.0.9 - 2019-08-28
+## VMware.vSphereDSC 2.0.0.9 - 2019-08-28
 ### Changed
 - The VssName property was changed from 'Mandatory' to 'Key' in the Standard Switch Resources Documentation.
 
-## 2.0.0.8 - 2019-08-20
+## VMware.vSphereDSC 2.0.0.8 - 2019-08-20
 ### Added
 - Added VMHostAgentVM DSC Resource.
 - Added Unit Tests for VMHostAgentVM DSC Resource.
@@ -547,18 +547,18 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Moved vCenterProductId Constant to BaseDSC class.
 
-## 2.0.0.7 - 2019-08-02
+## VMware.vSphereDSC 2.0.0.7 - 2019-08-02
 ### Changed
 - Fix bug with '?' character in Build.ps1.
 
-## 2.0.0.6 - 2019-08-02
+## VMware.vSphereDSC 2.0.0.6 - 2019-08-02
 ### Added
 - Added VMHostAdvancedSettings DSC Resource.
 - Added Unit Tests for VMHostAdvancedSettings DSC Resource.
 - Added Integration Tests for VMHostAdvancedSettings DSC Resource.
 - Added Documentation and example Configuration for VMHostAdvancedSettings DSC Resource.
 
-## 2.0.0.5 - 2019-08-02
+## VMware.vSphereDSC 2.0.0.5 - 2019-08-02
 ### Added
 - Added CHANGELOG.md document to the repository.
 - Added CHANGELOG_TEMPLATE.md document to the repository.
@@ -570,16 +570,16 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Removed the 'dev' branch from .travis.yml.
 
-## 2.0.0.4 - 2019-07-19
+## VMware.vSphereDSC 2.0.0.4 - 2019-07-19
 ### Added
 - Added VMHostSyslog example in Configurations.
 - Introduced TestSetup for VMHostSyslog Integration Tests.
 
-## 2.0.0.3 - 2019-07-19
+## VMware.vSphereDSC 2.0.0.3 - 2019-07-19
 ### Changed
 - Updated documentation for Unit and Integration Tests.
 
-## 2.0.0.2 - 2019-06-14
+## VMware.vSphereDSC 2.0.0.2 - 2019-06-14
 ### Added
 - Example Configuration File with the Inventory Resources: **DatacenterFolder**, **Datacenter**, **Folder**, **Cluster**.
 - Example Configuration File with the VSS Resources: **VMHostVss**, **VMHostVssSecurity**, **VMHostVssShaping**, **VMHostVssBridge**, **VMHostVssTeaming**.
@@ -596,11 +596,11 @@ All notable changes to this project will be documented in this file.
 - Extended Configurations of DrsCluster Integration Tests with DatacenterFolder, Datacenter and Folder Resources.
 - Extended Configurations for VMHostVss Resources.
 
-## 2.0.0.1 - 2019-06-07
+## VMware.vSphereDSC 2.0.0.1 - 2019-06-07
 ### Changed
 - Bump module version to 2.0.0.0.
 
-## 2.0.0.0 - 2019-06-07
+## VMware.vSphereDSC 2.0.0.0 - 2019-06-07
 ### Added
 - **Cluster**: Composite Resource used to create, update and delete Clusters in a specified Datacenter. The resource also takes care to configure Cluster's High Availability (HA) and Drs settings.
 - **HACluster**: Used to create, update and delete Clusters in a specified Datacenter. The resource also takes care to configure Cluster's High Availability (HA) settings.
