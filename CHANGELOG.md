@@ -1,6 +1,32 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.73 - 2020-10-21
+### Added
+- Introduced a new module **VMware.PSDesiredStateConfiguration** for compiling and executing DSC Configurations without the use of MOF or LCM.
+- Added separate documentation files for both modules (**VMware.PSDesiredStateConfiguration.md** and **VMware.vSphereDSC.md**).
+- Added **EnableExperimentalFeature.ps1** to enable **Invoke-DscResource** cmdlet on non-windows Operating Systems.
+- Added a documentation file: **Limitations.md** for listing known issues and limitations.
+
+### Changed
+- Updated the build procedure in **build.ps1** to now work with both modules (**VMware.PSDesiredStateConfiguration** and **VMware.vSphereDSC**).
+- Updated **README.md** with common information and links to the new documentation files for both modules (**VMware.PSDesiredStateConfiguration** and **VMware.vSphereDSC**) .
+- **.travis.yml** now works with both **Ubuntu 14.04** and **Ubuntu 18.04** due to **Ubuntu 14.04** not supporting **Powershell Core 7.0.3**.
+
+
+## VMware.PSDesiredStateConfiguration 0.0.0.1 - 2020-10-21
+### Added
+- Introduced a new module **VMware.PSDesiredStateConfiguration** for compiling and executing DSC Configurations without the use of MOF or LCM.
+- Added separate documentation files for both modules (**VMware.PSDesiredStateConfiguration.md** and **VMware.vSphereDSC.md**).
+- Added **EnableExperimentalFeature.ps1** to enable **Invoke-DscResource** cmdlet on non-windows Operating Systems.
+- Added a documentation file: **Limitations.md** for listing known issues and limitations.
+
+### Changed
+- Updated the build procedure in **build.ps1** to now work with both modules (**VMware.PSDesiredStateConfiguration** and **VMware.vSphereDSC**).
+- Updated **README.md** with common information and links to the new documentation files for both modules (**VMware.PSDesiredStateConfiguration** and **VMware.vSphereDSC**) .
+- **.travis.yml** now works with both **Ubuntu 14.04** and **Ubuntu 18.04** due to **Ubuntu 14.04** not supporting **Powershell Core 7.0.3**.
+
+
 ## VMware.vSphereDSC 2.1.0.72 - 2020-10-13
 ### Added
 - Added new **MigratePhysicalNicsOnly** parameter to **VMHostVDSwitchMigration** DSC Resource.

@@ -20,7 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 RootModule = 'VMware.vSphereDSC.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.1.0.72'
+ModuleVersion = '2.1.0.73'
 
 # ID used to uniquely identify this module
 GUID = '664b57b4-bd8d-4a56-9984-278f7fe10cf8'
