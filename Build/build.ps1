@@ -441,7 +441,8 @@ function Set-PSDesiredStateConfigurationTestsResults {
     $coveragePath = Join-Path $env:TRAVIS_BUILD_DIR $env:PSDS_CODECOVERAGE_RESULTFILE
     $coveragePercent = [int] (Get-Content $coveragePath -Raw)
 
-    Remove-Item $env:TRAVIS_BUILD_DIR $env:PSDS_CODECOVERAGE_RESULTFILE
+	# remove travis workspace file
+    Remove-Item -Path $coveragePath -Force
 
     $updateCodeCoveragePercentInTextFileParams = @{
         CodeCoveragePercent = $coveragePercent
