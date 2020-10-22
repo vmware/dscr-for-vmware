@@ -15,12 +15,118 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-.Synopsis
+.DESCRIPTION
+BuildFlags defines operations which the build should perform.
+#>
+[Flags()] enum BuildFlags {
+    Update_PSDSC = 1
+    Update_VSDSC = 2
+    Tests_VSDSC = 4
+    Tests_PSDSC = 8
+    None = 256
+}
+
+<#
+.SYNOPSIS
+Checks if a certain DesiredFlag is included in the InputFlag.
+.DESCRIPTION
+Checks if a certain DesiredFlag is included in the InputFlag.
+The check is performed using a binary and on flags.
+.PARAMETER InputFlag
+Contains all the flags for the current build.
+.PARAMETER DesiredFlag
+The flag that gets checked if it's contained the current build flags.
+#>
+function Test-Flag {
+    [OutputType([bool])]
+    Param (
+        [BuildFlags]
+        $InputFlag,
+
+        [BuildFlags]
+        $DesiredFlag
+    )
+
+    ($InputFlag -band $DesiredFlag) -ne 0
+}
+
+<#
+.SYNOPSIS
+Finds and returns a list of file paths that have been changed since last build
+.DESCRIPTION
+Finds and returns a list of file paths that have been changed since last build.
+The changes are searched in the .git HEAD from the current commit to the last travis commit.
+#>
+function Get-ChangedFiles {
+    [OutputType([System.String[]])]
+    Param()
+
+    $lastTravisCommit = 1
+
+    # find last travis commit
+    while ($true) {
+        $commitInfo = git show HEAD~$lastTravisCommit
+        $author = $commitInfo[1]
+
+        if ($author.Contains('travis@travis-ci.org')) {
+            break
+        }
+
+        $lastTravisCommit += 1
+    }
+
+    # extract names of changed files from HEAD history
+    $changedFiles = git diff --name-only HEAD..HEAD~$lastTravisCommit
+
+    $changedFiles
+}
+<#
+.SYNOPSIS
+Depending on the changes made in the project [BuildFlags] get set and returned.
+.DESCRIPTION
+Depending on the changes made in the project [BuildFlags] get set and returned.
+The returned value contains all steps that should be perfomred depending on build change.
+#>
+function Set-BuildFlags {
+    # retrieve a list of changed files
+    $changedFiles = Get-ChangedFiles
+
+    $flagResult = 0
+
+    foreach ($changedFile in $changedFiles) {
+        if ($changedFile.Contains('Source')) {
+            # module change triggers the it's build and tests to run
+            if ($changedFile.Contains('VMware.PSDesiredStateConfiguration')) {
+                $flagResult = $flagResult -bor [BuildFlags]::Update_PSDSC
+                $flagResult = $flagResult -bor [BuildFlags]::Tests_PSDSC
+            } elseif ($changedFile.Contains('VMware.vSphereDSC')) {
+                $flagResult = $flagResult -bor [BuildFlags]::Update_VSDSC
+                $flagResult = $flagResult -bor [BuildFlags]::Tests_VSDSC
+            }
+        } elseif ($changedFile.Contains('Build') -or $changedFiles.Contains('.travis.yml')) {
+            # build change triggers unit tests to be run
+            $flagResult = $flagResult -bor [BuildFlags]::Tests_PSDSC
+            $flagResult = $flagResult -bor [BuildFlags]::Tests_VSDSC
+        }
+    }
+
+    # no major changes have been made
+    if ($flagResult -eq 0) {
+        $flagResult = [BuildFlags]::None
+    }
+
+    $flagResult
+}
+
+<#
+.SYNOPSIS
 Runs the unit tests for the specified module and returns code coverage percentage.
 
-.Description
-Runs the unit tests for the specified module and returns code coverage percentage. The tests should be located in a Tests\Unit location in the modules directory.
+.DESCRIPTION
+Runs the unit tests for the specified module and returns code coverage percentage. 
+The tests should be located in a Tests\Unit location in the modules directory.
 The code coverage result of the tests gets updated in the README.md document.
+This function relies on Pester for running the unit tests. If the module is not found it gets installed.
 
 .Notes
 The code coverage logic leads to the unit tests running slower.
@@ -45,6 +151,22 @@ function Invoke-UnitTests {
         [switch]
         $DisableCodeCoverage
     )
+
+    if ($null -eq (Get-Module -Name 'Pester' -ListAvailable)) {
+        # Install Pester.
+        Write-Host 'Installing Pester'
+
+        # suppress progress messages during installation due
+        # to broken display on Travis console
+        $oldProgressPreference = $ProgressPreference
+        $Global:ProgressPreference = 'SilentlyContinue'
+
+        Install-Module -Name Pester -RequiredVersion 4.10.1 -Scope CurrentUser -Force -SkipPublisherCheck
+
+        $Global:ProgressPreference = $oldProgressPreference
+
+        Write-Host 'Pester Installed'   
+    }
 
     # Runs all unit tests in the module.
     $moduleFolderPath = (Get-Module $ModuleName -ListAvailable).ModuleBase
@@ -73,17 +195,14 @@ function Invoke-UnitTests {
     }
 }
 
+# Define script variables
 $script:ProjectRoot = (Get-Item -Path $PSScriptRoot).Parent.FullName
-
-# Adds the Source directory from the repository to the list of modules directories.
 $script:SourceRoot = Join-Path -Path $script:ProjectRoot -ChildPath 'Source'
 $script:ReadMePath = Join-Path -Path $script:ProjectRoot -ChildPath 'README.md'
 $Script:ChangelogDocumentPath = Join-Path -Path $Script:ProjectRoot -ChildPath 'CHANGELOG.md'
 
+# Adds the Source directory from the repository to the list of modules directories.
 $env:PSModulePath += "$([System.IO.Path]::PathSeparator)$script:SourceRoot"
 
 # Registeres default PSRepository.
 Register-PSRepository -Default -ErrorAction SilentlyContinue
-
-# Installs Pester.
-Install-Module -Name Pester -RequiredVersion 4.10.1 -Scope CurrentUser -Force -SkipPublisherCheck
