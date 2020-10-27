@@ -144,7 +144,7 @@ function Update-ChangelogDocument {
     $currentDate = Get-Date -Format yyyy-MM-dd
     $newSectionHeader = [string]::Empty
 
-    if ([string]::IsNullOrEmpty($ModuleName) -or [string]::IsNullOrEmpty($ModuleName)) {
+    if ([string]::IsNullOrEmpty($ModuleName) -or [string]::IsNullOrEmpty($ModuleVersion)) {
         # generic header for project level changes
         $newSectionHeader = "## $currentDate"
     } else {
@@ -406,15 +406,18 @@ function Invoke-vSphereDSCTests {
     $moduleName = 'VMware.vSphereDSC'
     $moduleRoot = Join-Path -Path $script:SourceRoot -ChildPath $moduleName
     $psdPath = Join-Path -Path $moduleRoot -ChildPath "$($moduleName).psd1"
-    $psdContent = Get-Content -Path $psdPath
+    $originalPsdContent = Get-Content -Path $psdPath
 
     # The 'RequiredModules' array needs to be empty before the Unit tests are executed because 'VMware.PowerCLI' is not installed during the build procedure.
     $emptyRequiredModulesArray = @("RequiredModules = @()")
-    $psdContent = Update-RequiredModules -ModuleManifestContent $psdContent -RequiredModules $emptyRequiredModulesArray
+    $psdContent = Update-RequiredModules -ModuleManifestContent $originalPsdContent -RequiredModules $emptyRequiredModulesArray
     $psdContent | Out-File -FilePath $psdPath -Encoding Default
 
     # run tests and calculate coverage percent
     $coveragePercent = Invoke-UnitTests $moduleName
+
+    # revert 'RequiredModules' array changes
+    $originalPsdContent | Out-File -FilePath $psdPath -Encoding Default
 
     $updateCodeCoveragePercentInTextFileParams = @{
         CodeCoveragePercent = $coveragePercent
@@ -460,13 +463,13 @@ function Set-PSDesiredStateConfigurationTestsResults {
 $flagChanges = Set-BuildFlags
 
 # will contain modules that are changed and their updated versions
-$changedModuleNameToVersion = @{}
+$changedModulesInfo = @{}
 
 if (Test-Flag -InputFlag $flagChanges -DesiredFlag Update_PSDSC) {
     Write-Host '---------VMware.PSDesiredStateConfiguration build started'
 
     $version = Start-PSDesiredStateConfigurationBuild
-    $changedModuleNameToVersion['VMware.PSDesiredStateConfiguration'] = $version
+    $changedModulesInfo['VMware.PSDesiredStateConfiguration'] = $version
 
     Write-Host '---------VMware.PSDesiredStateConfiguration build ended'
 }
@@ -483,7 +486,7 @@ if (Test-Flag -InputFlag $flagChanges -DesiredFlag Update_VSDSC) {
     Write-Host '---------VMware.vSphereDSC build started'
 
     $version = Start-vSphereDSCBuild
-    $changedModuleNameToVersion['VMware.vSphereDSC'] = $version
+    $changedModulesInfo['VMware.vSphereDSC'] = $version
 
     Write-Host '---------VMware.vSphereDSC build ended'
 }
@@ -501,7 +504,7 @@ if ($env:TRAVIS_EVENT_TYPE -eq 'push' -and $env:TRAVIS_BRANCH -eq 'master') {
     $pullRequestDescription = Get-PullRequestDescription
 
     # check if there is a change in the modules
-    if ($changedModuleNameToVersion.Count -eq 0) {
+    if ($changedModulesInfo.Count -eq 0) {
         # when no change in the modules is found then
         # a generic entry with only a date gets generated in the CHANGELOG.md
         $updateChangeLogParams = @{
@@ -512,12 +515,12 @@ if ($env:TRAVIS_EVENT_TYPE -eq 'push' -and $env:TRAVIS_BRANCH -eq 'master') {
         Update-ChangelogDocument @updateChangeLogParams  
     } else {
         # generates an entry for each changed module in the CHANGELOG.md
-        foreach ($changedModuleKey in $changedModuleNameToVersion.Keys) {
+        foreach ($changedModuleKey in $changedModulesInfo.Keys) {
             $updateChangeLogParams = @{
                 ChangelogDocumentPath = $Script:ChangelogDocumentPath
                 PullRequestDescription = $pullRequestDescription
                 ModuleName = $changedModuleKey
-                ModuleVersion = $changedModuleNameToVersion[$changedModuleKey]
+                ModuleVersion = $changedModulesInfo[$changedModuleKey]
             }
 
             Update-ChangelogDocument @updateChangeLogParams  
