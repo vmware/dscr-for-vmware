@@ -44,6 +44,5 @@ jobs:
         - chmod +x Build/travis-push.sh
       script:
         - pwsh -File './Build/build.ps1'
-        - rm $PSDS_CODECOVERAGE_RESULTFILE
       after_success:
         - '[ "${TRAVIS_EVENT_TYPE}" = "push" ] && [ "${TRAVIS_BRANCH}" = "master" ] && Build/travis-push.sh'
