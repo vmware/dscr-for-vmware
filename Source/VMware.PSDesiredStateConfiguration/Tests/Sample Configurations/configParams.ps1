@@ -17,7 +17,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Configuration with parameters
+.DESCRIPTION
+Configuration with parameters.
+Should get filled by CustomParams parameter.
 #>
 Configuration Test {
     Param(
@@ -39,11 +41,13 @@ Configuration Test {
 $Script:expectedCompiled = [VmwDscConfiguration]::new(
     'Test',
     @(
-        [VmwDscResource]::new(
-            'file',
-            'FileResource',
-            'MyDscResource'
+        [VmwDscNode]::new(
+            'localhost',
+            [VmwDscResource]::new(
+                'file',
+                'FileResource',
+                @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' }
+            )
         )
     )
 )
-

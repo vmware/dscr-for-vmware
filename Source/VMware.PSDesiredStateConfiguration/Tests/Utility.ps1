@@ -17,72 +17,100 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    .Description
-    Performs an assert on two [VmwDscResource] objects to check if they're equal
+.DESCRIPTION
+Performs an assert on two [VmwDscResource] objects to check if they're equal
 #>
 function Script:AssertResourceEqual {
-    param (
+    Param (
         [VmwDscResource]
-        $resultRes,
+        $ResultRes,
 
         [VmwDscResource]
-        $expectedRes
+        $ExpectedRes
     )
     
     # assert regular properties
-    $resultRes.InstanceName | Should -Be $expectedRes.InstanceName
-    $resultRes.ModuleName | Should -Be $expectedRes.ModuleName
-    $resultRes.ResourceType | Should -Be $expectedRes.ResourceType
+    $ResultRes.InstanceName | Should -Be $ExpectedRes.InstanceName
+    $ResultRes.ResourceType | Should -Be $ExpectedRes.ResourceType
 
-    $resultRes.Property.Keys.Count | Should -Be $expectedRes.Property.Keys.Count
+    ($null -ne $ResultRes.ModuleName) | Should -Be ($null -ne $ExpectedRes.ModuleName)
 
-    # assert key value pairs in 'Property' property are equal
-    foreach ($key in $resultRes.Property.Keys) {
-        $resultResPropVal = $resultRes.Property[$key]
-
-        $isKeyContained = $expectedRes.Property.ContainsKey($key)
-        $isKeyContained | Should -Be $true
-
-        $resultResPropVal | Should -Be $expectedRes.Property[$key]
+    if ($null -ne $ResultRes.ModuleName) {
+        $ResultRes.ModuleName.Name | Should -Be $ExpectedRes.ModuleName.Name
+        $ResultRes.ModuleName.RequiredVersion.ToString() | Should -Be $ExpectedRes.ModuleName.RequiredVersion.ToString()
     }
 
-    $resultRes.GetIsComposite() | Should -Be $expectedRes.GetIsComposite()
+    $ResultRes.Property.Keys.Count | Should -Be $ExpectedRes.Property.Keys.Count
 
-    if ($resultRes.GetIsComposite()) {
-        $resultResInnerRes = $resultRes.GetInnerResources()
-        $expectedResInnerRes = $expectedRes.GetInnerResources()
+    # assert key value pairs in 'Property' property are equal
+    foreach ($key in $ResultRes.Property.Keys) {
+        $ResultResPropVal = $ResultRes.Property[$key]
 
-        $resultResInnerRes.Count | Should -Be $expectedResInnerRes.Count
+        $isKeyContained = $ExpectedRes.Property.ContainsKey($key)
+        $isKeyContained | Should -Be $true
 
-        for ($j = 0; $j -lt $resultResInnerRes.Count; $j++) {
+        $ResultResPropVal | Should -Be $ExpectedRes.Property[$key]
+    }
+
+    $ResultRes.GetIsComposite() | Should -Be $ExpectedRes.GetIsComposite()
+
+    if ($ResultRes.GetIsComposite()) {
+        $ResultResInnerRes = $ResultRes.GetInnerResources()
+        $ExpectedResInnerRes = $ExpectedRes.GetInnerResources()
+
+        $ResultResInnerRes.Count | Should -Be $ExpectedResInnerRes.Count
+
+        for ($j = 0; $j -lt $ResultResInnerRes.Count; $j++) {
             # assert inner Resources equal
-            Script:AssertResourceEqual $resultResInnerRes[$j] $expectedResInnerRes[$j]
+            Script:AssertResourceEqual $ResultResInnerRes[$j] $ExpectedResInnerRes[$j]
         }
     } else {
-        $resultRes.GetInnerResources() | Should -Be $null
+        $ResultRes.GetInnerResources() | Should -Be $null
     }
 }
 
 <#
-    .Description
-    Performs an assert on two [VmwDscConfiguration] objects to check if they're equal
+.DESCRIPTION
+Performs an assert on two [VmwNode] objects to check if they're equal
 #> 
-function Script:AssertConfigurationEqual {
-    param (
-        [VmwDscConfiguration]
-        $result,
+function Script:AssertNodeEqual {
+    Param (
+        [VmwDscNode]
+        $ResultNode,
 
-        [VmwDscConfiguration]
-        $expected
+        [VmwDscNode]
+        $ExpectedNode
     )
 
-    # assert regular properties
-    $result.InstanceName | Should -Be $expected.InstanceName
-    $result.Resources.Count | Should -Be $expected.Resources.Count
+    $ResultNode.InstanceName | Should -Be $ExpectedNode.InstanceName
 
-    for ($i = 0; $i -lt $result.Resources.Count; $i++) {
-        # assert resources array of configuration
-        Script:AssertResourceEqual $result.Resources[$i] $expected.Resources[$i]
+    $ResultNode.Resources.Count | Should -Be $ExpectedNode.Resources.Count
+
+    for ($i = 0; $i -lt $ResultNode.Resources.Count; $i++) {
+        # assert resources array of node
+        Script:AssertResourceEqual $ResultNode.Resources[$i] $ExpectedNode.Resources[$i]
     }
 }
 
+<#
+.DESCRIPTION
+Performs an assert on two [VmwDscConfiguration] objects to check if they're equal
+#> 
+function Script:AssertConfigurationEqual {
+    Param (
+        [VmwDscConfiguration]
+        $Result,
+
+        [VmwDscConfiguration]
+        $Expected
+    )
+
+    # assert regular properties
+    $Result.InstanceName | Should -Be $Expected.InstanceName
+    $Result.Nodes.Count | Should -Be $Expected.Nodes.Count
+
+    for ($i = 0; $i -lt $Result.Nodes.Count; $i++) {
+        # assert node array of configuration
+        Script:AssertNodeEqual $Result.Nodes[$i] $Expected.Nodes[$i]
+    }
+}

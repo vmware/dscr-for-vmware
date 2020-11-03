@@ -17,7 +17,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Basic Configuration with many Resources
+.DESCRIPTION
+Configuration with many resources that depend on a single resource.
+Resources should be ordered first by their DependsOn property then by the order in which they are defined.
 #>
 Configuration Test {
     Import-DscResource -ModuleName MyDscResource
@@ -51,36 +53,40 @@ Configuration Test {
 $Script:expectedCompiled = [VmwDscConfiguration]::new(
     'Test',
     @(
-        [VmwDscResource]::new(
-            'file2',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path2"
-                SourcePath = "path2"
-                Ensure = "absent"
-            }
-        )
-        [VmwDscResource]::new(
-            'file3',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path3"
-                SourcePath = "path3"
-                Ensure = "absent"
-            }
-        )
-        [VmwDscResource]::new(
-            'file1',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "path"
-                Ensure = "present"
-            }
+        [VmwDscNode]::new(
+            'localhost',
+            @(
+                [VmwDscResource]::new(
+                    'file2',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path2"
+                        SourcePath = "path2"
+                        Ensure = "absent"
+                    }
+                )
+                [VmwDscResource]::new(
+                    'file3',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path3"
+                        SourcePath = "path3"
+                        Ensure = "absent"
+                    }
+                )
+                [VmwDscResource]::new(
+                    'file1',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+            )
         )
     )
 )
-

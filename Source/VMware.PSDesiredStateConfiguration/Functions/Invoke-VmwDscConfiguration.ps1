@@ -17,8 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-.Description
-Invokes the dsc resources of a configuration with 'Get' Dsc method
+.DESCRIPTION
+Invokes the DSC Configuration with the 'Get' DSC method
 #>
 function Get-VmwDscConfiguration {
     [CmdletBinding()]
@@ -31,16 +31,24 @@ function Get-VmwDscConfiguration {
     )
 
     $invokeParams = @{
-        DscResources = $Configuration.Resources
+        VmwDscNodes = $Configuration.Nodes
         Method = 'Get'
     }
     
-    Invoke-VmwDscResources @invokeParams
+    try {
+        Invoke-VmwDscNodes @invokeParams
+    } catch {
+        $exceptionMessage = $_.Exception.ErrorRecord.ToString()
+        
+        if ($exceptionMessage -eq $Script:UserInputExitException) {
+            return
+        }
+    }
 }
 
 <#
-.Description
-Invokes the dsc resources of a configuration with 'Set' Dsc method
+.DESCRIPTION
+Invokes the DSC Configuration with the 'Set' DSC method
 #>
 function Start-VmwDscConfiguration {
     [CmdletBinding()]
@@ -53,16 +61,24 @@ function Start-VmwDscConfiguration {
     )
 
     $invokeParams = @{
-        DscResources = $Configuration.Resources
+        VmwDscNodes = $Configuration.Nodes
         Method = 'Set'
     }
     
-    Invoke-VmwDscResources @invokeParams | Out-Null
+    try {
+        Invoke-VmwDscNodes @invokeParams | Out-Null
+    } catch {
+        $exceptionMessage = $_.Exception.ErrorRecord.ToString()
+        
+        if ($exceptionMessage -eq $Script:UserInputExitException) {
+            return
+        }
+    }
 }
 
 <#
-.Description
-Invokes the resources of a configuration with 'Test' Dsc method.
+.DESCRIPTION
+Invokes the DSC Configuration with the 'Test' DSC method
 Returns a boolean result that shows if the current state is desired.
 Use Detailed switch to return an object with state flag and information on resources and their state
 #>
@@ -82,12 +98,22 @@ function Test-VmwDscConfiguration {
     )
 
     $invokeParams = @{
-        DscResources = $Configuration.Resources
+        VmwDscNodes = $Configuration.Nodes
         Method = 'Test'
     }
-    
-    $resStateArr = Invoke-VmwDscResources @invokeParams
 
+    $resStateArr = $null
+    
+    try {
+        $resStateArr = Invoke-VmwDscNodes @invokeParams
+    } catch {
+        $exceptionMessage = $_.Exception.ErrorRecord.ToString()
+        
+        if ($exceptionMessage -eq $Script:UserInputExitException) {
+            return
+        }
+    }
+     
     $result = $null
     
     if ($Detailed) {
@@ -101,100 +127,206 @@ function Test-VmwDscConfiguration {
 }
 
 <#
-.Description
-Invokes an array of dsc resource with the given method  
+.SYNOPSIS
+Invoke dsc nodes.
 #>
-function Invoke-VmwDscResources {
-    param (
-        [Parameter(Mandatory)]
-        [VmwDscResource[]]
-        $DscResources,
-        
-        [Parameter(Mandatory)]
-        [ValidateSet('Get', 'Set', 'Test')]
+function Invoke-VmwDscNodes {
+    Param(
+        [VmwDscNode[]]
+        $VmwDscNodes,
+
         [string]
         $Method
     )
 
-    $result = New-Object -TypeName 'System.Collections.ArrayList'
+    # check for vSphere node connections
+    $validVsphereNodes = New-Object 'System.Collections.ArrayList'
+    $vSphereNodes = $VmwDscNodes | Where-Object { $_ -is [VmwVsphereDscNode]}
 
-    # invoke the dsc resources
-    foreach ($dscResource in $DscResources) {
-        $invokeResult = $null
+    if ($null -ne $vSphereNodes) {
+        $defaultViServers = GetDefaultViServers
 
-        if ($dscResource.GetIsComposite()) {
-            $invokeVmwDscResourceParams = @{
-                DscResources = $dscResource.GetInnerResources()
-                Method = $Method
-            }
-
-            $invokeResult = Invoke-VmwDscResources @invokeVmwDscResourceParams
-        } else {
-            $invokeDscResourceUtilParams = @{
-                DscResource = $dscResource
-                Method = $Method
-            }
-
-            $invokeResult = InvokeDscResourceUtil @invokeDscResourceUtilParams
+        # check if any connections are established
+        if ($null -eq $defaultViServers -or $defaultViServers.Count -eq 0) {
+            throw $Script:NoVsphereConnectionsFoundException
         }
 
-        $result.Add($invokeResult) | Out-Null
+        $invalidNodeFound = $false
+
+        foreach ($vSphereNode in $vSphereNodes) {
+            $connection = $defaultViServers | Where-Object { $_.Name -eq $vSphereNode.InstanceName }
+
+            $warningMessage = [string]::empty
+
+            if ($null -eq $connection) {
+                $warningMessage = ($Script:NoVsphereConnectionsFoundForNodeWarning -f $vSphereNode.InstanceName)
+                
+            } elseif ($connection.Count -gt 1) {
+                $warningMessage = ($Script:TooManyConnectionOnASingleVCenterWarning -f $vSphereNode.InstanceName)
+            } else {
+                foreach ($resource in $vSphereNode.Resources) {
+                    $resource.Property['Connection'] = $connection
+                }
+
+                $validVsphereNodes.Add($vSphereNode) | Out-Null
+            }
+
+            if (-not [string]::IsNullOrEmpty($warningMessage)) {
+                Write-Warning $warningMessage
+                $invalidNodeFound = $true
+            }
+        }
+
+        if ($invalidNodeFound) {
+            $title    = 'Invalid vSphere node(s) found'
+            $question = 'Warnings for the invalid vSphere nodes have been displayed and those nodes will be ignored. Are you sure you want to proceed?'
+            $choices  = @('&Yes', '&No')
+
+            $decision = $Host.UI.PromptForChoice($title, $question, $choices, 1)
+
+            if ($decision -ne 0) {
+                throw $Script:UserInputExitException
+            }
+        }
     }
 
-    $result.ToArray()
+    $nodesToIterate = ($validVsphereNodes.ToArray()) + ($VmwDscNodes | Where-Object { $_.GetType() -eq [VmwDscNode] })
+
+    foreach ($node in $nodesToIterate) {
+        $jobSplatParams = @{
+            ScriptBlock = (Get-Command Invoke-VmwDscResourceJob).ScriptBlock
+            ArgumentList = @( $node.Resources, $Method )
+        }
+
+        $job = Start-ThreadJob @jobSplatParams
+
+        
+        Write-Debug ("Thread job with id: $($job.Id) on node: $($node.InstanceName) started.")
+    }
+
+    $jobResult = Get-Job | Wait-Job | Receive-Job
+
+    $jobResult
 }
 
 <#
-.Description
-Utility function wraper for invoking dsc resources
+.DESCRIPTION
+Retrieves the DefaultVIServers array global variable
 #>
-function InvokeDscResourceUtil {
-    param (
-        [VmwDscResource]
-        $DscResource,
+function GetDefaultViServers {
+    $Global:DefaultVIServers
+}
+
+function Invoke-VmwDscResourceJob {
+    Param(
+        # [VmwDscResource[]]
+        $DscResources,
 
         [string]
         $Method
     )
 
-    # parameters used for Invoke-DscResource cmdlet
-    # Method property gets set later on inside switch, because it's variable
-    $invokeSplatParams = @{
-        Name = $DscResource.ResourceType
-        ModuleName = $DscResource.ModuleName
-        Property = $DscResource.Property
+    $path = Join-Path -Path (Split-Path $Using:PSScriptRoot) -ChildPath 'VMware.PSDesiredStateConfiguration.psd1'
+
+    Import-Module $path
+
+    <#
+    .DESCRIPTION
+    Invokes an array of dsc resource with the given method  
+    #>
+    function Invoke-VmwDscResources {
+        param (
+            [Parameter(Mandatory)]
+            [VmwDscResource[]]
+            $DscResources,
+            
+            [Parameter(Mandatory)]
+            [ValidateSet('Get', 'Set', 'Test')]
+            [string]
+            $Method
+        )
+
+        $result = New-Object -TypeName 'System.Collections.ArrayList'
+
+        # invoke the dsc resources
+        foreach ($dscResource in $DscResources) {
+            $invokeResult = $null
+
+            if ($dscResource.GetIsComposite()) {
+                $invokeVmwDscResourceParams = @{
+                    DscResources = $dscResource.GetInnerResources()
+                    Method = $Method
+                }
+
+                $invokeResult = Invoke-VmwDscResources @invokeVmwDscResourceParams
+            } else {
+                $invokeDscResourceUtilParams = @{
+                    DscResource = $dscResource
+                    Method = $Method
+                }
+
+                $invokeResult = InvokeDscResourceUtil @invokeDscResourceUtilParams
+            }
+
+            $result.Add($invokeResult) | Out-Null
+        }
+
+        $result.ToArray()
     }
 
-    $invokeResult = $null
-    
-    if ($Method -eq 'Test' -or $Method -eq 'Get') {
-        try {
-            $invokeResult = Invoke-DscResource @invokeSplatParams -Method $Method
-        } catch {
-            # if an exception is thrown that means the resource is not in desired state
-            # due to a dependency not being in desired state
-            if ($Method -eq 'Test') {
-                $invokeResult = [PSCustomObject]@{
-                    InDesiredState = $false
-                } 
+    <#
+    .DESCRIPTION
+    Utility function wraper for invoking dsc resources
+    #>
+    function InvokeDscResourceUtil {
+        param (
+            [VmwDscResource]
+            $DscResource,
+
+            [string]
+            $Method
+        )
+
+        # parameters used for Invoke-DscResource cmdlet
+        # Method property gets set later on inside switch, because it's variable
+        $invokeSplatParams = @{
+            Name = $DscResource.ResourceType
+            ModuleName = $DscResource.ModuleName
+            Property = $DscResource.Property
+        }
+
+        $invokeResult = $null
+        
+        if ($Method -eq 'Test' -or $Method -eq 'Get') {
+            try {
+                $invokeResult = Invoke-DscResource @invokeSplatParams -Method $Method
+            } catch {
+                # if an exception is thrown that means the resource is not in desired state
+                # due to a dependency not being in desired state
+                if ($Method -eq 'Test') {
+                    $invokeResult = [PSCustomObject]@{
+                        InDesiredState = $false
+                    } 
+                } else {
+                    $invokeResult = $DscResource
+                }
+            }
+        } else {
+            # checks if the resource is in target state
+            $isInDesiredState = Invoke-DscResource @invokeSplatParams -Method 'Test'
+
+            # executes 'set' method only if state is not desired
+            if ($isInDesiredState.InDesiredState) {
+                $invokeResult = $isInDesiredState
             } else {
-                $invokeResult = $DscResource
+                $invokeResult = Invoke-DscResource @invokeSplatParams -Method $Method
             }
         }
-    } 
-    else {
-        # checks if the resource is in target state
-        $isInDesiredState = Invoke-DscResource @invokeSplatParams -Method 'Test'
 
-        # executes 'set' method only if state is not desired
-        if ($isInDesiredState.InDesiredState) {
-            $invokeResult = $isInDesiredState
-        }
-        else {
-            $invokeResult = Invoke-DscResource @invokeSplatParams -Method $Method
-        }
+        $invokeResult
     }
 
-    $invokeResult
-}
+    $nodeInvokeResult = Invoke-VmwDscResources -DscResources $DscResources -Method $Method
 
+    $nodeInvokeResult
+}

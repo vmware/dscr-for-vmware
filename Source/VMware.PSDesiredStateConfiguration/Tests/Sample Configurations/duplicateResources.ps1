@@ -17,7 +17,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Configuration with duplicate resource names of the same type
+.DESCRIPTION
+Configuration with duplicate resource names of the same type.
+Should throw exception.
 #>
 Configuration Test {
     Import-DscResource -ModuleName MyDscResource
@@ -36,4 +38,3 @@ Configuration Test {
         Ensure = "absent"
     }
 }
-

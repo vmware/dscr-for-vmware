@@ -27,6 +27,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
         $rootTestPath = Split-Path $PSScriptRoot
 
         $Script:configFolder = Join-Path $rootTestPath 'Sample Configurations'
+        $Script:NodeConfigFolder = Join-Path $Script:configFolder 'Nodes'
     
         $util = Join-Path $rootTestPath 'Utility.ps1'
         . $util
@@ -47,7 +48,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     
                 # assert
     
-                Script:AssertConfigurationEqual $res $Script:expectedCompiled
+                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
             }
             It 'Should Compile configuration with multiple resources correctly' {
                 # arrange
@@ -61,7 +62,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     
                 # assert
     
-                Script:AssertConfigurationEqual $res $Script:expectedCompiled
+                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
             }
             It 'Should Compile configuration with parameters in file correctly' {
                 # arrange
@@ -75,7 +76,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     
                 # assert
     
-                Script:AssertConfigurationEqual $res $Script:expectedCompiled
+                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
             }
             It 'Should Compile configuration with a dependsOn correctly and order resources properly' {
                 # arrange
@@ -89,7 +90,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     
                 # assert
     
-                Script:AssertConfigurationEqual $res $Script:expectedCompiled
+                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
             }
             It 'Should compile configuration with parameters correctly' {
                 # arrange
@@ -103,14 +104,14 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     
                 . $configFile
     
-                $Script:expectedCompiled.Resources[0].Property = $paramsToUse
+                $Script:ExpectedCompiled.Nodes[0].Resources[0].Property = $paramsToUse
     
                 # act
                 $res = New-VmwDscConfiguration 'Test' -CustomParams $paramsToUse
     
                 # assert
     
-                Script:AssertConfigurationEqual $res $Script:expectedCompiled
+                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
             }
             It 'Should compile configuration with multiple DependsOn resources in a single resource' {
                 # arrange
@@ -122,19 +123,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                 $res = New-VmwDscConfiguration 'Test' -CustomParams $paramsToUse
     
                 # assert
-                Script:AssertConfigurationEqual $res $Script:expectedCompiled
-            }
-            #TODO Remove when node logic is implemented
-            It 'Should throw if configuration contains nodes' {
-                # arrange
-                $configToUse = 'manyNodes.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
-    
-                . $configFile
-    
-                # assert
-    
-                { New-VmwDscConfiguration 'Test' } | Should -Throw
+                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
             }
             It 'Should throw if given an invaid configuration name' {
                 # arrange
@@ -194,7 +183,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     $res = New-VmwDscConfiguration 'Test'
     
                     # assert
-                    Script:AssertConfigurationEqual $res $Script:expectedCompiled
+                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
                 }
                 It 'Should compile composite resource correctly' {
 
@@ -222,7 +211,45 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     $res = New-VmwDscConfiguration 'Test'
     
                     # assert
-                    Script:AssertConfigurationEqual $res $Script:expectedCompiled
+                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                }
+            }
+            Context 'Node logic' {
+                It 'Should compile a single Node correctly' {
+                    # arrange
+                    $configToUse = 'singleNode.ps1'
+                    $configFile = Join-Path $Script:NodeConfigFolder $configToUse
+    
+                    . $configFile
+                    # act
+                    $res = New-VmwDscConfiguration 'Test'
+    
+                    # assert
+                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                }
+                It 'Should group resources from multiple same node definitions correctly' {
+                    # arrange
+                    $configToUse = 'singleNode.ps1'
+                    $configFile = Join-Path $Script:NodeConfigFolder $configToUse
+    
+                    . $configFile
+                    # act
+                    $res = New-VmwDscConfiguration 'Test'
+    
+                    # assert
+                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                }
+                It 'Should compile multiple Nodes correctly' {
+                    # arrange
+                    $configToUse = 'manyNodes.ps1'
+                    $configFile = Join-Path $Script:NodeConfigFolder $configToUse
+    
+                    . $configFile
+                    # act
+                    $res = New-VmwDscConfiguration 'Test'
+    
+                    # assert
+                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
                 }
             }
         }

@@ -17,35 +17,39 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Configuration with multiple nodes
+    Basic Configuration with only a single resource
 #>
-Configuration Test
+Configuration Test 
 {
     Import-DscResource -ModuleName MyDscResource
 
-    Node 'MyNode' 
-    {
-        FileResource 'file'
+    Node 'Sample Node' {
+        FileResource file 
         {
-            Path = 'path'
-            SourcePath = 'path2'
-            Ensure = 'present'
+            Path = "path"
+            SourcePath = "path"
+            Ensure = "present"
         }
-    }
-
-    Node 'Other'
-    {
-        FileResource file {
-            Path = 'no path'
-            SourcePath = 'no source'
-            Ensure = 'absent'
-        }
-    }
-
-    FileResource file {
-        Path = 'no path'
-        SourcePath = 'no source'
-        Ensure = 'absent'
     }
 }
 
+$Script:expectedCompiled = [VmwDscConfiguration]::new(
+    'Test',
+    @(
+        [VmwDscNode]::new(
+            'Sample Node',
+            @(
+                [VmwDscResource]::new(
+                    'file',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+            )
+        )
+    )
+)

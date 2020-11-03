@@ -17,7 +17,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Configuration file with parameters
+.DESCRIPTION
+Configuration with parameters from the file.
+Should get parsed correctly.
 #>
 Param(
     $PathToUse
@@ -37,16 +39,20 @@ Configuration Test {
 $Script:expectedCompiled = [VmwDscConfiguration]::new(
     'Test',
     @(
-        [VmwDscResource]::new(
-            'file',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = $PathToUse
-                SourcePath = "some path"
-                Ensure = "present"
-            }
+        [VmwDscNode]::new(
+            'localhost',
+            @(
+                [VmwDscResource]::new(
+                    'file',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = $PathToUse
+                        SourcePath = "some path"
+                        Ensure = "present"
+                    }
+                )
+            )
         )
     )
 )
-
