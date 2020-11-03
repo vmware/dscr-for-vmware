@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## VMware.vSphereDSC 2.1.0.73 - 2020-11-03
+## 2020-11-03
 ### Added
 - Added **BuildFlags** enumeration that tracks the steps which need to be performed during the build process.
 
