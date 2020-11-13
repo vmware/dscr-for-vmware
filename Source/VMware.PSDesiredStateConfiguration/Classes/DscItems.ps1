@@ -67,9 +67,6 @@ Class that defines a dsc resource
 #>
 class VmwDscResource : DscItem {
     [ValidateNotNullOrEmpty()]
-    [string] $InstanceName
-
-    [ValidateNotNullOrEmpty()]
     [string] $ResourceType
 
     [ValidateNotNull()]
@@ -259,8 +256,8 @@ class DscConfigurationCompiler {
         $this.CustomParams = $CustomParams
         $this.ConfigurationData = $ConfigurationData
 
-        $this.ResourceNameToInfo = @{}
         $this.CompositeResourceToScriptBlock = @{}
+        $this.ResourceNameToInfo = @{}
         $this.IsNested = $false
     }
 
@@ -414,22 +411,46 @@ class DscConfigurationCompiler {
     hidden [DscItem[]] CompileDscConfigurationUtil([System.Management.Automation.ConfigurationInfo] $ConfigCommand, [Hashtable] $CustomParams) {
         $dscConfigurationParser = [DscConfigurationParser]::new()
 
+        # parse the configuration, run Import-DscResource statements and retrieve the found resources/nested configurations
+        $parseResult = $dscConfigurationParser.ParseDscConfiguration($configCommand)
+
+        $resources = $parseResult.ResourceNameToInfo
         $foundDscResourcesList = New-Object -TypeName 'System.Collections.ArrayList'
-        $configScriptBlock = $dscConfigurationParser.ParseDscConfiguration($configCommand, $foundDscResourcesList, $this.CompositeResourceToScriptBlock, $this.ResourceNameToInfo)
+        # divide the regular resources and composite/nested into separate groups
+        foreach ($resourceName in $resources.Keys) {
+            $this.ResourceNameToInfo[$resourceName] = $resources[$resourceName]
+
+            $resourceInfo = $this.ResourceNameToInfo[$resourceName]
+
+            if ($resourceInfo.ImplementedAs.ToString() -eq 'Composite' -or $resourceInfo.ImplementedAs.ToString() -eq 'Configuration') {
+                $this.CompositeResourceToScriptBlock[$resourceName] = (Get-Command $resourceName -ErrorAction 'SilentlyContinue')
+            } else {
+                $foundDscResourcesList.Add($resourceName) | Out-Null
+            }
+        }
+
+        # create functions for nodes and resources to be used in InvokeWithContext
         $functionsToDefine = $this.CreateFunctionsToDefine($foundDscResourcesList.ToArray())
 
+        # create variable objects for InvokeWithContext from ConfigurationData and common dsc configuration variables
         $variablesToDefine = $this.CreateVariablesToDefine()
+
+        $configScriptBlock = $parseResult.ScriptBlock
 
         $dscItems = $configScriptBlock.InvokeWithContext($functionsToDefine, $variablesToDefine, $CustomParams)
 
         return $dscItems
     }
 
+    <#
+    .DESCRIPTION
+    Creates variables that will be used during the dsc configuration scriptblock execution
+    #>
     hidden [Array] CreateVariablesToDefine() {
         $result = @(
             if ($null -ne $this.ConfigurationData) {
                 New-Object -TypeName PSVariable -ArgumentList ('ConfigurationData', $this.ConfigurationData )
-                New-Object -TypeName PSVariable -ArgumentList ('ConfigurationData', $this.ConfigurationData.AllNodes )
+                New-Object -TypeName PSVariable -ArgumentList ('AllNodes', $this.ConfigurationData.AllNodes )
             }
         )
         
@@ -478,6 +499,7 @@ class DscConfigurationCompiler {
             }
         }
 
+        # group nodeless resources
         if ($nodeLessResources.Count -gt 0) {
             $localHostConnection = 'localhost'
             
@@ -523,9 +545,7 @@ class DscConfigurationCompiler {
                 [string]
                 $NestedConfigName,
                 [ScriptBlock]
-                $Properties,
-                [string]
-                $ResourceOrConfigType = ''
+                $Properties
             )
 
             if ($this.IsNested) {
@@ -547,8 +567,10 @@ class DscConfigurationCompiler {
                 $parsedProps.Remove('DependsOn')
             }
 
+            # get type of the configuration from the stack
             $configType = Get-PSCallStack | Select-Object -First 1 | Select-Object -ExpandProperty Command
 
+            # retrieve internal resources
             $innerResources = $this.CompileDscConfigurationUtil($this.CompositeResourceToScriptBlock[$configType], $parsedProps)
 
             $compositeResourceProps = @{}
@@ -614,28 +636,6 @@ class DscConfigurationCompiler {
         $functionsToDefine['vSphereNode'] = $nodeLogicScriptBlock
 
         return $functionsToDefine
-    }
-    
-    <#
-    .DESCRIPTION
-    Handles the logic for Import-DscResource.
-    #>
-    hidden [void] ParseImportDscResource([string[]] $Name, $ModuleName) {
-        $getDscResourceSplatParams = @{
-            Name = $Name
-            Module = $ModuleName
-        }  
-
-        $oldProgPref = $Global:ProgressPreference
-        $Global:ProgressPreference = 'SilentlyContinue'
-
-        $importedResources = Get-DscResource @getDscResourceSplatParams
-
-        $Global:ProgressPreference = $oldProgPref
-
-        foreach ($importedResource in $importedResources) {
-            $this.ResourceNameToInfo[$importedResource.Name] = $importedResource
-        }
     }
 
     <#
@@ -710,10 +710,7 @@ class DscConfigurationParser {
     Parses the Configuration scriptblock into an invokable form and retrieves a list dsc resources
     and a hashtable of local configuration names to their scriptblock
     #>
-    [ScriptBlock] ParseDscConfiguration([System.Management.Automation.ConfigurationInfo] $ConfigCommand,
-    [System.Collections.ArrayList] $FoundDscResourcesList,
-    [Hashtable] $NestedConfigToScriptBlock,
-    [Hashtable] $ResourceNameToInfo) {
+    [PsObject] ParseDscConfiguration([System.Management.Automation.ConfigurationInfo] $ConfigCommand) {
         $configTextBlock = $ConfigCommand.ScriptBlock.Ast.Extent.Text
         
         # find and extract the import-dscresource statements so that they can be executed first 
@@ -736,10 +733,6 @@ class DscConfigurationParser {
         # invoke the import-dscresource statements
         $this.InvokeImportDscResource($statements.ToArray())
 
-        foreach ($resource in $this.ResourceNameToInfo.Keys) {
-            $ResourceNameToInfo[$resource] = $this.ResourceNameToInfo[$resource]
-        }
-
         $configTextBlock = $configTextBlock.Insert(0, 'Param( $CustomParams ) . ')
 
         # find all dynamic keywords inside the configuration
@@ -755,26 +748,28 @@ class DscConfigurationParser {
             $itemFullName = "$itemName $($dynamicKeyword.CommandElements[1].Extent.Text)"
             $configTextBlock = $this.ReplaceBracketWith($configTextBlock, $itemFullName, "{")
 
-            if ($itemName -eq 'Node') {
-                continue
-            }
+            $command = (Get-Command $itemName -ErrorAction 'SilentlyContinue')
 
-            # check if resource is nested configuration
-            $nestedConfigCommand = Get-Command $itemName -ErrorAction 'SilentlyContinue'
-
-            if (($null -ne $nestedConfigCommand) -and ($nestedConfigCommand.CommandType.ToString() -eq 'Configuration')) {
-                $NestedConfigToScriptBlock[$itemName] = $nestedConfigCommand
-            } else {
-                $FoundDscResourcesList.Add($itemName) | Out-Null
+            # case for nested configurations
+            if ($null -ne $command -and -not $this.ResourceNameToInfo.ContainsKey($itemName)) {
+                $this.ResourceNameToInfo[$itemName] = [PsObject]@{
+                    ImplementedAs = 'Configuration'
+                }
             }
         }
 
         $configTextBlock += ' @CustomParams'
 
-        # return created scriptblock
-        return [ScriptBlock]::Create($configTextBlock)
+        return [PsObject]@{
+            ScriptBlock = [ScriptBlock]::Create($configTextBlock)
+            ResourceNameToInfo = $this.ResourceNameToInfo
+        }
     }
 
+    <#
+    .DESCRIPTION
+    Invokes all the found Import-DscResource statements
+    #>
     hidden [void] InvokeImportDscResource([string[]] $statements) {
         $importDscResourceLogic = {
             Param (
@@ -859,5 +854,277 @@ class DscConfigurationParser {
         $StringToChange = $StringToChange -replace $regexPattern, $replacement
     
         return $StringToChange
+    }
+}
+
+<#
+.DESCRIPTION
+Base type for Invoke-VmwDscConfigurations results
+#>
+class BaseDscMethodResult {
+    [string] $NodeName
+
+    BaseDscMethodResult([string] $NodeName) {
+        $this.NodeName = $NodeName
+    }
+}
+
+<#
+.DESCRIPTION
+Result type for Get-VmwDscConfiguration
+#>
+class DscGetMethodResult : BaseDscMethodResult {
+    [PsObject[]] $ResourcesStates
+
+    DscGetMethodResult([string] $NodeName, [PsObject[]]$Resources) : base($NodeName) {
+        $this.ResourcesStates = $Resources
+    }
+}
+
+<#
+.DESCRIPTION
+Result type for Test-VmwDscConfiguration with -Detailed flag switched on
+#>
+class DscTestMethodDetailedResult : BaseDscMethodResult {
+    [bool] $InDesiredState
+
+    [VmwDscResource[]] $ResourcesInDesiredState
+
+    [VmwDscResource[]] $ResourcesNotInDesiredState
+
+    DscTestMethodDetailedResult([VmwDscNode] $Node, [PsObject[]] $StateArr) : base($Node.InstanceName) {
+        $this.NodeName = $Node.InstanceName
+
+        $this.GroupResourcesByDesiredState($node.Resources, $StateArr)
+    }
+
+    hidden [void] GroupResourcesByDesiredState([VmwDscResource[]] $Resources, [PsObject[]] $StateArr) {
+        $this.InDesiredState = $true
+        $resInDesiredState = New-Object -TypeName 'System.Collections.ArrayList'
+        $resNotInDesiredState = New-Object -TypeName 'System.Collections.ArrayList'
+
+        for ($i = 0; $i -lt $Resources.Count; $i++) {
+            # states can be an array due to composite resources having multiple inner resources
+            $states = $StateArr[$i]
+            $currInDesiredState = $true
+
+            foreach ($state in $states) {
+                if (-not $state.InDesiredState) {
+                    $currInDesiredState = $false
+                    break
+                }
+            }
+
+            # add to correct array depending on the desired state
+            if ($currInDesiredState) {
+                $resInDesiredState.Add($Resources[$i]) | Out-Null
+            } else {
+                $resNotInDesiredState.Add($Resources[$i]) | Out-Null
+                $this.InDesiredState = $false
+            }
+        }
+
+        $this.ResourcesInDesiredState = $resInDesiredState.ToArray()
+        $this.ResourcesNotInDesiredState = $resNotInDesiredState.ToArray()
+    }
+}
+
+<#
+.DESCRIPTION
+Executes Configuration objects created from New-VmwDscConfiguration cmdlet.
+#>
+class DscConfigurationRunner {
+    [VmwDscConfiguration] $Configuration
+    [string] $DscMethod
+
+    hidden [VmwDscNode[]] $ValidNodes
+
+    DscConfigurationRunner([VmwDscConfiguration] $Configuration, [string] $DscMethod) {
+        $this.Configuration = $Configuration
+        $this.DscMethod = $DscMethod
+    }
+
+    <#
+    .DESCRIPTION
+    Invokes the configuration
+    #>
+    [Psobject] InvokeConfiguration() {
+        $this.ValidateVsphereNodes()
+
+        $invokeResult = New-Object 'System.Collections.ArrayList'
+
+        foreach ($node in $this.ValidNodes) {
+            $result = $this.InvokeNodeResources($node.Resources)
+
+            $nodeResult = [PsObject]@{
+                OriginalNode = $node
+                InvokeResult = $result
+            }
+
+            $invokeResult.Add($nodeResult) | Out-Null
+        }
+
+        return $invokeResult
+    }
+
+    <#
+    .DESCRIPTION
+    Checks if there are any vSphere Nodes and validates them.
+    Sets ValidNodes property for use in invoking the nodes
+    #>
+    hidden [void] ValidateVsphereNodes() {
+        $vSphereNodes = $this.Configuration.Nodes | Where-Object { $_ -is [VmwVsphereDscNode] }
+
+        if ($null -eq $vSphereNodes -or $vSphereNodes.Count -eq 0) {
+            $this.ValidNodes = $this.Configuration.Nodes
+
+            return
+        }
+
+        # gets PSVersionTable via Get-Variable because automatic variables are not accessable in any other way inside classes
+        $psVersionTableVariable = Get-Variable -Name PSVersionTable
+
+        if ($psVersionTableVariable.Value['PSEdition'] -ne 'Core') {
+            throw $Script:VsphereNodesAreOnlySupportedOnPowerShellCoreException
+        }
+
+        $validVsphereNodes = New-Object 'System.Collections.ArrayList'
+
+        $defaultViServers = $this.GetDefaultViServers()
+
+        # check if any connections are established
+        if ($null -eq $defaultViServers -or $defaultViServers.Count -eq 0) {
+            throw $Script:NoVsphereConnectionsFoundException
+        }
+
+        foreach ($vSphereNode in $vSphereNodes) {
+            $warningMessage = [string]::Empty
+
+            if (-not $defaultViServers.ContainsKey($vSphereNode.InstanceName)) {
+                $warningMessage = ($Script:NoVsphereConnectionsFoundForNodeWarning -f $vSphereNode.InstanceName)
+            } else {
+                $this.SetResourcesConnection($vSphereNode.Resources, $defaultViServers, $vSphereNode.InstanceName)
+
+                $validVsphereNodes.Add($vSphereNode) | Out-Null
+            }
+
+            if (-not [string]::IsNullOrEmpty($warningMessage)) {
+                # write warning for no connection on a vSphere node
+                Write-Warning $warningMessage
+            }
+        }
+
+        # combine valid vSphereNodes with all regular Nodes
+        $this.ValidNodes = ($validVsphereNodes.ToArray()) + ($this.Configuration.Nodes | Where-Object { $_.GetType() -eq [VmwDscNode] })
+    }
+
+    <#
+    .DESCRIPTION
+    Sets the connection property of vSphereNode resources and composite resources.
+    #>
+    hidden [void] SetResourcesConnection([VmwDscResource[]] $Resources, [HashTable] $DefaultViServers, [string] $nodeInstanceName) {
+        foreach ($resource in $Resources) {
+            if ($resource.GetIsComposite()) {
+                $this.SetResourcesConnection($resource.GetInnerResources(), $DefaultViServers, $nodeInstanceName)
+            } else {
+                $resource.Property['Connection'] = $defaultViServers[$nodeInstanceName]
+            }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+    Invokes Resources
+    #>
+    [Psobject[]] InvokeNodeResources([VmwDscResource[]] $DscResources) {
+        $result = New-Object -TypeName 'System.Collections.ArrayList'
+
+        # invoke the dsc resources
+        foreach ($dscResource in $DscResources) {
+            $invokeResult = $null
+
+            if ($dscResource.GetIsComposite()) {
+                $invokeResult = $this.InvokeNodeResources($dscResource.GetInnerResources())
+            } else {
+                $invokeResult = $this.InvokeNodeResource($dscResource)
+            }
+
+            $result.Add($invokeResult) | Out-Null
+        }
+
+        return $result.ToArray()
+    }
+
+    <#
+    .DESCRIPTION
+    Invokes single resource.
+    Uses Invoke-DscResource internaly.
+    #>
+    hidden [Psobject] InvokeNodeResource([VmwDscResource] $DscResource) {
+        # parameters used for Invoke-DscResource cmdlet
+        # Method property gets set later on inside switch, because it's variable
+        $invokeSplatParams = @{
+            Name = $DscResource.ResourceType
+            ModuleName = $DscResource.ModuleName
+            Property = $DscResource.Property
+        }
+
+        $invokeResult = $null
+
+        if ($this.DscMethod -eq 'Test') {
+            try {
+                $invokeResult = Invoke-DscResource @invokeSplatParams -Method $this.DscMethod
+            } catch {
+                # if an exception is thrown that means the resource is not in desired state
+                # due to a dependency not being in desired state
+                $invokeResult = [PSCustomObject]@{
+                    InDesiredState = $false
+                }
+            }
+        } elseif ($this.DscMethod -eq 'Get') {
+            try {
+                $invokeResult = Invoke-DscResource @invokeSplatParams -Method $this.DscMethod
+            } catch {
+                # if an exception is thrown that means the resource is not in desired state
+                # due to a dependency not being in desired state
+                $invokeResult = $null
+            }
+        } else {
+            # checks if the resource is in target state
+            $isInDesiredState = Invoke-DscResource @invokeSplatParams -Method 'Test'
+
+            # executes 'set' method only if state is not desired
+            if (-not $isInDesiredState.InDesiredState) {
+                (Invoke-DscResource @invokeSplatParams -Method $this.DscMethod) | Out-Null
+            }
+        }
+
+        return $invokeResult
+    }
+
+    <#
+    .DESCRIPTION
+    Retrieves the global VI Servers array from VICore module and transforms it into
+    a hashtable with key name and value the object
+    #>
+    hidden [Hashtable] GetDefaultViServers() {
+        $serverList = $Global:DefaultVIServers
+
+        if ($null -eq $serverList) {
+            return $null
+        }
+
+        $serverHashtable = @{}
+
+        foreach ($server in $serverList) {
+            if ($serverHashtable.ContainsKey($server.Name)) {
+                # more than one connection to the same VIServer
+                throw ($Script:TooManyConnectionOnASingleVCenterException -f $server.Name)
+            }
+
+            $serverHashtable[$server.Name] = $server
+        }
+
+        return $serverHashtable
     }
 }

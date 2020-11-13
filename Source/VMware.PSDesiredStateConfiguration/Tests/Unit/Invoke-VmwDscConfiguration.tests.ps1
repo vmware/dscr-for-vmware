@@ -16,8 +16,6 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-#TODO: Update unit tests for compatability with vSphere Nodes
-
 $root = Split-Path (Split-Path $PSScriptRoot)
 
 $module = Join-Path $root 'VMware.PSDesiredStateConfiguration.psd1'
@@ -25,246 +23,106 @@ $module = Join-Path $root 'VMware.PSDesiredStateConfiguration.psd1'
 Import-Module $module -Force
 
 InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
-    Describe 'Invoke-VmwDscResources' {
-        $Script:placeholderResource = @(
-            [VmwDscResource]::new(
-                'testResourceName',
-                'testResourceType',
-                'testModuleName',
-                @{
-                    TestField = 'Test'
-                }
-            )
-        )
-        Context 'Set' {
-            It 'Should not execute if resource is in desired state' {
-                # arrange
-                Mock Invoke-DscResource {
-                    [PSCustomObject]@{
-                        InDesiredState = $true
-                    }
-                } -Verifiable
-    
-                # act
-                $result = Invoke-VmwDscResources $Script:placeholderResource 'Set'                
-    
-                # assert
-                Assert-VerifiableMock
-                $result | Should -Be $true
-            }
-            It 'Should execute if resource is not in desired state' {
-                # arrange
-                Mock Invoke-DscResource {
-                    Param(
-                        $Name,
-                        $ModuleName,
-                        $Property,
-                        $Method
-                    )
-
-                    if ($Method -eq 'Test') {
-                        [PSCustomObject]@{
-                            InDesiredState = $false
-                        }
-                    } else {
-                        'completed job'
-                    }
-                } -Verifiable
-
-                # act
-                $result = Invoke-VmwDscResources $Script:placeholderResource 'Set'
-
-                # assert
-                Assert-VerifiableMock
-                $result | Should -Be 'completed job'
-            }
-        }
-        Context 'Get' {
-            It 'Should return correct result' {
-                # arrange
-                $expectedResource = @(
+    $Script:SampleDscConfiguration = [VmwDscConfiguration]::new(
+        'Test',
+        @(
+            [VmwDscNode]::new(
+                'localhost',
+                @(
                     [VmwDscResource]::new(
                         'file',
                         'FileResource',
-                        'MyDscResource',
-                        @{
-                            Path = "new.txt"
-                            SourcePath = "original.txt"
-                            Ensure = "Present"
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                        @{ 
+                            Path = "path"
+                            SourcePath = "path"
+                            Ensure = "present"
+                        }
+                    ),
+                    [VmwDscResource]::new(
+                        'file2',
+                        'FileResource',
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                        @{ 
+                            Path = "path2"
+                            SourcePath = "path2"
+                            Ensure = "absent"
                         }
                     )
                 )
-                Mock Invoke-DscResource {
-                    Param(
-                        $Property
-                    )
-                    
-                    [PSCustomObject]@{
-                        Path = $Property['Path']
-                        SourcePath = $Property['SourcePath']
-                        Ensure = $Property['Ensure']
-                    }
-                } -Verifiable
+            )
+        )
+    )
 
-                # act
-                $result = Invoke-VmwDscResources $expectedResource 'Get'
-    
-                # assert
-                Assert-VerifiableMock
-
-                ($null -eq $result) | Should -BeFalse
-                $result.Path | Should -Be $expectedResource.Property['Path']
-                $result.SourcePath | Should -Be $expectedResource.Property['SourcePath']
-                $result.Ensure | Should -Be $expectedResource.Property['Ensure']
-            }
-        }
-        Context 'Test' {
-            It 'Should return correct result' {
-                # arrange
-                Mock Invoke-DscResource {
-                    [PSCustomObject]@{
-                        InDesiredState = $true
-                    }
-                } -Verifiable
-                # act
-                $res = Invoke-VmwDscResources $Script:placeholderResource 'Test'
-    
-                # assert
-                Assert-VerifiableMock
-                $res | Should -Be $true
-            }
-        }
-        Context 'Composite Resources' {
-            It 'Should return innerresources data as a signle entry instead of multiple' {
-                # arrange
-                $testResource = @(
+    $Script:SampleDscConfigurationWithVsphereNode = [VmwDscConfiguration]::new(
+        'Test',
+        @(
+            [VmwVsphereDscNode]::new(
+                '10.10.10.10',
+                @(
                     [VmwDscResource]::new(
-                        'testComposite',
-                        'testType',
-                        'testModule',
+                        'MyDatacenterFolder',
+                        'DatacenterFolder',
+                        'VMware.vSphereDSC',
                         @{
-                            SomeProp = 'this'
-                        },
-                        @(
-                            [VmwDscResource]::new(
-                                'testInner1',
-                                'testInner1Type',
-                                'testModule'
-                            ),
-                            [VmwDscResource]::new(
-                                'testInner2',
-                                'testInner2Type',
-                                'testModule'
-                            )
-                        )
-                    ),
-                    [VmwDscResource]::new(
-                        'testNormal',
-                        'testNormalType',
-                        'testNormalModule'
+                            Location = ''
+                            Name = 'MyDatacenterFolder'
+                            Ensure = 'Present'
+                        }
                     )
                 )
+            )
+        )
+    )
+    
+    Describe 'Get-VmwDscConfiguration' {
+        It 'Should return the last executed configuration resources' {
+            # arrange
+            Mock Invoke-DscResource {
+                Param(
+                    $Method
+                )
+                
+                if ($Method -eq 'Get') {
+                    [PSCustomObject]@{
+                        Prop = 'MyProp'
+                    }
+                }
+            } -Verifiable
 
-                Mock InvokeDscResourceUtil {
-                    Param(
-                        $DscResource,
-                        $Method
-                    )
+            $Script:LastExecutedConfiguration = $Script:SampleDscConfiguration
+            
+            # act
+            $result = Get-VmwDscConfiguration
 
-                    $DscResource
-                } -Verifiable
-
-                # act
-                $results = Invoke-VmwDscResources $testResource -Method 'Test'
-
-                # assert
-                Assert-VerifiableMock
-                $results.Count | Should -Be 2
-            }
-        }
-        It 'Should throw if invalid method is given' {
             # assert
-            { Invoke-VmwDscResources $Script:placeholderResource 'invalid method' } | Should -Throw
+            Assert-VerifiableMock
+            ($null -ne $result) | Should -Be $true
         }
     }
     Describe 'Test-VmwDscConfiguration' {
-        Context 'Detailed switch is off' {
-            It 'Should return true if all resources are in desired state' {
-                # arrange
-                $config = [VmwDscConfiguration]::new(
-                    'test',
-                    @(
-                        [VmwDscResource]::new(
-                            'file',
-                            'valid',
-                            'MyDscResource',
-                            @{
-                                Property = 'some prop'
-                            }
-                        )
-                    )
-                )
-
+        Context 'Detailed switch is on' {
+            It 'Should place resources in desired state in ResourcesInDesiredState property' {
                 Mock Invoke-DscResource {
+                    Param(
+                        $Name
+                    )
+    
                     [PSCustomObject]@{
                         InDesiredState = $true
                     }
                 } -Verifiable
 
                 # act
-                $res = Test-VmwDscConfiguration $config
+                $res = Test-VmwDscConfiguration $Script:SampleDscConfiguration -Detailed
 
                 # assert
                 Assert-VerifiableMock
-                $res | Should -Be $true
+                $res.InDesiredState | Should -Be $true
+                $res.ResourcesInDesiredState.Count | Should -Be 2
+                $res.ResourcesNotInDesiredState.Count | Should -Be 0
             }
-            It 'Should return false if at least one resource is not in desired state' {
-                # arrange
-                $config = [VmwDscConfiguration]::new(
-                    'test',
-                    @(
-                        [VmwDscResource]::new(
-                            'file',
-                            'valid',
-                            'MyDscResource',
-                            @{
-                                Property = 'some prop'
-                            }
-                        )
-                    )
-                )
-
-                Mock Invoke-DscResource {    
-                    [PSCustomObject]@{
-                        InDesiredState = $false
-                    }
-                } -Verifiable
-
-                # act
-                $res = Test-VmwDscConfiguration $config
-
-                # assert
-                Assert-VerifiableMock
-                $res | Should -Be $false
-            }
-        }
-        Context 'Detailed switch is on' {
-            It 'Should have desired state be false if at least one resource is not in desired state and correctly placed resources in arrays' {
-                # arrange
-                $config = [VmwDscConfiguration]::new(
-                    'test',
-                    @(
-                        [VmwDscResource]::new(
-                            'file',
-                            'valid',
-                            'MyDscResource',
-                            @{
-                                Property = 'some prop'
-                            }
-                        )
-                    )
-                )
-    
+            It 'Should place resources not in desired state in ResourcesNotInDesiredState property' {
                 Mock Invoke-DscResource {
                     Param(
                         $Name
@@ -274,64 +132,179 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         InDesiredState = $false
                     }
                 } -Verifiable
-    
+
                 # act
-                $res = Test-VmwDscConfiguration $config -Detailed
-    
+                $res = Test-VmwDscConfiguration $Script:SampleDscConfiguration -Detailed
+
                 # assert
                 Assert-VerifiableMock
                 $res.InDesiredState | Should -Be $false
                 $res.ResourcesInDesiredState.Count | Should -Be 0
-                $res.ResourcesNotInDesiredState.Count | Should -Be 1
+                $res.ResourcesNotInDesiredState.Count | Should -Be 2
             }
-            It 'Should place resources in correct arrays and have desired state be true' {
-                # arrange
-                $config = [VmwDscConfiguration]::new(
-                    'test',
-                    @(
-                        [VmwDscResource]::new(
-                            'file',
-                            'FileResource',
-                            'MyDscResource',
-                            @{
-                                Path = "new.txt"
-                                SourcePath = "original.txt"
-                                Ensure = "Present"
-                            }
-                        )
-                        [VmwDscResource]::new(
-                            'file2',
-                            'FileResource',
-                            'MyDscResource',
-                            @{
-                                Path = "new2.txt"
-                                SourcePath = "original.txt"
-                                Ensure = "Present"
-                            }
-                        )
-                    )
-                )
-    
+        }
+        Context 'Detailed switch is off' {
+            It 'Should return $true if state is desired' {
                 Mock Invoke-DscResource {
-                    Param(
-                        $Property
-                    )
-    
                     [PSCustomObject]@{
                         InDesiredState = $true
                     }
                 } -Verifiable
     
                 # act
-                $res = Test-VmwDscConfiguration $config -Detailed
+                $res = Test-VmwDscConfiguration $Script:SampleDscConfiguration
     
                 # assert
                 Assert-VerifiableMock
-                $res.InDesiredState | Should -Be $true
-                $res.ResourcesInDesiredState.Count | Should -Be 2
-                $res.ResourcesNotInDesiredState.Count | Should -Be 0
+                $res | Should -Be $true
+            }
+            It 'Should return $false if state is not desired' {
+                Mock Invoke-DscResource {
+                    [PSCustomObject]@{
+                        InDesiredState = $false
+                    }
+                } -Verifiable
+    
+                # act
+                $res = Test-VmwDscConfiguration $Script:SampleDscConfiguration
+    
+                # assert
+                Assert-VerifiableMock
+                $res | Should -Be $false
+            }
+        }
+    }
+    Describe 'Start-VmwDscConfiguration' {
+        It 'Should not execute set method if resource is in desired state' {
+            try {
+                # arrange
+                $Global:_IsSetExecuted = $false
+
+                Mock Invoke-DscResource {
+                    Param(
+                        $Method
+                    )
+
+                    if ($Method -eq 'Test') {
+                        [PSCustomObject]@{
+                            InDesiredState = $true
+                        }
+                    } else {
+                        $Global:_IsSetExecuted = $true
+                    }
+                } -Verifiable
+
+                # act
+                Start-VmwDscConfiguration $Script:SampleDscConfiguration
+
+                # assert
+                Assert-VerifiableMock
+                $Global:_IsSetExecuted | Should -Be $false
+            }
+            finally {
+                Remove-Variable -Name '_IsSetExecuted' -Scope 'Global'
+            }
+        }
+        It 'Should execute set method if resource is not in desired state' {
+            try {
+                # arrange
+                $Global:_IsSetExecuted = $false
+
+                Mock Invoke-DscResource {
+                    Param(
+                        $Method
+                    )
+
+                    if ($Method -eq 'Test') {
+                        [PSCustomObject]@{
+                            InDesiredState = $false
+                        }
+                    } else {
+                        $Global:_IsSetExecuted = $true
+                    }
+                } -Verifiable
+
+                # act
+                Start-VmwDscConfiguration $Script:SampleDscConfiguration
+
+                # assert
+                Assert-VerifiableMock
+                $Global:_IsSetExecuted | Should -Be $true
+            }
+            finally {
+                Remove-Variable -Name '_IsSetExecuted' -Scope 'Global'
+            }
+        }
+    }
+    Describe 'Invoke-VmwDscConfiguration' {
+        It 'Should throw if invalid method is given' {
+            # assert
+            { Invoke-VmwDscConfiguration $Script:SampleDscConfiguration 'invalid method' } | Should -Throw
+        }
+        It 'Should throw if no configuration is given and no configuration has been executed before it' {
+            # arrange
+            $Script:LastExecutedConfiguration = $null
+
+            # assert
+            { Invoke-VmwDscConfiguration -Method 'test' } | Should -Throw $Script:NoConfigurationDetectedForInvokeException
+        }
+    }
+    Describe 'vSphereNode functionality' {
+        It 'Should throw if DefaultViServers is null' {
+            # assert
+            { Invoke-VmwDscConfiguration $Script:SampleDscConfigurationWithVsphereNode 'Test' } | Should -Throw $Script:NoVsphereConnectionsFoundException
+        }
+        It 'Should throw if there are multiple connections to the same vSphere server' {
+            try {
+                # arrange
+                $Global:DefaultViServers = @(
+                    [PsObject]@{
+                        Name = $Script:SampleDscConfigurationWithVsphereNode.Nodes[0].InstanceName
+                    }
+                    [PsObject]@{
+                        Name = $Script:SampleDscConfigurationWithVsphereNode.Nodes[0].InstanceName
+                    }
+                )
+    
+                # assert
+                { Invoke-VmwDscConfiguration $Script:SampleDscConfigurationWithVsphereNode 'Test' } | Should -Throw ($Script:TooManyConnectionOnASingleVCenterException -f $Script:SampleDscConfigurationWithVsphereNode.Nodes[0].InstanceName)
+            }
+            finally {
+                Remove-Variable -Name 'DefaultViServers' -Scope 'Global'
+            }
+        }
+        It 'Should Set Connection property of resources correctly' {
+            try {
+                $Global:_IsConnectionPropertySet = $false
+                $Global:DefaultViServers = @(
+                    [PsObject]@{
+                        Name = $Script:SampleDscConfigurationWithVsphereNode.Nodes[0].InstanceName
+                    }
+                )
+
+                Mock Invoke-DscResource {
+                    Param(
+                        $Property
+                    )
+    
+                    $Global:_IsConnectionPropertySet = $Property.ContainsKey('Connection')
+
+                    [PSCustomObject]@{
+                        InDesiredState = $true
+                    }
+                } -Verifiable
+    
+                # act
+                Invoke-VmwDscConfiguration $Script:SampleDscConfigurationWithVsphereNode 'Test' | Out-Null
+    
+                # assert
+                Assert-VerifiableMock
+                $Global:_IsConnectionPropertySet | Should -Be $true
+            }
+            finally {
+                Remove-Variable -Name 'DefaultViServers' -Scope 'Global'
+                Remove-Variable -Name '_IsConnectionPropertySet' -Scope 'Global'
             }
         }
     }
 }
-

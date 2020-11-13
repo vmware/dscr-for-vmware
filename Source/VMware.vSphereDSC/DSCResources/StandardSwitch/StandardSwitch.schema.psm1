@@ -22,16 +22,6 @@ Configuration StandardSwitch {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $Server,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [System.Management.Automation.PSCredential]
-        $Credential,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
         $VMHostName,
 
         [Parameter(Mandatory = $true)]
@@ -44,6 +34,16 @@ Configuration StandardSwitch {
         [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Server,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.PSCredential]
+        $Credential,
 
         [Parameter(Mandatory = $false)]
         [nullable[int]]
@@ -125,11 +125,11 @@ Configuration StandardSwitch {
 
     # Constructs VMHostVss Resource Block.
     $nullableVMHostVssProperties = @{
+        Server = $Server
+        Credential = $Credential
         Mtu = $Mtu
     }
     $vmHostVssProperties = @{
-        Server = $Server
-        Credential = $Credential
         Name = $VMHostName
         VssName = $Name
         Ensure = $Ensure
@@ -141,11 +141,11 @@ Configuration StandardSwitch {
 
     # Constructs VMHostVssBridge Resource Block.
     $nullableVMHostVssBridgeProperties = @{
+        Server = $Server
+        Credential = $Credential
         BeaconInterval = $BeaconInterval
     }
     $vmHostVssBridgeProperties = @{
-        Server = $Server
-        Credential = $Credential
         Name = $VMHostName
         VssName = $Name
         Ensure = $Ensure
@@ -161,14 +161,14 @@ Configuration StandardSwitch {
 
     # Constructs VMHostVssShaping Resource Block.
     $nullableVMHostVssShapingProperties = @{
+        Server = $Server
+        Credential = $Credential
         Enabled = $Enabled
         AverageBandwidth = $AverageBandwidth
         PeakBandwidth = $PeakBandwidth
         BurstSize = $BurstSize
     }
     $vmHostVssShapingProperties = @{
-        Server = $Server
-        Credential = $Credential
         Name = $VMHostName
         VssName = $Name
         Ensure = $Ensure
@@ -181,13 +181,13 @@ Configuration StandardSwitch {
 
     # Constructs VMHostVssSecurity Resource Block.
     $nullableVMHostVssSecurityProperties = @{
+        Server = $Server
+        Credential = $Credential
         AllowPromiscuous = $AllowPromiscuous
         ForgedTransmits = $ForgedTransmits
         MacChanges = $MacChanges
     }
     $vmHostVssSecurityProperties = @{
-        Server = $Server
-        Credential = $Credential
         Name = $VMHostName
         VssName = $Name
         Ensure = $Ensure
@@ -200,13 +200,13 @@ Configuration StandardSwitch {
 
     # Constructs VMHostVssTeaming Resource Block.
     $nullableVMHostVssTeamingProperties = @{
+        Server = $Server
+        Credential = $Credential
         CheckBeacon = $CheckBeacon
         NotifySwitches = $NotifySwitches
         RollingOrder = $RollingOrder
     }
     $vmHostVssTeamingProperties = @{
-        Server = $Server
-        Credential = $Credential
         Name = $VMHostName
         VssName = $Name
         Ensure = $Ensure

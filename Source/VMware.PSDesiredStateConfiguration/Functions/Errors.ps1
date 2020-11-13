@@ -27,6 +27,9 @@ $Script:NoVsphereConnectionsFoundException = "No active vSphere connection found
 $Script:UserInputExitException = "Exit due to use input"
 $Script:NestedMoreThanASingleLevelException = "Cannot nest more than a single level."
 $Script:NestedNodesAreNotSupportedException = "Cannot nest nodes."
+$Script:TooManyConnectionOnASingleVCenterException = "More than 1 active connection found for '{0}'. Please establish only a single connection."
+$Script:VsphereNodesAreOnlySupportedOnPowerShellCoreException = "In order to be able to run vSphere Nodes please switch to a Core version of PowerShell"
+$Script:NoConfigurationDetectedForInvokeException = "No configuration has been found! Please supply a configuration via a parameter."
 
 # configurationData exception
 $Script:ConfigurationDataDoesNotContainAllNodesException = "ConfigurationData parameter must contain an AllNodes key."
@@ -36,5 +39,4 @@ $Script:ConfigurationDataNodeEntryInAllNodesDoesNotContainNodeNameException = "C
 $Script:DuplicateEntryInAllNodesException = "ConfigurationData AllNodes must not have entries with the same NodeName."
 
 # warnings
-$Script:TooManyConnectionOnASingleVCenterWarning = "More than 1 active connection found for '{0}'. Please establish only a single connection."
-$Script:NoVsphereConnectionsFoundForNodeWarning = "No active vSphere conenctions found for '{0}'. Please establish a connection."
+$Script:NoVsphereConnectionsFoundForNodeWarning = "No active vSphere connection found for node with name '{0}' and will be skipped. Please establish a connection."

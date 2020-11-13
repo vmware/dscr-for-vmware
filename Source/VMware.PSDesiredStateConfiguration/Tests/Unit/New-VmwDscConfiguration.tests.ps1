@@ -262,4 +262,3 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
         $Global:ProgressPreference = $Global:OldProgressPreference
     }
 }
-
