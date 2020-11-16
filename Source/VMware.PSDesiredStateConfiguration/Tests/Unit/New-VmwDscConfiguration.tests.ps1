@@ -172,7 +172,104 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                 # assert
                 { New-VmwDscConfiguration 'ImpostorConfig' } | Should -Throw ($Script:CommandIsNotAConfigurationException -f 'ImpostorConfig', 'function')
             }
-            Context 'Nested Configurations' {
+            Context 'ConfigurationData logic' {
+                It 'Should throw if no AllNodes key is present' {
+                    # assert
+                    {
+                        $splat = @{
+                            ConfigurationData = @{}
+                            ConfigName = 'placeholder'
+                        }
+
+                        New-VmwDscConfiguration @splat
+                    } | Should -Throw $Script:ConfigurationDataDoesNotContainAllNodesException
+                }
+                It 'Should throw if AllNodes key is not an array' {
+                    # assert
+                    {
+                        $splat = @{
+                            ConfigurationData = @{
+                                AllNodes = [string]::empty
+                            } 
+                            ConfigName = 'placeholder'
+                        }
+
+                        New-VmwDscConfiguration @splat
+                    } | Should -Throw $Script:ConfigurationDataAllNodesKeyIsNotAnArrayException       
+                }
+                It 'Should throw if AllNodes contains a non hashtable entry' {
+                    # assert
+                    {
+                        $splat = @{
+                            ConfigurationData = @{
+                                AllNodes = @([string]::empty)
+                            } 
+                            ConfigName = 'placeholder'
+                        }
+
+                        New-VmwDscConfiguration @splat
+                    } | Should -Throw $Script:ConfigurationDataNodeEntryInAllNodesIsNotAHashtableException  
+                }
+                It 'Should throw if AllNodes values contain a entry without the nodename property' {
+                    # assert
+                    {
+                        $splat = @{
+                            ConfigurationData = @{
+                                AllNodes = @(
+                                    @{
+                                        TestProp = [string]::empty
+                                    }
+                                )
+                            } 
+                            ConfigName = 'placeholder'
+                        }
+
+                        New-VmwDscConfiguration @splat
+                    } | Should -Throw $Script:ConfigurationDataNodeEntryInAllNodesDoesNotContainNodeNameException
+                }
+                It 'Should throw if AllNodes contains values with duplicate nodename properties' {
+                    # assert
+                    {
+                        $splat = @{
+                            ConfigurationData = @{
+                                AllNodes = @(
+                                    @{
+                                        NodeName = 'Duplicate'
+                                    },
+                                    @{
+                                        NodeName = 'Duplicate'
+                                    }
+                                )
+                            } 
+                            ConfigName = 'placeholder'
+                        }
+
+                        New-VmwDscConfiguration @splat
+                    } | Should -Throw $Script:DuplicateEntryInAllNodesException                
+                }
+                It 'Should compile configuration that requires configurationData successfully' {
+                    # arrange
+                    $configToUse = 'configurationDataConfig.ps1'
+                    $configFile = Join-Path $Script:configFolder $configToUse
+                    $configurationData = @{
+                        AllNodes = @(
+                            @{
+                                NodeName = 'localhost'
+                                Path = 'Some path'
+                                SourcePath = 'Source path'
+                            }
+                        )
+                    }
+
+                    . $configFile $configurationData
+                    # act
+                    $res = New-VmwDscConfiguration 'Test' -ConfigurationData $configurationData
+
+                    # assert
+                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled  
+                }
+            }
+            Context 'Nested configurations and composite resources' {
                 It 'Should compile nested configuration correctly' {
                     # arrange
                     $configToUse = 'nestedConfig.ps1'
@@ -186,7 +283,6 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
                 }
                 It 'Should compile composite resource correctly' {
-
                     $os = $PSVersionTable['OS']
 
                     # null check because the OS key is not present on PowerShell 5.1
