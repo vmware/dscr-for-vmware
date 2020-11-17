@@ -37,7 +37,7 @@ function Script:AssertResourceEqual {
 
     if ($null -ne $ResultRes.ModuleName) {
         $ResultRes.ModuleName.Name | Should -Be $ExpectedRes.ModuleName.Name
-        $ResultRes.ModuleName.RequiredVersion.ToString() | Should -Be $ExpectedRes.ModuleName.RequiredVersion.ToString()
+        $ResultRes.ModuleName.RequiredVersion.ToString().Contains($ExpectedRes.ModuleName.RequiredVersion.ToString()) | Should -Be $true
     }
 
     $ResultRes.Property.Keys.Count | Should -Be $ExpectedRes.Property.Keys.Count

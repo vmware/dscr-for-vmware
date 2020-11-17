@@ -35,8 +35,13 @@ function Invoke-PsDesiredStateConfigurationTests {
     # add the required DSC Resource for unit tests
     $env:PSModulePath += "$([System.IO.Path]::PathSeparator)$configPath"
 
+    # sets ProgressPreference to ignore text because it breaks the travisCI console output
+    $Global:ProgressPreference = 'SilentlyContinue'
+
     # run unit tests
     $coveragePercent = Invoke-UnitTests $moduleName
+
+    $Global:ProgressPreference = 'Continue'
 
     $coveragePercent
 }
