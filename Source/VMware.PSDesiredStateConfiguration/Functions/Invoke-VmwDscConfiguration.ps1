@@ -28,7 +28,8 @@ function Start-VmwDscConfiguration {
     param (
         [Parameter(
         Mandatory            = $true,
-        ValueFromPipeline    = $true)]
+        ValueFromPipeline    = $true,
+        Position             = 0)]
         [ValidateNotNullOrEmpty()]
         [VmwDscConfiguration]
         $Configuration
@@ -47,11 +48,31 @@ function Start-VmwDscConfiguration {
 Invokes the DSC Configuration with the 'Get' DSC method.
 Retrieves the dsc resources current states.
 #>
+
+#> 
 function Get-VmwDscConfiguration {
     [CmdletBinding()]
-    param ()
+    param (
+        [Parameter(
+        Mandatory            = $true,
+        ValueFromPipeline    = $true,
+        ParameterSetName     = 'Explicit_Configuration',
+        Position             = 0)]
+        [ValidateNotNullOrEmpty()]
+        [VmwDscConfiguration]
+        $Configuration,
+
+        [Parameter(
+        Mandatory            = $true,
+        ParameterSetName     = 'Last_Configuration',
+        Position             = 0)]
+        [Switch]
+        $ExecuteLastConfiguration
+    )
 
     $invokeParams = @{
+        Configuration = $Configuration
+        ExecuteLastConfiguration = $ExecuteLastConfiguration
         Method = 'Get'
     }
     
@@ -60,7 +81,9 @@ function Get-VmwDscConfiguration {
     $result = New-Object -TypeName 'System.Collections.ArrayList'
 
     foreach ($nodeStateResult in $getResult) {
-        $result.Add([DscGetMethodResult]::new($nodeStateResult.OriginalNode.InstanceName, $nodeStateResult.InvokeResult)) | Out-Null
+        $dscGetResult = [DscGetMethodResult]::new($nodeStateResult.OriginalNode, $nodeStateResult.InvokeResult)
+
+        $result.Add($dscGetResult) | Out-Null
     }
 
     $result.ToArray()
@@ -76,20 +99,31 @@ function Test-VmwDscConfiguration {
     [CmdletBinding()]
     param (
         [Parameter(
-        Mandatory            = $false,
-        ValueFromPipeline    = $true)]
+        Mandatory            = $true,
+        ValueFromPipeline    = $true,
+        ParameterSetName     = 'Explicit_Configuration',
+        Position             = 0)]
         [ValidateNotNullOrEmpty()]
         [VmwDscConfiguration]
         $Configuration,
+
+        [Parameter(
+        Mandatory            = $true,
+        ParameterSetName     = 'Last_Configuration',
+        Position             = 0)]
+        [Switch]
+        $ExecuteLastConfiguration,
         
         [Parameter(
-        Mandatory            = $false)]
+        Mandatory            = $false,
+        Position             = 1)]
         [Switch]
         $Detailed
     )
 
     $invokeParams = @{
         Configuration = $Configuration
+        ExecuteLastConfiguration = $ExecuteLastConfiguration
         Method = 'Test'
     }
 
@@ -122,20 +156,23 @@ function Invoke-VmwDscConfiguration {
     [CmdletBinding()]
     Param (
         [Parameter(
-        Mandatory            = $false,
-        ValueFromPipeline    = $true)]
-        [ValidateNotNullOrEmpty()]
+        Mandatory            = $true)]
+        [ValidateSet('Get', 'Set', 'Test')]
+        [string]
+        $Method,
+
+        [Parameter(
+        Mandatory            = $false)]
         [VmwDscConfiguration]
         $Configuration,
 
         [Parameter(
-        Mandatory            = $true)]
-        [ValidateSet('Get', 'Set', 'Test')]
-        [string]
-        $Method
+        Mandatory            = $false)]
+        [Switch]
+        $ExecuteLastConfiguration
     )
 
-    if ($null -eq $Configuration) {
+    if ($ExecuteLastConfiguration) {
         if ($null -eq $Script:LastExecutedConfiguration) {
             throw $Script:NoConfigurationDetectedForInvokeException
         }

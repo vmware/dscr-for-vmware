@@ -422,7 +422,8 @@ class DscConfigurationCompiler {
 
             $resourceInfo = $this.ResourceNameToInfo[$resourceName]
 
-            if ($resourceInfo.ImplementedAs.ToString() -eq 'Composite' -or $resourceInfo.ImplementedAs.ToString() -eq 'Configuration') {
+            if (($resourceInfo.ImplementedAs.ToString() -eq 'Composite' -or $resourceInfo.ImplementedAs.ToString() -eq 'Configuration') -and
+                (-not $this.CompositeResourceToScriptBlock.ContainsKey($resourceName))) {
                 $this.CompositeResourceToScriptBlock[$resourceName] = (Get-Command $resourceName -ErrorAction 'SilentlyContinue')
             } else {
                 $foundDscResourcesList.Add($resourceName) | Out-Null
@@ -871,13 +872,47 @@ class BaseDscMethodResult {
 
 <#
 .DESCRIPTION
+Used for get method result to represent composite resources
+#>
+class CompositeResourceGetMethodResult {
+    [string] $Name
+    
+    [PsObject[]] $InnerResources
+
+    CompositeResourceGetMethodResult([string] $Name, [PsObject[]] $InnerResources) {
+        $this.Name = $Name
+        $this.InnerResources = $InnerResources
+    }
+}
+
+<#
+.DESCRIPTION
 Result type for Get-VmwDscConfiguration
 #>
 class DscGetMethodResult : BaseDscMethodResult {
     [PsObject[]] $ResourcesStates
 
-    DscGetMethodResult([string] $NodeName, [PsObject[]]$Resources) : base($NodeName) {
-        $this.ResourcesStates = $Resources
+    DscGetMethodResult([VmwDscNode] $Node, [PsObject[]]$Resources) : base($Node.InstanceName) {
+        $this.FillResourceStates($Node, $Resources)
+    }
+
+    hidden [void] FillResourceStates([VmwDscNode] $Node, [PsObject[]]$Resources) {
+        $result = New-Object 'System.Collections.ArrayList'
+
+        for ($i = 0; $i -lt $Resources.Count; $i++) {
+            $states = $Resources[$i]
+            $objectToAdd = $null
+
+            if ($states.Count -gt 1) {
+                $objectToAdd = [CompositeResourceGetMethodResult]::new($Node.Resources[$i].InstanceName, $states)
+            } else {
+                $objectToAdd = $states
+            }
+
+            $result.Add($objectToAdd) | Out-Null
+        }
+
+        $this.ResourcesStates = $result.ToArray()
     }
 }
 
@@ -954,6 +989,8 @@ class DscConfigurationRunner {
         $invokeResult = New-Object 'System.Collections.ArrayList'
 
         foreach ($node in $this.ValidNodes) {
+            Write-Progress "Invoking node with name: $($node.InstanceName)"
+            
             $result = $this.InvokeNodeResources($node.Resources)
 
             $nodeResult = [PsObject]@{
@@ -1069,7 +1106,12 @@ class DscConfigurationRunner {
             Property = $DscResource.Property
         }
 
+        Write-Progress "Invoking resource with id: $($DscResource.GetId())"
+
         $invokeResult = $null
+
+        $oldProgressPref = (Get-Variable 'ProgressPreference').Value
+        Set-Variable -Name 'ProgressPreference' -Value 'SilentlyContinue' -Scope 'Global'
 
         if ($this.DscMethod -eq 'Test') {
             try {
@@ -1098,6 +1140,8 @@ class DscConfigurationRunner {
                 (Invoke-DscResource @invokeSplatParams -Method $this.DscMethod) | Out-Null
             }
         }
+
+        Set-Variable -Name 'ProgressPreference' -Value $oldProgressPref -Scope 'Global'
 
         return $invokeResult
     }

@@ -76,7 +76,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     )
     
     Describe 'Get-VmwDscConfiguration' {
-        It 'Should return the last executed configuration resources' {
+        It 'Should return the last executed configuration resources when ExecuteLastConfiguration switch is used' {
             # arrange
             Mock Invoke-DscResource {
                 Param(
@@ -93,11 +93,19 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
             $Script:LastExecutedConfiguration = $Script:SampleDscConfiguration
             
             # act
-            $result = Get-VmwDscConfiguration
+            $result = Get-VmwDscConfiguration -ExecuteLastConfiguration
 
             # assert
             Assert-VerifiableMock
             ($null -ne $result) | Should -Be $true
+        }
+        It 'Should throw when there is no old configuration to be used with ExecuteLastConfiguration switch' {
+            #assert
+            {
+                $Script:LastExecutedConfiguration = $null
+             
+                Get-VmwDscConfiguration -ExecuteLastConfiguration
+            } | Should -Throw $Script:NoConfigurationDetectedForInvokeException
         }
     }
     Describe 'Test-VmwDscConfiguration' {
@@ -241,18 +249,17 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
             # assert
             { Invoke-VmwDscConfiguration $Script:SampleDscConfiguration 'invalid method' } | Should -Throw
         }
-        It 'Should throw if no configuration is given and no configuration has been executed before it' {
-            # arrange
-            $Script:LastExecutedConfiguration = $null
-
-            # assert
-            { Invoke-VmwDscConfiguration -Method 'test' } | Should -Throw $Script:NoConfigurationDetectedForInvokeException
-        }
     }
     Describe 'vSphereNode functionality' {
         It 'Should throw if DefaultViServers is null' {
             # assert
-            { Invoke-VmwDscConfiguration $Script:SampleDscConfigurationWithVsphereNode 'Test' } | Should -Throw $Script:NoVsphereConnectionsFoundException
+            { 
+                $splat = @{
+                    Configuration = $Script:SampleDscConfigurationWithVsphereNode
+                    Method = 'Test'
+                }
+                Invoke-VmwDscConfiguration @splat
+            } | Should -Throw $Script:NoVsphereConnectionsFoundException
         }
         It 'Should throw if there are multiple connections to the same vSphere server' {
             try {
@@ -267,7 +274,13 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                 )
     
                 # assert
-                { Invoke-VmwDscConfiguration $Script:SampleDscConfigurationWithVsphereNode 'Test' } | Should -Throw ($Script:TooManyConnectionOnASingleVCenterException -f $Script:SampleDscConfigurationWithVsphereNode.Nodes[0].InstanceName)
+                { 
+                    $splat = @{
+                        Configuration = $Script:SampleDscConfigurationWithVsphereNode
+                        Method = 'Test'
+                    }
+                    Invoke-VmwDscConfiguration @splat
+                } | Should -Throw ($Script:TooManyConnectionOnASingleVCenterException -f $Script:SampleDscConfigurationWithVsphereNode.Nodes[0].InstanceName)
             }
             finally {
                 Remove-Variable -Name 'DefaultViServers' -Scope 'Global'
@@ -295,7 +308,11 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                 } -Verifiable
     
                 # act
-                Invoke-VmwDscConfiguration $Script:SampleDscConfigurationWithVsphereNode 'Test' | Out-Null
+                $splat = @{
+                    Configuration = $Script:SampleDscConfigurationWithVsphereNode
+                    Method = 'Test'
+                }
+                Invoke-VmwDscConfiguration @splat | Out-Null
     
                 # assert
                 Assert-VerifiableMock
