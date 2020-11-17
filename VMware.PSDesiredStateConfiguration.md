@@ -3,6 +3,8 @@
 **VMware.PSDesiredStateConfiguration** provides a set of commands to compile and execute **DSC Configuration** without using the DSC Local Configuration Manager. Compiled DSC Configurations are stored in memory as PowerShell objects.
 **Start-VmwDscConfiguration**, **Get-VmwDscConfiguration**, **Test-VmwDscConfiguration** cmdlets use **Invoke-DSCResource** cmdlet from the **PSDesiredStateConfiguration** module to execute the compiled configuration.
 This solution allows cross platform support on MacOS and Linux. This module is also designed to work with the existing **DSC Resources** in the **VMware.vSphereDSC** module.
+This module also features vSphereNodes which represent connections to VIServers.
+For more information on vSphereNodes please read here [vSphere Nodes](https://github.com/vmware/dscr-for-vmware/blob/master/Documentation/vSphereNodes.md)
 
 ## Requirements
 
@@ -52,7 +54,7 @@ For information on how to enable it read here: [WinRM guide](https://docs.micros
 
 ## Overview
 VMware.PSDesiredStateConfiguration works with ps1 configuration files and the general flow is as follow:
-- Compiles a DSC Configuration defined in a PowerShell script file (ps1) and transforms the given DSC Configuration to a configuration object. The object contains the name of the configuration and an array of DSC Resources. Each DSC Resource object contains an **InstanceName** for name of the DSC Resource given in the configuration, a **ResourceType** which display the type of the DSC Resource, a  **ModuleName** which displays the module of the DSC Resource and a **Property** which is a hashtable of properties which are unique for a given DSC Resource. Example Configuration object from a given configuration:
+- Compiles a DSC Configuration defined in a PowerShell script file (ps1) and transforms the given DSC Configuration to a configuration object. The object contains the name of the configuration and an array of DSC Nodes. All Dsc Resources which are not nested inside a node block will get bundled into a default 'localhost' node. Each Node contains the name of the Node and an array of DSC Resources. Each DSC Resource object contains an **InstanceName** for name of the DSC Resource given in the configuration, a **ResourceType** which display the type of the DSC Resource, a  **ModuleName** which displays the module of the DSC Resource and a **Property** which is a hashtable of properties which are unique for a given DSC Resource. Example Configuration object from a given configuration:
     ```
     Configuration Test
     {
@@ -69,14 +71,19 @@ VMware.PSDesiredStateConfiguration works with ps1 configuration files and the ge
     [VmwDscConfiguration]@{
         InstanceName = 'Test'
         Resource = @(
-            [VmwDscResource]@{
-                InstanceName = 'myResource'
-                ResourceType = 'CustomResource'
-                ModuleName = 'MyDscResource'
-                Property = @{
-                    Field = "Test field"
-                    Ensure = "Present"
-                }
+            [VmwDscNode]@{
+                InstanceName = 'localhost'
+                Resources = @(
+                    [VmwDscResource]@{
+                        InstanceName = 'myResource'
+                        ResourceType = 'CustomResource'
+                        ModuleName = 'MyDscResource'
+                        Property = @{
+                            Field = "Test field"
+                            Ensure = "Present"
+                        }
+                    }
+                )
             }
         )
     }
@@ -132,7 +139,7 @@ Configuration ConfigurationDataRequired {
     Import-DscResource MyResource
     
     MyResource res {
-        requredKey = $someValue
+        requredKey = $ConfigurationData.SomeValue
     }
 }
 ```
@@ -141,14 +148,13 @@ In order to assign a value to it we must define it in the **ConfigurationData** 
 $newVmwDscConfigParams = @{
     ConfigName = 'ConfigurationDataRequired'
     ConfigurationData = @{
-        someValue = 'sample value'
+        SomeValue = 'sample value'
     }
 }
 
 $config = New-VmwDscConfiguration @vmwDscConfigParams
 ```
 
----
 ---
 #### Start,Test,Get-VmwDscConfiguration
 These cmdlets work with the PowerShell object created by **New-VmwDscConfiguration** and apply the Set, Test, Get **DSC methods** to the compiled configuration.
@@ -196,6 +202,16 @@ These cmdlets work with the PowerShell object created by **New-VmwDscConfigurati
     ```
     Test-VmwDscConfiguration -Configuration $dscConfiguration 
     ```
+    This will return a boolean result that shows if the state is desired or not. If you want a detailed result in which every resource state is shown you can use the optional **-Detailed** switch for the **Test-VmwDscConfiguration** cmdlet.
+    ```
+    Test-VmwDscConfiguration -Configuration $dscConfiguration -Detailed
+    ```
+    The resulting object will contain an **InDesiredState** flag which shows the overall state of the configuration, a **ResourcesInDesiredState** array of resources in desired state and a **ResourcesNotInDesiredState** array of resources not in desired state.
+    
+    Test-VmwDscConfiguration also remembers the last run configuration so you can use the -ExecuteLastConfiguration flag to invoke it.
+    ```
+    Test-VmwDscConfiguration -ExecuteLastConfiguration
+    ```
 4. To Apply the NTP Configuration:
     ```
     Start-VmwDscConfiguration -Configuration $dscConfiguration
@@ -203,4 +219,9 @@ These cmdlets work with the PowerShell object created by **New-VmwDscConfigurati
 5. To get the latest applied configuration on your machine:
     ```
     Get-VmwDscConfiguration -Configuration $dscConfiguration
+    ```
+    
+    Get-VmwDscConfiguration also remembers the last run configuration so you can use the -ExecuteLastConfiguration flag to invoke it.
+    ```
+    Get-VmwDscConfiguration -ExecuteLastConfiguration
     ```
