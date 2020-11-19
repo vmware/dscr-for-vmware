@@ -622,15 +622,23 @@ class DscConfigurationCompiler {
             $dscResources = . $ScriptBlock
 
             $type = Get-PSCallStack | Select-Object -First 1 -ExpandProperty Command
-            $vmwNodeResult = $null
+            $vmwNodeResult = New-Object -TypeName 'System.Collections.ArrayList'
 
-            if ($type -eq 'Node') {
-                $vmwNodeResult = [VmwDscNode]::new($Connections, $dscResources)
-            } elseif ($type -eq 'vSphereNode') {
-                $vmwNodeResult = [VmwVsphereDscNode]::new($Connections, $dscResources)
+            # when multipe connections are specified for a node blocke
+            # each connection gets made into a different node object
+            foreach ($connection in $Connections) {
+                $nodeObject = $null
+
+                if ($type -eq 'Node') {
+                    $nodeObject = [VmwDscNode]::new($connection, $dscResources)
+                } elseif ($type -eq 'vSphereNode') {
+                    $nodeObject = [VmwVsphereDscNode]::new($connection, $dscResources)
+                }
+
+                $vmwNodeResult.Add($nodeObject) | Out-Null
             }
-            
-            $vmwNodeResult
+
+            $vmwNodeResult.ToArray()
         }
 
         $functionsToDefine['Node'] = $nodeLogicScriptBlock
@@ -1027,20 +1035,20 @@ class DscConfigurationRunner {
 
         $validVsphereNodes = New-Object 'System.Collections.ArrayList'
 
-        $defaultViServers = $this.GetDefaultViServers()
+        $viServersHashtable = $this.GetDefaultViServers()
 
         # check if any connections are established
-        if ($null -eq $defaultViServers -or $defaultViServers.Count -eq 0) {
+        if ($null -eq $viServersHashtable -or $viServersHashtable.Count -eq 0) {
             throw $Script:NoVsphereConnectionsFoundException
         }
 
         foreach ($vSphereNode in $vSphereNodes) {
             $warningMessage = [string]::Empty
 
-            if (-not $defaultViServers.ContainsKey($vSphereNode.InstanceName)) {
+            if (-not $viServersHashtable.ContainsKey($vSphereNode.InstanceName)) {
                 $warningMessage = ($Script:NoVsphereConnectionsFoundForNodeWarning -f $vSphereNode.InstanceName)
             } else {
-                $this.SetResourcesConnection($vSphereNode.Resources, $defaultViServers, $vSphereNode.InstanceName)
+                $this.SetResourcesConnection($vSphereNode.Resources, $viServersHashtable, $vSphereNode.InstanceName)
 
                 $validVsphereNodes.Add($vSphereNode) | Out-Null
             }
@@ -1059,12 +1067,12 @@ class DscConfigurationRunner {
     .DESCRIPTION
     Sets the connection property of vSphereNode resources and composite resources.
     #>
-    hidden [void] SetResourcesConnection([VmwDscResource[]] $Resources, [HashTable] $DefaultViServers, [string] $nodeInstanceName) {
+    hidden [void] SetResourcesConnection([VmwDscResource[]] $Resources, [HashTable] $ViServers, [string] $nodeInstanceName) {
         foreach ($resource in $Resources) {
             if ($resource.GetIsComposite()) {
-                $this.SetResourcesConnection($resource.GetInnerResources(), $DefaultViServers, $nodeInstanceName)
+                $this.SetResourcesConnection($resource.GetInnerResources(), $ViServers, $nodeInstanceName)
             } else {
-                $resource.Property['Connection'] = $defaultViServers[$nodeInstanceName]
+                $resource.Property['Connection'] = $ViServers[$nodeInstanceName]
             }
         }
     }

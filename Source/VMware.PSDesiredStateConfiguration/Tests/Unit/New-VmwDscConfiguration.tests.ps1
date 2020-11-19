@@ -347,6 +347,18 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     # assert
                     Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
                 }
+                It 'Shoud compile a single Node with multiple connections' {
+                    # arrange
+                    $configToUse = 'oneNodeManyConnections.ps1'
+                    $configFile = Join-Path $Script:NodeConfigFolder $configToUse
+    
+                    . $configFile
+                    # act
+                    $res = New-VmwDscConfiguration 'Test'
+    
+                    # assert
+                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled                  
+                }
             }
         }
     }
