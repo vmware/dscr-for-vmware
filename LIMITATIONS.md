@@ -12,5 +12,5 @@ This is is a list of known problems and limitations regarding Microsoft PowerShe
    ```
     Get-DscResources -Module '$modulename'
    ``` 
-- **Invoke-DscResource** is currently having severe performance issues and will potentially get fixed in PowerShell 7.2
+- **Invoke-DscResource** is currently having performance issues and will potentially get fixed in PowerShell 7.2
 Issue link: [PowerShell repo](https://github.com/PowerShell/PowerShell/issues/13996)

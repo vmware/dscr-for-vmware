@@ -17,7 +17,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 <#
 .NOTES
 vCenterSettings inherits BasevSphereConnection instead of BaseDSC because it is a specific case where
-the resource does not have it's own DSC key property. That's why were create a $Server property here in order to
+the resource does not have it's own DSC key property. That's why were define a $Server property here in order to
 use it as a key.
 #>
 [DscResource()]
@@ -25,7 +25,7 @@ class vCenterSettings : BasevSphereConnection {
     <#
     .DESCRIPTION
 
-    Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi.
+    Name of the Server we are trying to connect to. The Server must be a vCenter.
     #>
     [DscProperty(Key)]
     [string] $Server
@@ -35,6 +35,7 @@ class vCenterSettings : BasevSphereConnection {
 
     Logging Level Advanced Setting value.
     #>
+    [DscProperty()]
     [LoggingLevel] $LoggingLevel = [LoggingLevel]::Unset
 
     <#
