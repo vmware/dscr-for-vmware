@@ -1,9 +1,6 @@
 # List of known limitations
 This is is a list of known problems and limitations regarding Microsoft PowerShell Desired State Configuration and PowerShell.
 
-## VMware.PSDesiredStateConfiguration
-- Currently dsc key properties for the resources do not get validated during the execution phase and in the case of resources with duplicate with duplicate keys the latest one gets executed and no error or warning occurs. This will be fixed in a future update.
-
 ## PowerShell 7.0 limitations
 - Paths used for modules containing DSC resources must not have a space in them, because the path gets cut. Bug: [PowerShell repo](https://github.com/PowerShell/PowerShell/issues/13250)
 - The **Get-DscResource** used in **New-VmwDscConfiguration** sometimes fails to retrieve composite dsc resources and results in an exception when using composite resources in configurations. 

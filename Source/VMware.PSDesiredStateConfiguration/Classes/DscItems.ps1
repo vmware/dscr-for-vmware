@@ -974,6 +974,65 @@ class DscTestMethodDetailedResult : BaseDscMethodResult {
 
 <#
 .DESCRIPTION
+Type used for checking uniqueness of dsc resource key properties
+#>
+class KeyPropertyResourceCheck {
+    [string] $ResourceType
+      
+    # can contain only string, int, enum values, because only properties of those types can be keys
+    [Hashtable] $KeyPropertiesToValues
+
+    KeyPropertyResourceCheck([string] $ResourceType, [Hashtable] $KeyPropertiesToValues) {
+        $this.ResourceType = $ResourceType
+        $this.KeyPropertiesToValues = $KeyPropertiesToValues
+    }
+
+    [bool] Equals([Object] $other) {
+        $other = $other -as [KeyPropertyResourceCheck]
+
+        if (-not $this.ResourceType.Equals($other.ResourceType)) {
+            return $false
+        }
+
+        foreach ($key in $this.KeyPropertiesToValues.Keys) {
+            if (-not $other.KeyPropertiesToValues.ContainsKey($key)) {
+                return $false
+            }
+
+            if (-not $this.KeyPropertiesToValues[$key].Equals($other.KeyPropertiesToValues[$key])) {
+                return $false
+            }
+        }
+
+        return $true
+    }
+
+    [int] GetHashCode() {
+        $hash = $this.CalculateHashCode()
+
+        return $hash
+    }
+
+    <#
+    .DESCRIPTION
+    Calculates the hashcode via the Get-KeyPropertyResourceCheckDotNetHashCode cmdlet, because
+    it uses a custom c# type that is created during runtime and can't be used inside a class due to it
+    raising a parse error.
+    #>
+    [int] CalculateHashCode() {
+        $splat = @{
+            ResourceType = $this.ResourceType
+            KeyPropertiesToValues = $this.KeyPropertiesToValues
+        }
+
+        $hash = Get-KeyPropertyResourceCheckDotNetHashCode @splat
+
+        return $hash
+    }
+}
+
+<#
+.DESCRIPTION
 Executes Configuration objects created from New-VmwDscConfiguration cmdlet.
 #>
 class DscConfigurationRunner {
@@ -998,6 +1057,8 @@ class DscConfigurationRunner {
 
         foreach ($node in $this.ValidNodes) {
             Write-Progress "Invoking node with name: $($node.InstanceName)"
+
+            $this.ValidateDscKeyProperties($node.Resources)
             
             $result = $this.InvokeNodeResources($node.Resources)
 
@@ -1152,6 +1213,95 @@ class DscConfigurationRunner {
         Set-Variable -Name 'ProgressPreference' -Value $oldProgressPref -Scope 'Global'
 
         return $invokeResult
+    }
+
+    <#
+    .DESCRIPTION
+    Finds and validates DSC Resource key properties.
+    When two or more dsc resources of the same type have the same values for key properties an exception is thrown
+    #>
+    hidden [void] ValidateDscKeyProperties([VmwDscResource[]] $DscResources) {
+        $resourcesQueue = New-Object 'System.Collections.Queue'
+        $dscResourcesDuplicateChecker = New-Object 'System.Collections.Generic.HashSet[KeyPropertyResourceCheck]'
+
+        $resourcesQueue.Enqueue($DscResources)
+
+        while ($resourcesQueue.Count -gt 0) {
+            $currentResources = $resourcesQueue.Dequeue()
+
+            foreach ($currentResource in $currentResources) {
+                if ($currentResource.GetIsComposite()) {
+                    $resourcesQueue.Enqueue($currentResource.GetInnerResources())
+
+                    continue
+                }
+
+                $resourceCheck = $this.GetDscResouceKeyProperties($currentResource)
+
+                $isAdded = $dscResourcesDuplicateChecker.Add($resourceCheck)
+
+                if (-not $isAdded) {
+                    throw ($Script:DscResourcesWithDuplicateKeyPropertiesException -f $currentResource.ResourceType)
+                }
+            }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+    Finds the key properties of a dsc resource and
+    wraps it in a KeyPropertyResourceCheck object with the resource type and key props array.
+    #>
+    hidden [KeyPropertyResourceCheck] GetDscResouceKeyProperties([VmwDscResource] $DscResource) {
+        $moduleName = $DscResource.ModuleName.Name
+        $moduleVersion = $DscResource.ModuleName.RequiredVersion.ToString()
+
+        # load resource module with 'using module'
+        # and find key properties via reflection
+        $sbText = @"
+                using module @{
+                    ModuleName = '$moduleName'
+                    RequiredVersion = '$moduleVersion'
+                }
+
+                `$dscProperties = [$($DscResource.ResourceType)].GetProperties()
+
+                `$dscKeyProperties = New-Object -TypeName 'System.Collections.ArrayList'
+
+                foreach (`$dscProperty in `$dscProperties) {
+                    `$dscPropertyAttr = `$dscProperty.CustomAttributes | Where-Object {
+                        `$_.AttributeType.ToString() -eq 'System.Management.Automation.DscPropertyAttribute'
+                    }
+
+                    # not a dsc property
+                    if (`$null -eq `$dscPropertyAttr) {
+                        continue
+                    }
+
+                    if (`$dscPropertyAttr.NamedArguments.MemberName -eq 'Key' -and `$dscPropertyAttr.NamedArguments.TypedValue.ToString() -eq '(Boolean)True') {
+                        `$dscKeyProperties.Add(`$dscProperty.Name) | Out-Null
+                    }
+                }
+
+                `$dscKeyProperties.ToArray()
+"@
+
+        $sb = [ScriptBlock]::Create($sbText)
+
+        $dscResourceKeyProperties = & $sb
+
+        $dscResourceKeyPropertiesHashTable = @{}
+
+        foreach ($dscKeyProp in $dscResourceKeyProperties) {
+            $dscResourceKeyPropertiesHashTable[$dscKeyProp] = $DscResource.Property[$dscKeyProp]
+        }
+
+        $resourceCheck = [KeyPropertyResourceCheck]::new(
+            $DscResource.ResourceType,
+            $dscResourceKeyPropertiesHashTable
+        )
+
+        return $resourceCheck
     }
 
     <#

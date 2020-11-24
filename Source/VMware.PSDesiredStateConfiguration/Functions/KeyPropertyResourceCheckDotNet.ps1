@@ -16,15 +16,56 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-# contains all scriptPath that will be put into the module
-$scriptPaths = @(
-    (Join-Path $PSScriptRoot 'Classes')
-    (Join-Path $PSScriptRoot 'Functions')
-)
-
-# inserts all scripts into the module
-Get-ChildItem -Filter '*.ps1' -Path $scriptPaths -Recurse | ForEach-Object {
-    . $_.FullName
+<#
+.DESCRIPTION
+Used to generate a hashcode for the KeyPropertyResourceCheck object.
+A similiar class is created via c# so that the unchecked param is used for overflow ignoring.
+PowerShell by itself automaticaly changes the number type when before overflowing to avoid it.
+#>
+function Get-KeyPropertyResourceCheckDotNetHashCode {
+    Param(
+        [string] $ResourceType,
+    
+        [Hashtable] $KeyPropertiesToValues
+    )
+    
+    $code = @"
+    using System.Collections;
+    
+    public class KeyPropertyResourceCheckDotNet
+    {
+        public KeyPropertyResourceCheckDotNet(string resourceType, Hashtable keyPropertiesToValues)
+        {
+            this.ResourceType = resourceType;
+            this.KeyPropertiesToValues = keyPropertiesToValues;
+        }
+    
+        private string ResourceType { get; set; }
+    
+        private Hashtable KeyPropertiesToValues { get; set; }
+    
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+    
+                hash = hash * 23 + this.ResourceType.GetHashCode();
+    
+                foreach (var key in this.KeyPropertiesToValues.Keys)
+                {
+                    hash = hash * 23 + this.KeyPropertiesToValues[key].GetHashCode();
+                }
+    
+                return hash;
+            }
+        }
+    }
+"@
+    
+    Add-Type -TypeDefinition $code
+    
+    $obj = [KeyPropertyResourceCheckDotNet]::new($ResourceType, $KeyPropertiesToValues)
+    
+    $obj.GetHashCode() 
 }
-
-# exported members are specified in the manifest

@@ -63,11 +63,42 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     [VmwDscResource]::new(
                         'MyDatacenterFolder',
                         'DatacenterFolder',
-                        'VMware.vSphereDSC',
+                        @{ ModuleName = 'VMware.vSphereDSC'; RequiredVersion = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).Version.ToString() },
                         @{
                             Location = ''
                             Name = 'MyDatacenterFolder'
                             Ensure = 'Present'
+                        }
+                    )
+                )
+            )
+        )
+    )
+
+    $Script:SampleDscConfigurationWithDuplicateKeyPropertiesResource = [VmwDscConfiguration]::new(
+        'Test',
+        @(
+            [VmwDscNode]::new(
+                'localhost',
+                @(
+                    [VmwDscResource]::new(
+                        'file',
+                        'FileResource',
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                        @{ 
+                            Path = "path"
+                            SourcePath = "path"
+                            Ensure = "present"
+                        }
+                    ),
+                    [VmwDscResource]::new(
+                        'file2',
+                        'FileResource',
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                        @{ 
+                            Path = "path"
+                            SourcePath = "path"
+                            Ensure = "present"
                         }
                     )
                 )
@@ -247,7 +278,25 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     Describe 'Invoke-VmwDscConfiguration' {
         It 'Should throw if invalid method is given' {
             # assert
-            { Invoke-VmwDscConfiguration $Script:SampleDscConfiguration 'invalid method' } | Should -Throw
+            { 
+                $splat = @{
+                    Configuration = $Script:SampleDscConfiguration
+                    Method = 'Invalid Method'
+                }
+
+                Invoke-VmwDscConfiguration @splat 
+            } | Should -Throw
+        }
+        It 'Should throw if node contains a resource with duplicate key property values' {
+            # assert
+            { 
+                $splat = @{
+                    Configuration = $Script:SampleDscConfigurationWithDuplicateKeyPropertiesResource
+                    Method = 'Test'
+                }
+
+                Invoke-VmwDscConfiguration @splat
+            } | Should -Throw ($Script:DscResourcesWithDuplicateKeyPropertiesException -f $Script:SampleDscConfigurationWithDuplicateKeyPropertiesResource.Nodes[0].Resources[0].ResourceType)
         }
     }
     Describe 'vSphereNode functionality' {
@@ -258,6 +307,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     Configuration = $Script:SampleDscConfigurationWithVsphereNode
                     Method = 'Test'
                 }
+
                 Invoke-VmwDscConfiguration @splat
             } | Should -Throw $Script:NoVsphereConnectionsFoundException
         }
