@@ -16,185 +16,175 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-<#
-.Description
-Invokes the dsc resources of a configuration with 'Get' Dsc method
-#>
-function Get-VmwDscConfiguration {
-    [CmdletBinding()]
-    param (
-        [Parameter(
-        Mandatory            = $true,
-        ValueFromPipeline    = $true)]
-        [VmwDscConfiguration]
-        $Configuration
-    )
-
-    $invokeParams = @{
-        DscResources = $Configuration.Resources
-        Method = 'Get'
-    }
-    
-    Invoke-VmwDscResources @invokeParams
-}
+$Script:LastExecutedConfiguration = $null
 
 <#
-.Description
-Invokes the dsc resources of a configuration with 'Set' Dsc method
+.DESCRIPTION
+Invokes the DSC Configuration with the 'Set' DSC method.
+Every Resource that is not in desired state gets it's set method run.
 #>
 function Start-VmwDscConfiguration {
     [CmdletBinding()]
     param (
         [Parameter(
         Mandatory            = $true,
-        ValueFromPipeline    = $true)]
+        ValueFromPipeline    = $true,
+        Position             = 0)]
+        [ValidateNotNullOrEmpty()]
         [VmwDscConfiguration]
         $Configuration
     )
 
     $invokeParams = @{
-        DscResources = $Configuration.Resources
+        Configuration = $Configuration
         Method = 'Set'
     }
     
-    Invoke-VmwDscResources @invokeParams | Out-Null
+    Invoke-VmwDscConfiguration @invokeParams | Out-Null
 }
 
 <#
-.Description
-Invokes the resources of a configuration with 'Test' Dsc method.
-Returns a boolean result that shows if the current state is desired.
-Use Detailed switch to return an object with state flag and information on resources and their state
+.DESCRIPTION
+Invokes the DSC Configuration with the 'Get' DSC method.
+Retrieves the dsc resources current states.
 #>
-function Test-VmwDscConfiguration {
+
+#> 
+function Get-VmwDscConfiguration {
     [CmdletBinding()]
     param (
         [Parameter(
         Mandatory            = $true,
-        ValueFromPipeline    = $true)]
+        ValueFromPipeline    = $true,
+        ParameterSetName     = 'Explicit_Configuration',
+        Position             = 0)]
+        [ValidateNotNullOrEmpty()]
         [VmwDscConfiguration]
         $Configuration,
-        
+
         [Parameter(
-        Mandatory            = $false)]
+        Mandatory            = $true,
+        ParameterSetName     = 'Last_Configuration',
+        Position             = 0)]
         [Switch]
-        $Detailed
+        $ExecuteLastConfiguration
     )
 
     $invokeParams = @{
-        DscResources = $Configuration.Resources
-        Method = 'Test'
+        Configuration = $Configuration
+        ExecuteLastConfiguration = $ExecuteLastConfiguration
+        Method = 'Get'
     }
     
-    $resStateArr = Invoke-VmwDscResources @invokeParams
-
-    $result = $null
-    
-    if ($Detailed) {
-        $result = [DscTestMethodDetailedResult]::new($Configuration.Resources, $resStateArr)
-    }
-    else {
-        $result = ($resStateArr | Where-Object { $_.InDesiredState -eq $false }).Count -eq 0
-    }
-
-    $result
-}
-
-<#
-.Description
-Invokes an array of dsc resource with the given method  
-#>
-function Invoke-VmwDscResources {
-    param (
-        [Parameter(Mandatory)]
-        [VmwDscResource[]]
-        $DscResources,
-        
-        [Parameter(Mandatory)]
-        [ValidateSet('Get', 'Set', 'Test')]
-        [string]
-        $Method
-    )
+    $getResult = Invoke-VmwDscConfiguration @invokeParams
 
     $result = New-Object -TypeName 'System.Collections.ArrayList'
 
-    # invoke the dsc resources
-    foreach ($dscResource in $DscResources) {
-        $invokeResult = $null
+    foreach ($nodeStateResult in $getResult) {
+        $dscGetResult = [DscGetMethodResult]::new($nodeStateResult.OriginalNode, $nodeStateResult.InvokeResult)
 
-        if ($dscResource.GetIsComposite()) {
-            $invokeVmwDscResourceParams = @{
-                DscResources = $dscResource.GetInnerResources()
-                Method = $Method
-            }
-
-            $invokeResult = Invoke-VmwDscResources @invokeVmwDscResourceParams
-        } else {
-            $invokeDscResourceUtilParams = @{
-                DscResource = $dscResource
-                Method = $Method
-            }
-
-            $invokeResult = InvokeDscResourceUtil @invokeDscResourceUtilParams
-        }
-
-        $result.Add($invokeResult) | Out-Null
+        $result.Add($dscGetResult) | Out-Null
     }
 
     $result.ToArray()
 }
 
 <#
-.Description
-Utility function wraper for invoking dsc resources
+.DESCRIPTION
+Invokes the DSC Configuration with the 'Test' DSC method
+Returns a boolean result that shows if the current state is desired.
+Use Detailed switch to return an object with state flag and more detailed information on resources and their individual states.
 #>
-function InvokeDscResourceUtil {
+function Test-VmwDscConfiguration {
+    [CmdletBinding()]
     param (
-        [VmwDscResource]
-        $DscResource,
+        [Parameter(
+        Mandatory            = $true,
+        ValueFromPipeline    = $true,
+        ParameterSetName     = 'Explicit_Configuration',
+        Position             = 0)]
+        [ValidateNotNullOrEmpty()]
+        [VmwDscConfiguration]
+        $Configuration,
 
-        [string]
-        $Method
+        [Parameter(
+        Mandatory            = $true,
+        ParameterSetName     = 'Last_Configuration',
+        Position             = 0)]
+        [Switch]
+        $ExecuteLastConfiguration,
+        
+        [Parameter(
+        Mandatory            = $false,
+        Position             = 1)]
+        [Switch]
+        $Detailed
     )
 
-    # parameters used for Invoke-DscResource cmdlet
-    # Method property gets set later on inside switch, because it's variable
-    $invokeSplatParams = @{
-        Name = $DscResource.ResourceType
-        ModuleName = $DscResource.ModuleName
-        Property = $DscResource.Property
+    $invokeParams = @{
+        Configuration = $Configuration
+        ExecuteLastConfiguration = $ExecuteLastConfiguration
+        Method = 'Test'
     }
 
-    $invokeResult = $null
-    
-    if ($Method -eq 'Test' -or $Method -eq 'Get') {
-        try {
-            $invokeResult = Invoke-DscResource @invokeSplatParams -Method $Method
-        } catch {
-            # if an exception is thrown that means the resource is not in desired state
-            # due to a dependency not being in desired state
-            if ($Method -eq 'Test') {
-                $invokeResult = [PSCustomObject]@{
-                    InDesiredState = $false
-                } 
-            } else {
-                $invokeResult = $DscResource
-            }
-        }
-    } 
-    else {
-        # checks if the resource is in target state
-        $isInDesiredState = Invoke-DscResource @invokeSplatParams -Method 'Test'
+    $testResults = Invoke-VmwDscConfiguration @invokeParams
 
-        # executes 'set' method only if state is not desired
-        if ($isInDesiredState.InDesiredState) {
-            $invokeResult = $isInDesiredState
+    $result = $null
+
+    if ($Detailed) {
+        $result = New-Object -TypeName 'System.Collections.ArrayList'
+
+        foreach ($nodeStateResult in $testResults) {
+            $testResultObject = [DscTestMethodDetailedResult]::new($nodeStateResult.OriginalNode, $nodeStateResult.InvokeResult)
+
+            $result.Add($testResultObject) | Out-Null
         }
-        else {
-            $invokeResult = Invoke-DscResource @invokeSplatParams -Method $Method
-        }
+
+        $result = $result.ToArray()
+    } else {
+        $result = ($testResults | Select-Object -ExpandProperty InvokeResult | Where-Object { $_.InDesiredState -eq $false }).Count -eq 0
     }
+
+    $result
+}
+
+<#
+.SYNOPSIS
+Invokes the dsc configuration object and returns an appropriate result depending on the method used
+#>
+function Invoke-VmwDscConfiguration {
+    [CmdletBinding()]
+    Param (
+        [Parameter(
+        Mandatory            = $true)]
+        [ValidateSet('Get', 'Set', 'Test')]
+        [string]
+        $Method,
+
+        [Parameter(
+        Mandatory            = $false)]
+        [VmwDscConfiguration]
+        $Configuration,
+
+        [Parameter(
+        Mandatory            = $false)]
+        [Switch]
+        $ExecuteLastConfiguration
+    )
+
+    if ($ExecuteLastConfiguration) {
+        if ($null -eq $Script:LastExecutedConfiguration) {
+            throw $Script:NoConfigurationDetectedForInvokeException
+        }
+
+        $Configuration = $Script:LastExecutedConfiguration
+    }
+
+    $invoker = [DscConfigurationRunner]::new($Configuration, $Method)
+
+    $invokeResult = $invoker.InvokeConfiguration()
+
+    $Script:LastExecutedConfiguration = $Configuration
 
     $invokeResult
 }
-

@@ -17,7 +17,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Configuration that causes inner exception during runtime
+.DESCRIPTION
+Configuration that causes an exception during runtime.
+Should rethrow the exception.
 #>
 Configuration Test 
 {
@@ -32,4 +34,3 @@ Configuration Test
 
     InvalidCall
 }
-

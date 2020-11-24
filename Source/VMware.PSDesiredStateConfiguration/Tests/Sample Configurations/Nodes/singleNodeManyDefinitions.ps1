@@ -18,18 +18,29 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 <#
 .DESCRIPTION
-Basic Configuration with only a single resource.
-Should compile the configuration correctly.
+Configuration with 2 Nodes that have the same name.
+Should get combined into one in the resulting object.
 #>
 Configuration Test 
 {
     Import-DscResource -ModuleName MyDscResource
 
-    FileResource file 
-    {
-        Path = "path"
-        SourcePath = "path"
-        Ensure = "present"
+    Node 'Sample Node' {
+        FileResource file 
+        {
+            Path = "path"
+            SourcePath = "path"
+            Ensure = "present"
+        }
+    }
+
+    Node 'Sample Node' {
+        FileResource file2
+        {
+            Path = "path2"
+            SourcePath = "path2"
+            Ensure = "absent"
+        }
     }
 }
 
@@ -37,7 +48,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
     'Test',
     @(
         [VmwDscNode]::new(
-            'localhost',
+            'Sample Node',
             @(
                 [VmwDscResource]::new(
                     'file',
@@ -47,6 +58,16 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"
+                    }
+                ),
+                [VmwDscResource]::new(
+                    'file2',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path2"
+                        SourcePath = "path2"
+                        Ensure = "absent"
                     }
                 )
             )

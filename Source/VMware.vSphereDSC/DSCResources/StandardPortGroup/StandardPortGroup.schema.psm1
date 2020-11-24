@@ -22,16 +22,6 @@ Configuration StandardPortGroup {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $Server,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [System.Management.Automation.PSCredential]
-        $Credential,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
         $VMHostName,
 
         [Parameter(Mandatory = $true)]
@@ -49,6 +39,16 @@ Configuration StandardPortGroup {
         [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Server,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.PSCredential]
+        $Credential,
 
         [Parameter(Mandatory = $false)]
         [nullable[int]]
@@ -149,11 +149,11 @@ Configuration StandardPortGroup {
 
     # Constructs VMHostVssPortGroup Resource Block.
     $nullableVMHostVssPortGroupProperties = @{
+        Server = $Server
+        Credential = $Credential
         VLanId = $VLanId
     }
     $vmHostVssPortGroupProperties = @{
-        Server = $Server
-        Credential = $Credential
         VMHostName = $VMHostName
         Name = $Name
         VssName = $VssName
@@ -166,14 +166,14 @@ Configuration StandardPortGroup {
 
     # Constructs VMHostVssPortGroupShaping Resource Block.
     $nullableVMHostVssPortGroupShapingProperties = @{
+        Server = $Server
+        Credential = $Credential
         Enabled = $Enabled
         AverageBandwidth = $AverageBandwidth
         PeakBandwidth = $PeakBandwidth
         BurstSize = $BurstSize
     }
     $vmHostVssPortGroupShapingProperties = @{
-        Server = $Server
-        Credential = $Credential
         VMHostName = $VMHostName
         Name = $Name
         Ensure = $Ensure
@@ -186,6 +186,8 @@ Configuration StandardPortGroup {
 
     # Constructs VMHostVssPortGroupSecurity Resource Block.
     $nullableVMHostVssPortGroupSecurityProperties = @{
+        Server = $Server
+        Credential = $Credential
         AllowPromiscuous = $AllowPromiscuous
         AllowPromiscuousInherited = $AllowPromiscuousInherited
         ForgedTransmits = $ForgedTransmits
@@ -194,8 +196,6 @@ Configuration StandardPortGroup {
         MacChangesInherited = $MacChangesInherited
     }
     $vmHostVssPortGroupSecurityProperties = @{
-        Server = $Server
-        Credential = $Credential
         VMHostName = $VMHostName
         Name = $Name
         Ensure = $Ensure
@@ -208,6 +208,8 @@ Configuration StandardPortGroup {
 
     # Constructs VMHostVssPortGroupTeaming Resource Block.
     $nullableVMHostVssPortGroupTeamingProperties = @{
+        Server = $Server
+        Credential = $Credential
         FailbackEnabled = $FailbackEnabled
         NotifySwitches = $NotifySwitches
         InheritFailback = $InheritFailback
@@ -217,8 +219,6 @@ Configuration StandardPortGroup {
         InheritNotifySwitches = $InheritNotifySwitches
     }
     $vmHostVssPortGroupTeamingProperties = @{
-        Server = $Server
-        Credential = $Credential
         VMHostName = $VMHostName
         Name = $Name
         Ensure = $Ensure

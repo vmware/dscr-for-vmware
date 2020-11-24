@@ -17,7 +17,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Configuration with another nested configuration
+.DESCRIPTION
+Configuration that contains another nested configuration.
+Should compile the nested configuration successfully.
 #>
 Configuration Another {
     Param(
@@ -63,34 +65,38 @@ Configuration Test
 $Script:expectedCompiled = [VmwDscConfiguration]::new(
     'Test',
     @(
-        [VmwDscResource]::new(
-            'NestedConfig',
-            'Another',
-            '',
-            @{},
+        [VmwDscNode]::new(
+            'localhost',
             @(
                 [VmwDscResource]::new(
-                    'Test2',
+                    'NestedConfig',
+                    'Another',
+                    '',
+                    @{},
+                    @(
+                        [VmwDscResource]::new(
+                            'Test2',
+                            'FileResource',
+                            @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                            @{ 
+                                Path = "Some Destination"
+                                SourcePath = "Some Source"
+                                Ensure = "present"
+                            }
+                        )
+                    )
+                ),
+                [VmwDscResource]::new(
+                    'Test',
                     'FileResource',
-                    'MyDscResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
                     @{ 
-                        Path = "Some Destination"
-                        SourcePath = "Some Source"
+                        Path = "path"
+                        SourcePath = "source path"
                         Ensure = "present"
                     }
                 )
             )
-        ),
-        [VmwDscResource]::new(
-            'Test',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "source path"
-                Ensure = "present"
-            }
         )
     )
 )
-

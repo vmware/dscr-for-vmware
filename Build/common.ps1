@@ -60,7 +60,7 @@ function Test-Flag {
 Finds and returns a list of file paths that have been changed since last build
 .DESCRIPTION
 Finds and returns a list of file paths that have been changed since last build.
-The changes are searched in the .git HEAD from the current commit to the last travis commit.
+The changes are searched in the .git HEAD from the current commit to the last travis commit or DSCAutomation commit.
 #>
 function Get-ChangedFiles {
     [OutputType([System.String[]])]
@@ -68,12 +68,12 @@ function Get-ChangedFiles {
 
     $lastTravisCommit = 1
 
-    # find last travis commit
+    # stops at first found travis commit or DSCAutomation commit
     while ($true) {
         $commitInfo = git show HEAD~$lastTravisCommit
         $author = $commitInfo[1]
 
-        if ($author.Contains('travis@travis-ci.org')) {
+        if ($author.Contains('travis@travis-ci.org') -or $author.Contains('DSCAutomation')) {
             break
         }
 

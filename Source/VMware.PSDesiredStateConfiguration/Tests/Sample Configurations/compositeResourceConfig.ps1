@@ -17,7 +17,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Configuration containing a composite resource
+.DESCRIPTION
+Configuration containing a composite resource.
+Should result in a composite resource object with set innerResources.
 #>
 Configuration Test
 {
@@ -32,23 +34,27 @@ Configuration Test
 $Script:expectedCompiled = [VmwDscConfiguration]::new(
     'Test',
     @(
-        [VmwDscResource]::new(
-            'Test',
-            'CompositeResourceTest',
-            'MyDscResource',
-            @{},
+        [VmwDscNode]::new(
+            'localhost',
             @(
                 [VmwDscResource]::new(
                     'Test',
-                    'MyTestResource',
-                    'MyDscResource',
-                    @{ 
-                        SomeVal = 'Test Field'
-                        Ensure = 'Present'
-                    }
+                    'CompositeResourceTest',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{},
+                    @(
+                        [VmwDscResource]::new(
+                            'Test',
+                            'MyTestResource',
+                            @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                            @{ 
+                                SomeVal = 'Test Field'
+                                Ensure = 'Present'
+                            }
+                        )
+                    )
                 )
             )
         )
     )
 )
-

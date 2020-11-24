@@ -17,14 +17,15 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Configuration with multiple nodes
+.DESCRIPTION
+Configuration with a single node that has many connections.
+Should generate multiple node objects.
 #>
 Configuration Test
 {
     Import-DscResource -ModuleName MyDscResource
 
-    Node 'MyNode' 
-    {
+    vSphereNode @('MyNode', 'OtherNode') {
         FileResource 'file'
         {
             Path = 'path'
@@ -32,20 +33,40 @@ Configuration Test
             Ensure = 'present'
         }
     }
-
-    Node 'Other'
-    {
-        FileResource file {
-            Path = 'no path'
-            SourcePath = 'no source'
-            Ensure = 'absent'
-        }
-    }
-
-    FileResource file {
-        Path = 'no path'
-        SourcePath = 'no source'
-        Ensure = 'absent'
-    }
 }
 
+$Script:expectedCompiled = [VmwDscConfiguration]::new(
+    'Test',
+    @(
+        [VmwVsphereDscNode]::new(
+            'MyNode',
+            @(
+                [VmwDscResource]::new(
+                    'file',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path2"
+                        Ensure = "present"
+                    }
+                )
+            )
+        ),
+        [VmwVsphereDscNode]::new(
+            'OtherNode',
+            @(
+                [VmwDscResource]::new(
+                    'file',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path2"
+                        Ensure = "present"
+                    }
+                )
+            )
+        )
+    )
+)

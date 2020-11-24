@@ -16,6 +16,11 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
+<#
+.DESCRIPTION
+Configuration with resources that have a non-linear order.
+Should get ordered by their DependsOn property.
+#>
 Configuration Test {
     Import-DscResource -ModuleName MyDscResource
 
@@ -84,86 +89,90 @@ Configuration Test {
 $Script:expectedCompiled = [VmwDscConfiguration]::new(
     'Test',
     @(
-        [VmwDscResource]::new(
-            'file2',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "path"
-                Ensure = "present"
-            }
-        )
-        [VmwDscResource]::new(
-            'file3',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "path"
-                Ensure = "present"
-            }
-        )
-        [VmwDscResource]::new(
-            'file1',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "path"
-                Ensure = "present"
-            }
-        )
-        [VmwDscResource]::new(
-            'file4',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "path"
-                Ensure = "present"
-            }
-        )
-        [VmwDscResource]::new(
-            'file5',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "path"
-                Ensure = "present"
-            }
-        )
-        [VmwDscResource]::new(
-            'file8',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "path"
-                Ensure = "present"
-            }
-        )
-        [VmwDscResource]::new(
-            'file7',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "path"
-                Ensure = "present"
-            }
-        )
-        [VmwDscResource]::new(
-            'file6',
-            'FileResource',
-            'MyDscResource',
-            @{ 
-                Path = "path"
-                SourcePath = "path"
-                Ensure = "present"
-            }
+        [VmwDscNode]::new(
+            'localhost',
+            @(
+                [VmwDscResource]::new(
+                    'file2',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+                [VmwDscResource]::new(
+                    'file3',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+                [VmwDscResource]::new(
+                    'file1',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+                [VmwDscResource]::new(
+                    'file4',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+                [VmwDscResource]::new(
+                    'file5',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+                [VmwDscResource]::new(
+                    'file8',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+                [VmwDscResource]::new(
+                    'file7',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+                [VmwDscResource]::new(
+                    'file6',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{ 
+                        Path = "path"
+                        SourcePath = "path"
+                        Ensure = "present"
+                    }
+                )
+            )
         )
     )
 )
-

@@ -22,16 +22,6 @@ Configuration Cluster {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]
-        $Server,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [System.Management.Automation.PSCredential]
-        $Credential,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
         $Name,
 
         [Parameter(Mandatory = $true)]
@@ -54,6 +44,16 @@ Configuration Cluster {
         [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Server,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.PSCredential]
+        $Credential,
 
         [Parameter(Mandatory = $false)]
         [nullable[bool]]
@@ -110,10 +110,10 @@ Configuration Cluster {
         HAEnabled = $HAEnabled
         HAAdmissionControlEnabled = $HAAdmissionControlEnabled
         HAFailoverLevel = $HAFailoverLevel
-    }
-    $haClusterProperties = @{
         Server = $Server
         Credential = $Credential
+    }
+    $haClusterProperties = @{
         Ensure = $Ensure
         Location = $Location
         DatacenterName = $DatacenterName
@@ -134,10 +134,10 @@ Configuration Cluster {
         DrsDistribution = $DrsDistribution
         MemoryLoadBalancing = $MemoryLoadBalancing
         CPUOverCommitment = $CPUOverCommitment
-    }
-    $drsClusterProperties = @{
         Server = $Server
         Credential = $Credential
+    }
+    $drsClusterProperties = @{
         Ensure = $Ensure
         Location = $Location
         DatacenterName = $DatacenterName

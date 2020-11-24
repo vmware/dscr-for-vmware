@@ -17,19 +17,19 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-.DESCRIPTION
-Basic Configuration with only a single resource.
-Should compile the configuration correctly.
+    Basic Configuration with only a single resource
 #>
 Configuration Test 
 {
     Import-DscResource -ModuleName MyDscResource
 
-    FileResource file 
-    {
-        Path = "path"
-        SourcePath = "path"
-        Ensure = "present"
+    Node 'Sample Node' {
+        FileResource file 
+        {
+            Path = "path"
+            SourcePath = "path"
+            Ensure = "present"
+        }
     }
 }
 
@@ -37,7 +37,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
     'Test',
     @(
         [VmwDscNode]::new(
-            'localhost',
+            'Sample Node',
             @(
                 [VmwDscResource]::new(
                     'file',

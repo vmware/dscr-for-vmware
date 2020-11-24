@@ -17,7 +17,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 <#
-    Configuration with an invalid dependsOn property
+.DESCRIPTION
+Configuration with a Resource that has an invalid dependsOn property.
+Should throw an exception.
 #>
 Configuration Test {
     Import-DscResource -ModuleName MyDscResource
@@ -30,4 +32,3 @@ Configuration Test {
         DependsOn = "Something else"
     }
 }
-
