@@ -1,6 +1,24 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.2 - 2020-11-24
+### Added
+- Added a special **vSphereNode** dynamic keyword that represents a connection to a **VIServer** and allows reusing **vSphere** connections via the new execution engine.
+- Added documentation for new **vSphere Node** feature.
+
+### Changed
+- The **DSC Resources** in the **VMware.vSphereDSC** module now have the **Server** and **Credential** properties set as optional as they're not mandatory when using **vSphereNodes**.
+- **Test** and **Get-VmwDscConfiguration** cmdlets are extended with additional parameter sets to execute the latest applied configuration.
+
+## VMware.vSphereDSC 2.1.0.73 - 2020-11-24
+### Added
+- Added a special **vSphereNode** dynamic keyword that represents a connection to a **VIServer** and allows reusing **vSphere** connections via the new execution engine.
+- Added documentation for new **vSphere Node** feature.
+
+### Changed
+- The **DSC Resources** in the **VMware.vSphereDSC** module now have the **Server** and **Credential** properties set as optional as they're not mandatory when using **vSphereNodes**.
+- **Test** and **Get-VmwDscConfiguration** cmdlets are extended with additional parameter sets to execute the latest applied configuration.
+
 ## 2020-11-03
 ### Added
 - Added **BuildFlags** enumeration that tracks the steps which need to be performed during the build process.

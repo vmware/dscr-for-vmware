@@ -247,7 +247,7 @@ enum ProxyPolicy {
     Unset
 }
 
-class BaseDSC {
+class BasevSphereConnection {
     <#
     .DESCRIPTION
 
@@ -261,7 +261,7 @@ class BaseDSC {
 
     Credentials needed for connection to the specified Server.
     #>
-    [DscProperty(Mandatory)]
+    [DscProperty()]
     [PSCredential] $Credential
 
     <#
@@ -269,7 +269,7 @@ class BaseDSC {
 
     Established connection to the specified vSphere Server.
     #>
-    hidden [PSObject] $Connection
+    [PSObject] $Connection
 
     hidden [string] $DscResourceName = $this.GetType().Name
     hidden [string] $DscResourceIsInDesiredStateMessage = "{0} DSC Resource is in Desired State."
@@ -304,33 +304,6 @@ class BaseDSC {
         Import-Module -Name 'VMware.VimAutomation.Core'
 
         $global:VerbosePreference = $savedVerbosePreference
-    }
-
-    <#
-    .DESCRIPTION
-
-    Connects to the specified vSphere Server with the passed Credentials.
-    The method sets the Connection property to the established connection.
-    If connection cannot be established, the method throws an exception.
-    #>
-    [void] ConnectVIServer() {
-        $this.ImportRequiredModules()
-
-        if ($null -eq $this.Connection) {
-            try {
-                $connectVIServerParams = @{
-                    Server = $this.Server
-                    Credential = $this.Credential
-                    ErrorAction = 'Stop'
-                    Verbose = $false
-                }
-
-                $this.Connection = Connect-VIServer @connectVIServerParams
-            }
-            catch {
-                throw "Cannot establish connection to vSphere Server $($this.Server). For more information: $($_.Exception.Message)"
-            }
-        }
     }
 
     <#
@@ -467,6 +440,38 @@ class BaseDSC {
     <#
     .DESCRIPTION
 
+    Connects to the specified vSphere Server with the passed Credentials.
+    The method sets the Connection property to the established connection.
+    If connection cannot be established, the method throws an exception.
+    #>
+    [void] ConnectVIServer() {
+        $this.ImportRequiredModules()
+
+        if ($null -eq $this.Connection) {
+            try {
+                $connectVIServerParams = @{
+                    Server = $this.Server
+                    Credential = $this.Credential
+                    ErrorAction = 'Stop'
+                    Verbose = $false
+                }
+
+                $this.Connection = Connect-VIServer @connectVIServerParams
+            }
+            catch {
+                throw "Cannot establish connection to vSphere Server $($this.Server). For more information: $($_.Exception.Message)"
+            }
+        } else {
+            # this is a connection from a vSphereDSC node
+            # a new connection with the same session and server name get created because of an issue with runspaces in PowerShell 
+
+            $this.Connection = Connect-VIServer -Session $this.Connection.SessionSecret -Server $this.Connection.Name
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
     Closes the last open connection to the specified vSphere Server.
     #>
     [void] DisconnectVIServer() {
@@ -484,6 +489,16 @@ class BaseDSC {
             throw "Cannot close connection to vSphere Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
         }
     }
+}
+
+class BaseDSC : BasevSphereConnection {
+    <#
+    .DESCRIPTION
+
+    Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi.
+    #>
+    [DscProperty()]
+    [string] $Server
 }
 
 class DatacenterInventoryBaseDSC : BaseDSC {
@@ -4422,8 +4437,22 @@ class PowerCLISettings {
     }
 }
 
+<#
+.NOTES
+vCenterSettings inherits BasevSphereConnection instead of BaseDSC because it is a specific case where
+the resource does not have it's own DSC key property. That's why were define a $Server property here in order to
+use it as a key.
+#>
 [DscResource()]
-class vCenterSettings : BaseDSC {
+class vCenterSettings : BasevSphereConnection {
+    <#
+    .DESCRIPTION
+
+    Name of the Server we are trying to connect to. The Server must be a vCenter.
+    #>
+    [DscProperty(Key)]
+    [string] $Server
+
     <#
     .DESCRIPTION
 
