@@ -32,7 +32,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     [VmwDscResource]::new(
                         'file',
                         'FileResource',
-                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
                         @{ 
                             Path = "path"
                             SourcePath = "path"
@@ -42,7 +42,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     [VmwDscResource]::new(
                         'file2',
                         'FileResource',
-                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
                         @{ 
                             Path = "path2"
                             SourcePath = "path2"
@@ -84,7 +84,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     [VmwDscResource]::new(
                         'file',
                         'FileResource',
-                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
                         @{ 
                             Path = "path"
                             SourcePath = "path"
@@ -94,7 +94,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     [VmwDscResource]::new(
                         'file2',
                         'FileResource',
-                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
                         @{ 
                             Path = "path"
                             SourcePath = "path"
