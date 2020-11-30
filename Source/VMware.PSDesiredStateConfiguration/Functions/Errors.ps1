@@ -29,6 +29,7 @@ $Script:NestedNodesAreNotSupportedException = "Nesting nodes is not supported."
 $Script:TooManyConnectionOnASingleVCenterException = "More than 1 active connection found for '{0}'. Please establish only a single connection."
 $Script:VsphereNodesAreOnlySupportedOnPowerShellCoreException = "In order to be able to run vSphere Nodes please switch to a Core version of PowerShell"
 $Script:NoConfigurationDetectedForInvokeException = "No configuration has been found! Please supply a configuration via a parameter."
+$Script:DscResourcesWithDuplicateKeyPropertiesException = "The Dsc Resource of type '{0}' has multiple entries with the same key properties values. Please ensure all key properties have unique values."
 
 # configurationData exception
 $Script:ConfigurationDataDoesNotContainAllNodesException = "ConfigurationData parameter must contain an AllNodes key."

@@ -133,4 +133,4 @@ $connection = Connect-ViServer -User '<Username here>' -Password '<Password here
 $dscConfig | Start-VmwDscConfiguration
 ```
 
-When invoking a dsc configuration object that contains vSphereNodes but connections to those nodes are not established then a warning is printed to the console and those nodes get skipped during execution.
+When invoking a DSC configuration object that contains vSphereNodes but connections to those nodes are not established then a warning is printed to the console and those nodes get skipped during execution.

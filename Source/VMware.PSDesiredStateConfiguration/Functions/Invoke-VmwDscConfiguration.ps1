@@ -48,8 +48,6 @@ function Start-VmwDscConfiguration {
 Invokes the DSC Configuration with the 'Get' DSC method.
 Retrieves the dsc resources current states.
 #>
-
-#> 
 function Get-VmwDscConfiguration {
     [CmdletBinding()]
     param (
