@@ -32,11 +32,20 @@ function Start-VmwDscConfiguration {
         Position             = 0)]
         [ValidateNotNullOrEmpty()]
         [VmwDscConfiguration]
-        $Configuration
+        $Configuration,
+
+        [Parameter(
+        Mandatory            = $false,
+        ValueFromPipeline    = $false,
+        Position             = 1)]
+        [ValidateNotNullOrEmpty()]
+        [PsObject]
+        $ConnectionFilter
     )
 
     $invokeParams = @{
         Configuration = $Configuration
+        ConnectionFilter = $ConnectionFilter
         Method = 'Set'
     }
     
@@ -47,7 +56,7 @@ function Start-VmwDscConfiguration {
 .DESCRIPTION
 Invokes the DSC Configuration with the 'Get' DSC method.
 Retrieves the dsc resources current states.
-#>
+#> 
 function Get-VmwDscConfiguration {
     [CmdletBinding()]
     param (
@@ -65,12 +74,21 @@ function Get-VmwDscConfiguration {
         ParameterSetName     = 'Last_Configuration',
         Position             = 0)]
         [Switch]
-        $ExecuteLastConfiguration
+        $ExecuteLastConfiguration,
+
+        [Parameter(
+        Mandatory            = $false,
+        ValueFromPipeline    = $false,
+        Position             = 1)]
+        [ValidateNotNullOrEmpty()]
+        [PsObject]
+        $ConnectionFilter
     )
 
     $invokeParams = @{
         Configuration = $Configuration
         ExecuteLastConfiguration = $ExecuteLastConfiguration
+        ConnectionFilter = $ConnectionFilter
         Method = 'Get'
     }
     
@@ -116,12 +134,21 @@ function Test-VmwDscConfiguration {
         Mandatory            = $false,
         Position             = 1)]
         [Switch]
-        $Detailed
+        $Detailed,
+
+        [Parameter(
+        Mandatory            = $false,
+        ValueFromPipeline    = $false,
+        Position             = 2)]
+        [ValidateNotNullOrEmpty()]
+        [PsObject]
+        $ConnectionFilter
     )
 
     $invokeParams = @{
         Configuration = $Configuration
         ExecuteLastConfiguration = $ExecuteLastConfiguration
+        ConnectionFilter = $ConnectionFilter
         Method = 'Test'
     }
 
@@ -167,7 +194,12 @@ function Invoke-VmwDscConfiguration {
         [Parameter(
         Mandatory            = $false)]
         [Switch]
-        $ExecuteLastConfiguration
+        $ExecuteLastConfiguration,
+
+        [Parameter(
+        Mandatory            = $false)]
+        [PsObject]
+        $ConnectionFilter
     )
 
     if ($ExecuteLastConfiguration) {
@@ -178,7 +210,32 @@ function Invoke-VmwDscConfiguration {
         $Configuration = $Script:LastExecutedConfiguration
     }
 
-    $invoker = [DscConfigurationRunner]::new($Configuration, $Method)
+    $configToUse = $Configuration
+
+    if ($null -ne $ConnectionFilter) {
+        $connectionToFilterBy = New-Object -TypeName 'System.Collections.Generic.HashSet[string]'
+
+        foreach ($connection in $ConnectionFilter) {
+            # check if entire connection object is given or just the connection name
+            if ($connection -is [string]) {
+                $connectionToFilterBy.Add($connection) | Out-Null
+            } else {
+                $connectionToFilterBy.Add($connection.Name) | Out-Null
+            }
+        }
+
+        $nodesToUse = New-Object -TypeName 'System.Collections.ArrayList'
+
+        foreach($node in $configToUse.Nodes) {
+            if ($connectionToFilterBy.Contains($node.InstanceName)) {
+                $nodesToUse.Add($node) | Out-Null
+            }
+        }
+
+        $configToUse.Nodes = $nodesToUse.ToArray()
+    }
+
+    $invoker = [DscConfigurationRunner]::new($configToUse, $Method)
 
     $invokeResult = $invoker.InvokeConfiguration()
 
