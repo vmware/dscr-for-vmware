@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.3 - 2020-11-30
+### Changed
+- Extend ***-VmwDscConfiguration** cmdlets vaildation to check for **DSC Resources** with duplicate key properties.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.2 - 2020-11-24
 ### Added
 - Added a special **vSphereNode** dynamic keyword that represents a connection to a **VIServer** and allows reusing **vSphere** connections via the new execution engine.
