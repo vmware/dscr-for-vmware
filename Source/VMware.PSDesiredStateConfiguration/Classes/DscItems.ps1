@@ -285,7 +285,7 @@ class DscConfigurationCompiler {
         $dscNodes = $this.CombineNodes($dscItems)
 
         for ($i = 0; $i -lt $dscNodes.Length; $i++) {
-            Write-Verbose ("Ordering Resources of node with name: " + $dscNodes[$i].InstanceName)
+            Write-Verbose ("Ordering DSC Resources of node: " + $dscNodes[$i].InstanceName)
 
             # parse the dsc resources and their dependencies into a sorted array
             $dscNodes[$i].Resources = $this.OrderResources($dscNodes[$i].Resources)
@@ -992,21 +992,21 @@ class DscTestMethodDetailedResult : BaseDscMethodResult {
 .DESCRIPTION
 Type used for checking uniqueness of dsc resource key properties
 #>
-class KeyPropertyResourceCheck {
-    [string] $ResourceType
+class DscKeyPropertyResourceCheck {
+    [string] $DscResourceType
       
     # can contain only string, int, enum values, because only properties of those types can be keys
     [Hashtable] $KeyPropertiesToValues
 
-    KeyPropertyResourceCheck([string] $ResourceType, [Hashtable] $KeyPropertiesToValues) {
-        $this.ResourceType = $ResourceType
+    DscKeyPropertyResourceCheck([string] $DscResourceType, [Hashtable] $KeyPropertiesToValues) {
+        $this.DscResourceType = $DscResourceType
         $this.KeyPropertiesToValues = $KeyPropertiesToValues
     }
 
     [bool] Equals([Object] $other) {
-        $other = $other -as [KeyPropertyResourceCheck]
+        $other = $other -as [DscKeyPropertyResourceCheck]
 
-        if (-not $this.ResourceType.Equals($other.ResourceType)) {
+        if (-not $this.DscResourceType.Equals($other.DscResourceType)) {
             return $false
         }
 
@@ -1240,7 +1240,7 @@ class DscConfigurationRunner {
     #>
     hidden [void] ValidateDscKeyProperties([VmwDscResource[]] $DscResources) {
         $resourcesQueue = New-Object 'System.Collections.Queue'
-        $dscResourcesDuplicateChecker = New-Object 'System.Collections.Generic.HashSet[KeyPropertyResourceCheck]'
+        $dscResourcesDuplicateChecker = New-Object 'System.Collections.Generic.HashSet[DscKeyPropertyResourceCheck]'
 
         $resourcesQueue.Enqueue($DscResources)
 
@@ -1268,9 +1268,9 @@ class DscConfigurationRunner {
     <#
     .DESCRIPTION
     Finds the key properties of a dsc resource and
-    wraps it in a KeyPropertyResourceCheck object with the resource type and key props array.
+    wraps it in a DscKeyPropertyResourceCheck object with the resource type and key props array.
     #>
-    hidden [KeyPropertyResourceCheck] GetDscResouceKeyProperties([VmwDscResource] $DscResource) {
+    hidden [DscKeyPropertyResourceCheck] GetDscResouceKeyProperties([VmwDscResource] $DscResource) {
         $moduleName = $DscResource.ModuleName.Name
         $moduleVersion = $DscResource.ModuleName.RequiredVersion.ToString()
 
@@ -1314,7 +1314,7 @@ class DscConfigurationRunner {
             $dscResourceKeyPropertiesHashTable[$dscKeyProp] = $DscResource.Property[$dscKeyProp]
         }
 
-        $resourceCheck = [KeyPropertyResourceCheck]::new(
+        $resourceCheck = [DscKeyPropertyResourceCheck]::new(
             $DscResource.ResourceType,
             $dscResourceKeyPropertiesHashTable
         )
