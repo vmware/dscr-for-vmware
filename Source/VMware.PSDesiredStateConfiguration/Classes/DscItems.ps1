@@ -1004,23 +1004,21 @@ class DscKeyPropertyResourceCheck {
     }
 
     [bool] Equals([Object] $other) {
+        $comparisonResult = $true
         $other = $other -as [DscKeyPropertyResourceCheck]
 
         if (-not $this.DscResourceType.Equals($other.DscResourceType)) {
-            return $false
-        }
-
-        foreach ($key in $this.KeyPropertiesToValues.Keys) {
-            if (-not $other.KeyPropertiesToValues.ContainsKey($key)) {
-                return $false
-            }
-
-            if (-not $this.KeyPropertiesToValues[$key].Equals($other.KeyPropertiesToValues[$key])) {
-                return $false
+            $comparisonResult = $false
+        } else {
+            foreach ($key in $this.KeyPropertiesToValues.Keys) {
+                if ((-not $other.KeyPropertiesToValues.ContainsKey($key)) -or (-not $this.KeyPropertiesToValues[$key].Equals($other.KeyPropertiesToValues[$key]))) {
+                    $comparisonResult = $false
+                    break
+                }
             }
         }
 
-        return $true
+        return $comparisonResult
     }
 
     [int] GetHashCode() {
