@@ -266,6 +266,10 @@ class DscConfigurationCompiler {
     Compiles the DSC Configuration and returns an configuration object
     #>
     [VmwDscConfiguration] CompileDscConfiguration() {
+        Write-Verbose "Starting compilation process"
+
+        Write-Verbose "Validating ConfigurationData"
+        
         # validate the configurationData
         $this.ValidateConfigurationData()
 
@@ -275,10 +279,14 @@ class DscConfigurationCompiler {
         # parse and compile the configuration
         $dscItems = $this.CompileDscConfigurationUtil($configCommand, $this.CustomParams)
 
+        Write-Verbose "Handling nodes"
+
         # combine nodes of same instanceName and bundle nodeless resources
         $dscNodes = $this.CombineNodes($dscItems)
 
         for ($i = 0; $i -lt $dscNodes.Length; $i++) {
+            Write-Verbose ("Ordering DSC Resources of node: " + $dscNodes[$i].InstanceName)
+
             # parse the dsc resources and their dependencies into a sorted array
             $dscNodes[$i].Resources = $this.OrderResources($dscNodes[$i].Resources)
         }
@@ -411,8 +419,12 @@ class DscConfigurationCompiler {
     hidden [DscItem[]] CompileDscConfigurationUtil([System.Management.Automation.ConfigurationInfo] $ConfigCommand, [Hashtable] $CustomParams) {
         $dscConfigurationParser = [DscConfigurationParser]::new()
 
+        Write-Verbose "Parsing configuration block of $($ConfigCommand.Name)"
+
         # parse the configuration, run Import-DscResource statements and retrieve the found resources/nested configurations
         $parseResult = $dscConfigurationParser.ParseDscConfiguration($configCommand)
+
+        Write-Verbose "Preparing functions for dsc resources and nodes"
 
         $resources = $parseResult.ResourceNameToInfo
         $foundDscResourcesList = New-Object -TypeName 'System.Collections.ArrayList'
@@ -433,10 +445,14 @@ class DscConfigurationCompiler {
         # create functions for nodes and resources to be used in InvokeWithContext
         $functionsToDefine = $this.CreateFunctionsToDefine($foundDscResourcesList.ToArray())
 
+        Write-Verbose "Preparing default variables and variables from ConfigurationData"
+
         # create variable objects for InvokeWithContext from ConfigurationData and common dsc configuration variables
         $variablesToDefine = $this.CreateVariablesToDefine()
 
         $configScriptBlock = $parseResult.ScriptBlock
+
+        Write-Verbose "Executing Configuration scriptblock to extract resources and nodes"
 
         $dscItems = $configScriptBlock.InvokeWithContext($functionsToDefine, $variablesToDefine, $CustomParams)
 
@@ -1054,7 +1070,7 @@ class DscConfigurationRunner {
         $invokeResult = New-Object 'System.Collections.ArrayList'
 
         foreach ($node in $this.ValidNodes) {
-            Write-Progress "Invoking node with name: $($node.InstanceName)"
+            Write-Verbose "Invoking node with name: $($node.InstanceName)"
 
             $this.ValidateDscKeyProperties($node.Resources)
             
@@ -1173,10 +1189,11 @@ class DscConfigurationRunner {
             Property = $DscResource.Property
         }
 
-        Write-Progress "Invoking resource with id: $($DscResource.GetId())"
+        Write-Verbose "Invoking resource with id: $($DscResource.GetId())"
 
         $invokeResult = $null
 
+        # ignore progress from internal Get-DscResource in Invoke-DscResource 
         $oldProgressPref = (Get-Variable 'ProgressPreference').Value
         Set-Variable -Name 'ProgressPreference' -Value 'SilentlyContinue' -Scope 'Global'
 
@@ -1208,6 +1225,7 @@ class DscConfigurationRunner {
             }
         }
 
+        # revert progresspreference
         Set-Variable -Name 'ProgressPreference' -Value $oldProgressPref -Scope 'Global'
 
         return $invokeResult

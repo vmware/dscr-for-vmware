@@ -105,6 +105,57 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
             )
         )
     )
+
+    $Script:SampleDscConfigurationWithMultipleNodes = [VmwDscConfiguration]::new(
+        'Test',
+        @(
+            [VmwDscNode]::new(
+                'firstNode',
+                @(
+                    [VmwDscResource]::new(
+                        'file',
+                        'FileResource',
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
+                        @{ 
+                            Path = "path"
+                            SourcePath = "path"
+                            Ensure = "present"
+                        }
+                    )
+                )
+            ),
+            [VmwDscNode]::new(
+                'secondNode',
+                @(
+                    [VmwDscResource]::new(
+                        'file2',
+                        'FileResource',
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
+                        @{ 
+                            Path = "path2"
+                            SourcePath = "path2"
+                            Ensure = "absent"
+                        }
+                    )
+                )
+            ),
+            [VmwDscNode]::new(
+                'thirdNode',
+                @(
+                    [VmwDscResource]::new(
+                        'file3',
+                        'FileResource',
+                        @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
+                        @{ 
+                            Path = "path3"
+                            SourcePath = "path3"
+                            Ensure = "present"
+                        }
+                    )
+                )
+            )
+        )
+    )
     
     Describe 'Get-VmwDscConfiguration' {
         It 'Should return the last executed configuration resources when ExecuteLastConfiguration switch is used' {
@@ -297,6 +348,84 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
 
                 Invoke-VmwDscConfiguration @splat
             } | Should -Throw ($Script:DscResourcesWithDuplicateKeyPropertiesException -f $Script:SampleDscConfigurationWithDuplicateKeyPropertiesResource.Nodes[0].Resources[0].ResourceType)
+        }
+        It 'Should correctly filter configuration nodes based on ConnectionFilter parameter with string input' {
+            # arrange
+            $nodeToUse = 'secondNode'
+
+            Mock Invoke-DscResource {
+                [PsObject]@{
+                    Result = 'myResult'
+                }
+            } -Verifiable
+
+            # act
+            $splat = @{
+                Configuration = $Script:SampleDscConfigurationWithMultipleNodes
+                ConnectionFilter = $nodeToUse
+                Method = 'Test'
+            }
+
+            $res = Invoke-VmwDscConfiguration @splat
+
+            # assert
+            Assert-VerifiableMock
+            $res.OriginalNode.InstanceName | Should -Be $nodeToUse
+        }
+        It 'Should correctly filter configuration nodes based on ConnectionFilter parameter with object input' {
+            # arrange
+            $nodeToUse = [PsObject]@{
+                Name = 'secondNode'
+            }
+
+            Mock Invoke-DscResource {
+                [PsObject]@{
+                    Result = 'myResult'
+                }
+            } -Verifiable
+
+            # act
+            $splat = @{
+                Configuration = $Script:SampleDscConfigurationWithMultipleNodes
+                ConnectionFilter = $nodeToUse
+                Method = 'Test'
+            }
+
+            $res = Invoke-VmwDscConfiguration @splat
+
+            # assert
+            Assert-VerifiableMock
+            $res.OriginalNode.InstanceName | Should -Be $nodeToUse.Name
+        }
+        It 'Should correctly filter configuration nodes based on ConnectionFilter parameter with array input' {
+            # arrange
+            $nodesToUse = @(
+                'secondNode',
+                'thirdNode'
+            )
+
+            Mock Invoke-DscResource {
+                [PsObject]@{
+                    Result = 'myResult'
+                }
+            } -Verifiable
+
+            # act
+            $splat = @{
+                Configuration = $Script:SampleDscConfigurationWithMultipleNodes
+                ConnectionFilter = $nodesToUse
+                Method = 'Test'
+            }
+
+            $results = Invoke-VmwDscConfiguration @splat
+
+            # assert
+            Assert-VerifiableMock
+            $results.Count | Should -Be $nodesToUse.Count
+
+            foreach($res in $results) {
+                $nodesToUse | Should -Contain $res.OriginalNode.InstanceName
+            }
         }
     }
     Describe 'vSphereNode functionality' {

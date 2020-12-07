@@ -160,7 +160,11 @@ $config = New-VmwDscConfiguration @vmwDscConfigParams
 These cmdlets work with the PowerShell object created by **New-VmwDscConfiguration** and apply the Set, Test, Get **DSC methods** to the compiled configuration.
 
 ##### Parameters
-- **Configuration** - A Dsc Configuration compiled by **New-VmwDscConfiguration**
+##### Mandatory
+- **Configuration** - A DSC Configuration object compiled by **New-VmwDscConfiguration**
+
+#### Optional
+- **ConnectionFilter** - An array of node names that should be executed. Nodes that are not in the list will be skipped. Node names can be in the form of strings or ViConnection objects. 
 
 ---
 ### Examples
@@ -208,7 +212,7 @@ These cmdlets work with the PowerShell object created by **New-VmwDscConfigurati
     ```
     The resulting object will contain an **InDesiredState** flag which shows the overall state of the configuration, a **ResourcesInDesiredState** array of resources in desired state and a **ResourcesNotInDesiredState** array of resources not in desired state.
     
-    Test-VmwDscConfiguration also remembers the last run configuration so you can use the -ExecuteLastConfiguration flag to invoke it.
+    **Test-VmwDscConfiguration** also remembers the last run configuration so you can use the -ExecuteLastConfiguration flag to invoke it.
     ```powershell
     Test-VmwDscConfiguration -ExecuteLastConfiguration
     ```
@@ -216,12 +220,42 @@ These cmdlets work with the PowerShell object created by **New-VmwDscConfigurati
     ```powershell
     Start-VmwDscConfiguration -Configuration $dscConfiguration
     ```
-5. To get the latest applied configuration on your machine:
+5. To get the current sate of the configuration:
     ```powershell
     Get-VmwDscConfiguration -Configuration $dscConfiguration
     ```
     
-    Get-VmwDscConfiguration also remembers the last run configuration so you can use the -ExecuteLastConfiguration flag to invoke it.
+    **Get-VmwDscConfiguration** also remembers the last run configuration so you can use the -ExecuteLastConfiguration flag to invoke it.
     ```powershell
     Get-VmwDscConfiguration -ExecuteLastConfiguration
     ```
+##### Example with ConnectionFilter parameter
+
+The following configuration has multiple nodes. Only the nodes specified in **ConnectionFilter**
+will be executed.
+
+```powershell
+Configuration Test {
+    Import-DscResource -ModuleName 'MyDscResourceModule'
+    
+    Node 'mynode' {
+        MyResource res {
+            Prop = 'Test'
+        }
+    }
+    Node 'other node' {
+        MyResource res {
+            Prop = 'Test'
+        }
+    }
+}
+
+$dscConfiguration = New-VmwDscConfiguration -ConfigName 'Test'
+
+$splatParams = @{
+    Configuration = $dscConfiguration
+    ConnectionFilter = 'other node'
+}
+
+$result = Start-VmwDscConfiguration @$splatParams
+```
