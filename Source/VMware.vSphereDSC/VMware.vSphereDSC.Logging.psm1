@@ -39,11 +39,14 @@ function Write-VerboseLog {
         [array] $Arguments
     )
 
-    if ($null -eq $Arguments) {
-        Write-Verbose -Message $message
+    if ($null -ne $Arguments) {
+        $Message = [string]::Format($Message, $Arguments)
     }
-    else {
-        Write-Verbose -Message ([string]::Format($Message, $Arguments))
+    
+    Write-Verbose -Message $Message
+
+    if ($VerbosePreference -ne 'Continue') {
+        Write-LogToFile -Message $Message -LogType 'Verbose'
     }
 }
 
@@ -73,10 +76,54 @@ function Write-WarningLog {
         [array] $Arguments
     )
 
-    if ($null -eq $Arguments) {
-        Write-Warning -Message $message
+    if ($null -ne $Arguments) {
+        $Message = [string]::Format($Message, $Arguments)
     }
-    else {
-        Write-Warning -Message ([string]::Format($Message, $Arguments))
+    
+    Write-Warning -Message $Message
+
+    if ($WarningPreference -ne 'Continue') {
+        Write-LogToFile -Message $Message -LogType 'Warning'
     }
+}
+
+<#
+.SYNOPSIS
+Saves the messages to a log file
+
+.DESCRIPTION
+Saves the messages to a log file, because Invoke-DscResource runs this in a separate runspace
+where the streams are not accessable.
+
+.PARAMETER Message
+Message to save into the log file.
+
+.PARAMETER LogType
+Type of the stream: Verbose, Warning etc..
+#>
+function Write-LogToFile {
+    Param(
+        [string]
+        $Message,
+
+        [string]
+        $LogType
+    )
+
+    $logFilePath = Join-Path -Path $env:TEMP -ChildPath "__VMware.vSphereDSC_$LogType.txt"
+
+    if (-not (Test-Path -Path $logFilePath -PathType 'Leaf')) {
+        $file = New-Item -Path $logFilePath -ItemType 'File' -Force -ErrorAction 'SilentlyContinue'
+
+        # exit function if file is not created
+        if ($null -eq $file) {
+            return
+        }
+    } 
+    
+    $content = Get-Content -Path $logFilePath -Raw
+
+    $content += $Message
+
+    Set-Content -Path $logFilePath -Value $content -Force -ErrorAction 'SilentlyContinue'
 }

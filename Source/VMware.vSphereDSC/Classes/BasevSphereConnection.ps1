@@ -18,14 +18,6 @@ class BasevSphereConnection {
     <#
     .DESCRIPTION
 
-    Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi.
-    #>
-    [DscProperty(Key)]
-    [string] $Server
-
-    <#
-    .DESCRIPTION
-
     Credentials needed for connection to the specified Server.
     #>
     [DscProperty()]

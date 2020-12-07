@@ -1197,38 +1197,69 @@ class DscConfigurationRunner {
         $oldProgressPref = (Get-Variable 'ProgressPreference').Value
         Set-Variable -Name 'ProgressPreference' -Value 'SilentlyContinue' -Scope 'Global'
 
-        if ($this.DscMethod -eq 'Test') {
-            try {
+        try {
+            if ($this.DscMethod -eq 'Test' -or $this.DscMethod -eq 'Get') {
                 $invokeResult = Invoke-DscResource @invokeSplatParams -Method $this.DscMethod
-            } catch {
-                # if an exception is thrown that means the resource is not in desired state
-                # due to a dependency not being in desired state
+            } else {
+                # checks if the resource is in target state
+                $isInDesiredState = Invoke-DscResource @invokeSplatParams -Method 'Test'
+    
+                # executes 'set' method only if state is not desired
+                if (-not $isInDesiredState.InDesiredState) {
+                    (Invoke-DscResource @invokeSplatParams -Method $this.DscMethod) | Out-Null
+                }
+            }
+        } catch {
+            # if an exception is thrown that means the resource is not in desired state
+            # due to a dependency not being in desired state
+            if ($this.DscMethod -eq 'Test') {
                 $invokeResult = [PSCustomObject]@{
                     InDesiredState = $false
                 }
             }
-        } elseif ($this.DscMethod -eq 'Get') {
-            try {
-                $invokeResult = Invoke-DscResource @invokeSplatParams -Method $this.DscMethod
-            } catch {
-                # if an exception is thrown that means the resource is not in desired state
-                # due to a dependency not being in desired state
-                $invokeResult = $null
-            }
-        } else {
-            # checks if the resource is in target state
-            $isInDesiredState = Invoke-DscResource @invokeSplatParams -Method 'Test'
-
-            # executes 'set' method only if state is not desired
-            if (-not $isInDesiredState.InDesiredState) {
-                (Invoke-DscResource @invokeSplatParams -Method $this.DscMethod) | Out-Null
-            }
+        } finally {
+            $this.HandleStreamOutputFromDscResources()
         }
 
         # revert progresspreference
         Set-Variable -Name 'ProgressPreference' -Value $oldProgressPref -Scope 'Global'
 
         return $invokeResult
+    }
+
+    <#
+    .DESCRIPTION
+    Extract and print logs from dsc resource invoked by Invoke-DscResource from a log file.
+    This is done this way because the streams are not accessable in any other way.
+    #>
+    hidden [void] HandleStreamOutputFromDscResources() {
+        $logsToExtract = @( 'Warning', 'Verbose' )
+
+        foreach ($logType in $logsToExtract) {
+            # get stream preference
+            # note: preference 
+            $logPreference = (Get-Variable -Name ($logType + 'Preference')).Value
+
+            if ($logPreference -ne 'Continue') {
+                continue
+            }
+
+            # attempt to retrieve stream data if file exists
+            $logPath = Join-Path -Path $env:TEMP -ChildPath "__VMware.vSphereDSC_$logType.txt"
+
+            if (-not (Test-Path -Path $logPath -PathType 'Leaf')) {
+                continue
+            }
+        
+            $rows = Get-Content -Path $logPath -ErrorAction 'SilentlyContinue'
+        
+            foreach ($row in $rows) {
+                Invoke-Expression "Write-$LogType '$row'"
+            }
+        
+            # remove the temp file
+            Remove-Item -Path $logPath -ErrorAction 'SilentlyContinue' -Force
+        }
     }
 
     <#
