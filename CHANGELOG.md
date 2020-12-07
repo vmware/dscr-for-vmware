@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.4 - 2020-12-07
+### Added
+- **ConnectionFilter** parameter was added to the **Start, Test and Get-VmwDscConfiguration** cmdlets, which gives the option to choose the **vSphere Nodes** on which the configuration will be executed.
+
+### Changed
+- Extend the **New-VmwDscConfiguration** cmdlet to have **Verbose** output.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.3 - 2020-11-30
 ### Changed
 - Extend ***-VmwDscConfiguration** cmdlets vaildation to check for **DSC Resources** with duplicate key properties.
