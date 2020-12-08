@@ -110,6 +110,11 @@ function Write-LogToFile {
         $LogType
     )
 
+    # do nothing in case no temp folder is available
+    if ($null -eq $env:TEMP) {
+        return
+    }
+
     $logFilePath = Join-Path -Path $env:TEMP -ChildPath "__VMware.vSphereDSC_$LogType.txt"
 
     if (-not (Test-Path -Path $logFilePath -PathType 'Leaf')) {
