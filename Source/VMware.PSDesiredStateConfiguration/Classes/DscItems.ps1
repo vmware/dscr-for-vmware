@@ -1233,6 +1233,11 @@ class DscConfigurationRunner {
     This is done this way because the streams are not accessable in any other way.
     #>
     hidden [void] HandleStreamOutputFromDscResources() {
+        # no temp folder is available by default during travis build
+        if ($null -eq $env:TEMP) {
+            return
+        }
+
         $logsToExtract = @( 'Warning', 'Verbose' )
 
         foreach ($logType in $logsToExtract) {
