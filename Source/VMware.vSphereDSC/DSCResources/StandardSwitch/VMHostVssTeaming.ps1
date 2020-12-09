@@ -65,6 +65,8 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     [DscProperty()]
     [nullable[bool]] $RollingOrder
 
+    hidden [string] $PhysicalNicNotInBridgeMessage = "Physical network adapter {0} is not in the bridge with standard switch {1}."
+
     [void] Set() {
         try {
             Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
@@ -159,10 +161,31 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
 
+    Validates that all provided physical network adapters: (ActiveNic and StandbyNic) are in the bridge
+    with the specified standard switch.
+    #>
+    [void] ValidatePhysicalNetworkAdapters() {
+        $physicalNics = $this.ActiveNic + $this.StandbyNic
+
+        if ($physicalNics.Length -gt 0) {
+            $standardSwitch = $this.GetVss()
+            foreach ($physicalNic in $physicalNics) {
+                if (!($standardSwitch.Spec.Bridge.NicDevice -Contains $physicalNic)) {
+                    throw ($this.PhysicalNicNotInBridgeMessage -f $physicalNic, $standardSwitch.Name)
+                }
+            }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssTeaming($vmHost) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+
+        $this.ValidatePhysicalNetworkAdapters()
 
         $vssTeamingArgs = @{
             Name = $this.VssName
