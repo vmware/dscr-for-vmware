@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.74 - 2020-12-09
+### Changed
+- Fixed bugs with physical network adapters when updating the teaming policy of the standard switch.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.4 - 2020-12-07
 ### Added
 - **ConnectionFilter** parameter was added to the **Start, Test and Get-VmwDscConfiguration** cmdlets, which gives the option to choose the **vSphere Nodes** on which the configuration will be executed.
