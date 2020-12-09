@@ -59,7 +59,7 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should throw an exception with the correct message when error occurs while configuring the iSCSI Host Bus Adapter CHAP settings' {
                     # Act && Assert
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $resource.Set() } | Should -Throw "Could not configure CHAP settings of iSCSI Host Bus Adapter $($script:constants.IScsiHbaDeviceName) from VMHost $($script:vmHost.Name). For more information: ScriptHalted"
+                    { $resource.Set() } | Should -Throw "Could not configure iSCSI Host Bus Adapter $($script:constants.IScsiHbaDeviceName) from VMHost $($script:vmHost.Name). For more information: ScriptHalted"
                 }
             }
 
@@ -88,6 +88,42 @@ InModuleScope -ModuleName $script:moduleName {
                         ParameterFilter = {
                             $IScsiHba -eq $script:iScsiHba -and
                             $ChapType -eq $script:constants.ChapTypeProhibited -and
+                            !$Confirm
+                        }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
+            }
+
+            Context 'When modifying the iSCSI name of the iSCSI Host Bus Adapter' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenModifyingTheIScsiNameOfTheIScsiHostBusAdapter
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should invoke all defined mocks with the correct parameters' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should invoke the Set-VMHostHba mock with the specified iSCSI Host Bus Adapter and iSCSI name once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Set-VMHostHba'
+                        ParameterFilter = {
+                            $IScsiHba -eq $script:iScsiHba -and
+                            $IScsiName -eq $script:constants.IScsiName -and
                             !$Confirm
                         }
                         Exactly = $true
@@ -153,6 +189,54 @@ InModuleScope -ModuleName $script:moduleName {
                     $result | Should -BeFalse
                 }
             }
+
+            Context 'When the iSCSI name of the iSCSI Host Bus Adapter does not need to be modified' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenTheIScsiNameOfTheIScsiHostBusAdapterDoesNotNeedToBeModified
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should invoke all defined mocks with the correct parameters' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $true when the iSCSI name of the iSCSI Host Bus Adapter does not need to be modified' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -BeTrue
+                }
+            }
+
+            Context 'When the iSCSI name of the iSCSI Host Bus Adapter needs to be modified' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenTheIScsiNameOfTheIScsiHostBusAdapterNeedsToBeModified
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should invoke all defined mocks with the correct parameters' {
+                    # Act
+                    $resource.Test()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should return $false when the iSCSI name of the iSCSI Host Bus Adapter needs to be modified' {
+                    # Act
+                    $result = $resource.Test()
+
+                    # Assert
+                    $result | Should -BeFalse
+                }
+            }
         }
 
         Describe 'VMHostIScsiHba\Get' -Tag 'Get' {
@@ -180,6 +264,7 @@ InModuleScope -ModuleName $script:moduleName {
                 $result.Server | Should -Be $script:viServer.Name
                 $result.VMHostName | Should -Be $script:vmHost.Name
                 $result.Name | Should -Be $script:iScsiHba.Device
+                $result.IScsiName | Should -Be $script:iScsiHba.IScsiName
                 $result.ChapType | Should -Be $script:iScsiHba.AuthenticationProperties.ChapType
                 $result.ChapName | Should -Be $script:iScsiHba.AuthenticationProperties.ChapName
                 $result.MutualChapEnabled | Should -Be $script:iScsiHba.AuthenticationProperties.MutualChapEnabled

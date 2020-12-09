@@ -361,6 +361,7 @@ $script:constants = @{
     IScsiHbaSendTargetType = 'Send'
     IScsiHbaStaticTargetType = 'Static'
     IScsiName = 'iqn.com.vmware:esx-server'
+    IScsiNameTwo = 'iqn.com.vmware:esx-server-two'
 }
 
 $script:credential = New-Object System.Management.Automation.PSCredential($script:constants.VIServerUser, $script:constants.VIServerPassword)
@@ -1647,6 +1648,7 @@ $script:vmHostFirewallRuleset = [VMware.VimAutomation.ViCore.Impl.V1.Host.VMHost
 $script:iScsiHba = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaImpl] @{
     Device = $script:constants.IScsiHbaDeviceName
     VMHost = $script:vmHost
+    IScsiName = $script:constants.IScsiName
     AuthenticationProperties = [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaAuthenticationPropertiesImpl] @{
         ChapType = $script:constants.ChapTypeRequired
         ChapName = $script:constants.ChapName
