@@ -1210,8 +1210,6 @@ class DscConfigurationRunner {
                 }
             }
         } catch {
-            # if an exception is thrown that means the resource is not in desired state
-            # due to a dependency not being in desired state
             if ($this.DscMethod -eq 'Test') {
                 $invokeResult = [PSCustomObject]@{
                     InDesiredState = $false
@@ -1229,16 +1227,17 @@ class DscConfigurationRunner {
 
     <#
     .DESCRIPTION
-    Extract and print logs from dsc resource invoked by Invoke-DscResource from a log file.
-    This is done this way because the streams are not accessable in any other way.
+    Prints the output from the execution of a DSC Resource via the Invoke-DscResource cmdlet.
+    The logs are extracted from a file, located in the Temp directory of the OS, where the execution occurred.
+    This extraction and printing is required, because the streams are not available during the execution of the DSC Resource.
     #>
     hidden [void] HandleStreamOutputFromDscResources() {
-        # no temp folder is available by default during travis build
+        # The Temp folder is not available when executing the build procedure with Travis CI.
         if ($null -eq $env:TEMP) {
             return
         }
 
-        $logsToExtract = @( 'Warning', 'Verbose' )
+        $logsToExtract = @('Warning', 'Verbose')
 
         foreach ($logType in $logsToExtract) {
             # get stream preference
