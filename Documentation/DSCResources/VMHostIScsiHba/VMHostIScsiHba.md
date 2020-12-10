@@ -8,6 +8,7 @@
 | **Credential** | Mandatory | PSCredential | The credentials needed for connection to the specified Server. ||
 | **VMHostName** | Key | string | The name of the VMHost. ||
 | **Name** | Key | string | The name of the iSCSI Host Bus Adapter. ||
+| **IScsiName** | Optional | string | The name for the VMHost Host Bus Adapter device. ||
 | **ChapType** | Optional | ChapType | The type of the CHAP (Challenge Handshake Authentication Protocol). | Prohibited, Discouraged, Preferred, Required |
 | **ChapName** | Optional | string | The CHAP authentication name. ||
 | **ChapPassword** | Optional | string | The CHAP authentication password. ||
@@ -18,7 +19,7 @@
 
 ## Description
 
-The resource is used to modify the CHAP settings of the specified iSCSI Host Bus Adapter on the specified VMHost.
+The resource is used to modify the CHAP settings and the iSCSI name of the specified iSCSI Host Bus Adapter on the specified VMHost.
 
 ## Examples
 
@@ -107,6 +108,48 @@ Configuration VMHostIScsiHba_ConfigureCHAPSettingsOfIScsiHostBusAdapterWithProhi
             VMHostName = $VMHostName
             Name = $IScsiHbaName
             ChapType = 'Prohibited'
+        }
+    }
+}
+```
+
+### Example 3
+
+Modifies the **iSCSI name** of the specified iSCSI Host Bus Adapter to **iqn.1998-01.com.vmware:esx-server1**.
+
+```powershell
+Configuration VMHostIScsiHba_ModifyIScsiNameOfIScsiHostBusAdapter_Config {
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Server,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.PSCredential]
+        $Credential,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $VMHostName,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $IScsiHbaName
+    )
+
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        VMHostIScsiHba VMHostIScsiHba {
+            Server = $Server
+            Credential = $Credential
+            VMHostName = $VMHostName
+            Name = $IScsiHbaName
+            IScsiName = 'iqn.1998-01.com.vmware:esx-server1'
         }
     }
 }
