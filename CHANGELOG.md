@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.76 - 2020-12-14
+### Added
+- Added **IScsiName** property of **VMHostIScsiHba DSC Resource**.
+- Added Unit Tests for **IScsiName** property of **VMHostIScsiHba DSC Resource**.
+- Added Integration Tests for **IScsiName** property of **VMHostIScsiHba DSC Resource**.
+- Added Documentation and example Configuration for **IScsiName** property of **VMHostIScsiHba DSC Resource**.
+
 ## VMware.vSphereDSC 2.1.0.75 - 2020-12-14
 ### Changed
 - Moved name validation to **VmfsDatastore DSC Resource** due to not being applicable for **NfsDatastores**.
