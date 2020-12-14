@@ -69,6 +69,19 @@ function New-MocksWhenNoErrorOccursWhileConfiguringTheiSCSIHostBusAdapterCHAPSet
     $vmHostIScsiHbaProperties
 }
 
+function New-MocksWhenModifyingTheIScsiNameOfTheIScsiHostBusAdapter {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostIScsiHbaProperties = New-VMHostIScsiHbaProperties
+
+    $vmHostIScsiHbaProperties.IScsiName = $script:constants.IScsiName
+
+    Mock -CommandName Set-VMHostHba -MockWith { return $null }.GetNewClosure() -Verifiable
+
+    $vmHostIScsiHbaProperties
+}
+
 function New-MocksWhenTheCHAPSettingsOfTheiSCSIHostBusAdapterDoNotNeedToBeModified {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
@@ -85,6 +98,29 @@ function New-MocksWhenTheCHAPSettingsOfTheiSCSIHostBusAdapterNeedToBeModified {
     [OutputType([System.Collections.Hashtable])]
 
     $vmHostIScsiHbaProperties = New-VMHostIScsiHbaProperties
+
+    $vmHostIScsiHbaProperties
+}
+
+function New-MocksWhenTheIScsiNameOfTheIScsiHostBusAdapterDoesNotNeedToBeModified {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostIScsiHbaProperties = New-VMHostIScsiHbaProperties
+
+    $vmHostIScsiHbaProperties.IScsiName = $script:constants.IScsiName
+    $vmHostIScsiHbaProperties.ChapType = $script:constants.ChapTypeRequired
+
+    $vmHostIScsiHbaProperties
+}
+
+function New-MocksWhenTheIScsiNameOfTheIScsiHostBusAdapterNeedsToBeModified {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vmHostIScsiHbaProperties = New-VMHostIScsiHbaProperties
+
+    $vmHostIScsiHbaProperties.IScsiName = $script:constants.IScsiNameTwo
 
     $vmHostIScsiHbaProperties
 }
