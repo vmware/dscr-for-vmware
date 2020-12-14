@@ -33,6 +33,7 @@ Configuration VMHostVDSwitchMigration_CreateStandardSwitchStandardPortGroupVDSwi
             Name = $AllNodes.PortGroupName
             VssName = $AllNodes.StandardSwitchName
             Ensure = 'Present'
+            VLanId = $AllNodes.PortGroupVLanId
             DependsOn = $AllNodes.VMHostVssResourceId
         }
 
@@ -107,6 +108,7 @@ Configuration VMHostVDSwitchMigration_MigrateOneDisconnectedPhysicalNetworkAdapt
             VMHostName = $AllNodes.VMHostName
             VdsName = $AllNodes.VDSwitchName
             PhysicalNicNames = @($AllNodes.PhysicalNetworkAdapterNames[0])
+            MigratePhysicalNicsOnly = $AllNodes.MigratePhysicalNicsOnly
         }
     }
 }
@@ -121,6 +123,7 @@ Configuration VMHostVDSwitchMigration_MigrateTwoDisconnectedPhysicalNetworkAdapt
             VMHostName = $AllNodes.VMHostName
             VdsName = $AllNodes.VDSwitchName
             PhysicalNicNames = @($AllNodes.PhysicalNetworkAdapterNames[0], $AllNodes.PhysicalNetworkAdapterNames[1])
+            MigratePhysicalNicsOnly = $AllNodes.MigratePhysicalNicsOnly
         }
     }
 }
@@ -135,6 +138,7 @@ Configuration VMHostVDSwitchMigration_MigrateTwoDisconnectedAndOneConnectedPhysi
             VMHostName = $AllNodes.VMHostName
             VdsName = $AllNodes.VDSwitchName
             PhysicalNicNames = $AllNodes.PhysicalNetworkAdapterNames
+            MigratePhysicalNicsOnly = $AllNodes.MigratePhysicalNicsOnly
         }
     }
 }

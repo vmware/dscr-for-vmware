@@ -77,10 +77,12 @@ $script:configurationData = @{
             LinkDiscoveryProtocolOperation = 'Listen'
             LinkDiscoveryProtocolProtocol = 'CDP'
             PortGroupName = 'Management Network'
+            PortGroupVLanId = 4094
             ManagementPortGroupName = 'MyManagementPortGroup'
             VMotionPortGroupName = 'MyvMotionPortGroup'
             ManagementTrafficEnabled = $true
             VMotionEnabled = $true
+            MigratePhysicalNicsOnly = $true
         }
     )
 }

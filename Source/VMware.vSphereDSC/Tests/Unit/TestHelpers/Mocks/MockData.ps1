@@ -204,8 +204,11 @@ $script:constants = @{
     DisconnectedPhysicalNetworkAdapterBitRatePerSecMb = 0
     VMKernelNetworkAdapterOneName = 'MyVMKernelNetworkAdapterOne'
     VMKernelNetworkAdapterTwoName = 'MyVMKernelNetworkAdapterTwo'
+    VMKernelNicAttachedToPortGroupWithVLanName = 'MyVMKernelNetworkAdapterAttachedToPortGroupWithVLanName'
     PortGroupOneName = 'MyPortGroupOneName'
     PortGroupTwoName = 'MyPortGroupTwoName'
+    PortGroupWithVLanName = 'MyPortGroupWithVLanName'
+    PortGroupWithVLanVLanId = 4094
     DistributedSwitchWithoutAddedPhysicalNetworkAdaptersName = 'MyDistributedSwitchWithoutAddedPhysicalNetworkAdapters'
     DomainName = 'MyDomain'
     DomainUsername = 'MyDomainUsername'
@@ -1158,6 +1161,17 @@ $script:vmKernelNetworkAdapterTwo = [VMware.VimAutomation.ViCore.Impl.V1.Host.Ne
     Name = $script:constants.VMKernelNetworkAdapterTwoName
     VMHost = $script:vmHostAddedToDistributedSwitchOne
     PortGroupName = $script:constants.PortGroupTwoName
+}
+
+$script:vmKernelNicAttachedToPortGroupWithVLan = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.HostVMKernelVirtualNicImpl] @{
+    Name = $script:constants.VMKernelNicAttachedToPortGroupWithVLanName
+    VMHost = $script:vmHostAddedToDistributedSwitchOne
+    PortGroupName = $script:constants.PortGroupWithVLanName
+}
+
+$script:portGroupWithVLan = [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.VirtualPortGroupImpl] @{
+    Name = $script:constants.PortGroupWithVLanName
+    VLanId = $script:constants.PortGroupWithVLanVLanId
 }
 
 $script:distributedSwitchWithoutAddedPhysicalNetworkAdapters = [VMware.VimAutomation.Vds.Impl.V1.VmwareVDSwitchImpl] @{
