@@ -60,6 +60,17 @@ class NfsUser : VMHostEntityBaseDSC {
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
             $this.RetrieveVMHost()
 
@@ -82,12 +93,33 @@ class NfsUser : VMHostEntityBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
             Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
             $this.RetrieveVMHost()
 
@@ -113,12 +145,33 @@ class NfsUser : VMHostEntityBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [NfsUser] Get() {
         try {
             Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $result = [NfsUser]::new()
 
             $this.ConnectVIServer()
@@ -132,6 +185,16 @@ class NfsUser : VMHostEntityBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -173,6 +236,17 @@ class NfsUser : VMHostEntityBaseDSC {
 
         try {
             Write-VerboseLog -Message $this.CreateNfsUserMessage -Arguments @($this.Name, $this.VMHost.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.CreateNfsUserMessage
+                Arguments = @($this.Name, $this.VMHost.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             New-NfsUser @newNfsUserParams
         }
         catch {
@@ -197,6 +271,17 @@ class NfsUser : VMHostEntityBaseDSC {
 
         try {
             Write-VerboseLog -Message $this.ChangeNfsUserPasswordMessage -Arguments @($nfsUser.Username, $this.VMHost.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.ChangeNfsUserPasswordMessage
+                Arguments = @($nfsUser.Username, $this.VMHost.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             Set-NfsUser @setNfsUserParams
         }
         catch {
@@ -219,6 +304,17 @@ class NfsUser : VMHostEntityBaseDSC {
 
         try {
             Write-VerboseLog -Message $this.RemoveNfsUserMessage -Arguments @($nfsUser.Username, $this.VMHost.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.RemoveNfsUserMessage
+                Arguments = @($nfsUser.Username, $this.VMHost.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             Remove-NfsUser @removeNfsUserParams
         }
         catch {

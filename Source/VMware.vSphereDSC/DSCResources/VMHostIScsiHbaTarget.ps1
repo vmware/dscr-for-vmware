@@ -98,6 +98,17 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
             $this.RetrieveVMHost()
             $this.IPEndPoint = $this.Address + ':' + $this.Port.ToString()
@@ -122,12 +133,33 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
             Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
             $this.RetrieveVMHost()
             $this.IPEndPoint = $this.Address + ':' + $this.Port.ToString()
@@ -156,12 +188,33 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [VMHostIScsiHbaTarget] Get() {
         try {
             Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $result = [VMHostIScsiHbaTarget]::new()
 
             $this.ConnectVIServer()
@@ -178,6 +231,16 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -221,6 +284,17 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
 
         try {
             Write-VerboseLog -Message $this.CreateIScsiHbaTargetMessage -Arguments @($this.IPEndPoint, $this.IScsiHbaName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.CreateIScsiHbaTargetMessage
+                Arguments = @($this.IPEndPoint, $this.IScsiHbaName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             New-IScsiHbaTarget @newIScsiHbaTargetParams
         }
         catch {
@@ -246,6 +320,17 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
 
         try {
             Write-VerboseLog -Message $this.ModifyIScsiHbaTargetMessage -Arguments @($this.IPEndPoint, $this.IScsiHbaName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.ModifyIScsiHbaTargetMessage
+                Arguments = @($this.IPEndPoint, $this.IScsiHbaName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             Set-IScsiHbaTarget @setIScsiHbaTargetParams
         }
         catch {
@@ -269,6 +354,17 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
 
         try {
             Write-VerboseLog -Message $this.RemoveIScsiHbaTargetMessage -Arguments @($this.IPEndPoint, $this.IScsiHbaName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.RemoveIScsiHbaTargetMessage
+                Arguments = @($this.IPEndPoint, $this.IScsiHbaName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             Remove-IScsiHbaTarget @removeIScsiHbaTargetParams
         }
         catch {

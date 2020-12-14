@@ -68,6 +68,17 @@ class VMHostVss : VMHostVssBaseDSC {
         try {
             Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = "{0} Entering {1}"
+                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
+
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
@@ -82,6 +93,17 @@ class VMHostVss : VMHostVssBaseDSC {
     [bool] Test() {
         try {
             Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = "{0} Entering {1}"
+                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
@@ -108,6 +130,17 @@ class VMHostVss : VMHostVssBaseDSC {
     [VMHostVss] Get() {
         try {
             Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = "{0} Entering {1}"
+                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
 
             $result = [VMHostVss]::new()
             $result.Server = $this.Server
@@ -136,6 +169,17 @@ class VMHostVss : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
+        $writeToLogFilesplat = @{
+            Connection = $this.Connection.Name
+            ResourceName = $this.GetType().ToString()
+            LogType = 'Verbose'
+            Message = "{0} Entering {1}"
+            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        }
+
+        Write-LogToFile @writeToLogFilesplat
+
+
         $vssTest = @(
             $this.ShouldUpdateDscResourceSetting('VssName', $vss.Name, $this.VssName),
             $this.ShouldUpdateDscResourceSetting('Mtu', $vss.Mtu, $this.Mtu)
@@ -151,6 +195,17 @@ class VMHostVss : VMHostVssBaseDSC {
     #>
     [void] UpdateVss($vmHost) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+
+        $writeToLogFilesplat = @{
+            Connection = $this.Connection.Name
+            ResourceName = $this.GetType().ToString()
+            LogType = 'Verbose'
+            Message = "{0} Entering {1}"
+            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        }
+
+        Write-LogToFile @writeToLogFilesplat
+
 
         $vssConfigArgs = @{
             Name = $this.VssName
@@ -191,6 +246,17 @@ class VMHostVss : VMHostVssBaseDSC {
     #>
     [void] PopulateResult($vmHost, $vmHostVSS) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+
+        $writeToLogFilesplat = @{
+            Connection = $this.Connection.Name
+            ResourceName = $this.GetType().ToString()
+            LogType = 'Verbose'
+            Message = "{0} Entering {1}"
+            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        }
+
+        Write-LogToFile @writeToLogFilesplat
+
 
         $currentVss = $this.GetVss()
 

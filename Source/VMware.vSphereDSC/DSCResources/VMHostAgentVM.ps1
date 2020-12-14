@@ -163,6 +163,20 @@ class VMHostAgentVM : VMHostBaseDSC {
                         $agentVmSetting
                     )
 
+                    $writeToLogFilesplat = @{
+                        Connection = $this.Connection.Name
+                        ResourceName = $this.GetType().ToString()
+                        LogType = 'Verbose'
+                        Message = $this.SettingIsNotInDesiredStateMessage
+                        Arguments = @(
+                            $agentVmSettingName,
+                            $agentVmSettingAsViewObject.Name,
+                            $agentVmSetting
+                        )
+                    }
+
+                    Write-LogToFile @writeToLogFilesplat
+
                     return $true
                 }
             }

@@ -47,6 +47,17 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
         try {
             Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = "{0} Entering {1}"
+                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
+
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
@@ -61,6 +72,17 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     [bool] Test() {
         try {
             Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = "{0} Entering {1}"
+                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
 
             $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
@@ -92,6 +114,17 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
         try {
             Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = "{0} Entering {1}"
+                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
+
             $result = [VMHostVssSecurity]::new()
             $result.Server = $this.Server
 
@@ -119,6 +152,17 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     [bool] Equals($vss) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
 
+        $writeToLogFilesplat = @{
+            Connection = $this.Connection.Name
+            ResourceName = $this.GetType().ToString()
+            LogType = 'Verbose'
+            Message = "{0} Entering {1}"
+            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        }
+
+        Write-LogToFile @writeToLogFilesplat
+
+
         $vssSecurityTest = @(
             $this.ShouldUpdateDscResourceSetting('AllowPromiscuous', $vss.Spec.Policy.Security.AllowPromiscuous, $this.AllowPromiscuous),
             $this.ShouldUpdateDscResourceSetting('ForgedTransmits', $vss.Spec.Policy.Security.ForgedTransmits, $this.ForgedTransmits),
@@ -135,6 +179,17 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     #>
     [void] UpdateVssSecurity($vmHost) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+
+        $writeToLogFilesplat = @{
+            Connection = $this.Connection.Name
+            ResourceName = $this.GetType().ToString()
+            LogType = 'Verbose'
+            Message = "{0} Entering {1}"
+            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        }
+
+        Write-LogToFile @writeToLogFilesplat
+
 
         $vssSecurityArgs = @{
             Name = $this.VssName
@@ -172,6 +227,17 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     #>
     [void] PopulateResult($vmHost, $vmHostVSSSecurity) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+
+        $writeToLogFilesplat = @{
+            Connection = $this.Connection.Name
+            ResourceName = $this.GetType().ToString()
+            LogType = 'Verbose'
+            Message = "{0} Entering {1}"
+            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        }
+
+        Write-LogToFile @writeToLogFilesplat
+
 
         $currentVss = $this.GetVss()
 

@@ -119,6 +119,17 @@ class DRSRule : BaseDSC {
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
 
             $this.InitInventoryUtil()
@@ -152,12 +163,33 @@ class DRSRule : BaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
             Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
 
             $this.InitInventoryUtil()
@@ -194,12 +226,33 @@ class DRSRule : BaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [DRSRule] Get() {
         try {
             Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $result = [DRSRule]::new()
 
             $this.ConnectVIServer()
@@ -227,6 +280,16 @@ class DRSRule : BaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -285,6 +348,16 @@ class DRSRule : BaseDSC {
             $notFoundVMNames = $this.VMNames | Where-Object -FilterScript { $result.Name -NotContains $_ }
             foreach ($notFoundVMName in $notFoundVMNames) {
                 Write-WarningLog -Message $this.CouldNotFindVMMessage -Arguments @($notFoundVMName, $cluster.Name)
+
+                $writeToLogFilesplat = @{
+                    Connection = $this.Connection.Name
+                    ResourceName = $this.GetType().ToString()
+                    LogType = 'Warning'
+                    Message = $this.CouldNotFindVMMessage
+                    Arguments = @($notFoundVMName, $cluster.Name)
+                }
+
+                Write-LogToFile @writeToLogFilesplat
             }
         }
 
@@ -342,6 +415,17 @@ class DRSRule : BaseDSC {
 
         try {
             Write-VerboseLog -Message $this.CreateDrsRuleMessage -Arguments @($this.Name, $cluster.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.CreateDrsRuleMessage
+                Arguments = @($this.Name, $cluster.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             New-DrsRule @newDrsRuleParams
         }
         catch {
@@ -368,6 +452,17 @@ class DRSRule : BaseDSC {
 
         try {
             Write-VerboseLog -Message $this.ModifyDrsRuleMessage -Arguments @($drsRule.Name, $drsRule.Cluster.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.ModifyDrsRuleMessage
+                Arguments = @($drsRule.Name, $drsRule.Cluster.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             Set-DrsRule @setDrsRuleParams
         }
         catch {
@@ -390,6 +485,17 @@ class DRSRule : BaseDSC {
 
         try {
             Write-VerboseLog -Message $this.RemoveDrsRuleMessage -Arguments @($drsRule.Name, $drsRule.Cluster.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.RemoveDrsRuleMessage
+                Arguments = @($drsRule.Name, $drsRule.Cluster.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             Remove-DrsRule @removeDrsRuleParams
         }
         catch {

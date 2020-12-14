@@ -56,6 +56,17 @@ class VMHostRole : BaseDSC {
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
             $this.EnsureConnectionIsESXi()
 
@@ -86,12 +97,33 @@ class VMHostRole : BaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
             Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
             $this.EnsureConnectionIsESXi()
 
@@ -120,12 +152,33 @@ class VMHostRole : BaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [VMHostRole] Get() {
         try {
             Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $result = [VMHostRole]::new()
 
             $this.ConnectVIServer()
@@ -139,6 +192,16 @@ class VMHostRole : BaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -164,6 +227,16 @@ class VMHostRole : BaseDSC {
             $privilege = Get-VIPrivilege -Server $this.Connection -Id $privilegeId -ErrorAction SilentlyContinue -Verbose:$false
             if ($null -eq $privilege) {
                 Write-WarningLog -Message $this.CouldNotFindPrivilegeMessage -Arguments @($privilegeId)
+
+                $writeToLogFilesplat = @{
+                    Connection = $this.Connection.Name
+                    ResourceName = $this.GetType().ToString()
+                    LogType = 'Warning'
+                    Message = $this.CouldNotFindPrivilegeMessage
+                    Arguments = @($privilegeId)
+                }
+
+                Write-LogToFile @writeToLogFilesplat
             }
             else {
                 $privileges += $privilege
@@ -211,6 +284,17 @@ class VMHostRole : BaseDSC {
     [void] NewVMHostRole() {
         try {
             Write-VerboseLog -Message $this.CreateRoleMessage -Arguments @($this.Name, $this.Connection.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.CreateRoleMessage
+                Arguments = @($this.Name, $this.Connection.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             New-VIRole -Server $this.Connection -Name $this.Name -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
@@ -228,6 +312,17 @@ class VMHostRole : BaseDSC {
 
         try {
             Write-VerboseLog -Message $this.CreateRoleWithPrivilegesMessage -Arguments @($this.Name, $desiredPrivilegeIds, $this.Connection.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.CreateRoleWithPrivilegesMessage
+                Arguments = @($this.Name, $desiredPrivilegeIds, $this.Connection.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             New-VIRole -Server $this.Connection -Name $this.Name -Privilege $desiredPrivileges -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
@@ -275,6 +370,17 @@ class VMHostRole : BaseDSC {
         try {
             Write-VerboseLog -Message $this.ModifyPrivilegesOfRoleMessage -Arguments @($vmHostRole.Name, $this.Connection.Name)
 
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.ModifyPrivilegesOfRoleMessage
+                Arguments = @($vmHostRole.Name, $this.Connection.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
+
             if ($privilegesToAdd.Length -eq 0) {
                 $setVIRoleParams.RemovePrivilege = $privilegesToRemove
                 Set-VIRole @setVIRoleParams
@@ -304,6 +410,17 @@ class VMHostRole : BaseDSC {
     [void] RemoveVMHostRole($vmHostRole) {
         try {
             Write-VerboseLog -Message $this.RemoveRoleMessage -Arguments @($vmHostRole.Name, $this.Connection.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.RemoveRoleMessage
+                Arguments = @($vmHostRole.Name, $this.Connection.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $vmHostRole | Remove-VIRole -Server $this.Connection -Force -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {

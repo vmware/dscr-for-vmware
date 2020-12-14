@@ -61,6 +61,17 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
 
             $this.RetrieveVMHost()
@@ -78,12 +89,33 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
             Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $this.ConnectVIServer()
 
             $this.RetrieveVMHost()
@@ -98,12 +130,33 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.TestMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [VMHostFirewallRuleset] Get() {
         try {
             Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodStartMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             $result = [VMHostFirewallRuleset]::new()
 
             $this.ConnectVIServer()
@@ -118,6 +171,16 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.GetMethodEndMessage
+                Arguments = @($this.DscResourceName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -246,6 +309,17 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
 
         try {
             Write-VerboseLog -Message $this.ModifyVMHostFirewallRulesetStateMessage -Arguments @($vmHostFirewallRuleset.Name, $this.VMHost.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.ModifyVMHostFirewallRulesetStateMessage
+                Arguments = @($vmHostFirewallRuleset.Name, $this.VMHost.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             Set-VMHostFirewallException @setVMHostFirewallExceptionParams
         }
         catch {
@@ -274,6 +348,17 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
 
         try {
             Write-VerboseLog -Message $this.ModifyVMHostFirewallRulesetAllowedIPAddressesListMessage -Arguments @($vmHostFirewallRuleset.Name, $this.VMHost.Name)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.ModifyVMHostFirewallRulesetAllowedIPAddressesListMessage
+                Arguments = @($vmHostFirewallRuleset.Name, $this.VMHost.Name)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
+
             Update-VMHostFirewallRuleset -VMHostFirewallSystem $vmHostFirewallSystem -VMHostFirewallRulesetId $vmHostFirewallRuleset.ExtensionData.Key -VMHostFirewallRulesetSpec $vmHostFirewallRulesetSpec
         }
         catch {

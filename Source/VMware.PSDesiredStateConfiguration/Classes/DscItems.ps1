@@ -1216,7 +1216,7 @@ class DscConfigurationRunner {
                 }
             }
         } finally {
-            $this.HandleStreamOutputFromDscResources()
+            $this.HandleStreamOutputFromDscResources($DscResource)
         }
 
         # revert progresspreference
@@ -1231,7 +1231,7 @@ class DscConfigurationRunner {
     The logs are extracted from a file, located in the Temp directory of the OS, where the execution occurred.
     This extraction and printing is required, because the streams are not available during the execution of the DSC Resource.
     #>
-    hidden [void] HandleStreamOutputFromDscResources() {
+    hidden [void] HandleStreamOutputFromDscResources([VmwDscResource] $DscResource) {
         # The Temp folder is not available when executing the build procedure with Travis CI.
         if ($null -eq $env:TEMP) {
             return
@@ -1248,8 +1248,18 @@ class DscConfigurationRunner {
                 continue
             }
 
+            $connectionName = [string]::Empty
+
+            if ($DscResource.Property.ContainsKey('Connection')) {
+                $connectionName = $DscResource.Property['Connection'].Name
+            } elseif ($DscResource.Property.ContainsKey('Server')) {
+                $connectionName = $DscResource.Property['Server']
+            }
+
+            $resourceName = $DscResource.ResourceType
+            
             # attempt to retrieve stream data if file exists
-            $logPath = Join-Path -Path $env:TEMP -ChildPath "__VMware.vSphereDSC_$logType.txt"
+            $logPath = Join-Path -Path $env:TEMP -ChildPath "__VMware.vSphereDSC_$($connectionName)_$($resourceName)_$($logType).TMP"
 
             if (-not (Test-Path -Path $logPath -PathType 'Leaf')) {
                 continue

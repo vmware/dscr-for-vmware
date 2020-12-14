@@ -100,6 +100,16 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
             provide an information to the user that invalid data is passed.
             #>
             Write-WarningLog -Message "Advanced Setting {0} does not exist for VMHost {1} and will be ignored." -Arguments @($advancedSettingName, $vmHostName)
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Warning'
+                Message = "Advanced Setting {0} does not exist for VMHost {1} and will be ignored."
+                Arguments = @($advancedSettingName, $vmHostName)
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
 
         return $advancedSetting
@@ -144,6 +154,20 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
                 $advancedSetting.Value,
                 $advancedSettingDesiredValue
             )
+
+            $writeToLogFilesplat = @{
+                Connection = $this.Connection.Name
+                ResourceName = $this.GetType().ToString()
+                LogType = 'Verbose'
+                Message = $this.SettingIsNotInDesiredStateMessage
+                Arguments = @(
+                    $advancedSetting.Name,
+                    $advancedSetting.Value,
+                    $advancedSettingDesiredValue
+                )
+            }
+
+            Write-LogToFile @writeToLogFilesplat
         }
 
         return $result

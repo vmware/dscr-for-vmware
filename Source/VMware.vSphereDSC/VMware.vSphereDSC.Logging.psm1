@@ -44,10 +44,6 @@ function Write-VerboseLog {
     }
     
     Write-Verbose -Message $Message
-
-    if ($VerbosePreference -ne 'Continue') {
-        Write-LogToFile -Message $Message -LogType 'Verbose'
-    }
 }
 
 <#
@@ -81,33 +77,53 @@ function Write-WarningLog {
     }
     
     Write-Warning -Message $Message
-
-    if ($WarningPreference -ne 'Continue') {
-        Write-LogToFile -Message $Message -LogType 'Warning'
-    }
 }
 
 <#
 .SYNOPSIS
-Saves the messages to a log file
+Saves the messages to a log file.
 
 .DESCRIPTION
 Saves the messages to a log file, because Invoke-DscResource runs this in a separate runspace
 where the streams are not accessable.
 
 .PARAMETER Message
-Message to save into the log file.
+Specifies the message to write to the file.
 
 .PARAMETER LogType
 Type of the stream: Verbose, Warning etc..
+
+.PARAMETER Connection
+Connection to the vCenter server.
+
+.PARAMETER ResourceName
+Name of the DSC Resource.
+
+.PARAMETER Arguments
+Specifies the arguments that are needed for formatting the message using [string]::Format method.
+The message is expected to be a format string that expects the given arguments.
 #>
 function Write-LogToFile {
     Param(
+        [Parameter(Mandatory = $true)]
         [string]
         $Message,
 
+        [Parameter(Mandatory = $true)]
         [string]
-        $LogType
+        $LogType,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Connection,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $ResourceName,
+
+        [Parameter()]
+        [array] $Arguments
+
     )
 
     # do nothing in case no temp folder is available
@@ -115,7 +131,12 @@ function Write-LogToFile {
         return
     }
 
-    $logFilePath = Join-Path -Path $env:TEMP -ChildPath "__VMware.vSphereDSC_$LogType.txt"
+    if ($null -ne $Arguments) {
+        $Message = [string]::Format($Message, $Arguments)
+    }
+
+    # create file in the following format
+    $logFilePath = Join-Path -Path $env:TEMP -ChildPath "__VMware.vSphereDSC_$($Connection)_$($ResourceName)_$($LogType).TMP"
 
     if (-not (Test-Path -Path $logFilePath -PathType 'Leaf')) {
         $file = New-Item -Path $logFilePath -ItemType 'File' -Force -ErrorAction 'SilentlyContinue'
@@ -124,7 +145,7 @@ function Write-LogToFile {
         if ($null -eq $file) {
             return
         }
-    } 
+    }
     
     $content = Get-Content -Path $logFilePath -Raw
 
