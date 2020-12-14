@@ -834,7 +834,6 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     hidden [string] $ModifyDatastoreMessage = "Modifying Datastore {0} on VMHost {1}."
     hidden [string] $RemoveDatastoreMessage = "Removing Datastore {0} from VMHost {1}."
 
-    hidden [string] $CouldNotCreateDatastoreWithTheSpecifiedNameMessage = "Could not create Datastore {0} on VMHost {1} because there is another Datastore with the same name on vCenter Server {2}."
     hidden [string] $CouldNotCreateDatastoreMessage = "Could not create Datastore {0} on VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotModifyDatastoreMessage = "Could not modify Datastore {0} on VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotRemoveDatastoreMessage = "Could not remove Datastore {0} from VMHost {1}. For more information: {2}"
@@ -853,28 +852,7 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
             Verbose = $false
         }
 
-        $datastore = Get-Datastore @getDatastoreParams
-
-        <#
-        If the established connection is to a vCenter Server, Ensure is 'Present' and the Datastore does not exist on the specified VMHost,
-        we need to check if there is a Datastore with the same name on the vCenter Server.
-        #>
-        if ($this.Connection.ProductLine -eq $this.vCenterProductId -and $this.Ensure -eq [Ensure]::Present -and $null -eq $datastore) {
-            # We need to remove the filter by VMHost from the hashtable to search for the Datastore in the whole vCenter Server.
-            $getDatastoreParams.Remove('VMHost')
-
-            <#
-            If there is another Datastore with the same name on the vCenter Server but on a different VMHost, we need to inform the user that the Datastore cannot be created with the
-            specified name. vCenter Server accepts multiple Datastore creations with the same name but changes the names internally to avoid name duplication.
-            vCenter Server appends '(<index>)' to the Datastore name.
-            #>
-            $datastoreInvCenter = Get-Datastore @getDatastoreParams
-            if ($null -ne $datastoreInvCenter) {
-                throw ($this.CouldNotCreateDatastoreWithTheSpecifiedNameMessage -f $this.Name, $this.VMHost.Name, $this.Connection.Name)
-            }
-        }
-
-        return $datastore
+        return Get-Datastore @getDatastoreParams
     }
 
     <#
@@ -8362,9 +8340,17 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
     [DscProperty(Key)]
     [string] $Name
 
-    hidden [string] $ConfigureIScsiHbaChapMessage = "Configuring CHAP settings of iSCSI Host Bus Adapter {0} from VMHost {1}."
+    <#
+    .DESCRIPTION
 
-    hidden [string] $CouldNotConfigureIScsiHbaChapMessage = "Could not configure CHAP settings of iSCSI Host Bus Adapter {0} from VMHost {1}. For more information: {2}"
+    Specifies the name for the VMHost Host Bus Adapter device.
+    #>
+    [DscProperty()]
+    [string] $IScsiName
+
+    hidden [string] $ConfigureIScsiHbaMessage = "Configuring iSCSI Host Bus Adapter {0} from VMHost {1}."
+
+    hidden [string] $CouldNotConfigureIScsiHbaMessage = "Could not configure iSCSI Host Bus Adapter {0} from VMHost {1}. For more information: {2}"
 
     [void] Set() {
         try {
@@ -8374,7 +8360,7 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
 
             $iScsiHba = $this.GetIScsiHba($this.Name)
 
-            $this.ConfigureIScsiHbaChap($iScsiHba)
+            $this.ConfigureIScsiHba($iScsiHba)
         }
         finally {
             $this.DisconnectVIServer()
@@ -8390,7 +8376,11 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
 
             $iScsiHba = $this.GetIScsiHba($this.Name)
 
-            $result = !$this.ShouldModifyCHAPSettings($iScsiHba.AuthenticationProperties)
+            $shouldConfigureiScsiHba = @(
+                $this.ShouldModifyCHAPSettings($iScsiHba.AuthenticationProperties),
+                $this.ShouldUpdateDscResourceSetting('IScsiName', $iScsiHba.IScsiName, $this.IScsiName)
+            )
+            $result = !($shouldConfigureiScsiHba -Contains $true)
 
             $this.WriteDscResourceState($result)
 
@@ -8425,9 +8415,9 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
     <#
     .DESCRIPTION
 
-    Configures the CHAP properties of the specified iSCSI Host Bus Adapter.
+    Configures the CHAP properties and the iScsi name of the specified iSCSI Host Bus Adapter.
     #>
-    [void] ConfigureIScsiHbaChap($iScsiHba) {
+    [void] ConfigureIScsiHba($iScsiHba) {
         $setVMHostHbaParams = @{
             IScsiHba = $iScsiHba
             Confirm = $false
@@ -8436,13 +8426,14 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
         }
 
         $this.PopulateCmdletParametersWithCHAPSettings($setVMHostHbaParams)
+        if (![string]::IsNullOrEmpty($this.IScsiName)) { $setVMHostHbaParams.IScsiName = $this.IScsiName }
 
         try {
-            Write-VerboseLog -Message $this.ConfigureIScsiHbaChapMessage -Arguments @($iScsiHba.Device, $this.VMHost.Name)
+            Write-VerboseLog -Message $this.ConfigureIScsiHbaMessage -Arguments @($iScsiHba.Device, $this.VMHost.Name)
             Set-VMHostHba @setVMHostHbaParams
         }
         catch {
-            throw ($this.CouldNotConfigureIScsiHbaChapMessage -f $iScsiHba.Device, $this.VMHost.Name, $_.Exception.Message)
+            throw ($this.CouldNotConfigureIScsiHbaMessage -f $iScsiHba.Device, $this.VMHost.Name, $_.Exception.Message)
         }
     }
 
@@ -8455,6 +8446,7 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
         $result.Server = $this.Connection.Name
         $result.VMHostName = $this.VMHost.Name
         $result.Name = $iScsiHba.Device
+        $result.IScsiName = $iScsiHba.IScsiName
         $result.ChapType = $iScsiHba.AuthenticationProperties.ChapType.ToString()
         $result.ChapName = [string] $iScsiHba.AuthenticationProperties.ChapName
         $result.MutualChapEnabled = $iScsiHba.AuthenticationProperties.MutualChapEnabled
@@ -11694,6 +11686,8 @@ class VmfsDatastore : DatastoreBaseDSC {
     [DscProperty()]
     [nullable[int]] $BlockSizeMB
 
+    hidden [string] $CouldNotCreateVmfsDatastoreWithTheSpecifiedNameMessage = "Could not create Vmfs Datastore {0} on VMHost {1} because there is another Vmfs Datastore with the same name on vCenter Server {2}."
+
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
@@ -11701,6 +11695,7 @@ class VmfsDatastore : DatastoreBaseDSC {
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
+            $this.ValidateVmfsDatastoreCreation($datastore)
 
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $datastore) {
@@ -11730,8 +11725,9 @@ class VmfsDatastore : DatastoreBaseDSC {
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
-            $result = $null
+            $this.ValidateVmfsDatastoreCreation($datastore)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $datastore) {
                     $result = $false
@@ -11763,6 +11759,8 @@ class VmfsDatastore : DatastoreBaseDSC {
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
+            $this.ValidateVmfsDatastoreCreation($datastore)
+
             $this.PopulateResultForVmfsDatastore($result, $datastore)
 
             return $result
@@ -11770,6 +11768,36 @@ class VmfsDatastore : DatastoreBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if a Vmfs Datastore with the specified name can be created on the vCenter Server.
+    #>
+    [void] ValidateVmfsDatastoreCreation($datastore) {
+        <#
+            If the established connection is to a vCenter Server, Ensure is 'Present' and the Vmfs Datastore does not exist on the specified VMHost,
+            we need to check if there is a Vmfs Datastore with the same name on the vCenter Server.
+        #>
+        if ($this.Connection.ProductLine -eq $this.vCenterProductId -and $this.Ensure -eq [Ensure]::Present -and $null -eq $datastore) {
+            $getDatastoreParams = @{
+                Server = $this.Connection
+                Name = $this.Name
+                ErrorAction = 'SilentlyContinue'
+                Verbose = $false
+            }
+
+            <#
+                If there is another Vmfs Datastore with the same name on the vCenter Server but on a different VMHost, we need to inform the user that
+                the Vmfs Datastore cannot be created with the specified name. vCenter Server accepts multiple Vmfs Datastore creations with the same name
+                but changes the names internally to avoid name duplication. vCenter Server appends '(<index>)' to the Vmfs Datastore name.
+            #>
+            $datastoreInvCenter = Get-Datastore @getDatastoreParams
+            if ($null -ne $datastoreInvCenter) {
+                throw ($this.CouldNotCreateVmfsDatastoreWithTheSpecifiedNameMessage -f $this.Name, $this.VMHost.Name, $this.Connection.Name)
+            }
         }
     }
 
@@ -16994,6 +17022,8 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     [DscProperty()]
     [nullable[bool]] $RollingOrder
 
+    hidden [string] $PhysicalNicNotInBridgeMessage = "Physical network adapter {0} is not in the bridge with standard switch {1}."
+
     [void] Set() {
         try {
             Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
@@ -17088,10 +17118,31 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     <#
     .DESCRIPTION
 
+    Validates that all provided physical network adapters: (ActiveNic and StandbyNic) are in the bridge
+    with the specified standard switch.
+    #>
+    [void] ValidatePhysicalNetworkAdapters() {
+        $physicalNics = $this.ActiveNic + $this.StandbyNic
+
+        if ($physicalNics.Length -gt 0) {
+            $standardSwitch = $this.GetVss()
+            foreach ($physicalNic in $physicalNics) {
+                if (!($standardSwitch.Spec.Bridge.NicDevice -Contains $physicalNic)) {
+                    throw ($this.PhysicalNicNotInBridgeMessage -f $physicalNic, $standardSwitch.Name)
+                }
+            }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssTeaming($vmHost) {
         Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+
+        $this.ValidatePhysicalNetworkAdapters()
 
         $vssTeamingArgs = @{
             Name = $this.VssName

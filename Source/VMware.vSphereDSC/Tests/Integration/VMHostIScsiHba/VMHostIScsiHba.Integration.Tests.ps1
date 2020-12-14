@@ -41,6 +41,13 @@ $Credential = New-Object -TypeName System.Management.Automation.PSCredential -Ar
 . "$PSScriptRoot\VMHostIScsiHba.Integration.Tests.Helpers.ps1"
 $script:vmHostIScsiHba = Get-VMHostIScsiHba
 
+<#
+    Example iSCSI name is: iqn.1998-01.com.vmware:esx-server1-7ccc38b8, with a random set of characters
+    appended to the end of the name: "7ccc38b8". So to test with a valid iSCSI name, we can remove this
+    set of characters.
+#>
+$script:iScsiName = $script:vmHostIScsiHba.IScsiName.Substring(0, $script:vmHostIScsiHba.IScsiName.LastIndexOf('-'))
+
 $script:dscResourceName = 'VMHostIScsiHba'
 $script:moduleFolderPath = (Get-Module -Name 'VMware.vSphereDSC' -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path -Path (Join-Path -Path $moduleFolderPath -ChildPath 'Tests') -ChildPath 'Integration'
@@ -56,12 +63,17 @@ $script:configurationData = @{
             VMHostName = $Name
             VMHostIScsiHbaResourceName = 'VMHostIScsiHba'
             IScsiHbaName = $script:vmHostIScsiHba.Name
+            InitialIScsiName = $script:vmHostIScsiHba.IScsiName
+            IScsiName = $script:iScsiName
             InitialChapType = $script:vmHostIScsiHba.ChapType
             ChapTypeRequired = 'Required'
             ChapTypeProhibited = 'Prohibited'
+            InitialChapName = $script:vmHostIScsiHba.ChapName
             ChapName = 'Admin'
             ChapPassword = 'AdminPasswordOne'
+            InitialMutualChapEnabled = $script:vmHostIScsiHba.MutualChapEnabled
             MutualChapEnabled = $true
+            InitialMutualChapName = $script:vmHostIScsiHba.MutualChapName
             MutualChapName = 'Admin'
             MutualChapPassword = 'AdminPasswordTwo'
         }
@@ -70,13 +82,17 @@ $script:configurationData = @{
 
 $script:configConfigureCHAPSettingsOfIScsiHostBusAdapterWithRequiredChapType = "$($script:dscResourceName)_ConfigureCHAPSettingsOfIScsiHostBusAdapterWithRequiredChapType_Config"
 $script:configConfigureCHAPSettingsOfIScsiHostBusAdapterWithProhibitedChapTypeAndDisabledMutualChap = "$($script:dscResourceName)_ConfigureCHAPSettingsOfIScsiHostBusAdapterWithProhibitedChapTypeAndDisabledMutualChap_Config"
+$script:configModifyIScsiNameOfIScsiHostBusAdapter = "$($script:dscResourceName)_ModifyIScsiNameOfIScsiHostBusAdapter_Config"
 $script:configConfigureCHAPSettingsOfIScsiHostBusAdapterToInitialState = "$($script:dscResourceName)_ConfigureCHAPSettingsOfIScsiHostBusAdapterToInitialState_Config"
+$script:configModifyIScsiNameOfIScsiHostBusAdapterToInitialState = "$($script:dscResourceName)_ModifyIScsiNameOfIScsiHostBusAdapterToInitialState_Config"
 
 . $script:configurationFile -ErrorAction Stop
 
 $script:mofFileConfigureCHAPSettingsOfIScsiHostBusAdapterWithRequiredChapTypePath = "$script:integrationTestsFolderPath\$script:configConfigureCHAPSettingsOfIScsiHostBusAdapterWithRequiredChapType\"
 $script:mofFileConfigureCHAPSettingsOfIScsiHostBusAdapterWithProhibitedChapTypeAndDisabledMutualChapPath = "$script:integrationTestsFolderPath\$script:configConfigureCHAPSettingsOfIScsiHostBusAdapterWithProhibitedChapTypeAndDisabledMutualChap\"
+$script:mofFileModifyIScsiNameOfIScsiHostBusAdapterPath = "$script:integrationTestsFolderPath\$script:configModifyIScsiNameOfIScsiHostBusAdapter\"
 $script:mofFileConfigureCHAPSettingsOfIScsiHostBusAdapterToInitialStatePath = "$script:integrationTestsFolderPath\$script:configConfigureCHAPSettingsOfIScsiHostBusAdapterToInitialState\"
+$script:mofFileModifyIScsiNameOfIScsiHostBusAdapterToInitialStatePath = "$script:integrationTestsFolderPath\$script:configModifyIScsiNameOfIScsiHostBusAdapterToInitialState\"
 
 Describe "$($script:dscResourceName)_Integration" {
     Context "When using configuration $script:configConfigureCHAPSettingsOfIScsiHostBusAdapterWithRequiredChapType" {
@@ -128,6 +144,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
             $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.VMHostName
             $configuration.Name | Should -Be $script:configurationData.AllNodes.IScsiHbaName
+            $configuration.IScsiName | Should -Be $script:configurationData.AllNodes.InitialIScsiName
             $configuration.ChapType | Should -Be $script:configurationData.AllNodes.ChapTypeRequired
             $configuration.ChapName | Should -Be $script:configurationData.AllNodes.ChapName
             $configuration.ChapPassword | Should -BeNullOrEmpty
@@ -238,6 +255,7 @@ Describe "$($script:dscResourceName)_Integration" {
             $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
             $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.VMHostName
             $configuration.Name | Should -Be $script:configurationData.AllNodes.IScsiHbaName
+            $configuration.IScsiName | Should -Be $script:configurationData.AllNodes.InitialIScsiName
             $configuration.ChapType | Should -Be $script:configurationData.AllNodes.ChapTypeProhibited
             $configuration.ChapName | Should -BeNullOrEmpty
             $configuration.ChapPassword | Should -BeNullOrEmpty
@@ -264,6 +282,102 @@ Describe "$($script:dscResourceName)_Integration" {
             # Arrange && Act
             Remove-Item -Path $script:mofFileConfigureCHAPSettingsOfIScsiHostBusAdapterWithRequiredChapTypePath -Recurse -Confirm:$false -ErrorAction Stop
             Remove-Item -Path $script:mofFileConfigureCHAPSettingsOfIScsiHostBusAdapterWithProhibitedChapTypeAndDisabledMutualChapPath -Recurse -Confirm:$false -ErrorAction Stop
+        }
+    }
+
+    Context "When using configuration $script:configModifyIScsiNameOfIScsiHostBusAdapter" {
+        BeforeAll {
+            # Arrange
+            & $script:configModifyIScsiNameOfIScsiHostBusAdapter `
+                -OutputPath $script:mofFileModifyIScsiNameOfIScsiHostBusAdapterPath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileModifyIScsiNameOfIScsiHostBusAdapterPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParameters
+        }
+
+        It 'Should apply the MOF without throwing' {
+            # Arrange
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileModifyIScsiNameOfIScsiHostBusAdapterPath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
+            # Act && Assert
+            { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration without throwing' {
+            # Arrange && Act && Assert
+            { Get-DscConfiguration -Verbose -ErrorAction Stop } | Should -Not -Throw
+        }
+
+        It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+            # Arrange && Act
+            $configuration = Get-DscConfiguration -Verbose -ErrorAction Stop | Where-Object -FilterScript { $_.ConfigurationName -eq $script:configModifyIScsiNameOfIScsiHostBusAdapter }
+
+            # Assert
+            $configuration.Server | Should -Be $script:configurationData.AllNodes.Server
+            $configuration.VMHostName | Should -Be $script:configurationData.AllNodes.VMHostName
+            $configuration.Name | Should -Be $script:configurationData.AllNodes.IScsiHbaName
+            $configuration.IScsiName | Should -Be $script:configurationData.AllNodes.IScsiName
+            $configuration.ChapType | Should -Be $script:configurationData.AllNodes.InitialChapType
+            $configuration.ChapName | Should -Be ([string] $script:configurationData.AllNodes.InitialChapName)
+            $configuration.ChapPassword | Should -BeNullOrEmpty
+            $configuration.MutualChapEnabled | Should -Be $script:configurationData.AllNodes.InitialMutualChapEnabled
+            $configuration.MutualChapName | Should -Be ([string] $script:configurationData.AllNodes.InitialMutualChapName)
+            $configuration.MutualChapPassword | Should -BeNullOrEmpty
+            $configuration.Force | Should -BeNull
+        }
+
+        It 'Should return $true when Test-DscConfiguration is run' {
+            # Arrange
+            $testDscConfigurationParameters = @{
+                ReferenceConfiguration = "$script:mofFileModifyIScsiNameOfIScsiHostBusAdapterPath\$($script:configurationData.AllNodes.NodeName).mof"
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
+            # Act && Assert
+            (Test-DscConfiguration @testDscConfigurationParameters).InDesiredState | Should -Be $true
+        }
+
+        AfterAll {
+            # Arrange
+            & $script:configModifyIScsiNameOfIScsiHostBusAdapterToInitialState `
+                -OutputPath $script:mofFileModifyIScsiNameOfIScsiHostBusAdapterToInitialStatePath `
+                -ConfigurationData $script:configurationData `
+                -ErrorAction Stop
+
+            $startDscConfigurationParameters = @{
+                Path = $script:mofFileModifyIScsiNameOfIScsiHostBusAdapterToInitialStatePath
+                ComputerName = $script:configurationData.AllNodes.NodeName
+                Wait = $true
+                Force = $true
+                Verbose = $true
+                ErrorAction = 'Stop'
+            }
+
+            # Act
+            Start-DscConfiguration @startDscConfigurationParameters
+
+            Remove-Item -Path $script:mofFileModifyIScsiNameOfIScsiHostBusAdapterPath -Recurse -Confirm:$false -ErrorAction Stop
+            Remove-Item -Path $script:mofFileModifyIScsiNameOfIScsiHostBusAdapterToInitialStatePath -Recurse -Confirm:$false -ErrorAction Stop
         }
     }
 }

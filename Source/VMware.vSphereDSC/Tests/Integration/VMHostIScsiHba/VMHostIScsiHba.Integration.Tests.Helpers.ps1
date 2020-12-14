@@ -36,7 +36,11 @@ function Get-VMHostIScsiHba {
 
     $vmHostIScsiHba = @{
         Name = $iScsiHba.Device
+        IScsiName = $iScsiHba.IScsiName
         ChapType = $iScsiHba.AuthenticationProperties.ChapType.ToString()
+        ChapName = $iScsiHba.AuthenticationProperties.ChapName
+        MutualChapEnabled = $iScsiHba.AuthenticationProperties.MutualChapEnabled
+        MutualChapName = $iScsiHba.AuthenticationProperties.MutualChapName
     }
 
     Disconnect-VIServer -Server $Server -Confirm:$false -ErrorAction Stop -Verbose:$false

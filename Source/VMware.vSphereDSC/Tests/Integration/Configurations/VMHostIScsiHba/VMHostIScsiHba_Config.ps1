@@ -52,6 +52,20 @@ Configuration VMHostIScsiHba_ConfigureCHAPSettingsOfIScsiHostBusAdapterWithProhi
     }
 }
 
+Configuration VMHostIScsiHba_ModifyIScsiNameOfIScsiHostBusAdapter_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VMHostIScsiHba $AllNodes.VMHostIScsiHbaResourceName {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            VMHostName = $AllNodes.VMHostName
+            Name = $AllNodes.IScsiHbaName
+            IScsiName = $AllNodes.IScsiName
+        }
+    }
+}
+
 Configuration VMHostIScsiHba_ConfigureCHAPSettingsOfIScsiHostBusAdapterToInitialState_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
@@ -62,6 +76,20 @@ Configuration VMHostIScsiHba_ConfigureCHAPSettingsOfIScsiHostBusAdapterToInitial
             VMHostName = $AllNodes.VMHostName
             Name = $AllNodes.IScsiHbaName
             ChapType = $AllNodes.InitialChapType
+        }
+    }
+}
+
+Configuration VMHostIScsiHba_ModifyIScsiNameOfIScsiHostBusAdapterToInitialState_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VMHostIScsiHba $AllNodes.VMHostIScsiHbaResourceName {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            VMHostName = $AllNodes.VMHostName
+            Name = $AllNodes.IScsiHbaName
+            IScsiName = $AllNodes.InitialIScsiName
         }
     }
 }

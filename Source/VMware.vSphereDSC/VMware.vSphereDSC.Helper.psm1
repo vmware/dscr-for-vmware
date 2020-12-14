@@ -330,10 +330,24 @@ function Update-Network {
                 throw "VMHostVssTeaming: Configuration error - You cannot use Active or Standby NICs, when there are no NICs assigned to the Bridge."
             }
 
+            <#
+                A physical network adapter cannot be in both active and standby lists, so if the
+                physical network adapter is moved from one list to another, it should be removed
+                from the current list as well.
+            #>
+            $updateNicOrderingPolicyParams = @{
+                CurrentActiveNic = $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.ActiveNic
+                DesiredActiveNic = $VssTeamingConfig.ActiveNic
+                CurrentStandbyNic = $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.StandbyNic
+                DesiredStandbyNic = $VssTeamingConfig.StandbyNic
+            }
+            $modifiedNics = Update-NicOrderingPolicy @updateNicOrderingPolicyParams
+
+            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.ActiveNic = $modifiedNics.ActiveNic
+            $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.StandbyNic = $modifiedNics.StandbyNic
+
             $hostVirtualSwitchConfig.ChangeOperation = $VssTeamingConfig.Operation
             if ($null -ne $VssTeamingConfig.CheckBeacon) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon = $VssTeamingConfig.CheckBeacon }
-            if (![string]::IsNullOrEmpty($VssTeamingConfig.ActiveNic)) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.ActiveNic = $VssTeamingConfig.ActiveNic }
-            if (![string]::IsNullOrEmpty($VssTeamingConfig.StandbyNic)) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NicOrder.StandbyNic = $VssTeamingConfig.StandbyNic }
             if ($null -ne $VssTeamingConfig.NotifySwitches) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.NotifySwitches = $VssTeamingConfig.NotifySwitches }
             if ($null -ne $VssTeamingConfig.RollingOrder) { $hostVirtualSwitchConfig.Spec.Policy.NicTeaming.RollingOrder = $VssTeamingConfig.RollingOrder }
 
@@ -400,6 +414,94 @@ function Update-Network {
     }
 
     $NetworkSystem.UpdateNetworkConfig($configNet, [VMware.Vim.HostConfigChangeMode]::modify)
+}
+
+<#
+.SYNOPSIS
+Modifies the network adapter ordering policy of a standard switch.
+
+.DESCRIPTION
+Modifies the network adapter ordering policy of a standard switch. A physical network adapter
+can be in the active list, the standby list, or neither. It cannot be in both lists.
+
+.PARAMETER CurrentActiveNic
+Specifies the current active list of physical network adapters.
+
+.PARAMETER DesiredActiveNic
+Specifies the desired active list of physical network adapters.
+
+.PARAMETER CurrentStandbyNic
+Specifies the current standby list of physical network adapters.
+
+.PARAMETER DesiredStandbyNic
+Specifies the desired standby list of physical network adapters.
+#>
+function Update-NicOrderingPolicy {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    Param(
+        [Parameter(Mandatory = $false)]
+        [string[]] $CurrentActiveNic,
+
+        [Parameter(Mandatory = $false)]
+        [string[]] $DesiredActiveNic,
+
+        [Parameter(Mandatory = $false)]
+        [string[]] $CurrentStandbyNic,
+
+        [Parameter(Mandatory = $false)]
+        [string[]] $DesiredStandbyNic
+    )
+
+    $modifiedActiveNic = $CurrentActiveNic
+    $modifiedStandbyNic = $CurrentStandbyNic
+
+    if (
+        $null -ne $DesiredActiveNic -and
+        $null -ne $DesiredStandbyNic
+    ) {
+        $modifiedActiveNic = $DesiredActiveNic
+        $modifiedStandbyNic = $DesiredStandbyNic
+    }
+    elseif (
+        $null -ne $DesiredActiveNic -and
+        $null -eq $DesiredStandbyNic
+    ) {
+        $modifiedActiveNic = $DesiredActiveNic
+
+        if ($CurrentStandbyNic.Length -gt 0) {
+            $standbyNics = @()
+            foreach ($standyNic in $CurrentStandbyNic) {
+                if (!($DesiredActiveNic -Contains $standyNic)) {
+                    $standbyNics += $standyNic
+                }
+            }
+
+            $modifiedStandbyNic = $standbyNics
+        }
+    }
+    elseif (
+        $null -ne $DesiredStandbyNic -and
+        $null -eq $DesiredActiveNic
+    ) {
+        $modifiedStandbyNic = $DesiredStandbyNic
+
+        if ($CurrentActiveNic.Length -gt 0) {
+            $activeNics = @()
+            foreach ($activeNic in $CurrentActiveNic) {
+                if (!($DesiredStandbyNic -Contains $activeNic)) {
+                    $activeNics += $activeNic
+                }
+            }
+
+            $modifiedActiveNic = $activeNics
+        }
+    }
+
+    return @{
+        'ActiveNic' = $modifiedActiveNic
+        'StandbyNic' = $modifiedStandbyNic
+    }
 }
 
 function Add-Cluster {
