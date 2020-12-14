@@ -834,7 +834,6 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
     hidden [string] $ModifyDatastoreMessage = "Modifying Datastore {0} on VMHost {1}."
     hidden [string] $RemoveDatastoreMessage = "Removing Datastore {0} from VMHost {1}."
 
-    hidden [string] $CouldNotCreateDatastoreWithTheSpecifiedNameMessage = "Could not create Datastore {0} on VMHost {1} because there is another Datastore with the same name on vCenter Server {2}."
     hidden [string] $CouldNotCreateDatastoreMessage = "Could not create Datastore {0} on VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotModifyDatastoreMessage = "Could not modify Datastore {0} on VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotRemoveDatastoreMessage = "Could not remove Datastore {0} from VMHost {1}. For more information: {2}"
@@ -853,28 +852,7 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
             Verbose = $false
         }
 
-        $datastore = Get-Datastore @getDatastoreParams
-
-        <#
-        If the established connection is to a vCenter Server, Ensure is 'Present' and the Datastore does not exist on the specified VMHost,
-        we need to check if there is a Datastore with the same name on the vCenter Server.
-        #>
-        if ($this.Connection.ProductLine -eq $this.vCenterProductId -and $this.Ensure -eq [Ensure]::Present -and $null -eq $datastore) {
-            # We need to remove the filter by VMHost from the hashtable to search for the Datastore in the whole vCenter Server.
-            $getDatastoreParams.Remove('VMHost')
-
-            <#
-            If there is another Datastore with the same name on the vCenter Server but on a different VMHost, we need to inform the user that the Datastore cannot be created with the
-            specified name. vCenter Server accepts multiple Datastore creations with the same name but changes the names internally to avoid name duplication.
-            vCenter Server appends '(<index>)' to the Datastore name.
-            #>
-            $datastoreInvCenter = Get-Datastore @getDatastoreParams
-            if ($null -ne $datastoreInvCenter) {
-                throw ($this.CouldNotCreateDatastoreWithTheSpecifiedNameMessage -f $this.Name, $this.VMHost.Name, $this.Connection.Name)
-            }
-        }
-
-        return $datastore
+        return Get-Datastore @getDatastoreParams
     }
 
     <#
@@ -11694,6 +11672,8 @@ class VmfsDatastore : DatastoreBaseDSC {
     [DscProperty()]
     [nullable[int]] $BlockSizeMB
 
+    hidden [string] $CouldNotCreateVmfsDatastoreWithTheSpecifiedNameMessage = "Could not create Vmfs Datastore {0} on VMHost {1} because there is another Vmfs Datastore with the same name on vCenter Server {2}."
+
     [void] Set() {
         try {
             Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
@@ -11701,6 +11681,7 @@ class VmfsDatastore : DatastoreBaseDSC {
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
+            $this.ValidateVmfsDatastoreCreation($datastore)
 
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $datastore) {
@@ -11730,8 +11711,9 @@ class VmfsDatastore : DatastoreBaseDSC {
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
-            $result = $null
+            $this.ValidateVmfsDatastoreCreation($datastore)
 
+            $result = $null
             if ($this.Ensure -eq [Ensure]::Present) {
                 if ($null -eq $datastore) {
                     $result = $false
@@ -11763,6 +11745,8 @@ class VmfsDatastore : DatastoreBaseDSC {
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
+            $this.ValidateVmfsDatastoreCreation($datastore)
+
             $this.PopulateResultForVmfsDatastore($result, $datastore)
 
             return $result
@@ -11770,6 +11754,36 @@ class VmfsDatastore : DatastoreBaseDSC {
         finally {
             $this.DisconnectVIServer()
             Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if a Vmfs Datastore with the specified name can be created on the vCenter Server.
+    #>
+    [void] ValidateVmfsDatastoreCreation($datastore) {
+        <#
+            If the established connection is to a vCenter Server, Ensure is 'Present' and the Vmfs Datastore does not exist on the specified VMHost,
+            we need to check if there is a Vmfs Datastore with the same name on the vCenter Server.
+        #>
+        if ($this.Connection.ProductLine -eq $this.vCenterProductId -and $this.Ensure -eq [Ensure]::Present -and $null -eq $datastore) {
+            $getDatastoreParams = @{
+                Server = $this.Connection
+                Name = $this.Name
+                ErrorAction = 'SilentlyContinue'
+                Verbose = $false
+            }
+
+            <#
+                If there is another Vmfs Datastore with the same name on the vCenter Server but on a different VMHost, we need to inform the user that
+                the Vmfs Datastore cannot be created with the specified name. vCenter Server accepts multiple Vmfs Datastore creations with the same name
+                but changes the names internally to avoid name duplication. vCenter Server appends '(<index>)' to the Vmfs Datastore name.
+            #>
+            $datastoreInvCenter = Get-Datastore @getDatastoreParams
+            if ($null -ne $datastoreInvCenter) {
+                throw ($this.CouldNotCreateVmfsDatastoreWithTheSpecifiedNameMessage -f $this.Name, $this.VMHost.Name, $this.Connection.Name)
+            }
         }
     }
 

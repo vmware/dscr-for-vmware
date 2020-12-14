@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.75 - 2020-12-14
+### Changed
+- Moved name validation to **VmfsDatastore DSC Resource** due to not being applicable for **NfsDatastores**.
+
 ## VMware.vSphereDSC 2.1.0.74 - 2020-12-09
 ### Changed
 - Fixed bugs with physical network adapters when updating the teaming policy of the standard switch.
