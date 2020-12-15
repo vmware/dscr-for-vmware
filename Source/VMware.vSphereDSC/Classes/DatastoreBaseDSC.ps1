@@ -120,7 +120,8 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
         if (![string]::IsNullOrEmpty($this.FileSystemVersion)) { $newDatastoreParams.FileSystemVersion = $this.FileSystemVersion }
 
         try {
-            Write-VerboseLog -Message $this.CreateDatastoreMessage -Arguments @($this.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateDatastoreMessage, @($this.Name, $this.VMHost.Name))
+
             $datastore = New-Datastore @newDatastoreParams
 
             return $datastore
@@ -148,7 +149,8 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
         if ($null -ne $this.CongestionThresholdMillisecond) { $setDatastoreParams.CongestionThresholdMillisecond = $this.CongestionThresholdMillisecond }
 
         try {
-            Write-VerboseLog -Message $this.ModifyDatastoreMessage -Arguments @($datastore.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyDatastoreMessage, @($datastore.Name, $this.VMHost.Name))
+
             Set-Datastore @setDatastoreParams
         }
         catch {
@@ -172,7 +174,8 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveDatastoreMessage -Arguments @($datastore.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveDatastoreMessage, @($datastore.Name, $this.VMHost.Name))
+
             Remove-Datastore @removeDatastoreParams
         }
         catch {

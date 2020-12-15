@@ -16,7 +16,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 [DscResource()]
 class VmfsDatastore : DatastoreBaseDSC {
-    <#
+    <#f
     .DESCRIPTION
 
     Specifies the maximum file size of Vmfs in megabytes (MB). If no value is specified, the maximum file size for the current system platform is used.
@@ -28,19 +28,10 @@ class VmfsDatastore : DatastoreBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
@@ -62,36 +53,18 @@ class VmfsDatastore : DatastoreBaseDSC {
             }
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
@@ -115,38 +88,20 @@ class VmfsDatastore : DatastoreBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [VmfsDatastore] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $result = [VmfsDatastore]::new()
 
-            $this.ConnectVIServer()
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
@@ -157,18 +112,9 @@ class VmfsDatastore : DatastoreBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
+            
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 

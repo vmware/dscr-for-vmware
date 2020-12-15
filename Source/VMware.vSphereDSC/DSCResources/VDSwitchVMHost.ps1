@@ -145,17 +145,7 @@ class VDSwitchVMHost : BaseDSC {
         foreach ($vmHostName in $this.VMHostNames) {
             $vmHost = Get-VMHost -Server $this.Connection -Name $vmHostName -ErrorAction SilentlyContinue
             if ($null -eq $vmHost) {
-                Write-WarningLog -Message "The passed VMHost {0} was not found and it will be ignored." -Arguments @($vmHostName)
-
-                $writeToLogFilesplat = @{
-                    Connection = $this.Connection.Name
-                    ResourceName = $this.GetType().ToString()
-                    LogType = 'Warning'
-                    Message = "The passed VMHost {0} was not found and it will be ignored."
-                    Arguments = @($vmHostName)
-                }
-
-                Write-LogToFile @writeToLogFilesplat
+                $this.WriteLogUtil('Warning', "The passed VMHost {0} was not found and it will be ignored.", @($vmHostName))
             }
             else {
                 $vmHosts += $vmHost
@@ -209,17 +199,7 @@ class VDSwitchVMHost : BaseDSC {
             foreach ($vmHost in $vmHosts) {
                 $addedVMHost = $vmHost.ExtensionData.Config.Network.ProxySwitch | Where-Object -FilterScript { $_.DvsName -eq $distributedSwitch.Name }
                 if ($null -ne $addedVMHost) {
-                    Write-WarningLog -Message "VMHost {0} is already added to Distributed Switch {1} and it will be ignored." -Arguments @($vmHost.Name, $distributedSwitch.Name)
-
-                    $writeToLogFilesplat = @{
-                        Connection = $this.Connection.Name
-                        ResourceName = $this.GetType().ToString()
-                        LogType = 'Warning'
-                        Message = "VMHost {0} is already added to Distributed Switch {1} and it will be ignored."
-                        Arguments = @($vmHost.Name, $distributedSwitch.Name)
-                    }
-
-                    Write-LogToFile @writeToLogFilesplat
+                    $this.WriteLogUtil('Warning', "VMHost {0} is already added to Distributed Switch {1} and it will be ignored.", @($vmHost.Name, $distributedSwitch.Name))
 
                     continue
                 }
@@ -231,17 +211,7 @@ class VDSwitchVMHost : BaseDSC {
             foreach ($vmHost in $vmHosts) {
                 $removedVMHost = $vmHost.ExtensionData.Config.Network.ProxySwitch | Where-Object -FilterScript { $_.DvsName -eq $distributedSwitch.Name }
                 if ($null -eq $removedVMHost) {
-                    Write-WarningLog -Message "VMHost {0} is not added to Distributed Switch {1} and it will be ignored." -Arguments @($vmHost.Name, $distributedSwitch.Name)
-
-                    $writeToLogFilesplat = @{
-                        Connection = $this.Connection.Name
-                        ResourceName = $this.GetType().ToString()
-                        LogType = 'Warning'
-                        Message = "VMHost {0} is not added to Distributed Switch {1} and it will be ignored."
-                        Arguments = @($vmHost.Name, $distributedSwitch.Name)
-                    }
-
-                    Write-LogToFile @writeToLogFilesplat
+                    $this.WriteLogUtil('Warning', "VMHost {0} is not added to Distributed Switch {1} and it will be ignored.", @($vmHost.Name, $distributedSwitch.Name))
 
                     continue
                 }

@@ -69,20 +69,10 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = "{0} Entering {1}"
-                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -95,20 +85,10 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = "{0} Entering {1}"
-                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
@@ -139,23 +119,13 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 
     [VMHostVssTeaming] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = "{0} Entering {1}"
-                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $result = [VMHostVssTeaming]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -177,18 +147,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssTeaming should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        $writeToLogFilesplat = @{
-            Connection = $this.Connection.Name
-            ResourceName = $this.GetType().ToString()
-            LogType = 'Verbose'
-            Message = "{0} Entering {1}"
-            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        }
-
-        Write-LogToFile @writeToLogFilesplat
-
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssTeamingTest = @(
             $this.ShouldUpdateDscResourceSetting('CheckBeacon', $vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon, $this.CheckBeacon),
@@ -227,18 +186,8 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssTeaming($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        
-            $writeToLogFilesplat = @{
-            Connection = $this.Connection.Name
-            ResourceName = $this.GetType().ToString()
-            LogType = 'Verbose'
-            Message = "{0} Entering {1}"
-            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        }
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
-        Write-LogToFile @writeToLogFilesplat
-        
         $this.ValidatePhysicalNetworkAdapters()
 
         $vssTeamingArgs = @{
@@ -283,18 +232,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSTeaming) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        $writeToLogFilesplat = @{
-            Connection = $this.Connection.Name
-            ResourceName = $this.GetType().ToString()
-            LogType = 'Verbose'
-            Message = "{0} Entering {1}"
-            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        }
-
-        Write-LogToFile @writeToLogFilesplat
-
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $currentVss = $this.GetVss()
 

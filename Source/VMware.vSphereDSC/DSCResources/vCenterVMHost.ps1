@@ -70,19 +70,10 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.EnsureConnectionIsvCenter()
 
             $vmHost = $this.GetVMHost()
@@ -120,36 +111,18 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
             }
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.EnsureConnectionIsvCenter()
 
             $vmHost = $this.GetVMHost()
@@ -176,38 +149,20 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [vCenterVMHost] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $result = [vCenterVMHost]::new()
 
-            $this.ConnectVIServer()
             $this.EnsureConnectionIsvCenter()
 
             $vmHost = $this.GetVMHost()
@@ -216,18 +171,9 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -336,17 +282,7 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         if ($null -ne $this.Force) { $addVMHostParams.Force = $this.Force }
 
         try {
-            Write-VerboseLog -Message $this.AddVMHostTovCenterMessage -Arguments @($this.Name, $this.Connection.Name, $vmHostLocation.Name)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.AddVMHostTovCenterMessage
-                Arguments = @($this.Name, $this.Connection.Name, $vmHostLocation.Name)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.AddVMHostTovCenterMessage, @($this.Name, $this.Connection.Name, $vmHostLocation.Name))
 
             Add-VMHost @addVMHostParams
         }
@@ -371,17 +307,7 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.MoveVMHostToDestinationMessage -Arguments @($vmHost.Name, $vmHostLocation.Name, $this.Connection.Name)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.MoveVMHostToDestinationMessage
-                Arguments = @($vmHost.Name, $vmHostLocation.Name, $this.Connection.Name)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.MoveVMHostToDestinationMessage, @($vmHost.Name, $vmHostLocation.Name, $this.Connection.Name))
 
             Move-VMHost @moveVMHostParams
         }
@@ -405,17 +331,7 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveVMHostFromvCenterMessage -Arguments @($vmHost.Name, $this.Connection.Name)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.RemoveVMHostFromvCenterMessage
-                Arguments = @($vmHost.Name, $this.Connection.Name)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.RemoveVMHostFromvCenterMessage, @($vmHost.Name, $this.Connection.Name))
 
             Remove-VMHost @removeVMHostParams
         }

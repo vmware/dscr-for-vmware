@@ -96,19 +96,10 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.RetrieveVMHost()
 
             $scsiLun = $this.GetScsiLun()
@@ -116,36 +107,18 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
             $this.ModifyScsiLunConfiguration($scsiLun)
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.RetrieveVMHost()
 
             $scsiLun = $this.GetScsiLun()
@@ -157,38 +130,20 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [VMHostScsiLun] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $result = [VMHostScsiLun]::new()
 
-            $this.ConnectVIServer()
             $this.RetrieveVMHost()
 
             $scsiLun = $this.GetScsiLun()
@@ -198,18 +153,9 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
+            
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -352,17 +298,7 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.ModifyScsiLunConfigurationMessage -Arguments @($scsiLun.CanonicalName, $this.VMHost.Name)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.ModifyScsiLunConfigurationMessage
-                Arguments = @($scsiLun.CanonicalName, $this.VMHost.Name)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.ModifyScsiLunConfigurationMessage, @($scsiLun.CanonicalName, $this.VMHost.Name))
 
             Set-ScsiLun @setScsiLunParams
         }

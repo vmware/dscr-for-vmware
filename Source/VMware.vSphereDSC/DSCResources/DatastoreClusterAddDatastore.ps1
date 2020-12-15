@@ -80,19 +80,9 @@ class DatastoreClusterAddDatastore : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
 
             $this.InitInventoryUtil()
             $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
@@ -112,36 +102,17 @@ class DatastoreClusterAddDatastore : BaseDSC {
             $this.AddDatastoresToDatastoreCluster($datastoreCluster, $datastoresToAddToDatastoreCluster)
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
 
             $this.InitInventoryUtil()
             $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
@@ -164,38 +135,19 @@ class DatastoreClusterAddDatastore : BaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [DatastoreClusterAddDatastore] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $result = [DatastoreClusterAddDatastore]::new()
-
-            $this.ConnectVIServer()
 
             $this.InitInventoryUtil()
             $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
@@ -221,18 +173,9 @@ class DatastoreClusterAddDatastore : BaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
+            
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -269,17 +212,7 @@ class DatastoreClusterAddDatastore : BaseDSC {
         if ($this.DatastoreNames.Length -gt $result.Length) {
             $notFoundDatastoreNames = $this.DatastoreNames | Where-Object -FilterScript { $result.Name -NotContains $_ }
             foreach ($notFoundDatastoreName in $notFoundDatastoreNames) {
-                Write-WarningLog -Message $this.CouldNotFindDatastoreMessage -Arguments @($notFoundDatastoreName, $datacenter.Name)
-
-                $writeToLogFilesplat = @{
-                    Connection = $this.Connection.Name
-                    ResourceName = $this.GetType().ToString()
-                    LogType = 'Warning'
-                    Message = $this.CouldNotFindDatastoreMessage
-                    Arguments = @($notFoundDatastoreName, $datacenter.Name)
-                }
-
-                Write-LogToFile @writeToLogFilesplat
+                $this.WriteLogUtil('Warning', $this.CouldNotFindDatastoreMessage, @($notFoundDatastoreName, $datacenter.Name))
             }
         }
 
@@ -334,23 +267,10 @@ class DatastoreClusterAddDatastore : BaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.AddDatastoresToDatastoreClusterMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.AddDatastoresToDatastoreClusterMessage, @(
                 ($datastoresToAddToDatastoreCluster.Name -Join ', '),
                 $datastoreCluster.Name
-            )
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.AddDatastoresToDatastoreClusterMessage
-                Arguments = @(
-                    ($datastoresToAddToDatastoreCluster.Name -Join ', '),
-                    $datastoreCluster.Name
-                )
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            ))
                 
             Move-Datastore @moveDatastoreParams
         }

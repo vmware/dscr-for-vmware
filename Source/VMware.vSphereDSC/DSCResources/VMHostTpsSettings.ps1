@@ -53,54 +53,27 @@ class VMHostTpsSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $vmHost = $this.GetVMHost()
 
             $this.UpdateTpsSettings($vmHost)
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $vmHost = $this.GetVMHost()
 
             $result = !$this.ShouldUpdateTpsSettings($vmHost)
@@ -110,39 +83,21 @@ class VMHostTpsSettings : VMHostBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [VMHostTpsSettings] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $result = [VMHostTpsSettings]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $result.Name = $vmHost.Name
 
@@ -159,18 +114,9 @@ class VMHostTpsSettings : VMHostBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -203,17 +149,7 @@ class VMHostTpsSettings : VMHostBaseDSC {
             $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
 
             if ($null -ne $this.$tpsSettingName -and $this.$tpsSettingName -ne $tpsSetting.Value) {
-                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($tpsSettingName, $tpsSetting.Value, $this.$tpsSettingName)
-
-                $writeToLogFilesplat = @{
-                    Connection = $this.Connection.Name
-                    ResourceName = $this.GetType().ToString()
-                    LogType = 'Verbose'
-                    Message = $this.SettingIsNotInDesiredStateMessage
-                    Arguments = @($tpsSettingName, $tpsSetting.Value, $this.$tpsSettingName)
-                }
-
-                Write-LogToFile @writeToLogFilesplat
+                $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($tpsSettingName, $tpsSetting.Value, $this.$tpsSettingName))
 
                 return $true
             }

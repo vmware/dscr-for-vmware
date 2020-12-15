@@ -114,19 +114,9 @@ class VMHostConfiguration : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
 
             $vmHost = $this.GetVMHost()
 
@@ -146,36 +136,17 @@ class VMHostConfiguration : VMHostBaseDSC {
             }
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
 
             $vmHost = $this.GetVMHost()
             $result = $true
@@ -189,38 +160,19 @@ class VMHostConfiguration : VMHostBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [VMHostConfiguration] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $result = [VMHostConfiguration]::new()
-
-            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
             $this.PopulateResult($result, $vmHost)
@@ -228,18 +180,9 @@ class VMHostConfiguration : VMHostBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -499,17 +442,7 @@ class VMHostConfiguration : VMHostBaseDSC {
         $setVMHostParams.RunAsync = $true
 
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostConfigurationMessage -Arguments @($setVMHostParams.VMHost.Name)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.ModifyVMHostConfigurationMessage
-                Arguments = @($setVMHostParams.VMHost.Name)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostConfigurationMessage, @($setVMHostParams.VMHost.Name))
 
             $modifyVMHostConfigurationTask = Set-VMHost @setVMHostParams
 
@@ -535,17 +468,7 @@ class VMHostConfiguration : VMHostBaseDSC {
                 }
 
                 # All generated Drs Recommendations from the Cluster should be applied and when the Task is completed all powered on VMs are relocated or powered off.
-                Write-VerboseLog -Message $this.ApplyingDrsRecommendationsFromClusterMessage -Arguments @($setVMHostParams.VMHost.Parent.Name)
-
-                $writeToLogFilesplat = @{
-                    Connection = $this.Connection.Name
-                    ResourceName = $this.GetType().ToString()
-                    LogType = 'Verbose'
-                    Message = $this.ApplyingDrsRecommendationsFromClusterMessage
-                    Arguments = @($setVMHostParams.VMHost.Parent.Name)
-                }
-
-                Write-LogToFile @writeToLogFilesplat
+                $this.WriteLogUtil('Verbose', $this.ApplyingDrsRecommendationsFromClusterMessage, @($setVMHostParams.VMHost.Parent.Name))
 
                 $applyDrsRecommendationTask = Apply-DrsRecommendation @applyDrsRecommendationParams
                 Wait-Task -Task $applyDrsRecommendationTask -ErrorAction Stop -Verbose:$false
@@ -556,17 +479,7 @@ class VMHostConfiguration : VMHostBaseDSC {
 
             # The state of the VMHost should be verified when the Task completes.
             if ($vmHost.ConnectionState.ToString() -eq ([VMHostState]::Maintenance).ToString()) {
-                Write-VerboseLog -Message $this.VMHostStateWasChangedSuccessfullyMessage -Arguments @($vmHost.Name, $vmHost.ConnectionState.ToString())
-
-                $writeToLogFilesplat = @{
-                    Connection = $this.Connection.Name
-                    ResourceName = $this.GetType().ToString()
-                    LogType = 'Verbose'
-                    Message = $this.VMHostStateWasChangedSuccessfullyMessage
-                    Arguments = @($vmHost.Name, $vmHost.ConnectionState.ToString())
-                }
-
-                Write-LogToFile @writeToLogFilesplat
+                $this.WriteLogUtil('Verbose', $this.VMHostStateWasChangedSuccessfullyMessage, @($vmHost.Name, $vmHost.ConnectionState.ToString()))
             }
         }
         catch {
@@ -581,17 +494,7 @@ class VMHostConfiguration : VMHostBaseDSC {
     #>
     [void] ModifyVMHostConfiguration($setVMHostParams) {
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostConfigurationMessage -Arguments @($setVMHostParams.VMHost.Name)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.ModifyVMHostConfigurationMessage
-                Arguments = @($setVMHostParams.VMHost.Name)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostConfigurationMessage, @($setVMHostParams.VMHost.Name))
 
             Set-VMHost @setVMHostParams
         }
@@ -618,17 +521,7 @@ class VMHostConfiguration : VMHostBaseDSC {
         $setVMHostParams.KmsCluster = $kmsCluster
 
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostCryptoKeyMessage -Arguments @($vmHost.Name, $kmsCluster.Name)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.ModifyVMHostCryptoKeyMessage
-                Arguments = @($vmHost.Name, $kmsCluster.Name)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostCryptoKeyMessage, @($vmHost.Name, $kmsCluster.Name))
 
             Set-VMHost @setVMHostParams
         }

@@ -95,21 +95,11 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
         $advancedSetting = $retrievedAdvancedSettings | Where-Object { $_.Name -eq $advancedSettingName }
         if ($null -eq $advancedSetting) {
             <#
-            Here 'Write-Warning' is used instead of 'throw' to ensure that the execution will not stop
+            Here a warning log is used instead of 'throw' to ensure that the execution will not stop
             if an invalid Advanced Setting is present in the passed hashtable and in the same time to
             provide an information to the user that invalid data is passed.
             #>
-            Write-WarningLog -Message "Advanced Setting {0} does not exist for VMHost {1} and will be ignored." -Arguments @($advancedSettingName, $vmHostName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Warning'
-                Message = "Advanced Setting {0} does not exist for VMHost {1} and will be ignored."
-                Arguments = @($advancedSettingName, $vmHostName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Warning', "Advanced Setting {0} does not exist for VMHost {1} and will be ignored.", @($advancedSettingName, $vmHostName))
         }
 
         return $advancedSetting
@@ -149,25 +139,11 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
 
         $result = $advancedSettingDesiredValue -ne $advancedSetting.Value
         if ($result) {
-            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @(
                 $advancedSetting.Name,
                 $advancedSetting.Value,
                 $advancedSettingDesiredValue
-            )
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SettingIsNotInDesiredStateMessage
-                Arguments = @(
-                    $advancedSetting.Name,
-                    $advancedSetting.Value,
-                    $advancedSettingDesiredValue
-                )
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            ))
         }
 
         return $result

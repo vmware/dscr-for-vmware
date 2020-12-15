@@ -53,20 +53,10 @@ class VMHostVssBridge : VMHostVssBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = "{0} Entering {1}"
-                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -79,20 +69,10 @@ class VMHostVssBridge : VMHostVssBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = "{0} Entering {1}"
-                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
@@ -120,23 +100,13 @@ class VMHostVssBridge : VMHostVssBaseDSC {
 
     [VMHostVssBridge] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = "{0} Entering {1}"
-                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $result = [VMHostVssBridge]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -158,18 +128,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssBridge should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        $writeToLogFilesplat = @{
-            Connection = $this.Connection.Name
-            ResourceName = $this.GetType().ToString()
-            LogType = 'Verbose'
-            Message = "{0} Entering {1}"
-            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        }
-
-        Write-LogToFile @writeToLogFilesplat
-
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssBridgeTest = @(
             $this.ShouldUpdateArraySetting('NicDevice', $vss.Spec.Bridge.NicDevice, $this.NicDevice),
@@ -195,18 +154,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Updates the Bridge configuration of the virtual switch.
     #>
     [void] UpdateVssBridge($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        $writeToLogFilesplat = @{
-            Connection = $this.Connection.Name
-            ResourceName = $this.GetType().ToString()
-            LogType = 'Verbose'
-            Message = "{0} Entering {1}"
-            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        }
-
-        Write-LogToFile @writeToLogFilesplat
-
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssBridgeArgs = @{
             Name = $this.VssName
@@ -248,18 +196,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Bridge settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSBridge) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        $writeToLogFilesplat = @{
-            Connection = $this.Connection.Name
-            ResourceName = $this.GetType().ToString()
-            LogType = 'Verbose'
-            Message = "{0} Entering {1}"
-            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        }
-
-        Write-LogToFile @writeToLogFilesplat
-
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $currentVss = $this.GetVss()
 

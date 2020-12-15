@@ -79,7 +79,8 @@ class BasevSphereConnection {
         }
         elseif ($desiredArray.Length -eq 0 -and $currentArray.Length -ne 0) {
             # Empty array specified as desired, but current is not an empty array, so update should be performed.
-            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+            $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', ')))
+
             $result = $true
         }
         else {
@@ -92,7 +93,8 @@ class BasevSphereConnection {
                     the desired array is a subset of the current array. In both cases
                     we should perform an update operation.
                 #>
-                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+                $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', ')))
+
                 $result = $true
             }
             else {
@@ -123,7 +125,7 @@ class BasevSphereConnection {
         }
 
         if ($result) {
-            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, $currentSetting, $desiredSetting)
+            $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($settingName, $currentSetting, $desiredSetting))
         }
 
         return $result
@@ -157,12 +159,16 @@ class BasevSphereConnection {
     Writes a Verbose message specifying if the DSC Resource is in the Desired State.
     #>
     [void] WriteDscResourceState($result) {
+        $messageToUse = [string]::Empty
+
         if ($result) {
-            Write-VerboseLog -Message $this.DscResourceIsInDesiredStateMessage -Arguments @($this.DscResourceName)
+            $messageToUse = $this.DscResourceIsInDesiredStateMessage
         }
         else {
-            Write-VerboseLog -Message $this.DscResourceIsNotInDesiredStateMessage -Arguments @($this.DscResourceName)
+            $messageToUse = $this.DscResourceIsNotInDesiredStateMessage
         }
+
+        $this.WriteLogUtil('Verbose', $messageToUse, @($this.DscResourceName))
     }
 
     <#
@@ -247,5 +253,40 @@ class BasevSphereConnection {
         catch {
             throw "Cannot close connection to vSphere Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Logs a message to the correct information stream and to a file.
+    #>
+    [void] WriteLogUtil($logType, $message, $arguments) {
+        $writeLogSplat = @{
+            Message = $message
+        }
+
+        if ($null -ne $arguments) {
+            $writeLogSplat['Arguments'] = $arguments
+        }
+
+        # write to warning or verbose stream
+        if ($logType -eq 'Verbose') {
+            Write-VerboseLog @writeLogSplat
+        } elseif ($logType -eq 'Warning') {
+            Write-WarningLog @writeLogSplat
+        }
+
+        # this is a special case for the unit tests of BaseDSC\ShouldUpdateArraySetting
+        # because they do not set the Connection prop
+        if ($null -eq $this.Connection) {
+            return
+        }
+
+        # write to log file
+        $writeLogSplat['Connection'] = $this.Connection.Name
+        $writeLogSplat['ResourceName'] = $this.GetType().ToString()
+        $writeLogSplat['LogType'] = $logType
+
+        Write-LogToFile @writeLogSplat
     }
 }

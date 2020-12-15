@@ -157,25 +157,11 @@ class VMHostAgentVM : VMHostBaseDSC {
             else {
                 $agentVmSettingAsViewObject = $this.$getAgentVmSettingAsViewObjectMethodName($esxAgentHostManager)
                 if ($agentVmSetting -ne $agentVmSettingAsViewObject.Name) {
-                    Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @(
+                    $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @(
                         $agentVmSettingName,
                         $agentVmSettingAsViewObject.Name,
                         $agentVmSetting
-                    )
-
-                    $writeToLogFilesplat = @{
-                        Connection = $this.Connection.Name
-                        ResourceName = $this.GetType().ToString()
-                        LogType = 'Verbose'
-                        Message = $this.SettingIsNotInDesiredStateMessage
-                        Arguments = @(
-                            $agentVmSettingName,
-                            $agentVmSettingAsViewObject.Name,
-                            $agentVmSetting
-                        )
-                    }
-
-                    Write-LogToFile @writeToLogFilesplat
+                    ))
 
                     return $true
                 }

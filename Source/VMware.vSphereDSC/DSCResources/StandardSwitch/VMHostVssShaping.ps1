@@ -50,20 +50,10 @@ class VMHostVssShaping : VMHostVssBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = "{0} Entering {1}"
-                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -76,20 +66,10 @@ class VMHostVssShaping : VMHostVssBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = "{0} Entering {1}"
-                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
@@ -118,23 +98,13 @@ class VMHostVssShaping : VMHostVssBaseDSC {
 
     [VMHostVssShaping] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = "{0} Entering {1}"
-                Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $result = [VMHostVssShaping]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -156,18 +126,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssShaping should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        $writeToLogFilesplat = @{
-            Connection = $this.Connection.Name
-            ResourceName = $this.GetType().ToString()
-            LogType = 'Verbose'
-            Message = "{0} Entering {1}"
-            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        }
-
-        Write-LogToFile @writeToLogFilesplat
-
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssShapingTest = @(
             $this.ShouldUpdateDscResourceSetting('AverageBandwidth', $vss.Spec.Policy.ShapingPolicy.AverageBandwidth, $this.AverageBandwidth),
@@ -185,18 +144,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssShaping($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        $writeToLogFilesplat = @{
-            Connection = $this.Connection.Name
-            ResourceName = $this.GetType().ToString()
-            LogType = 'Verbose'
-            Message = "{0} Entering {1}"
-            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        }
-
-        Write-LogToFile @writeToLogFilesplat
-
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssShapingArgs = @{
             Name = $this.VssName
@@ -235,19 +183,8 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSShaping) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-
-        $writeToLogFilesplat = @{
-            Connection = $this.Connection.Name
-            ResourceName = $this.GetType().ToString()
-            LogType = 'Verbose'
-            Message = "{0} Entering {1}"
-            Arguments = @((Get-Date), (Get-PSCallStack)[0].FunctionName)
-        }
-
-        Write-LogToFile @writeToLogFilesplat
-
-
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+        
         $currentVss = $this.GetVss()
 
         if ($null -ne $currentVss) {

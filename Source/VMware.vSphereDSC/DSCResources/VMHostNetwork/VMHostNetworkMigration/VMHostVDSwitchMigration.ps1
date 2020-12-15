@@ -63,20 +63,10 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.EnsureConnectionIsvCenter()
 
             $this.RetrieveVMHost()
@@ -98,37 +88,18 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
             }
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.SetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
-
-
             $this.ConnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.EnsureConnectionIsvCenter()
 
             $this.RetrieveVMHost()
@@ -157,38 +128,20 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.TestMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
     [VMHostVDSwitchMigration] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.ConnectVIServer()
 
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodStartMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $result = [VMHostVDSwitchMigration]::new()
 
-            $this.ConnectVIServer()
             $this.EnsureConnectionIsvCenter()
 
             $this.RetrieveVMHost()
@@ -199,18 +152,9 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
             return $result
         }
         finally {
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
+
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.GetMethodEndMessage
-                Arguments = @($this.DscResourceName)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
         }
     }
 
@@ -229,17 +173,7 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         $global:VerbosePreference = 'SilentlyContinue'
 
         try {
-            Write-VerboseLog -Message $this.RetrieveVDSwitchMessage -Arguments @($this.VdsName, $this.Connection.Name)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.RetrieveVDSwitchMessage
-                Arguments = @($this.VdsName, $this.Connection.Name)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.RetrieveVDSwitchMessage, @($this.VdsName, $this.Connection.Name))
 
             $getVDSwitchParams = @{
                 Server = $this.Connection
@@ -398,17 +332,7 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
             $distributedPortGroup = Get-VDPortgroup @getVDPortGroupParams
             if ($null -eq $distributedPortGroup) {
                 try {
-                    Write-VerboseLog -Message $this.CreateVDPortGroupMessage -Arguments @($distributedPortGroupName, $distributedSwitch.Name)
-
-                    $writeToLogFilesplat = @{
-                        Connection = $this.Connection.Name
-                        ResourceName = $this.GetType().ToString()
-                        LogType = 'Verbose'
-                        Message = $this.CreateVDPortGroupMessage
-                        Arguments = @($distributedPortGroupName, $distributedSwitch.Name)
-                    }
-
-                    Write-LogToFile @writeToLogFilesplat
+                    $this.WriteLogUtil('Verbose', $this.CreateVDPortGroupMessage, @($distributedPortGroupName, $distributedSwitch.Name))
 
                     $newVDPortGroupParams = @{
                         Server = $this.Connection
@@ -460,17 +384,7 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     #>
     [void] AddVMHostToDistributedSwitch($distributedSwitch) {
         try {
-            Write-VerboseLog -Message $this.AddVDSwitchToVMHostMessage -Arguments @($distributedSwitch.Name, $this.VMHost.Name)
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.AddVDSwitchToVMHostMessage
-                Arguments = @($distributedSwitch.Name, $this.VMHost.Name)
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Verbose', $this.AddVDSwitchToVMHostMessage, @($distributedSwitch.Name, $this.VMHost.Name))
 
             $addVDSwitchVMHostParams = @{
                 Server = $this.Connection
@@ -494,38 +408,16 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     #>
     [void] AddPhysicalNetworkAdaptersToDistributedSwitch($physicalNetworkAdapters, $distributedSwitch) {
         if ($null -eq $this.MigratePhysicalNicsOnly -or !$this.MigratePhysicalNicsOnly) {
-            Write-WarningLog -Message $this.MigratePhysicalNicsOnlyNotSpecified
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Warning'
-                Message = $this.MigratePhysicalNicsOnlyNotSpecified
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            $this.WriteLogUtil('Warning', $this.MigratePhysicalNicsOnlyNotSpecified)
 
             return
         }
 
         try {
-            Write-VerboseLog -Message $this.AddPhysicalNicsToVDSwitchMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.AddPhysicalNicsToVDSwitchMessage, @(
                 ($physicalNetworkAdapters.Name -Join ', '),
                 $distributedSwitch.Name
-            )
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.AddPhysicalNicsToVDSwitchMessage
-                Arguments = @(
-                    ($physicalNetworkAdapters.Name -Join ', '),
-                    $distributedSwitch.Name
-                )
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            ))
 
             $addVDSwitchPhysicalNetworkAdapterParams = $this.GetAddVDSwitchPhysicalNetworkAdapterParams($distributedSwitch, $physicalNetworkAdapters)
 
@@ -551,25 +443,11 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         $portGroups = $this.EnsureDistributedPortGroupsExist($distributedSwitch)
 
         try {
-            Write-VerboseLog -Message $this.AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage, @(
                 ($physicalNetworkAdapters.Name -Join ', '),
                 ($vmKernelNetworkAdapters.Name -Join ', '),
                 $distributedSwitch.Name
-            )
-
-            $writeToLogFilesplat = @{
-                Connection = $this.Connection.Name
-                ResourceName = $this.GetType().ToString()
-                LogType = 'Verbose'
-                Message = $this.AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage
-                Arguments = @(
-                    ($physicalNetworkAdapters.Name -Join ', '),
-                    ($vmKernelNetworkAdapters.Name -Join ', '),
-                    $distributedSwitch.Name
-                )
-            }
-
-            Write-LogToFile @writeToLogFilesplat
+            ))
 
             $addVDSwitchPhysicalNetworkAdapterParams = $this.GetAddVDSwitchPhysicalNetworkAdapterParams(
                 $distributedSwitch,
