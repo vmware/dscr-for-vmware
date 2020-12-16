@@ -12,6 +12,7 @@
 | **Notes** | Optional | string | The description for the Distributed Port Group. ||
 | **NumPorts** | Optional | int | The number of ports that the Distributed Port Group will have. If the parameter is not specified, the number of ports for the Distributed Port Group is 128. ||
 | **PortBinding** | Optional | PortBinding | The port binding setting for the Distributed Port Group. | Static, Dynamic, Ephemeral |
+| **VLanId** | Optional | int | The VLAN ID for the Distributed Port Group. Valid values are integers in the range of **1** to **4094**. If **0** is specified, the VLAN type is **None**. ||
 | **ReferenceVDPortGroupName** | Optional | string | The name for the reference Distributed Port Group. The properties of the new Distributed Port Group will be cloned from the reference Distributed Port Group. ||
 
 ## Description
@@ -22,7 +23,7 @@ The resource is used to create, modify the configuration or remove the specified
 
 ### Example 1
 
-Creates a new Datacenter **Datacenter** in the **Root Folder** of the Inventory. Creates a new vSphere Distributed Switch **MyVDSwitch** in the **Network Folder** of Datacenter **Datacenter**. Creates a new Distributed Port Group **MyVDPortGroup** on vSphere Distributed Switch **MyVDSwitch** with **Static** Port Binding and **128** Ports.
+Creates a new Datacenter **Datacenter** in the **Root Folder** of the Inventory. Creates a new vSphere Distributed Switch **MyVDSwitch** in the **Network Folder** of Datacenter **Datacenter**. Creates a new Distributed Port Group **MyVDPortGroup** on vSphere Distributed Switch **MyVDSwitch** with **Static** Port Binding, **128** Ports and VLAN ID **1**.
 
 ```powershell
 Configuration VDPortGroup_CreateVDPortGroup_Config {
@@ -69,6 +70,7 @@ Configuration VDPortGroup_CreateVDPortGroup_Config {
             NumPorts = 128
             Notes = 'MyVDPortGroup Notes'
             PortBinding = 'Static'
+            VLanId = 1
             DependsOn = '[VDSwitch]VDSwitch'
         }
     }

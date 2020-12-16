@@ -50,7 +50,7 @@ $script:configurationData = @{
 Creates a new Datacenter 'Datacenter' in the Root Folder of the Inventory.
 Creates a new vSphere Distributed Switch 'MyVDSwitch' in the Network Folder of Datacenter 'Datacenter'.
 Creates a new Distributed Port Group 'MyVDPortGroup' on vSphere Distributed Switch 'MyVDSwitch' with
-Static Port Binding and 128 Ports.
+Static Port Binding, 128 Ports and VLAN ID 1.
 #>
 Configuration VDPortGroup_CreateVDPortGroup_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
@@ -84,6 +84,7 @@ Configuration VDPortGroup_CreateVDPortGroup_Config {
             NumPorts = 128
             Notes = 'MyVDPortGroup Notes'
             PortBinding = 'Static'
+            VLanId = 1
             DependsOn = '[VDSwitch]VDSwitch'
         }
     }
