@@ -579,6 +579,29 @@ function Set-VDSwitch {
     return $null
 }
 
+function Set-VDVlanConfiguration {
+    [CmdletBinding(DefaultParameterSetName = "")]
+    param(
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", ValueFromPipeline = $true)]
+        [VMware.VimAutomation.Vds.Types.V1.VDPortgroup[]]
+        $VDPortgroup,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [int]
+        $VlanId,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $DisableVlan,
+
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", ValueFromPipeline = $false)]
+        [switch]
+        $Confirm
+    )
+
+    return $null
+}
+
 function Add-PassthroughDevice {
     [CmdletBinding(DefaultParameterSetName = "__AllParameterSets")]
     param(

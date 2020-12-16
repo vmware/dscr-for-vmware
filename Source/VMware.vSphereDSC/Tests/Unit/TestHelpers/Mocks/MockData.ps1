@@ -127,7 +127,10 @@ $script:constants = @{
     TaskErrorState = 'Error'
     VirtualSwitchName = 'vSwitch0'
     VirtualPortGroupName = 'MyVirtualPortGroup'
+    VlanTypeVlan = 'Vlan'
     VLanId = 4095
+    ModifiedVLanId = 10
+    VLanNone = 0
     AllowPromiscuous = $true
     AllowPromiscuousInherited = $false
     ForgedTransmits = $true
@@ -1074,6 +1077,10 @@ $script:distributedPortGroup = [VMware.VimAutomation.Vds.Impl.V1.VmwareVDPortgro
     NumPorts = $script:constants.DistributedPortGroupNumPorts
     PortBinding = $script:constants.DistributedPortGroupStaticPortBinding
     VDSwitch = $script:distributedSwitch
+    VlanConfiguration = [VMware.VimAutomation.Vds.Impl.V1.SingleVlanConfigurationImpl] @{
+        VlanType = $script:constants.VlanTypeVlan
+        VlanId = $script:constants.VLanId
+    }
 }
 
 $script:proxySwitch = [VMware.Vim.HostProxySwitch] @{

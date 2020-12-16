@@ -61,6 +61,7 @@ function New-MocksWhenDistributedPortGroupDoesNotExistDistributedPortGroupSettin
     $vdPortGroupProperties.Notes = $script:constants.DistributedPortGroupNotes
     $vdPortGroupProperties.NumPorts = $script:constants.DistributedPortGroupNumPorts
     $vdPortGroupProperties.PortBinding = $script:constants.DistributedPortGroupStaticPortBinding
+    $vdPortGroupProperties.VLanId = $script:constants.VLanId
 
     Mock -CommandName Get-VDPortGroup -MockWith { return $null }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedPortGroupName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
     Mock -CommandName New-VDPortGroup -MockWith { return $null }.GetNewClosure() -Verifiable
@@ -95,6 +96,38 @@ function New-MocksWhenDistributedPortGroupExistsDistributedPortGroupSettingsAreP
 
     Mock -CommandName Get-VDPortGroup -MockWith { return $distributedPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedPortGroupName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
     Mock -CommandName Set-VDPortGroup -MockWith { return $null }.GetNewClosure() -Verifiable
+
+    $vdPortGroupProperties
+}
+
+function New-MocksWhenDistributedPortGroupExistsVlanId0IsPassedAndNeedsToBeUpdatedAndEnsureIsPresent {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vdPortGroupProperties = New-VDPortGroupProperties
+
+    $vdPortGroupProperties.VLanId = $script:constants.VLanNone
+
+    $distributedPortGroupMock = $script:distributedPortGroup
+
+    Mock -CommandName Get-VDPortGroup -MockWith { return $distributedPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedPortGroupName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
+    Mock -CommandName Set-VDVlanConfiguration -MockWith { return $null }.GetNewClosure() -Verifiable
+
+    $vdPortGroupProperties
+}
+
+function New-MocksWhenDistributedPortGroupExistsVlanIdIsPassedAndNeedsToBeUpdatedAndEnsureIsPresent {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+
+    $vdPortGroupProperties = New-VDPortGroupProperties
+
+    $vdPortGroupProperties.VLanId = $script:constants.ModifiedVLanId
+
+    $distributedPortGroupMock = $script:distributedPortGroup
+
+    Mock -CommandName Get-VDPortGroup -MockWith { return $distributedPortGroupMock }.GetNewClosure() -ParameterFilter { $Server -eq $script:viServer -and $Name -eq $script:constants.DistributedPortGroupName -and $VDSwitch -eq $script:distributedSwitch } -Verifiable
+    Mock -CommandName Set-VDVlanConfiguration -MockWith { return $null }.GetNewClosure() -Verifiable
 
     $vdPortGroupProperties
 }
@@ -162,6 +195,7 @@ function New-MocksWhenDistributedPortGroupExistsPassedDistributedPortGroupSettin
     $vdPortGroupProperties.Notes = $script:constants.DistributedPortGroupNotes
     $vdPortGroupProperties.NumPorts = $script:constants.DistributedPortGroupNumPorts
     $vdPortGroupProperties.PortBinding = $script:constants.DistributedPortGroupStaticPortBinding
+    $vdPortGroupProperties.VLanId = $script:constants.VLanId
 
     $distributedPortGroupMock = $script:distributedPortGroup
 
@@ -179,6 +213,7 @@ function New-MocksWhenDistributedPortGroupExistsPassedDistributedPortGroupSettin
     $vdPortGroupProperties.Notes = $script:constants.DistributedPortGroupNotes
     $vdPortGroupProperties.NumPorts = $script:constants.DistributedPortGroupNumPorts + $script:constants.DistributedPortGroupNumPorts
     $vdPortGroupProperties.PortBinding = $script:constants.DistributedPortGroupDynamicPortBinding
+    $vdPortGroupProperties.VLanId = $script:constants.VLanNone
 
     $distributedPortGroupMock = $script:distributedPortGroup
 
