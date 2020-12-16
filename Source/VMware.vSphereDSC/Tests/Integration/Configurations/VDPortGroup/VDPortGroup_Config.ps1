@@ -52,6 +52,7 @@ Configuration VDPortGroup_CreateVDPortGroup_Config {
             Notes = $AllNodes.VDPortGroupNotes
             NumPorts = $AllNodes.VDPortGroupNumPorts
             PortBinding = $AllNodes.VDPortGroupPortBinding
+            VLanId = $AllNodes.VLanId
         }
     }
 }
@@ -84,6 +85,37 @@ Configuration VDPortGroup_ModifyVDPortGroupNotesAndNumPorts_Config {
             Notes = $AllNodes.VDPortGroupDefaultNotes
             NumPorts = $AllNodes.VDPortGroupDefaultNumPorts
             PortBinding = $AllNodes.VDPortGroupPortBinding
+            VLanId = $AllNodes.VLanId
+        }
+    }
+}
+
+Configuration VDPortGroup_ModifyVDPortGroupVLanId_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VDPortGroup $AllNodes.VDPortGroupResourceName {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            Name = $AllNodes.VDPortGroupName
+            VdsName = $AllNodes.VDSwitchName
+            Ensure = 'Present'
+            VLanId = $AllNodes.ModifiedVLanId
+        }
+    }
+}
+
+Configuration VDPortGroup_SetVDPortGroupVLanToNone_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        VDPortGroup $AllNodes.VDPortGroupResourceName {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            Name = $AllNodes.VDPortGroupName
+            VdsName = $AllNodes.VDSwitchName
+            Ensure = 'Present'
+            VLanId = $AllNodes.VLanNone
         }
     }
 }
