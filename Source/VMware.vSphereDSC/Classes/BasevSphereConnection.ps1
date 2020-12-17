@@ -265,15 +265,20 @@ class BasevSphereConnection {
     <#
     .DESCRIPTION
 
-    Logs a message to the correct information stream and to a file.
+    Logs a message to the correct information stream and to a property.
     #>
     [void] WriteLogUtil($logType, $message, $arguments) {
         $writeLogSplat = @{
             Message = $message
         }
 
+        # this variable will be added to the logs hashtable
+        $logMessage = $message
+
         if ($null -ne $arguments) {
             $writeLogSplat['Arguments'] = $arguments
+
+            $logMessage = [string]::Format($Message, $Arguments)
         }
 
         # write to warning or verbose stream
@@ -283,21 +288,11 @@ class BasevSphereConnection {
             Write-WarningLog @writeLogSplat
         }
 
-        # this is a special case for the unit tests of BaseDSC\ShouldUpdateArraySetting
-        # because they do not set the Connection prop
-        if ($null -eq $this.Connection) {
-            return
-        }
-
         if ($null -eq $this.Logs) {
             return
         }
 
-        if ($null -ne $Arguments) {
-            $Message = [string]::Format($Message, $Arguments)
-        }
-
-        $this.Logs.Value[$logType].Add($Message) | Out-Null
+        $this.Logs.Value[$logType].Add($logMessage) | Out-Null
     }
 
     [void] WriteLogUtil($logType, $message) {

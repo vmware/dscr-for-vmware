@@ -65,9 +65,9 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
 
     [void] Set() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $datacenter = $this.GetDatacenter()
             $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
@@ -90,17 +90,17 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
             }
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $datacenter = $this.GetDatacenter()
             $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
@@ -126,17 +126,17 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [DatastoreCluster] Get() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $result = [DatastoreCluster]::new()
 
@@ -150,9 +150,9 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
-            
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 

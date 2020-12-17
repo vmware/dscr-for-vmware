@@ -36,9 +36,9 @@ class VMHostNtpSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
 
@@ -46,17 +46,17 @@ class VMHostNtpSettings : VMHostBaseDSC {
             $this.UpdateVMHostNtpServicePolicy($vmHost)
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
 
@@ -74,17 +74,17 @@ class VMHostNtpSettings : VMHostBaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostNtpSettings] Get() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostNtpSettings]::new()
 
@@ -102,9 +102,9 @@ class VMHostNtpSettings : VMHostBaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 

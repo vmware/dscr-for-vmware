@@ -53,26 +53,26 @@ class VMHostTpsSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
 
             $this.UpdateTpsSettings($vmHost)
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
 
@@ -83,17 +83,17 @@ class VMHostTpsSettings : VMHostBaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostTpsSettings] Get() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostTpsSettings]::new()
             $result.Server = $this.Server
@@ -114,9 +114,9 @@ class VMHostTpsSettings : VMHostBaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 

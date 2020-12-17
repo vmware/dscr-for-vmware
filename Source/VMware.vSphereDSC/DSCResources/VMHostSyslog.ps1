@@ -98,9 +98,9 @@ class VMHostSyslog : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
 
@@ -113,9 +113,9 @@ class VMHostSyslog : VMHostBaseDSC {
 
     [bool] Test() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
 
@@ -132,9 +132,9 @@ class VMHostSyslog : VMHostBaseDSC {
 
     [VMHostSyslog] Get() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostSyslog]::new()
 

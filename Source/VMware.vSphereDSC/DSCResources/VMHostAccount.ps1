@@ -61,9 +61,9 @@ class VMHostAccount : BaseDSC {
 
     [void] Set() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $this.EnsureConnectionIsESXi()
             $vmHostAccount = $this.GetVMHostAccount()
@@ -83,17 +83,17 @@ class VMHostAccount : BaseDSC {
             }
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $this.EnsureConnectionIsESXi()
             $vmHostAccount = $this.GetVMHostAccount()
@@ -117,17 +117,17 @@ class VMHostAccount : BaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostAccount] Get() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostAccount]::new()
             $result.Server = $this.Server
@@ -140,9 +140,9 @@ class VMHostAccount : BaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 

@@ -50,9 +50,9 @@ class VMHostVssShaping : VMHostVssBaseDSC {
 
     [void] Set() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
@@ -66,9 +66,9 @@ class VMHostVssShaping : VMHostVssBaseDSC {
 
     [bool] Test() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
@@ -98,9 +98,9 @@ class VMHostVssShaping : VMHostVssBaseDSC {
 
     [VMHostVssShaping] Get() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostVssShaping]::new()
             $result.Server = $this.Server

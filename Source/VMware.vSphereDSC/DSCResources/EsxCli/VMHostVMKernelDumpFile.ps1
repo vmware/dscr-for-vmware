@@ -64,9 +64,9 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -90,17 +90,17 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
             }
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -120,17 +120,17 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostVMKernelDumpFile] Get() {
         try {
-            $this.ConnectVIServer()
-
             $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostVMKernelDumpFile]::new()
 
@@ -142,9 +142,9 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
             return $result
         }
         finally {
-            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
-
             $this.DisconnectVIServer()
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
