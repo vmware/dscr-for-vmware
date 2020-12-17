@@ -1189,10 +1189,7 @@ class DscConfigurationRunner {
             Property = $DscResource.Property
         }
 
-        $logs = @{
-            'Verbose' = New-Object -TypeName 'System.Collections.ArrayList'
-            'Warning' = New-Object -TypeName 'System.Collections.ArrayList'
-        }
+        $logs = New-Object -TypeName 'System.Collections.ArrayList'
 
         $invokeSplatParams.Property['logs'] = [ref] $logs
 
@@ -1235,15 +1232,18 @@ class DscConfigurationRunner {
     <#
     .DESCRIPTION
     Prints the output from the execution of a DSC Resource via the Invoke-DscResource cmdlet.
-    The logs are extracted from a log hashtable that gets passed via 'Property'
+    The logs are extracted from a log arrayList that gets passed via 'Property'
     #>
-    hidden [void] HandleStreamOutputFromDscResources([HashTable] $Logs) {
-        foreach ($verboseLog in $Logs['Verbose']) {
-            Write-Verbose $verboseLog
-        }
+    hidden [void] HandleStreamOutputFromDscResources([System.Collections.ArrayList] $Logs) {
+        foreach ($log in $logs) {
+            $logType = $Log.Type
+            $message = $log.Message
 
-        foreach ($warningLog in $Logs['Warning']) {
-            Write-Warning $warningLog
+            if ($logType -eq 'Verbose') {
+                Write-Verbose $message
+            } elseif ($logType -eq 'Warning') {
+                Write-Warning $message
+            }
         }
     }
 

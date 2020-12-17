@@ -292,7 +292,10 @@ class BasevSphereConnection {
             return
         }
 
-        $this.Logs.Value[$logType].Add($logMessage) | Out-Null
+        $this.Logs.Value.Add([PsObject]@{
+            Type = $logType
+            Message = $logMessage
+        }) | Out-Null
     }
 
     [void] WriteLogUtil($logType, $message) {
