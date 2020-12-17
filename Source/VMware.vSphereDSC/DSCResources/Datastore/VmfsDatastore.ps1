@@ -16,7 +16,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 [DscResource()]
 class VmfsDatastore : DatastoreBaseDSC {
-    <#f
+    <#
     .DESCRIPTION
 
     Specifies the maximum file size of Vmfs in megabytes (MB). If no value is specified, the maximum file size for the current system platform is used.

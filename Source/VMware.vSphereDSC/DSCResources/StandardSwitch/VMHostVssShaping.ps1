@@ -184,7 +184,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     #>
     [void] PopulateResult($vmHost, $vmHostVSSShaping) {
         $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
-        
+
         $currentVss = $this.GetVss()
 
         if ($null -ne $currentVss) {
