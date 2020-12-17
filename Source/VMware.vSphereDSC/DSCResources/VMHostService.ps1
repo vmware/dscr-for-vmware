@@ -66,9 +66,10 @@ class VMHostService : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.UpdateVMHostService($vmHost)
@@ -80,9 +81,10 @@ class VMHostService : VMHostBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $result = !$this.ShouldUpdateVMHostService($vmHost)
@@ -98,12 +100,13 @@ class VMHostService : VMHostBaseDSC {
 
     [VMHostService] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostService]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.PopulateResult($vmHost, $result)
 
@@ -120,7 +123,7 @@ class VMHostService : VMHostBaseDSC {
     Returns a boolean value indicating if the VMHostService should to be updated.
     #>
     [bool] ShouldUpdateVMHostService($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
@@ -138,7 +141,7 @@ class VMHostService : VMHostBaseDSC {
     Updates the configuration of the VMHostService.
     #>
     [void] UpdateVMHostService($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
@@ -162,7 +165,7 @@ class VMHostService : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the VMHostService from the server.
     #>
     [void] PopulateResult($vmHost, $vmHostService) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
         $vmHostService.Name = $vmHost.Name

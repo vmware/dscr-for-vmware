@@ -114,7 +114,8 @@ class VMHostConfiguration : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -136,13 +137,15 @@ class VMHostConfiguration : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -158,16 +161,18 @@ class VMHostConfiguration : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostConfiguration] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostConfiguration]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostConfiguration]::new()
 
             $vmHost = $this.GetVMHost()
             $this.PopulateResult($result, $vmHost)
@@ -176,7 +181,8 @@ class VMHostConfiguration : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -436,7 +442,8 @@ class VMHostConfiguration : VMHostBaseDSC {
         $setVMHostParams.RunAsync = $true
 
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostConfigurationMessage -Arguments @($setVMHostParams.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostConfigurationMessage, @($setVMHostParams.VMHost.Name))
+
             $modifyVMHostConfigurationTask = Set-VMHost @setVMHostParams
 
             # The Drs Recommendation is not generated immediately after 'EnterMaintenance' task generation.
@@ -461,7 +468,8 @@ class VMHostConfiguration : VMHostBaseDSC {
                 }
 
                 # All generated Drs Recommendations from the Cluster should be applied and when the Task is completed all powered on VMs are relocated or powered off.
-                Write-VerboseLog -Message $this.ApplyingDrsRecommendationsFromClusterMessage -Arguments @($setVMHostParams.VMHost.Parent.Name)
+                $this.WriteLogUtil('Verbose', $this.ApplyingDrsRecommendationsFromClusterMessage, @($setVMHostParams.VMHost.Parent.Name))
+
                 $applyDrsRecommendationTask = Apply-DrsRecommendation @applyDrsRecommendationParams
                 Wait-Task -Task $applyDrsRecommendationTask -ErrorAction Stop -Verbose:$false
             }
@@ -471,7 +479,7 @@ class VMHostConfiguration : VMHostBaseDSC {
 
             # The state of the VMHost should be verified when the Task completes.
             if ($vmHost.ConnectionState.ToString() -eq ([VMHostState]::Maintenance).ToString()) {
-                Write-VerboseLog -Message $this.VMHostStateWasChangedSuccessfullyMessage -Arguments @($vmHost.Name, $vmHost.ConnectionState.ToString())
+                $this.WriteLogUtil('Verbose', $this.VMHostStateWasChangedSuccessfullyMessage, @($vmHost.Name, $vmHost.ConnectionState.ToString()))
             }
         }
         catch {
@@ -486,7 +494,8 @@ class VMHostConfiguration : VMHostBaseDSC {
     #>
     [void] ModifyVMHostConfiguration($setVMHostParams) {
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostConfigurationMessage -Arguments @($setVMHostParams.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostConfigurationMessage, @($setVMHostParams.VMHost.Name))
+
             Set-VMHost @setVMHostParams
         }
         catch {
@@ -512,7 +521,8 @@ class VMHostConfiguration : VMHostBaseDSC {
         $setVMHostParams.KmsCluster = $kmsCluster
 
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostCryptoKeyMessage -Arguments @($vmHost.Name, $kmsCluster.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostCryptoKeyMessage, @($vmHost.Name, $kmsCluster.Name))
+
             Set-VMHost @setVMHostParams
         }
         catch {

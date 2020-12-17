@@ -63,9 +63,10 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $this.RetrieveVMHost()
@@ -88,15 +89,17 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $this.RetrieveVMHost()
@@ -126,16 +129,19 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostVDSwitchMigration] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostVDSwitchMigration]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostVDSwitchMigration]::new()
+
             $this.EnsureConnectionIsvCenter()
 
             $this.RetrieveVMHost()
@@ -147,7 +153,8 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -166,7 +173,8 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         $global:VerbosePreference = 'SilentlyContinue'
 
         try {
-            Write-VerboseLog -Message $this.RetrieveVDSwitchMessage -Arguments @($this.VdsName, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.RetrieveVDSwitchMessage, @($this.VdsName, $this.Connection.Name))
+
             $getVDSwitchParams = @{
                 Server = $this.Connection
                 Name = $this.VdsName
@@ -324,7 +332,8 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
             $distributedPortGroup = Get-VDPortgroup @getVDPortGroupParams
             if ($null -eq $distributedPortGroup) {
                 try {
-                    Write-VerboseLog -Message $this.CreateVDPortGroupMessage -Arguments @($distributedPortGroupName, $distributedSwitch.Name)
+                    $this.WriteLogUtil('Verbose', $this.CreateVDPortGroupMessage, @($distributedPortGroupName, $distributedSwitch.Name))
+
                     $newVDPortGroupParams = @{
                         Server = $this.Connection
                         Name = $distributedPortGroupName
@@ -375,7 +384,8 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     #>
     [void] AddVMHostToDistributedSwitch($distributedSwitch) {
         try {
-            Write-VerboseLog -Message $this.AddVDSwitchToVMHostMessage -Arguments @($distributedSwitch.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.AddVDSwitchToVMHostMessage, @($distributedSwitch.Name, $this.VMHost.Name))
+
             $addVDSwitchVMHostParams = @{
                 Server = $this.Connection
                 VDSwitch = $distributedSwitch
@@ -398,15 +408,17 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     #>
     [void] AddPhysicalNetworkAdaptersToDistributedSwitch($physicalNetworkAdapters, $distributedSwitch) {
         if ($null -eq $this.MigratePhysicalNicsOnly -or !$this.MigratePhysicalNicsOnly) {
-            Write-WarningLog -Message $this.MigratePhysicalNicsOnlyNotSpecified
+            $this.WriteLogUtil('Warning', $this.MigratePhysicalNicsOnlyNotSpecified)
+
             return
         }
 
         try {
-            Write-VerboseLog -Message $this.AddPhysicalNicsToVDSwitchMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.AddPhysicalNicsToVDSwitchMessage, @(
                 ($physicalNetworkAdapters.Name -Join ', '),
                 $distributedSwitch.Name
-            )
+            ))
+
             $addVDSwitchPhysicalNetworkAdapterParams = $this.GetAddVDSwitchPhysicalNetworkAdapterParams($distributedSwitch, $physicalNetworkAdapters)
 
             Add-VDSwitchPhysicalNetworkAdapter @addVDSwitchPhysicalNetworkAdapterParams
@@ -431,11 +443,12 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         $portGroups = $this.EnsureDistributedPortGroupsExist($distributedSwitch)
 
         try {
-            Write-VerboseLog -Message $this.AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage, @(
                 ($physicalNetworkAdapters.Name -Join ', '),
                 ($vmKernelNetworkAdapters.Name -Join ', '),
                 $distributedSwitch.Name
-            )
+            ))
+
             $addVDSwitchPhysicalNetworkAdapterParams = $this.GetAddVDSwitchPhysicalNetworkAdapterParams(
                 $distributedSwitch,
                 $physicalNetworkAdapters,

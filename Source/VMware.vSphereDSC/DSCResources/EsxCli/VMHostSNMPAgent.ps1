@@ -162,7 +162,8 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -177,13 +178,15 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -198,16 +201,18 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostSNMPAgent] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostSNMPAgent]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostSNMPAgent]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -218,7 +223,8 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 

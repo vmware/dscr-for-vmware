@@ -84,7 +84,7 @@ class VMHostRestartBaseDSC : VMHostBaseDSC {
                     break
                 }
 
-                Write-VerboseLog -Message $this.VMHostIsStillNotInDesiredStateMessage -Arguments @($this.Name, $desiredState)
+                $this.WriteLogUtil('Verbose', $this.VMHostIsStillNotInDesiredStateMessage, @($this.Name, $desiredState))
             }
             catch {
                 <#
@@ -92,11 +92,11 @@ class VMHostRestartBaseDSC : VMHostBaseDSC {
                 when retrieving the VMHost or establishing a Connection. This way the user still gets notified
                 that the VMHost is not in the Desired State.
                 #>
-                Write-VerboseLog -Message $this.VMHostIsStillNotInDesiredStateMessage -Arguments @($this.Name, $desiredState)
+                $this.WriteLogUtil('Verbose', $this.VMHostIsStillNotInDesiredStateMessage, @($this.Name, $desiredState))
             }
         }
 
-        Write-VerboseLog -Message $this.VMHostIsRestartedSuccessfullyMessage -Arguments @($this.Name, $desiredState)
+        $this.WriteLogUtil('Verbose', $this.VMHostIsRestartedSuccessfullyMessage, @($this.Name, $desiredState))
     }
 
     <#
@@ -106,6 +106,8 @@ class VMHostRestartBaseDSC : VMHostBaseDSC {
     #>
     [void] RestartVMHost($vmHost) {
         try {
+            $this.WriteLogUtil('Verbose', $this.RestartVMHostMessage, @($vmHost.Name))
+
             $restartVMHostParams = @{
                 Server = $this.Connection
                 VMHost = $vmHost
@@ -114,7 +116,6 @@ class VMHostRestartBaseDSC : VMHostBaseDSC {
                 Verbose = $false
             }
 
-            Write-VerboseLog -Message $this.RestartVMHostMessage -Arguments @($vmHost.Name)
             Restart-VMHost @restartVMHostParams
         }
         catch {

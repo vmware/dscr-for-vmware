@@ -39,12 +39,11 @@ function Write-VerboseLog {
         [array] $Arguments
     )
 
-    if ($null -eq $Arguments) {
-        Write-Verbose -Message $message
+    if ($null -ne $Arguments) {
+        $Message = [string]::Format($Message, $Arguments)
     }
-    else {
-        Write-Verbose -Message ([string]::Format($Message, $Arguments))
-    }
+    
+    Write-Verbose -Message $Message
 }
 
 <#
@@ -73,10 +72,9 @@ function Write-WarningLog {
         [array] $Arguments
     )
 
-    if ($null -eq $Arguments) {
-        Write-Warning -Message $message
+    if ($null -ne $Arguments) {
+        $Message = [string]::Format($Message, $Arguments)
     }
-    else {
-        Write-Warning -Message ([string]::Format($Message, $Arguments))
-    }
+    
+    Write-Warning -Message $Message
 }

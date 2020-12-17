@@ -56,7 +56,8 @@ class VMHostIPRoute : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -75,13 +76,15 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -101,16 +104,18 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostIPRoute] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostIPRoute]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostIPRoute]::new()
 
             $vmHost = $this.GetVMHost()
             $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
@@ -121,7 +126,8 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -153,7 +159,8 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.CreateVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $vmHost.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateVMHostIPRouteMessage, @($this.Gateway, $this.Destination, $vmHost.Name))
+
             New-VMHostRoute @newVMHostRouteParams
         }
         catch {
@@ -175,7 +182,8 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $this.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveVMHostIPRouteMessage, @($this.Gateway, $this.Destination, $this.Name))
+
             Remove-VMHostRoute @removeVMHostRouteParams
         }
         catch {

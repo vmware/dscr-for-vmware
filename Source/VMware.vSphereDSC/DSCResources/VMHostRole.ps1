@@ -55,8 +55,10 @@ class VMHostRole : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
 
             $vmHostRole = $this.GetVMHostRole()
@@ -85,14 +87,17 @@ class VMHostRole : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
 
             $vmHostRole = $this.GetVMHostRole()
@@ -119,16 +124,19 @@ class VMHostRole : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostRole] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostRole]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostRole]::new()
+
             $this.EnsureConnectionIsESXi()
 
             $vmHostRole = $this.GetVMHostRole()
@@ -138,7 +146,8 @@ class VMHostRole : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -163,7 +172,7 @@ class VMHostRole : BaseDSC {
         foreach ($privilegeId in $this.PrivilegeIds) {
             $privilege = Get-VIPrivilege -Server $this.Connection -Id $privilegeId -ErrorAction SilentlyContinue -Verbose:$false
             if ($null -eq $privilege) {
-                Write-WarningLog -Message $this.CouldNotFindPrivilegeMessage -Arguments @($privilegeId)
+                $this.WriteLogUtil('Warning', $this.CouldNotFindPrivilegeMessage, @($privilegeId))
             }
             else {
                 $privileges += $privilege
@@ -210,7 +219,8 @@ class VMHostRole : BaseDSC {
     #>
     [void] NewVMHostRole() {
         try {
-            Write-VerboseLog -Message $this.CreateRoleMessage -Arguments @($this.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateRoleMessage, @($this.Name, $this.Connection.Name))
+
             New-VIRole -Server $this.Connection -Name $this.Name -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
@@ -227,7 +237,8 @@ class VMHostRole : BaseDSC {
         $desiredPrivilegeIds = [string]::Join(', ', $desiredPrivileges.Id)
 
         try {
-            Write-VerboseLog -Message $this.CreateRoleWithPrivilegesMessage -Arguments @($this.Name, $desiredPrivilegeIds, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateRoleWithPrivilegesMessage, @($this.Name, $desiredPrivilegeIds, $this.Connection.Name))
+
             New-VIRole -Server $this.Connection -Name $this.Name -Privilege $desiredPrivileges -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
@@ -273,7 +284,7 @@ class VMHostRole : BaseDSC {
         and 'RemovePrivilege' parameters of 'Set-VIRole' cmdlet are in different parameter sets, so two cmdlet invocations need to be made.
         #>
         try {
-            Write-VerboseLog -Message $this.ModifyPrivilegesOfRoleMessage -Arguments @($vmHostRole.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyPrivilegesOfRoleMessage, @($vmHostRole.Name, $this.Connection.Name))
 
             if ($privilegesToAdd.Length -eq 0) {
                 $setVIRoleParams.RemovePrivilege = $privilegesToRemove
@@ -303,7 +314,8 @@ class VMHostRole : BaseDSC {
     #>
     [void] RemoveVMHostRole($vmHostRole) {
         try {
-            Write-VerboseLog -Message $this.RemoveRoleMessage -Arguments @($vmHostRole.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveRoleMessage, @($vmHostRole.Name, $this.Connection.Name))
+
             $vmHostRole | Remove-VIRole -Server $this.Connection -Force -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {

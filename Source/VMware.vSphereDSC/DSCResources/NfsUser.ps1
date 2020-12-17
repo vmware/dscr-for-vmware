@@ -59,8 +59,10 @@ class NfsUser : VMHostEntityBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $nfsUser = $this.GetNfsUser()
@@ -81,14 +83,17 @@ class NfsUser : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $nfsUser = $this.GetNfsUser()
@@ -112,16 +117,19 @@ class NfsUser : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [NfsUser] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [NfsUser]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [NfsUser]::new()
+
             $this.RetrieveVMHost()
 
             $nfsUser = $this.GetNfsUser()
@@ -131,7 +139,8 @@ class NfsUser : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -172,7 +181,8 @@ class NfsUser : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.CreateNfsUserMessage -Arguments @($this.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateNfsUserMessage,  @($this.Name, $this.VMHost.Name))
+
             New-NfsUser @newNfsUserParams
         }
         catch {
@@ -196,7 +206,8 @@ class NfsUser : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.ChangeNfsUserPasswordMessage -Arguments @($nfsUser.Username, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ChangeNfsUserPasswordMessage,  @($nfsUser.Username, $this.VMHost.Name))
+
             Set-NfsUser @setNfsUserParams
         }
         catch {
@@ -218,7 +229,8 @@ class NfsUser : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveNfsUserMessage -Arguments @($nfsUser.Username, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveNfsUserMessage,  @($nfsUser.Username, $this.VMHost.Name))
+
             Remove-NfsUser @removeNfsUserParams
         }
         catch {

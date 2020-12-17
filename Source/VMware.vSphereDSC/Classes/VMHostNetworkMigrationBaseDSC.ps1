@@ -47,7 +47,8 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
         $physicalNetworkAdapters = @()
 
         foreach ($physicalNetworkAdapterName in $this.PhysicalNicNames) {
-            Write-VerboseLog -Message $this.RetrievePhysicalNicMessage -Arguments @($physicalNetworkAdapterName, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.RetrievePhysicalNicMessage, @($physicalNetworkAdapterName, $this.VMHost.Name))
+
             $getVMHostNetworkAdapterParams = @{
                 Server = $this.Connection
                 Name = $physicalNetworkAdapterName
@@ -59,7 +60,7 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
 
             $physicalNetworkAdapter = Get-VMHostNetworkAdapter @getVMHostNetworkAdapterParams
             if ($null -eq $physicalNetworkAdapter) {
-                Write-WarningLog -Message $this.CouldNotFindPhysicalNicMessage -Arguments @($physicalNetworkAdapterName, $this.VMHost.Name)
+                $this.WriteLogUtil('Warning', $this.CouldNotFindPhysicalNicMessage, @($physicalNetworkAdapterName, $this.VMHost.Name))
             }
             else {
                 $physicalNetworkAdapters += $physicalNetworkAdapter
@@ -79,7 +80,8 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
         $vmKernelNetworkAdapters = @()
 
         foreach ($vmKernelNetworkAdapterName in $this.VMKernelNicNames) {
-            Write-VerboseLog -Message $this.RetrieveVMKernelNicMessage -Arguments @($vmKernelNetworkAdapterName, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.RetrieveVMKernelNicMessage, @($vmKernelNetworkAdapterName, $this.VMHost.Name))
+
             $getVMHostNetworkAdapterParams = @{
                 Server = $this.Connection
                 Name = $vmKernelNetworkAdapterName

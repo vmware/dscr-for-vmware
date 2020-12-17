@@ -92,8 +92,10 @@ class VMHostPermission : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
 
             $foundEntityLocation = $this.GetEntityLocation()
@@ -118,14 +120,17 @@ class VMHostPermission : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
 
             $foundEntityLocation = $this.GetEntityLocation()
@@ -153,16 +158,19 @@ class VMHostPermission : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostPermission] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostPermission]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostPermission]::new()
+
             $this.EnsureConnectionIsESXi()
 
             $foundEntityLocation = $this.GetEntityLocation()
@@ -176,7 +184,8 @@ class VMHostPermission : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -454,7 +463,8 @@ class VMHostPermission : BaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.CreatePermissionMessage -Arguments @($entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.CreatePermissionMessage, @($entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.Connection.Name))
+
             New-VIPermission @newVIPermissionParams
         }
         catch {
@@ -487,7 +497,8 @@ class VMHostPermission : BaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.ModifyPermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyPermissionMessage, @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $this.Connection.Name))
+
             Set-VIPermission @setVIPermissionParams
         }
         catch {
@@ -502,7 +513,8 @@ class VMHostPermission : BaseDSC {
     #>
     [void] RemoveVMHostPermission($vmHostPermission) {
         try {
-            Write-VerboseLog -Message $this.RemovePermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.RemovePermissionMessage, @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name))
+
             $vmHostPermission | Remove-VIPermission -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {

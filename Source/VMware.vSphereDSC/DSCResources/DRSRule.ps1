@@ -118,7 +118,8 @@ class DRSRule : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.InitInventoryUtil()
@@ -151,13 +152,15 @@ class DRSRule : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.InitInventoryUtil()
@@ -193,16 +196,18 @@ class DRSRule : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [DRSRule] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [DRSRule]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [DRSRule]::new()
 
             $this.InitInventoryUtil()
             $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
@@ -224,9 +229,10 @@ class DRSRule : BaseDSC {
 
             return $result
         }
-        finally {
+        finally {            
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -284,7 +290,7 @@ class DRSRule : BaseDSC {
         if ($this.VMNames.Length -gt $result.Length) {
             $notFoundVMNames = $this.VMNames | Where-Object -FilterScript { $result.Name -NotContains $_ }
             foreach ($notFoundVMName in $notFoundVMNames) {
-                Write-WarningLog -Message $this.CouldNotFindVMMessage -Arguments @($notFoundVMName, $cluster.Name)
+                $this.WriteLogUtil('Warning', $this.CouldNotFindVMMessage, @($notFoundVMName, $cluster.Name))
             }
         }
 
@@ -341,7 +347,8 @@ class DRSRule : BaseDSC {
         if ($null -ne $this.Enabled) { $newDrsRuleParams.Enabled = $this.Enabled }
 
         try {
-            Write-VerboseLog -Message $this.CreateDrsRuleMessage -Arguments @($this.Name, $cluster.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateDrsRuleMessage, @($this.Name, $cluster.Name))
+
             New-DrsRule @newDrsRuleParams
         }
         catch {
@@ -367,7 +374,8 @@ class DRSRule : BaseDSC {
         if ($null -ne $this.Enabled) { $setDrsRuleParams.Enabled = $this.Enabled }
 
         try {
-            Write-VerboseLog -Message $this.ModifyDrsRuleMessage -Arguments @($drsRule.Name, $drsRule.Cluster.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyDrsRuleMessage, @($drsRule.Name, $drsRule.Cluster.Name))
+
             Set-DrsRule @setDrsRuleParams
         }
         catch {
@@ -389,7 +397,8 @@ class DRSRule : BaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveDrsRuleMessage -Arguments @($drsRule.Name, $drsRule.Cluster.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveDrsRuleMessage, @($drsRule.Name, $drsRule.Cluster.Name))
+
             Remove-DrsRule @removeDrsRuleParams
         }
         catch {

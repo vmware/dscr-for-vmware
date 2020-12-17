@@ -97,8 +97,10 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
             $this.IPEndPoint = $this.Address + ':' + $this.Port.ToString()
 
@@ -121,14 +123,17 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
             $this.IPEndPoint = $this.Address + ':' + $this.Port.ToString()
 
@@ -155,16 +160,19 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostIScsiHbaTarget] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostIScsiHbaTarget]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostIScsiHbaTarget]::new()
+
             $this.RetrieveVMHost()
             $this.IPEndPoint = $this.Address + ':' + $this.Port.ToString()
 
@@ -177,7 +185,8 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -220,7 +229,8 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         $this.PopulateCmdletParametersWithCHAPSettings($newIScsiHbaTargetParams, $this.InheritChap, $this.InheritMutualChap)
 
         try {
-            Write-VerboseLog -Message $this.CreateIScsiHbaTargetMessage -Arguments @($this.IPEndPoint, $this.IScsiHbaName)
+            $this.WriteLogUtil('Verbose', $this.CreateIScsiHbaTargetMessage, @($this.IPEndPoint, $this.IScsiHbaName))
+
             New-IScsiHbaTarget @newIScsiHbaTargetParams
         }
         catch {
@@ -245,7 +255,8 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         $this.PopulateCmdletParametersWithCHAPSettings($setIScsiHbaTargetParams, $this.InheritChap, $this.InheritMutualChap)
 
         try {
-            Write-VerboseLog -Message $this.ModifyIScsiHbaTargetMessage -Arguments @($this.IPEndPoint, $this.IScsiHbaName)
+            $this.WriteLogUtil('Verbose', $this.ModifyIScsiHbaTargetMessage, @($this.IPEndPoint, $this.IScsiHbaName))
+
             Set-IScsiHbaTarget @setIScsiHbaTargetParams
         }
         catch {
@@ -268,7 +279,8 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveIScsiHbaTargetMessage -Arguments @($this.IPEndPoint, $this.IScsiHbaName)
+            $this.WriteLogUtil('Verbose', $this.RemoveIScsiHbaTargetMessage, @($this.IPEndPoint, $this.IScsiHbaName))
+
             Remove-IScsiHbaTarget @removeIScsiHbaTargetParams
         }
         catch {

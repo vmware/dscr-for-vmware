@@ -53,9 +53,10 @@ class VMHostSettings : VMHostBaseDSC {
 
     [void] Set() {
     	try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.UpdateVMHostSettings($vmHost)
@@ -67,9 +68,10 @@ class VMHostSettings : VMHostBaseDSC {
 
     [bool] Test() {
     	try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $result = !$this.ShouldUpdateVMHostSettings($vmHost)
@@ -85,12 +87,14 @@ class VMHostSettings : VMHostBaseDSC {
 
     [VMHostSettings] Get() {
     	try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostSettings]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.PopulateResult($vmHost, $result)
 
@@ -107,7 +111,7 @@ class VMHostSettings : VMHostBaseDSC {
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
     [bool] ShouldUpdateVMHostSettings($vmHost) {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -131,7 +135,7 @@ class VMHostSettings : VMHostBaseDSC {
     Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
     #>
   	[void] SetAdvancedSetting($advancedSettingName, $advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+    	$this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
     	if ($clearValue) {
       	    if ($this.ShouldUpdateDscResourceSetting($advancedSettingName, $advancedSettingCurrentValue, [string]::Empty)) {
@@ -151,7 +155,7 @@ class VMHostSettings : VMHostBaseDSC {
     Performs update on those Advanced Settings values that needs to be updated.
     #>
     [void] UpdateVMHostSettings($vmHost) {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -168,7 +172,7 @@ class VMHostSettings : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the advanced settings from the server.
     #>
     [void] PopulateResult($vmHost, $result) {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+    	$this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 

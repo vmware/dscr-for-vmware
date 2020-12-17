@@ -18,14 +18,6 @@ class BasevSphereConnection {
     <#
     .DESCRIPTION
 
-    Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi.
-    #>
-    [DscProperty(Key)]
-    [string] $Server
-
-    <#
-    .DESCRIPTION
-
     Credentials needed for connection to the specified Server.
     #>
     [DscProperty()]
@@ -37,6 +29,13 @@ class BasevSphereConnection {
     Established connection to the specified vSphere Server.
     #>
     [PSObject] $Connection
+
+    <#
+    .DESCRIPTION
+
+    Saves logs in a HashTable ref in order to retrieve the stream output from outside of Invoke-DscResource execution.
+    #>
+    [ref] $Logs
 
     hidden [string] $DscResourceName = $this.GetType().Name
     hidden [string] $DscResourceIsInDesiredStateMessage = "{0} DSC Resource is in Desired State."
@@ -87,7 +86,8 @@ class BasevSphereConnection {
         }
         elseif ($desiredArray.Length -eq 0 -and $currentArray.Length -ne 0) {
             # Empty array specified as desired, but current is not an empty array, so update should be performed.
-            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+            $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', ')))
+
             $result = $true
         }
         else {
@@ -100,7 +100,8 @@ class BasevSphereConnection {
                     the desired array is a subset of the current array. In both cases
                     we should perform an update operation.
                 #>
-                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+                $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', ')))
+
                 $result = $true
             }
             else {
@@ -131,7 +132,7 @@ class BasevSphereConnection {
         }
 
         if ($result) {
-            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, $currentSetting, $desiredSetting)
+            $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($settingName, $currentSetting, $desiredSetting))
         }
 
         return $result
@@ -165,12 +166,16 @@ class BasevSphereConnection {
     Writes a Verbose message specifying if the DSC Resource is in the Desired State.
     #>
     [void] WriteDscResourceState($result) {
+        $messageToUse = [string]::Empty
+
         if ($result) {
-            Write-VerboseLog -Message $this.DscResourceIsInDesiredStateMessage -Arguments @($this.DscResourceName)
+            $messageToUse = $this.DscResourceIsInDesiredStateMessage
         }
         else {
-            Write-VerboseLog -Message $this.DscResourceIsNotInDesiredStateMessage -Arguments @($this.DscResourceName)
+            $messageToUse = $this.DscResourceIsNotInDesiredStateMessage
         }
+
+        $this.WriteLogUtil('Verbose', $messageToUse, @($this.DscResourceName))
     }
 
     <#
@@ -255,5 +260,45 @@ class BasevSphereConnection {
         catch {
             throw "Cannot close connection to vSphere Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Logs a message to the correct information stream and to a property.
+    #>
+    [void] WriteLogUtil($logType, $message, $arguments) {
+        $writeLogSplat = @{
+            Message = $message
+        }
+
+        # this variable will be added to the logs hashtable
+        $logMessage = $message
+
+        if ($null -ne $arguments) {
+            $writeLogSplat['Arguments'] = $arguments
+
+            $logMessage = [string]::Format($Message, $Arguments)
+        }
+
+        # write to warning or verbose stream
+        if ($logType -eq 'Verbose') {
+            Write-VerboseLog @writeLogSplat
+        } elseif ($logType -eq 'Warning') {
+            Write-WarningLog @writeLogSplat
+        }
+
+        if ($null -eq $this.Logs) {
+            return
+        }
+
+        $this.Logs.Value.Add([PsObject]@{
+            Type = $logType
+            Message = $logMessage
+        }) | Out-Null
+    }
+
+    [void] WriteLogUtil($logType, $message) {
+        $this.WriteLogUtil($logType, $message, $null)
     }
 }

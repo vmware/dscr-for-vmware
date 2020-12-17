@@ -65,7 +65,8 @@ function Update-ModuleVersion {
 
     $newVersion = (New-Object -TypeName 'System.Version' $currentVersion.Major, $currentVersion.Minor, $currentVersion.Build, ($currentVersion.Revision + 1)).ToString()
 
-    ($fileContent -replace $moduleVersionPattern, $newVersion) | Out-File $FilePath
+    # -NoNewline switch prevents a new line being added every time
+    ($fileContent -replace $moduleVersionPattern, $newVersion) | Out-File $FilePath -NoNewline
 }
 
 # paths to all scripts

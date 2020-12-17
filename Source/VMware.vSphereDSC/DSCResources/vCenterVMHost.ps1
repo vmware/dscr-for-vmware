@@ -70,8 +70,10 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $vmHost = $this.GetVMHost()
@@ -110,14 +112,17 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $vmHost = $this.GetVMHost()
@@ -145,16 +150,19 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [vCenterVMHost] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [vCenterVMHost]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [vCenterVMHost]::new()
+
             $this.EnsureConnectionIsvCenter()
 
             $vmHost = $this.GetVMHost()
@@ -164,7 +172,8 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -273,7 +282,8 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         if ($null -ne $this.Force) { $addVMHostParams.Force = $this.Force }
 
         try {
-            Write-VerboseLog -Message $this.AddVMHostTovCenterMessage -Arguments @($this.Name, $this.Connection.Name, $vmHostLocation.Name)
+            $this.WriteLogUtil('Verbose', $this.AddVMHostTovCenterMessage, @($this.Name, $this.Connection.Name, $vmHostLocation.Name))
+
             Add-VMHost @addVMHostParams
         }
         catch {
@@ -297,7 +307,8 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.MoveVMHostToDestinationMessage -Arguments @($vmHost.Name, $vmHostLocation.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.MoveVMHostToDestinationMessage, @($vmHost.Name, $vmHostLocation.Name, $this.Connection.Name))
+
             Move-VMHost @moveVMHostParams
         }
         catch {
@@ -320,7 +331,8 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveVMHostFromvCenterMessage -Arguments @($vmHost.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveVMHostFromvCenterMessage, @($vmHost.Name, $this.Connection.Name))
+
             Remove-VMHost @removeVMHostParams
         }
         catch {

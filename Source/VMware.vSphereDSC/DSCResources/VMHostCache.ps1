@@ -187,7 +187,7 @@ class VMHostCache : VMHostBaseDSC {
             throw "An error occured while updating Cache Configuration for VMHost $($this.Name). For more information: $($_.Exception.Message)"
         }
 
-        Write-VerboseLog -Message "Cache Configuration was successfully updated for VMHost {0}." -Arguments @($this.Name)
+        $this.WriteLogUtil('Verbose', "Cache Configuration was successfully updated for VMHost {0}.", @($this.Name))
     }
 
     <#

@@ -65,7 +65,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $datacenter = $this.GetDatacenter()
@@ -90,13 +91,15 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $datacenter = $this.GetDatacenter()
@@ -124,16 +127,18 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [DatastoreCluster] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [DatastoreCluster]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [DatastoreCluster]::new()
 
             $datacenter = $this.GetDatacenter()
             $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
@@ -146,7 +151,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -225,7 +231,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.CreateDatastoreClusterMessage -Arguments @($this.Name, $datastoreClusterLocation.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateDatastoreClusterMessage, @($this.Name, $datastoreClusterLocation.Name))
+
             return New-DatastoreCluster @newDatastoreClusterParams
         }
         catch {
@@ -253,7 +260,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         if ($null -ne $this.SpaceUtilizationThresholdPercent) { $setDatastoreClusterParams.SpaceUtilizationThresholdPercent = $this.SpaceUtilizationThresholdPercent }
 
         try {
-            Write-VerboseLog -Message $this.ModifyDatastoreClusterMessage -Arguments @($datastoreCluster.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyDatastoreClusterMessage, @($datastoreCluster.Name))
+
             Set-DatastoreCluster @setDatastoreClusterParams
         }
         catch {
@@ -276,7 +284,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveDatastoreClusterMessage -Arguments @($datastoreCluster.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveDatastoreClusterMessage, @($datastoreCluster.Name))
+
             Remove-DatastoreCluster @removeDatastoreClusterParams
         }
         catch {

@@ -37,7 +37,7 @@ class VMHostVssBaseDSC : VMHostNetworkBaseDSC {
     Returns the desired virtual switch if it is present on the server otherwise returns $null.
     #>
     [PSObject] GetVss() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $this.vmHostNetworkSystem.UpdateViewData('NetworkInfo.Vswitch')
         return ($this.vmHostNetworkSystem.NetworkInfo.Vswitch | Where-Object { $_.Name -eq $this.VssName })
