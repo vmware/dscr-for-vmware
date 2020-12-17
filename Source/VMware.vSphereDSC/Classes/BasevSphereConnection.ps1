@@ -30,6 +30,13 @@ class BasevSphereConnection {
     #>
     [PSObject] $Connection
 
+    <#
+    .DESCRIPTION
+
+    Saves logs in a HashTable ref in order to retrieve the stream output from outside of Invoke-DscResource execution.
+    #>
+    [ref] $Logs
+
     hidden [string] $DscResourceName = $this.GetType().Name
     hidden [string] $DscResourceIsInDesiredStateMessage = "{0} DSC Resource is in Desired State."
     hidden [string] $DscResourceIsNotInDesiredStateMessage = "{0} DSC Resource is not in Desired State."
@@ -282,11 +289,18 @@ class BasevSphereConnection {
             return
         }
 
-        # write to log file
-        $writeLogSplat['Connection'] = $this.Connection.Name
-        $writeLogSplat['ResourceName'] = $this.GetType().ToString()
-        $writeLogSplat['LogType'] = $logType
+        if ($null -eq $this.Logs) {
+            return
+        }
 
-        Write-LogToFile @writeLogSplat
+        if ($null -ne $Arguments) {
+            $Message = [string]::Format($Message, $Arguments)
+        }
+
+        $this.Logs.Value[$logType].Add($Message) | Out-Null
+    }
+
+    [void] WriteLogUtil($logType, $message) {
+        $this.WriteLogUtil($logType, $message, $null)
     }
 }

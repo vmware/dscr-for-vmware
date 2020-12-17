@@ -1189,6 +1189,13 @@ class DscConfigurationRunner {
             Property = $DscResource.Property
         }
 
+        $logs = @{
+            'Verbose' = New-Object -TypeName 'System.Collections.ArrayList'
+            'Warning' = New-Object -TypeName 'System.Collections.ArrayList'
+        }
+
+        $invokeSplatParams.Property['logs'] = [ref] $logs
+
         Write-Verbose "Invoking resource with id: $($DscResource.GetId())"
 
         $invokeResult = $null
@@ -1216,7 +1223,7 @@ class DscConfigurationRunner {
                 }
             }
         } finally {
-            $this.HandleStreamOutputFromDscResources($DscResource)
+            $this.HandleStreamOutputFromDscResources($logs)
         }
 
         # revert progresspreference
@@ -1228,51 +1235,15 @@ class DscConfigurationRunner {
     <#
     .DESCRIPTION
     Prints the output from the execution of a DSC Resource via the Invoke-DscResource cmdlet.
-    The logs are extracted from a file, located in the Temp directory of the OS, where the execution occurred.
-    This extraction and printing is required, because the streams are not available during the execution of the DSC Resource.
+    The logs are extracted from a log hashtable that gets passed via 'Property'
     #>
-    hidden [void] HandleStreamOutputFromDscResources([VmwDscResource] $DscResource) {
-        # The Temp folder is not available when executing the build procedure with Travis CI.
-        if ($null -eq $env:TEMP) {
-            return
+    hidden [void] HandleStreamOutputFromDscResources([HashTable] $Logs) {
+        foreach ($verboseLog in $Logs['Verbose']) {
+            Write-Verbose $verboseLog
         }
 
-        $logsToExtract = @('Warning', 'Verbose')
-
-        foreach ($logType in $logsToExtract) {
-            # get stream preference
-            # note: preference 
-            $logPreference = (Get-Variable -Name ($logType + 'Preference')).Value
-
-            if ($logPreference -ne 'Continue') {
-                continue
-            }
-
-            $connectionName = [string]::Empty
-
-            if ($DscResource.Property.ContainsKey('Connection')) {
-                $connectionName = $DscResource.Property['Connection'].Name
-            } elseif ($DscResource.Property.ContainsKey('Server')) {
-                $connectionName = $DscResource.Property['Server']
-            }
-
-            $resourceName = $DscResource.ResourceType
-            
-            # attempt to retrieve stream data if file exists
-            $logPath = Join-Path -Path $env:TEMP -ChildPath "__VMware.vSphereDSC_$($connectionName)_$($resourceName)_$($logType).TMP"
-
-            if (-not (Test-Path -Path $logPath -PathType 'Leaf')) {
-                continue
-            }
-        
-            $rows = Get-Content -Path $logPath -ErrorAction 'SilentlyContinue'
-        
-            foreach ($row in $rows) {
-                Invoke-Expression "Write-$LogType '$row'"
-            }
-        
-            # remove the temp file
-            Remove-Item -Path $logPath -ErrorAction 'SilentlyContinue' -Force
+        foreach ($warningLog in $Logs['Warning']) {
+            Write-Warning $warningLog
         }
     }
 
