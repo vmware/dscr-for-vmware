@@ -561,6 +561,7 @@ class DscConfigurationCompiler {
             Param(
                 [string]
                 $NestedConfigName,
+
                 [ScriptBlock]
                 $Properties
             )
@@ -626,7 +627,7 @@ class DscConfigurationCompiler {
             Param (
                 [string[]]
                 $Connections,
-        
+
                 [ScriptBlock]
                 $ScriptBlock
             )
@@ -634,8 +635,6 @@ class DscConfigurationCompiler {
             if ($this.IsNested) {
                 throw $Script:NestedNodesAreNotSupportedException
             }
-        
-            $dscResources = . $ScriptBlock
 
             $type = Get-PSCallStack | Select-Object -First 1 -ExpandProperty Command
             $vmwNodeResult = New-Object -TypeName 'System.Collections.ArrayList'
@@ -644,6 +643,9 @@ class DscConfigurationCompiler {
             # each connection gets made into a different node object
             foreach ($connection in $Connections) {
                 $nodeObject = $null
+
+                # resources are created here to avoid duplicates via reference
+                $dscResources = . $ScriptBlock
 
                 if ($type -eq 'Node') {
                     $nodeObject = [VmwDscNode]::new($connection, $dscResources)
