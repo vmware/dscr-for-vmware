@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.77 - 2020-12-17
+### Added
+- Added additional logic for **Verbose** and **Warning** outputs which enables printing the output when the **DSC Resource** is invoked via the **Invoke-DscResource** cmdlet.
+
+### Changed
+- Fixed the bug with redundant **Server**  DSC key property in the **BasevSphereConnection** class.
+
+## VMware.PSDesiredStateConfiguration 0.0.0.5 - 2020-12-17
+### Added
+- Added additional logic for **Verbose** and **Warning** outputs which enables printing the output when the **DSC Resource** is invoked via the **Invoke-DscResource** cmdlet.
+
+### Changed
+- Fixed the bug with redundant **Server**  DSC key property in the **BasevSphereConnection** class.
+
 ## VMware.vSphereDSC 2.1.0.76 - 2020-12-14
 ### Added
 - Added **IScsiName** property of **VMHostIScsiHba DSC Resource**.

@@ -251,14 +251,6 @@ class BasevSphereConnection {
     <#
     .DESCRIPTION
 
-    Name of the Server we are trying to connect to. The Server can be a vCenter or ESXi.
-    #>
-    [DscProperty(Key)]
-    [string] $Server
-
-    <#
-    .DESCRIPTION
-
     Credentials needed for connection to the specified Server.
     #>
     [DscProperty()]
@@ -270,6 +262,13 @@ class BasevSphereConnection {
     Established connection to the specified vSphere Server.
     #>
     [PSObject] $Connection
+
+    <#
+    .DESCRIPTION
+
+    Saves logs in a HashTable ref in order to retrieve the stream output from outside of Invoke-DscResource execution.
+    #>
+    [ref] $Logs
 
     hidden [string] $DscResourceName = $this.GetType().Name
     hidden [string] $DscResourceIsInDesiredStateMessage = "{0} DSC Resource is in Desired State."
@@ -320,7 +319,8 @@ class BasevSphereConnection {
         }
         elseif ($desiredArray.Length -eq 0 -and $currentArray.Length -ne 0) {
             # Empty array specified as desired, but current is not an empty array, so update should be performed.
-            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+            $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', ')))
+
             $result = $true
         }
         else {
@@ -333,7 +333,8 @@ class BasevSphereConnection {
                     the desired array is a subset of the current array. In both cases
                     we should perform an update operation.
                 #>
-                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', '))
+                $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($settingName, ($currentArray -Join ', '), ($desiredArray -Join ', ')))
+
                 $result = $true
             }
             else {
@@ -364,7 +365,7 @@ class BasevSphereConnection {
         }
 
         if ($result) {
-            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($settingName, $currentSetting, $desiredSetting)
+            $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($settingName, $currentSetting, $desiredSetting))
         }
 
         return $result
@@ -398,12 +399,16 @@ class BasevSphereConnection {
     Writes a Verbose message specifying if the DSC Resource is in the Desired State.
     #>
     [void] WriteDscResourceState($result) {
+        $messageToUse = [string]::Empty
+
         if ($result) {
-            Write-VerboseLog -Message $this.DscResourceIsInDesiredStateMessage -Arguments @($this.DscResourceName)
+            $messageToUse = $this.DscResourceIsInDesiredStateMessage
         }
         else {
-            Write-VerboseLog -Message $this.DscResourceIsNotInDesiredStateMessage -Arguments @($this.DscResourceName)
+            $messageToUse = $this.DscResourceIsNotInDesiredStateMessage
         }
+
+        $this.WriteLogUtil('Verbose', $messageToUse, @($this.DscResourceName))
     }
 
     <#
@@ -488,6 +493,46 @@ class BasevSphereConnection {
         catch {
             throw "Cannot close connection to vSphere Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Logs a message to the correct information stream and to a property.
+    #>
+    [void] WriteLogUtil($logType, $message, $arguments) {
+        $writeLogSplat = @{
+            Message = $message
+        }
+
+        # this variable will be added to the logs hashtable
+        $logMessage = $message
+
+        if ($null -ne $arguments) {
+            $writeLogSplat['Arguments'] = $arguments
+
+            $logMessage = [string]::Format($Message, $Arguments)
+        }
+
+        # write to warning or verbose stream
+        if ($logType -eq 'Verbose') {
+            Write-VerboseLog @writeLogSplat
+        } elseif ($logType -eq 'Warning') {
+            Write-WarningLog @writeLogSplat
+        }
+
+        if ($null -eq $this.Logs) {
+            return
+        }
+
+        $this.Logs.Value.Add([PsObject]@{
+            Type = $logType
+            Message = $logMessage
+        }) | Out-Null
+    }
+
+    [void] WriteLogUtil($logType, $message) {
+        $this.WriteLogUtil($logType, $message, $null)
     }
 }
 
@@ -765,7 +810,8 @@ class VMHostEntityBaseDSC : BaseDSC {
     #>
     [void] RetrieveVMHost() {
         try {
-            Write-VerboseLog -Message $this.RetrieveVMHostMessage -Arguments @($this.VMHostName, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.RetrieveVMHostMessage, @($this.VMHostName, $this.Connection.Name))
+
             $getVMHostParams = @{
                 Server = $this.Connection
                 Name = $this.VMHostName
@@ -886,7 +932,8 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
         if (![string]::IsNullOrEmpty($this.FileSystemVersion)) { $newDatastoreParams.FileSystemVersion = $this.FileSystemVersion }
 
         try {
-            Write-VerboseLog -Message $this.CreateDatastoreMessage -Arguments @($this.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateDatastoreMessage, @($this.Name, $this.VMHost.Name))
+
             $datastore = New-Datastore @newDatastoreParams
 
             return $datastore
@@ -914,7 +961,8 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
         if ($null -ne $this.CongestionThresholdMillisecond) { $setDatastoreParams.CongestionThresholdMillisecond = $this.CongestionThresholdMillisecond }
 
         try {
-            Write-VerboseLog -Message $this.ModifyDatastoreMessage -Arguments @($datastore.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyDatastoreMessage, @($datastore.Name, $this.VMHost.Name))
+
             Set-Datastore @setDatastoreParams
         }
         catch {
@@ -938,7 +986,8 @@ class DatastoreBaseDSC : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveDatastoreMessage -Arguments @($datastore.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveDatastoreMessage, @($datastore.Name, $this.VMHost.Name))
+
             Remove-Datastore @removeDatastoreParams
         }
         catch {
@@ -1726,7 +1775,7 @@ class VMHostRestartBaseDSC : VMHostBaseDSC {
                     break
                 }
 
-                Write-VerboseLog -Message $this.VMHostIsStillNotInDesiredStateMessage -Arguments @($this.Name, $desiredState)
+                $this.WriteLogUtil('Verbose', $this.VMHostIsStillNotInDesiredStateMessage, @($this.Name, $desiredState))
             }
             catch {
                 <#
@@ -1734,11 +1783,11 @@ class VMHostRestartBaseDSC : VMHostBaseDSC {
                 when retrieving the VMHost or establishing a Connection. This way the user still gets notified
                 that the VMHost is not in the Desired State.
                 #>
-                Write-VerboseLog -Message $this.VMHostIsStillNotInDesiredStateMessage -Arguments @($this.Name, $desiredState)
+                $this.WriteLogUtil('Verbose', $this.VMHostIsStillNotInDesiredStateMessage, @($this.Name, $desiredState))
             }
         }
 
-        Write-VerboseLog -Message $this.VMHostIsRestartedSuccessfullyMessage -Arguments @($this.Name, $desiredState)
+        $this.WriteLogUtil('Verbose', $this.VMHostIsRestartedSuccessfullyMessage, @($this.Name, $desiredState))
     }
 
     <#
@@ -1748,6 +1797,8 @@ class VMHostRestartBaseDSC : VMHostBaseDSC {
     #>
     [void] RestartVMHost($vmHost) {
         try {
+            $this.WriteLogUtil('Verbose', $this.RestartVMHostMessage, @($vmHost.Name))
+
             $restartVMHostParams = @{
                 Server = $this.Connection
                 VMHost = $vmHost
@@ -1756,7 +1807,6 @@ class VMHostRestartBaseDSC : VMHostBaseDSC {
                 Verbose = $false
             }
 
-            Write-VerboseLog -Message $this.RestartVMHostMessage -Arguments @($vmHost.Name)
             Restart-VMHost @restartVMHostParams
         }
         catch {
@@ -2030,7 +2080,8 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
         $physicalNetworkAdapters = @()
 
         foreach ($physicalNetworkAdapterName in $this.PhysicalNicNames) {
-            Write-VerboseLog -Message $this.RetrievePhysicalNicMessage -Arguments @($physicalNetworkAdapterName, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.RetrievePhysicalNicMessage, @($physicalNetworkAdapterName, $this.VMHost.Name))
+
             $getVMHostNetworkAdapterParams = @{
                 Server = $this.Connection
                 Name = $physicalNetworkAdapterName
@@ -2042,7 +2093,7 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
 
             $physicalNetworkAdapter = Get-VMHostNetworkAdapter @getVMHostNetworkAdapterParams
             if ($null -eq $physicalNetworkAdapter) {
-                Write-WarningLog -Message $this.CouldNotFindPhysicalNicMessage -Arguments @($physicalNetworkAdapterName, $this.VMHost.Name)
+                $this.WriteLogUtil('Warning', $this.CouldNotFindPhysicalNicMessage, @($physicalNetworkAdapterName, $this.VMHost.Name))
             }
             else {
                 $physicalNetworkAdapters += $physicalNetworkAdapter
@@ -2062,7 +2113,8 @@ class VMHostNetworkMigrationBaseDSC : VMHostEntityBaseDSC {
         $vmKernelNetworkAdapters = @()
 
         foreach ($vmKernelNetworkAdapterName in $this.VMKernelNicNames) {
-            Write-VerboseLog -Message $this.RetrieveVMKernelNicMessage -Arguments @($vmKernelNetworkAdapterName, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.RetrieveVMKernelNicMessage, @($vmKernelNetworkAdapterName, $this.VMHost.Name))
+
             $getVMHostNetworkAdapterParams = @{
                 Server = $this.Connection
                 Name = $vmKernelNetworkAdapterName
@@ -2472,7 +2524,7 @@ class VMHostVssBaseDSC : VMHostNetworkBaseDSC {
     Returns the desired virtual switch if it is present on the server otherwise returns $null.
     #>
     [PSObject] GetVss() {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $this.vmHostNetworkSystem.UpdateViewData('NetworkInfo.Vswitch')
         return ($this.vmHostNetworkSystem.NetworkInfo.Vswitch | Where-Object { $_.Name -eq $this.VssName })
@@ -2882,7 +2934,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $datacenter = $this.GetDatacenter()
@@ -2907,13 +2960,15 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $datacenter = $this.GetDatacenter()
@@ -2941,16 +2996,18 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [DatastoreCluster] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [DatastoreCluster]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [DatastoreCluster]::new()
 
             $datacenter = $this.GetDatacenter()
             $datacenterFolderName = "$($this.InventoryItemFolderType)Folder"
@@ -2963,7 +3020,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -3042,7 +3100,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.CreateDatastoreClusterMessage -Arguments @($this.Name, $datastoreClusterLocation.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateDatastoreClusterMessage, @($this.Name, $datastoreClusterLocation.Name))
+
             return New-DatastoreCluster @newDatastoreClusterParams
         }
         catch {
@@ -3070,7 +3129,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         if ($null -ne $this.SpaceUtilizationThresholdPercent) { $setDatastoreClusterParams.SpaceUtilizationThresholdPercent = $this.SpaceUtilizationThresholdPercent }
 
         try {
-            Write-VerboseLog -Message $this.ModifyDatastoreClusterMessage -Arguments @($datastoreCluster.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyDatastoreClusterMessage, @($datastoreCluster.Name))
+
             Set-DatastoreCluster @setDatastoreClusterParams
         }
         catch {
@@ -3093,7 +3153,8 @@ class DatastoreCluster : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveDatastoreClusterMessage -Arguments @($datastoreCluster.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveDatastoreClusterMessage, @($datastoreCluster.Name))
+
             Remove-DatastoreCluster @removeDatastoreClusterParams
         }
         catch {
@@ -3197,7 +3258,8 @@ class DatastoreClusterAddDatastore : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.InitInventoryUtil()
@@ -3219,13 +3281,15 @@ class DatastoreClusterAddDatastore : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.InitInventoryUtil()
@@ -3250,16 +3314,18 @@ class DatastoreClusterAddDatastore : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [DatastoreClusterAddDatastore] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [DatastoreClusterAddDatastore]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [DatastoreClusterAddDatastore]::new()
 
             $this.InitInventoryUtil()
             $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
@@ -3284,9 +3350,10 @@ class DatastoreClusterAddDatastore : BaseDSC {
 
             return $result
         }
-        finally {
+        finally {            
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -3323,7 +3390,7 @@ class DatastoreClusterAddDatastore : BaseDSC {
         if ($this.DatastoreNames.Length -gt $result.Length) {
             $notFoundDatastoreNames = $this.DatastoreNames | Where-Object -FilterScript { $result.Name -NotContains $_ }
             foreach ($notFoundDatastoreName in $notFoundDatastoreNames) {
-                Write-WarningLog -Message $this.CouldNotFindDatastoreMessage -Arguments @($notFoundDatastoreName, $datacenter.Name)
+                $this.WriteLogUtil('Warning', $this.CouldNotFindDatastoreMessage, @($notFoundDatastoreName, $datacenter.Name))
             }
         }
 
@@ -3378,10 +3445,11 @@ class DatastoreClusterAddDatastore : BaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.AddDatastoresToDatastoreClusterMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.AddDatastoresToDatastoreClusterMessage, @(
                 ($datastoresToAddToDatastoreCluster.Name -Join ', '),
                 $datastoreCluster.Name
-            )
+            ))
+                
             Move-Datastore @moveDatastoreParams
         }
         catch {
@@ -3500,7 +3568,8 @@ class DRSRule : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.InitInventoryUtil()
@@ -3533,13 +3602,15 @@ class DRSRule : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.InitInventoryUtil()
@@ -3575,16 +3646,18 @@ class DRSRule : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [DRSRule] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [DRSRule]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [DRSRule]::new()
 
             $this.InitInventoryUtil()
             $datacenter = $this.InventoryUtil.GetDatacenter($this.DatacenterName, $this.DatacenterLocation)
@@ -3606,9 +3679,10 @@ class DRSRule : BaseDSC {
 
             return $result
         }
-        finally {
+        finally {            
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -3666,7 +3740,7 @@ class DRSRule : BaseDSC {
         if ($this.VMNames.Length -gt $result.Length) {
             $notFoundVMNames = $this.VMNames | Where-Object -FilterScript { $result.Name -NotContains $_ }
             foreach ($notFoundVMName in $notFoundVMNames) {
-                Write-WarningLog -Message $this.CouldNotFindVMMessage -Arguments @($notFoundVMName, $cluster.Name)
+                $this.WriteLogUtil('Warning', $this.CouldNotFindVMMessage, @($notFoundVMName, $cluster.Name))
             }
         }
 
@@ -3723,7 +3797,8 @@ class DRSRule : BaseDSC {
         if ($null -ne $this.Enabled) { $newDrsRuleParams.Enabled = $this.Enabled }
 
         try {
-            Write-VerboseLog -Message $this.CreateDrsRuleMessage -Arguments @($this.Name, $cluster.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateDrsRuleMessage, @($this.Name, $cluster.Name))
+
             New-DrsRule @newDrsRuleParams
         }
         catch {
@@ -3749,7 +3824,8 @@ class DRSRule : BaseDSC {
         if ($null -ne $this.Enabled) { $setDrsRuleParams.Enabled = $this.Enabled }
 
         try {
-            Write-VerboseLog -Message $this.ModifyDrsRuleMessage -Arguments @($drsRule.Name, $drsRule.Cluster.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyDrsRuleMessage, @($drsRule.Name, $drsRule.Cluster.Name))
+
             Set-DrsRule @setDrsRuleParams
         }
         catch {
@@ -3771,7 +3847,8 @@ class DRSRule : BaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveDrsRuleMessage -Arguments @($drsRule.Name, $drsRule.Cluster.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveDrsRuleMessage, @($drsRule.Name, $drsRule.Cluster.Name))
+
             Remove-DrsRule @removeDrsRuleParams
         }
         catch {
@@ -3993,8 +4070,10 @@ class NfsUser : VMHostEntityBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $nfsUser = $this.GetNfsUser()
@@ -4015,14 +4094,17 @@ class NfsUser : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $nfsUser = $this.GetNfsUser()
@@ -4046,16 +4128,19 @@ class NfsUser : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [NfsUser] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [NfsUser]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [NfsUser]::new()
+
             $this.RetrieveVMHost()
 
             $nfsUser = $this.GetNfsUser()
@@ -4065,7 +4150,8 @@ class NfsUser : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -4106,7 +4192,8 @@ class NfsUser : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.CreateNfsUserMessage -Arguments @($this.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateNfsUserMessage,  @($this.Name, $this.VMHost.Name))
+
             New-NfsUser @newNfsUserParams
         }
         catch {
@@ -4130,7 +4217,8 @@ class NfsUser : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.ChangeNfsUserPasswordMessage -Arguments @($nfsUser.Username, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ChangeNfsUserPasswordMessage,  @($nfsUser.Username, $this.VMHost.Name))
+
             Set-NfsUser @setNfsUserParams
         }
         catch {
@@ -4152,7 +4240,8 @@ class NfsUser : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveNfsUserMessage -Arguments @($nfsUser.Username, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveNfsUserMessage,  @($nfsUser.Username, $this.VMHost.Name))
+
             Remove-NfsUser @removeNfsUserParams
         }
         catch {
@@ -4513,20 +4602,23 @@ class vCenterSettings : BasevSphereConnection {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.UpdatevCenterSettings($this.Connection)
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $result = !$this.ShouldUpdatevCenterSettings()
@@ -4537,24 +4629,28 @@ class vCenterSettings : BasevSphereConnection {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [vCenterSettings] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
+
             $result = [vCenterSettings]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $this.PopulateResult($result)
 
             return $result
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -4632,7 +4728,7 @@ class vCenterSettings : BasevSphereConnection {
     #>
 
     [void] SetAdvancedSetting($advancedSettingName, $advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}" , @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
     	if ($clearValue) {
       	    if ($this.ShouldUpdateDscResourceSetting($advancedSettingName, $advancedSettingCurrentValue, [string]::Empty)) {
@@ -4748,7 +4844,8 @@ class vCenterStatistics : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $performanceManager = $this.GetPerformanceManager()
@@ -4758,13 +4855,15 @@ class vCenterStatistics : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $performanceManager = $this.GetPerformanceManager()
@@ -4783,18 +4882,21 @@ class vCenterStatistics : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [vCenterStatistics] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
+
             $result = [vCenterStatistics]::new()
             $result.Server = $this.Server
             $result.Period = $this.Period
 
-            $this.ConnectVIServer()
             $performanceManager = $this.GetPerformanceManager()
             $currentPerformanceInterval = $this.GetPerformanceInterval($performanceManager)
 
@@ -4811,7 +4913,8 @@ class vCenterStatistics : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -4939,8 +5042,10 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $vmHost = $this.GetVMHost()
@@ -4979,14 +5084,17 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $vmHost = $this.GetVMHost()
@@ -5014,16 +5122,19 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [vCenterVMHost] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [vCenterVMHost]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [vCenterVMHost]::new()
+
             $this.EnsureConnectionIsvCenter()
 
             $vmHost = $this.GetVMHost()
@@ -5033,7 +5144,8 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -5142,7 +5254,8 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         if ($null -ne $this.Force) { $addVMHostParams.Force = $this.Force }
 
         try {
-            Write-VerboseLog -Message $this.AddVMHostTovCenterMessage -Arguments @($this.Name, $this.Connection.Name, $vmHostLocation.Name)
+            $this.WriteLogUtil('Verbose', $this.AddVMHostTovCenterMessage, @($this.Name, $this.Connection.Name, $vmHostLocation.Name))
+
             Add-VMHost @addVMHostParams
         }
         catch {
@@ -5166,7 +5279,8 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.MoveVMHostToDestinationMessage -Arguments @($vmHost.Name, $vmHostLocation.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.MoveVMHostToDestinationMessage, @($vmHost.Name, $vmHostLocation.Name, $this.Connection.Name))
+
             Move-VMHost @moveVMHostParams
         }
         catch {
@@ -5189,7 +5303,8 @@ class vCenterVMHost : DatacenterInventoryBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveVMHostFromvCenterMessage -Arguments @($vmHost.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveVMHostFromvCenterMessage, @($vmHost.Name, $this.Connection.Name))
+
             Remove-VMHost @removeVMHostParams
         }
         catch {
@@ -6019,7 +6134,7 @@ class VDSwitchVMHost : BaseDSC {
         foreach ($vmHostName in $this.VMHostNames) {
             $vmHost = Get-VMHost -Server $this.Connection -Name $vmHostName -ErrorAction SilentlyContinue
             if ($null -eq $vmHost) {
-                Write-WarningLog -Message "The passed VMHost {0} was not found and it will be ignored." -Arguments @($vmHostName)
+                $this.WriteLogUtil('Warning', "The passed VMHost {0} was not found and it will be ignored.", @($vmHostName))
             }
             else {
                 $vmHosts += $vmHost
@@ -6073,7 +6188,8 @@ class VDSwitchVMHost : BaseDSC {
             foreach ($vmHost in $vmHosts) {
                 $addedVMHost = $vmHost.ExtensionData.Config.Network.ProxySwitch | Where-Object -FilterScript { $_.DvsName -eq $distributedSwitch.Name }
                 if ($null -ne $addedVMHost) {
-                    Write-WarningLog -Message "VMHost {0} is already added to Distributed Switch {1} and it will be ignored." -Arguments @($vmHost.Name, $distributedSwitch.Name)
+                    $this.WriteLogUtil('Warning', "VMHost {0} is already added to Distributed Switch {1} and it will be ignored.", @($vmHost.Name, $distributedSwitch.Name))
+
                     continue
                 }
 
@@ -6084,7 +6200,8 @@ class VDSwitchVMHost : BaseDSC {
             foreach ($vmHost in $vmHosts) {
                 $removedVMHost = $vmHost.ExtensionData.Config.Network.ProxySwitch | Where-Object -FilterScript { $_.DvsName -eq $distributedSwitch.Name }
                 if ($null -eq $removedVMHost) {
-                    Write-WarningLog -Message "VMHost {0} is not added to Distributed Switch {1} and it will be ignored." -Arguments @($vmHost.Name, $distributedSwitch.Name)
+                    $this.WriteLogUtil('Warning', "VMHost {0} is not added to Distributed Switch {1} and it will be ignored.", @($vmHost.Name, $distributedSwitch.Name))
+
                     continue
                 }
 
@@ -6171,7 +6288,8 @@ class VMHostAccount : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.EnsureConnectionIsESXi()
@@ -6193,13 +6311,15 @@ class VMHostAccount : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.EnsureConnectionIsESXi()
@@ -6225,17 +6345,20 @@ class VMHostAccount : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostAccount] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
+
             $result = [VMHostAccount]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $this.EnsureConnectionIsESXi()
             $vmHostAccount = $this.GetVMHostAccount()
 
@@ -6245,7 +6368,8 @@ class VMHostAccount : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -6564,11 +6688,11 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
         $advancedSetting = $retrievedAdvancedSettings | Where-Object { $_.Name -eq $advancedSettingName }
         if ($null -eq $advancedSetting) {
             <#
-            Here 'Write-Warning' is used instead of 'throw' to ensure that the execution will not stop
+            Here a warning log is used instead of 'throw' to ensure that the execution will not stop
             if an invalid Advanced Setting is present in the passed hashtable and in the same time to
             provide an information to the user that invalid data is passed.
             #>
-            Write-WarningLog -Message "Advanced Setting {0} does not exist for VMHost {1} and will be ignored." -Arguments @($advancedSettingName, $vmHostName)
+            $this.WriteLogUtil('Warning', "Advanced Setting {0} does not exist for VMHost {1} and will be ignored.", @($advancedSettingName, $vmHostName))
         }
 
         return $advancedSetting
@@ -6608,11 +6732,11 @@ class VMHostAdvancedSettings : VMHostBaseDSC {
 
         $result = $advancedSettingDesiredValue -ne $advancedSetting.Value
         if ($result) {
-            Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @(
                 $advancedSetting.Name,
                 $advancedSetting.Value,
                 $advancedSettingDesiredValue
-            )
+            ))
         }
 
         return $result
@@ -6860,11 +6984,11 @@ class VMHostAgentVM : VMHostBaseDSC {
             else {
                 $agentVmSettingAsViewObject = $this.$getAgentVmSettingAsViewObjectMethodName($esxAgentHostManager)
                 if ($agentVmSetting -ne $agentVmSettingAsViewObject.Name) {
-                    Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @(
+                    $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @(
                         $agentVmSettingName,
                         $agentVmSettingAsViewObject.Name,
                         $agentVmSetting
-                    )
+                    ))
 
                     return $true
                 }
@@ -7330,7 +7454,7 @@ class VMHostCache : VMHostBaseDSC {
             throw "An error occured while updating Cache Configuration for VMHost $($this.Name). For more information: $($_.Exception.Message)"
         }
 
-        Write-VerboseLog -Message "Cache Configuration was successfully updated for VMHost {0}." -Arguments @($this.Name)
+        $this.WriteLogUtil('Verbose', "Cache Configuration was successfully updated for VMHost {0}.", @($this.Name))
     }
 
     <#
@@ -7448,7 +7572,8 @@ class VMHostConfiguration : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -7470,13 +7595,15 @@ class VMHostConfiguration : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -7492,16 +7619,18 @@ class VMHostConfiguration : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostConfiguration] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostConfiguration]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostConfiguration]::new()
 
             $vmHost = $this.GetVMHost()
             $this.PopulateResult($result, $vmHost)
@@ -7510,7 +7639,8 @@ class VMHostConfiguration : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -7770,7 +7900,8 @@ class VMHostConfiguration : VMHostBaseDSC {
         $setVMHostParams.RunAsync = $true
 
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostConfigurationMessage -Arguments @($setVMHostParams.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostConfigurationMessage, @($setVMHostParams.VMHost.Name))
+
             $modifyVMHostConfigurationTask = Set-VMHost @setVMHostParams
 
             # The Drs Recommendation is not generated immediately after 'EnterMaintenance' task generation.
@@ -7795,7 +7926,8 @@ class VMHostConfiguration : VMHostBaseDSC {
                 }
 
                 # All generated Drs Recommendations from the Cluster should be applied and when the Task is completed all powered on VMs are relocated or powered off.
-                Write-VerboseLog -Message $this.ApplyingDrsRecommendationsFromClusterMessage -Arguments @($setVMHostParams.VMHost.Parent.Name)
+                $this.WriteLogUtil('Verbose', $this.ApplyingDrsRecommendationsFromClusterMessage, @($setVMHostParams.VMHost.Parent.Name))
+
                 $applyDrsRecommendationTask = Apply-DrsRecommendation @applyDrsRecommendationParams
                 Wait-Task -Task $applyDrsRecommendationTask -ErrorAction Stop -Verbose:$false
             }
@@ -7805,7 +7937,7 @@ class VMHostConfiguration : VMHostBaseDSC {
 
             # The state of the VMHost should be verified when the Task completes.
             if ($vmHost.ConnectionState.ToString() -eq ([VMHostState]::Maintenance).ToString()) {
-                Write-VerboseLog -Message $this.VMHostStateWasChangedSuccessfullyMessage -Arguments @($vmHost.Name, $vmHost.ConnectionState.ToString())
+                $this.WriteLogUtil('Verbose', $this.VMHostStateWasChangedSuccessfullyMessage, @($vmHost.Name, $vmHost.ConnectionState.ToString()))
             }
         }
         catch {
@@ -7820,7 +7952,8 @@ class VMHostConfiguration : VMHostBaseDSC {
     #>
     [void] ModifyVMHostConfiguration($setVMHostParams) {
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostConfigurationMessage -Arguments @($setVMHostParams.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostConfigurationMessage, @($setVMHostParams.VMHost.Name))
+
             Set-VMHost @setVMHostParams
         }
         catch {
@@ -7846,7 +7979,8 @@ class VMHostConfiguration : VMHostBaseDSC {
         $setVMHostParams.KmsCluster = $kmsCluster
 
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostCryptoKeyMessage -Arguments @($vmHost.Name, $kmsCluster.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostCryptoKeyMessage, @($vmHost.Name, $kmsCluster.Name))
+
             Set-VMHost @setVMHostParams
         }
         catch {
@@ -7944,22 +8078,27 @@ class VMHostDnsSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.UpdateDns($vmHost)
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
@@ -7980,16 +8119,19 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostDnsSettings] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostDnsSettings]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostDnsSettings]::new()
+
             $vmHost = $this.GetVMHost()
             $vmHostDnsConfig = $vmHost.ExtensionData.Config.Network.DnsConfig
 
@@ -8007,7 +8149,8 @@ class VMHostDnsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -8092,7 +8235,8 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.RetrieveVMHost()
@@ -8109,13 +8253,15 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $this.RetrieveVMHost()
@@ -8129,16 +8275,19 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostFirewallRuleset] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostFirewallRuleset]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostFirewallRuleset]::new()
+
             $this.RetrieveVMHost()
 
             $vmHostFirewallRuleset = $this.GetVMHostFirewallRuleset()
@@ -8149,7 +8298,8 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -8277,7 +8427,8 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostFirewallRulesetStateMessage -Arguments @($vmHostFirewallRuleset.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostFirewallRulesetStateMessage, @($vmHostFirewallRuleset.Name, $this.VMHost.Name))
+
             Set-VMHostFirewallException @setVMHostFirewallExceptionParams
         }
         catch {
@@ -8305,7 +8456,8 @@ class VMHostFirewallRuleset : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.ModifyVMHostFirewallRulesetAllowedIPAddressesListMessage -Arguments @($vmHostFirewallRuleset.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyVMHostFirewallRulesetAllowedIPAddressesListMessage, @($vmHostFirewallRuleset.Name, $this.VMHost.Name))
+
             Update-VMHostFirewallRuleset -VMHostFirewallSystem $vmHostFirewallSystem -VMHostFirewallRulesetId $vmHostFirewallRuleset.ExtensionData.Key -VMHostFirewallRulesetSpec $vmHostFirewallRulesetSpec
         }
         catch {
@@ -8354,8 +8506,10 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $iScsiHba = $this.GetIScsiHba($this.Name)
@@ -8364,14 +8518,17 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $iScsiHba = $this.GetIScsiHba($this.Name)
@@ -8388,16 +8545,19 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostIScsiHba] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostIScsiHba]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostIScsiHba]::new()
+
             $this.RetrieveVMHost()
 
             $iScsiHba = $this.GetIScsiHba($this.Name)
@@ -8408,7 +8568,8 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -8429,7 +8590,8 @@ class VMHostIScsiHba : VMHostIScsiHbaBaseDSC {
         if (![string]::IsNullOrEmpty($this.IScsiName)) { $setVMHostHbaParams.IScsiName = $this.IScsiName }
 
         try {
-            Write-VerboseLog -Message $this.ConfigureIScsiHbaMessage -Arguments @($iScsiHba.Device, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ConfigureIScsiHbaMessage, @($iScsiHba.Device, $this.VMHost.Name))
+
             Set-VMHostHba @setVMHostHbaParams
         }
         catch {
@@ -8538,8 +8700,10 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
             $this.IPEndPoint = $this.Address + ':' + $this.Port.ToString()
 
@@ -8562,14 +8726,17 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
             $this.IPEndPoint = $this.Address + ':' + $this.Port.ToString()
 
@@ -8596,16 +8763,19 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostIScsiHbaTarget] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostIScsiHbaTarget]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostIScsiHbaTarget]::new()
+
             $this.RetrieveVMHost()
             $this.IPEndPoint = $this.Address + ':' + $this.Port.ToString()
 
@@ -8618,7 +8788,8 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -8661,7 +8832,8 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         $this.PopulateCmdletParametersWithCHAPSettings($newIScsiHbaTargetParams, $this.InheritChap, $this.InheritMutualChap)
 
         try {
-            Write-VerboseLog -Message $this.CreateIScsiHbaTargetMessage -Arguments @($this.IPEndPoint, $this.IScsiHbaName)
+            $this.WriteLogUtil('Verbose', $this.CreateIScsiHbaTargetMessage, @($this.IPEndPoint, $this.IScsiHbaName))
+
             New-IScsiHbaTarget @newIScsiHbaTargetParams
         }
         catch {
@@ -8686,7 +8858,8 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         $this.PopulateCmdletParametersWithCHAPSettings($setIScsiHbaTargetParams, $this.InheritChap, $this.InheritMutualChap)
 
         try {
-            Write-VerboseLog -Message $this.ModifyIScsiHbaTargetMessage -Arguments @($this.IPEndPoint, $this.IScsiHbaName)
+            $this.WriteLogUtil('Verbose', $this.ModifyIScsiHbaTargetMessage, @($this.IPEndPoint, $this.IScsiHbaName))
+
             Set-IScsiHbaTarget @setIScsiHbaTargetParams
         }
         catch {
@@ -8709,7 +8882,8 @@ class VMHostIScsiHbaTarget : VMHostIScsiHbaBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveIScsiHbaTargetMessage -Arguments @($this.IPEndPoint, $this.IScsiHbaName)
+            $this.WriteLogUtil('Verbose', $this.RemoveIScsiHbaTargetMessage, @($this.IPEndPoint, $this.IScsiHbaName))
+
             Remove-IScsiHbaTarget @removeIScsiHbaTargetParams
         }
         catch {
@@ -8779,8 +8953,10 @@ class VMHostNtpSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.UpdateVMHostNtpServer($vmHost)
@@ -8788,14 +8964,17 @@ class VMHostNtpSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
@@ -8813,16 +8992,19 @@ class VMHostNtpSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostNtpSettings] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostNtpSettings]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostNtpSettings]::new()
+
             $vmHost = $this.GetVMHost()
 
             $vmHostNtpConfig = $vmHost.ExtensionData.Config.DateTimeInfo.NtpConfig
@@ -8838,7 +9020,8 @@ class VMHostNtpSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -9108,8 +9291,10 @@ class VMHostPermission : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
 
             $foundEntityLocation = $this.GetEntityLocation()
@@ -9134,14 +9319,17 @@ class VMHostPermission : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
 
             $foundEntityLocation = $this.GetEntityLocation()
@@ -9169,16 +9357,19 @@ class VMHostPermission : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostPermission] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostPermission]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostPermission]::new()
+
             $this.EnsureConnectionIsESXi()
 
             $foundEntityLocation = $this.GetEntityLocation()
@@ -9192,7 +9383,8 @@ class VMHostPermission : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -9470,7 +9662,8 @@ class VMHostPermission : BaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.CreatePermissionMessage -Arguments @($entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.CreatePermissionMessage, @($entity.Name, $vmHostPrincipal.Name, $vmHostRole.Name, $this.Connection.Name))
+
             New-VIPermission @newVIPermissionParams
         }
         catch {
@@ -9503,7 +9696,8 @@ class VMHostPermission : BaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.ModifyPermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyPermissionMessage, @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $this.Connection.Name))
+
             Set-VIPermission @setVIPermissionParams
         }
         catch {
@@ -9518,7 +9712,8 @@ class VMHostPermission : BaseDSC {
     #>
     [void] RemoveVMHostPermission($vmHostPermission) {
         try {
-            Write-VerboseLog -Message $this.RemovePermissionMessage -Arguments @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.RemovePermissionMessage, @($vmHostPermission.Entity.Name, $vmHostPermission.Principal, $vmHostPermission.Role, $this.Connection.Name))
+
             $vmHostPermission | Remove-VIPermission -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
@@ -9683,8 +9878,10 @@ class VMHostRole : BaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
 
             $vmHostRole = $this.GetVMHostRole()
@@ -9713,14 +9910,17 @@ class VMHostRole : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsESXi()
 
             $vmHostRole = $this.GetVMHostRole()
@@ -9747,16 +9947,19 @@ class VMHostRole : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostRole] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostRole]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostRole]::new()
+
             $this.EnsureConnectionIsESXi()
 
             $vmHostRole = $this.GetVMHostRole()
@@ -9766,7 +9969,8 @@ class VMHostRole : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -9791,7 +9995,7 @@ class VMHostRole : BaseDSC {
         foreach ($privilegeId in $this.PrivilegeIds) {
             $privilege = Get-VIPrivilege -Server $this.Connection -Id $privilegeId -ErrorAction SilentlyContinue -Verbose:$false
             if ($null -eq $privilege) {
-                Write-WarningLog -Message $this.CouldNotFindPrivilegeMessage -Arguments @($privilegeId)
+                $this.WriteLogUtil('Warning', $this.CouldNotFindPrivilegeMessage, @($privilegeId))
             }
             else {
                 $privileges += $privilege
@@ -9838,7 +10042,8 @@ class VMHostRole : BaseDSC {
     #>
     [void] NewVMHostRole() {
         try {
-            Write-VerboseLog -Message $this.CreateRoleMessage -Arguments @($this.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateRoleMessage, @($this.Name, $this.Connection.Name))
+
             New-VIRole -Server $this.Connection -Name $this.Name -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
@@ -9855,7 +10060,8 @@ class VMHostRole : BaseDSC {
         $desiredPrivilegeIds = [string]::Join(', ', $desiredPrivileges.Id)
 
         try {
-            Write-VerboseLog -Message $this.CreateRoleWithPrivilegesMessage -Arguments @($this.Name, $desiredPrivilegeIds, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateRoleWithPrivilegesMessage, @($this.Name, $desiredPrivilegeIds, $this.Connection.Name))
+
             New-VIRole -Server $this.Connection -Name $this.Name -Privilege $desiredPrivileges -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
@@ -9901,7 +10107,7 @@ class VMHostRole : BaseDSC {
         and 'RemovePrivilege' parameters of 'Set-VIRole' cmdlet are in different parameter sets, so two cmdlet invocations need to be made.
         #>
         try {
-            Write-VerboseLog -Message $this.ModifyPrivilegesOfRoleMessage -Arguments @($vmHostRole.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyPrivilegesOfRoleMessage, @($vmHostRole.Name, $this.Connection.Name))
 
             if ($privilegesToAdd.Length -eq 0) {
                 $setVIRoleParams.RemovePrivilege = $privilegesToRemove
@@ -9931,7 +10137,8 @@ class VMHostRole : BaseDSC {
     #>
     [void] RemoveVMHostRole($vmHostRole) {
         try {
-            Write-VerboseLog -Message $this.RemoveRoleMessage -Arguments @($vmHostRole.Name, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveRoleMessage, @($vmHostRole.Name, $this.Connection.Name))
+
             $vmHostRole | Remove-VIRole -Server $this.Connection -Force -Confirm:$false -ErrorAction Stop -Verbose:$false
         }
         catch {
@@ -10084,8 +10291,10 @@ class VMHostSatpClaimRule : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.GetEsxCli($vmHost)
@@ -10105,14 +10314,17 @@ class VMHostSatpClaimRule : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.GetEsxCli($vmHost)
@@ -10133,13 +10345,17 @@ class VMHostSatpClaimRule : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostSatpClaimRule] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
+
             $result = [VMHostSatpClaimRule]::new()
 
             $result.Server = $this.Server
@@ -10148,7 +10364,6 @@ class VMHostSatpClaimRule : EsxCliBaseDSC {
             $result.Type = $this.Type
             $result.Force = $this.Force
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $result.Name = $vmHost.Name
 
@@ -10171,7 +10386,8 @@ class VMHostSatpClaimRule : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -10412,8 +10628,10 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $scsiLun = $this.GetScsiLun()
@@ -10422,14 +10640,17 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $scsiLun = $this.GetScsiLun()
@@ -10442,16 +10663,19 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostScsiLun] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostScsiLun]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostScsiLun]::new()
+
             $this.RetrieveVMHost()
 
             $scsiLun = $this.GetScsiLun()
@@ -10462,7 +10686,8 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -10605,7 +10830,8 @@ class VMHostScsiLun : VMHostEntityBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.ModifyScsiLunConfigurationMessage -Arguments @($scsiLun.CanonicalName, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ModifyScsiLunConfigurationMessage, @($scsiLun.CanonicalName, $this.VMHost.Name))
+
             Set-ScsiLun @setScsiLunParams
         }
         catch {
@@ -10678,8 +10904,10 @@ class VMHostScsiLunPath : VMHostEntityBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $scsiLun = $this.GetScsiLun()
@@ -10689,14 +10917,17 @@ class VMHostScsiLunPath : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $scsiLun = $this.GetScsiLun()
@@ -10710,16 +10941,19 @@ class VMHostScsiLunPath : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostScsiLunPath] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostScsiLunPath]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostScsiLunPath]::new()
+
             $this.RetrieveVMHost()
 
             $scsiLun = $this.GetScsiLun()
@@ -10731,7 +10965,8 @@ class VMHostScsiLunPath : VMHostEntityBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -10805,7 +11040,8 @@ class VMHostScsiLunPath : VMHostEntityBaseDSC {
         if ($null -ne $this.Preferred) { $setScsiLunPathParams.Preferred = $this.Preferred }
 
         try {
-            Write-VerboseLog -Message $this.ConfigureScsiLunPathMessage -Arguments @($scsiLunPath.Name, $scsiLunPath.ScsiLun.CanonicalName, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.ConfigureScsiLunPathMessage, @($scsiLunPath.Name, $scsiLunPath.ScsiLun.CanonicalName, $this.VMHost.Name))
+
             Set-ScsiLunPath @setScsiLunPathParams
         }
         catch {
@@ -10880,9 +11116,10 @@ class VMHostService : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.UpdateVMHostService($vmHost)
@@ -10894,9 +11131,10 @@ class VMHostService : VMHostBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $result = !$this.ShouldUpdateVMHostService($vmHost)
@@ -10912,12 +11150,13 @@ class VMHostService : VMHostBaseDSC {
 
     [VMHostService] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostService]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.PopulateResult($vmHost, $result)
 
@@ -10934,7 +11173,7 @@ class VMHostService : VMHostBaseDSC {
     Returns a boolean value indicating if the VMHostService should to be updated.
     #>
     [bool] ShouldUpdateVMHostService($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
@@ -10952,7 +11191,7 @@ class VMHostService : VMHostBaseDSC {
     Updates the configuration of the VMHostService.
     #>
     [void] UpdateVMHostService($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
 
@@ -10976,7 +11215,7 @@ class VMHostService : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the VMHostService from the server.
     #>
     [void] PopulateResult($vmHost, $vmHostService) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vmHostCurrentService = Get-VMHostService -Server $this.Connection -VMHost $vmHost | Where-Object { $_.Key -eq $this.Key }
         $vmHostService.Name = $vmHost.Name
@@ -11029,9 +11268,10 @@ class VMHostSettings : VMHostBaseDSC {
 
     [void] Set() {
     	try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.UpdateVMHostSettings($vmHost)
@@ -11043,9 +11283,10 @@ class VMHostSettings : VMHostBaseDSC {
 
     [bool] Test() {
     	try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $result = !$this.ShouldUpdateVMHostSettings($vmHost)
@@ -11061,12 +11302,14 @@ class VMHostSettings : VMHostBaseDSC {
 
     [VMHostSettings] Get() {
     	try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostSettings]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.PopulateResult($vmHost, $result)
 
@@ -11083,7 +11326,7 @@ class VMHostSettings : VMHostBaseDSC {
     Returns a boolean value indicating if at least one Advanced Setting value should be updated.
     #>
     [bool] ShouldUpdateVMHostSettings($vmHost) {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -11107,7 +11350,7 @@ class VMHostSettings : VMHostBaseDSC {
     Sets the desired value for the Advanced Setting, if update of the Advanced Setting value is needed.
     #>
   	[void] SetAdvancedSetting($advancedSettingName, $advancedSetting, $advancedSettingDesiredValue, $advancedSettingCurrentValue, $clearValue) {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+    	$this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
     	if ($clearValue) {
       	    if ($this.ShouldUpdateDscResourceSetting($advancedSettingName, $advancedSettingCurrentValue, [string]::Empty)) {
@@ -11127,7 +11370,7 @@ class VMHostSettings : VMHostBaseDSC {
     Performs update on those Advanced Settings values that needs to be updated.
     #>
     [void] UpdateVMHostSettings($vmHost) {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -11144,7 +11387,7 @@ class VMHostSettings : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the advanced settings from the server.
     #>
     [void] PopulateResult($vmHost, $result) {
-    	Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+    	$this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
     	$vmHostCurrentAdvancedSettings = Get-AdvancedSetting -Server $this.Connection -Entity $vmHost
 
@@ -11241,9 +11484,10 @@ class VMHostSyslog : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.UpdateVMHostSyslog($vmHost)
@@ -11255,9 +11499,10 @@ class VMHostSyslog : VMHostBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $result = !$this.ShouldUpdateVMHostSyslog($vmHost)
@@ -11273,11 +11518,12 @@ class VMHostSyslog : VMHostBaseDSC {
 
     [VMHostSyslog] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostSyslog]::new()
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.PopulateResult($vmHost, $result)
 
@@ -11294,7 +11540,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Returns a boolean value indicating if VMHostSyslog needs to be updated.
     #>
     [bool] ShouldUpdateVMHostSyslog($VMHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
         $current = Get-VMHostSyslogConfig -EsxCLi $esxcli
@@ -11321,7 +11567,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Updates the configuration of the VMHostSyslog.
     #>
     [void] UpdateVMHostSyslog($VMHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
 
@@ -11348,7 +11594,7 @@ class VMHostSyslog : VMHostBaseDSC {
     Populates the result returned from the Get() method with the values of the VMHostService from the server.
     #>
     [void] PopulateResult($VMHost, $syslog) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $esxcli = Get-Esxcli -Server $this.Connection -VMHost $vmHost -V2
         $currentVMHostSyslog = Get-VMHostSyslogConfig -EsxCLi $esxcli
@@ -11407,22 +11653,27 @@ class VMHostTpsSettings : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $this.UpdateTpsSettings($vmHost)
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
 
             $result = !$this.ShouldUpdateTpsSettings($vmHost)
@@ -11433,17 +11684,20 @@ class VMHostTpsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostTpsSettings] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+
+            $this.ConnectVIServer()
+
             $result = [VMHostTpsSettings]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $result.Name = $vmHost.Name
 
@@ -11461,7 +11715,8 @@ class VMHostTpsSettings : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -11494,7 +11749,8 @@ class VMHostTpsSettings : VMHostBaseDSC {
             $tpsSettingName = $tpsSetting.Name.TrimStart($this.MemValue)
 
             if ($null -ne $this.$tpsSettingName -and $this.$tpsSettingName -ne $tpsSetting.Value) {
-                Write-VerboseLog -Message $this.SettingIsNotInDesiredStateMessage -Arguments @($tpsSettingName, $tpsSetting.Value, $this.$tpsSettingName)
+                $this.WriteLogUtil('Verbose', $this.SettingIsNotInDesiredStateMessage, @($tpsSettingName, $tpsSetting.Value, $this.$tpsSettingName))
+
                 return $true
             }
         }
@@ -11559,8 +11815,10 @@ class NfsDatastore : DatastoreBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
@@ -11582,14 +11840,17 @@ class NfsDatastore : DatastoreBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
@@ -11613,16 +11874,19 @@ class NfsDatastore : DatastoreBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [NfsDatastore] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [NfsDatastore]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [NfsDatastore]::new()
+
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
@@ -11632,7 +11896,8 @@ class NfsDatastore : DatastoreBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -11690,8 +11955,10 @@ class VmfsDatastore : DatastoreBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
@@ -11714,14 +11981,17 @@ class VmfsDatastore : DatastoreBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
@@ -11746,16 +12016,19 @@ class VmfsDatastore : DatastoreBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VmfsDatastore] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+            
+            $this.ConnectVIServer()
+
             $result = [VmfsDatastore]::new()
 
-            $this.ConnectVIServer()
             $this.RetrieveVMHost()
 
             $datastore = $this.GetDatastore()
@@ -11767,7 +12040,8 @@ class VmfsDatastore : DatastoreBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -12776,7 +13050,8 @@ class VMHostAcceptanceLevel : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -12791,13 +13066,15 @@ class VMHostAcceptanceLevel : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -12812,16 +13089,18 @@ class VMHostAcceptanceLevel : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostAcceptanceLevel] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostAcceptanceLevel]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostAcceptanceLevel]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -12832,7 +13111,8 @@ class VMHostAcceptanceLevel : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -12867,7 +13147,8 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -12877,13 +13158,15 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -12898,16 +13181,18 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostDCUIKeyboard] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostDCUIKeyboard]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostDCUIKeyboard]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -12918,7 +13203,8 @@ class VMHostDCUIKeyboard : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -12976,7 +13262,8 @@ class VMHostNetworkCoreDump : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, ($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13018,13 +13305,15 @@ class VMHostNetworkCoreDump : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, ($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, ($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13039,16 +13328,18 @@ class VMHostNetworkCoreDump : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, ($this.DscResourceName))
         }
     }
 
     [VMHostNetworkCoreDump] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostNetworkCoreDump]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, ($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostNetworkCoreDump]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -13059,7 +13350,8 @@ class VMHostNetworkCoreDump : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, ($this.DscResourceName))
         }
     }
 
@@ -13161,7 +13453,8 @@ class VMHostSharedSwapSpace : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, ($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13174,13 +13467,15 @@ class VMHostSharedSwapSpace : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, ($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, ($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13195,16 +13490,18 @@ class VMHostSharedSwapSpace : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, ($this.DscResourceName))
         }
     }
 
     [VMHostSharedSwapSpace] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostSharedSwapSpace]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, ($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostSharedSwapSpace]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -13215,7 +13512,8 @@ class VMHostSharedSwapSpace : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, ($this.DscResourceName))
         }
     }
 
@@ -13411,7 +13709,8 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13426,13 +13725,15 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13447,16 +13748,18 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostSNMPAgent] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostSNMPAgent]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostSNMPAgent]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -13467,7 +13770,8 @@ class VMHostSNMPAgent : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -13563,7 +13867,8 @@ class VMHostSoftwareDevice : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13583,13 +13888,15 @@ class VMHostSoftwareDevice : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13603,16 +13910,18 @@ class VMHostSoftwareDevice : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostSoftwareDevice] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostSoftwareDevice]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostSoftwareDevice]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -13623,7 +13932,8 @@ class VMHostSoftwareDevice : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -13706,7 +14016,8 @@ class VMHostVMKernelActiveDumpFile : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13716,13 +14027,15 @@ class VMHostVMKernelActiveDumpFile : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13737,16 +14050,18 @@ class VMHostVMKernelActiveDumpFile : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostVMKernelActiveDumpFile] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostVMKernelActiveDumpFile]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostVMKernelActiveDumpFile]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -13757,7 +14072,8 @@ class VMHostVMKernelActiveDumpFile : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -13819,7 +14135,8 @@ class VMHostVMKernelActiveDumpPartition : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13829,13 +14146,15 @@ class VMHostVMKernelActiveDumpPartition : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13850,16 +14169,18 @@ class VMHostVMKernelActiveDumpPartition : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostVMKernelActiveDumpPartition] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostVMKernelActiveDumpPartition]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostVMKernelActiveDumpPartition]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -13870,7 +14191,8 @@ class VMHostVMKernelActiveDumpPartition : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -13958,7 +14280,8 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -13984,13 +14307,15 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -14012,16 +14337,18 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostVMKernelDumpFile] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostVMKernelDumpFile]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostVMKernelDumpFile]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -14032,7 +14359,8 @@ class VMHostVMKernelDumpFile : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -14182,7 +14510,8 @@ class VMHostVMKernelModule : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -14192,13 +14521,15 @@ class VMHostVMKernelModule : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -14213,16 +14544,18 @@ class VMHostVMKernelModule : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostVMKernelModule] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostVMKernelModule]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostVMKernelModule]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -14233,7 +14566,8 @@ class VMHostVMKernelModule : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -14372,7 +14706,8 @@ class VMHostvSANNetworkConfiguration : EsxCliBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -14392,13 +14727,15 @@ class VMHostvSANNetworkConfiguration : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -14412,16 +14749,18 @@ class VMHostvSANNetworkConfiguration : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostvSANNetworkConfiguration] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostvSANNetworkConfiguration]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostvSANNetworkConfiguration]::new()
 
             $vmHost = $this.GetVMHost()
             $this.GetEsxCli($vmHost)
@@ -14432,7 +14771,8 @@ class VMHostvSANNetworkConfiguration : EsxCliBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -14565,9 +14905,10 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $this.RetrieveVMHost()
@@ -14590,15 +14931,17 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $this.RetrieveVMHost()
@@ -14628,16 +14971,19 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostVDSwitchMigration] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostVDSwitchMigration]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostVDSwitchMigration]::new()
+
             $this.EnsureConnectionIsvCenter()
 
             $this.RetrieveVMHost()
@@ -14649,7 +14995,8 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -14668,7 +15015,8 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         $global:VerbosePreference = 'SilentlyContinue'
 
         try {
-            Write-VerboseLog -Message $this.RetrieveVDSwitchMessage -Arguments @($this.VdsName, $this.Connection.Name)
+            $this.WriteLogUtil('Verbose', $this.RetrieveVDSwitchMessage, @($this.VdsName, $this.Connection.Name))
+
             $getVDSwitchParams = @{
                 Server = $this.Connection
                 Name = $this.VdsName
@@ -14826,7 +15174,8 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
             $distributedPortGroup = Get-VDPortgroup @getVDPortGroupParams
             if ($null -eq $distributedPortGroup) {
                 try {
-                    Write-VerboseLog -Message $this.CreateVDPortGroupMessage -Arguments @($distributedPortGroupName, $distributedSwitch.Name)
+                    $this.WriteLogUtil('Verbose', $this.CreateVDPortGroupMessage, @($distributedPortGroupName, $distributedSwitch.Name))
+
                     $newVDPortGroupParams = @{
                         Server = $this.Connection
                         Name = $distributedPortGroupName
@@ -14877,7 +15226,8 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     #>
     [void] AddVMHostToDistributedSwitch($distributedSwitch) {
         try {
-            Write-VerboseLog -Message $this.AddVDSwitchToVMHostMessage -Arguments @($distributedSwitch.Name, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.AddVDSwitchToVMHostMessage, @($distributedSwitch.Name, $this.VMHost.Name))
+
             $addVDSwitchVMHostParams = @{
                 Server = $this.Connection
                 VDSwitch = $distributedSwitch
@@ -14900,15 +15250,17 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     #>
     [void] AddPhysicalNetworkAdaptersToDistributedSwitch($physicalNetworkAdapters, $distributedSwitch) {
         if ($null -eq $this.MigratePhysicalNicsOnly -or !$this.MigratePhysicalNicsOnly) {
-            Write-WarningLog -Message $this.MigratePhysicalNicsOnlyNotSpecified
+            $this.WriteLogUtil('Warning', $this.MigratePhysicalNicsOnlyNotSpecified)
+
             return
         }
 
         try {
-            Write-VerboseLog -Message $this.AddPhysicalNicsToVDSwitchMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.AddPhysicalNicsToVDSwitchMessage, @(
                 ($physicalNetworkAdapters.Name -Join ', '),
                 $distributedSwitch.Name
-            )
+            ))
+
             $addVDSwitchPhysicalNetworkAdapterParams = $this.GetAddVDSwitchPhysicalNetworkAdapterParams($distributedSwitch, $physicalNetworkAdapters)
 
             Add-VDSwitchPhysicalNetworkAdapter @addVDSwitchPhysicalNetworkAdapterParams
@@ -14933,11 +15285,12 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
         $portGroups = $this.EnsureDistributedPortGroupsExist($distributedSwitch)
 
         try {
-            Write-VerboseLog -Message $this.AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage -Arguments @(
+            $this.WriteLogUtil('Verbose', $this.AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage, @(
                 ($physicalNetworkAdapters.Name -Join ', '),
                 ($vmKernelNetworkAdapters.Name -Join ', '),
                 $distributedSwitch.Name
-            )
+            ))
+
             $addVDSwitchPhysicalNetworkAdapterParams = $this.GetAddVDSwitchPhysicalNetworkAdapterParams(
                 $distributedSwitch,
                 $physicalNetworkAdapters,
@@ -15501,8 +15854,10 @@ class VMHostVdsNic : VMHostNicBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $this.InitInventoryUtil()
@@ -15523,14 +15878,17 @@ class VMHostVdsNic : VMHostNicBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
+
             $this.EnsureConnectionIsvCenter()
 
             $this.InitInventoryUtil()
@@ -15555,16 +15913,19 @@ class VMHostVdsNic : VMHostNicBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostVdsNic] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostVdsNic]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostVdsNic]::new()
+
             $this.EnsureConnectionIsvCenter()
 
             $this.InitInventoryUtil()
@@ -15589,7 +15950,8 @@ class VMHostVdsNic : VMHostNicBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -15830,7 +16192,8 @@ class VMHostIPRoute : VMHostBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message $this.SetMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -15849,13 +16212,15 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.SetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message $this.TestMethodStartMessage -Arguments @($this.DscResourceName)
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+
             $this.ConnectVIServer()
 
             $vmHost = $this.GetVMHost()
@@ -15875,16 +16240,18 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.TestMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VMHostIPRoute] Get() {
         try {
-            Write-VerboseLog -Message $this.GetMethodStartMessage -Arguments @($this.DscResourceName)
-            $result = [VMHostIPRoute]::new()
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
 
             $this.ConnectVIServer()
+
+            $result = [VMHostIPRoute]::new()
 
             $vmHost = $this.GetVMHost()
             $vmHostIPRoute = $this.GetVMHostIPRoute($vmHost)
@@ -15895,7 +16262,8 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
-            Write-VerboseLog -Message $this.GetMethodEndMessage -Arguments @($this.DscResourceName)
+
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -15927,7 +16295,8 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.CreateVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $vmHost.Name)
+            $this.WriteLogUtil('Verbose', $this.CreateVMHostIPRouteMessage, @($this.Gateway, $this.Destination, $vmHost.Name))
+
             New-VMHostRoute @newVMHostRouteParams
         }
         catch {
@@ -15949,7 +16318,8 @@ class VMHostIPRoute : VMHostBaseDSC {
         }
 
         try {
-            Write-VerboseLog -Message $this.RemoveVMHostIPRouteMessage -Arguments @($this.Gateway, $this.Destination, $this.Name)
+            $this.WriteLogUtil('Verbose', $this.RemoveVMHostIPRouteMessage, @($this.Gateway, $this.Destination, $this.Name))
+
             Remove-VMHostRoute @removeVMHostRouteParams
         }
         catch {
@@ -16261,9 +16631,10 @@ class VMHostVss : VMHostVssBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+            
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -16276,9 +16647,10 @@ class VMHostVss : VMHostVssBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
@@ -16302,12 +16674,13 @@ class VMHostVss : VMHostVssBaseDSC {
 
     [VMHostVss] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+            
+            $this.ConnectVIServer()
 
             $result = [VMHostVss]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -16329,7 +16702,7 @@ class VMHostVss : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVss should be updated.
     #>
     [bool] Equals($vss) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssTest = @(
             $this.ShouldUpdateDscResourceSetting('VssName', $vss.Name, $this.VssName),
@@ -16345,7 +16718,7 @@ class VMHostVss : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVss($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssConfigArgs = @{
             Name = $this.VssName
@@ -16385,7 +16758,7 @@ class VMHostVss : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the virtual switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSS) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $currentVss = $this.GetVss()
 
@@ -16444,9 +16817,10 @@ class VMHostVssBridge : VMHostVssBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -16459,9 +16833,10 @@ class VMHostVssBridge : VMHostVssBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
@@ -16489,12 +16864,13 @@ class VMHostVssBridge : VMHostVssBaseDSC {
 
     [VMHostVssBridge] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+            
+            $this.ConnectVIServer()
 
             $result = [VMHostVssBridge]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -16516,7 +16892,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssBridge should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssBridgeTest = @(
             $this.ShouldUpdateArraySetting('NicDevice', $vss.Spec.Bridge.NicDevice, $this.NicDevice),
@@ -16542,7 +16918,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Updates the Bridge configuration of the virtual switch.
     #>
     [void] UpdateVssBridge($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssBridgeArgs = @{
             Name = $this.VssName
@@ -16584,7 +16960,7 @@ class VMHostVssBridge : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Bridge settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSBridge) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $currentVss = $this.GetVss()
 
@@ -16639,9 +17015,10 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -16654,9 +17031,10 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
@@ -16684,12 +17062,13 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
 
     [VMHostVssSecurity] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+            
+            $this.ConnectVIServer()
 
             $result = [VMHostVssSecurity]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -16711,7 +17090,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssSecurity should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssSecurityTest = @(
             $this.ShouldUpdateDscResourceSetting('AllowPromiscuous', $vss.Spec.Policy.Security.AllowPromiscuous, $this.AllowPromiscuous),
@@ -16728,7 +17107,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssSecurity($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssSecurityArgs = @{
             Name = $this.VssName
@@ -16765,7 +17144,7 @@ class VMHostVssSecurity : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSSecurity) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $currentVss = $this.GetVss()
 
@@ -16820,9 +17199,10 @@ class VMHostVssShaping : VMHostVssBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -16835,9 +17215,10 @@ class VMHostVssShaping : VMHostVssBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
@@ -16866,12 +17247,13 @@ class VMHostVssShaping : VMHostVssBaseDSC {
 
     [VMHostVssShaping] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostVssShaping]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -16893,7 +17275,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssShaping should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssShapingTest = @(
             $this.ShouldUpdateDscResourceSetting('AverageBandwidth', $vss.Spec.Policy.ShapingPolicy.AverageBandwidth, $this.AverageBandwidth),
@@ -16911,7 +17293,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssShaping($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssShapingArgs = @{
             Name = $this.VssName
@@ -16950,7 +17332,7 @@ class VMHostVssShaping : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSShaping) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $currentVss = $this.GetVss()
 
@@ -17026,9 +17408,10 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 
     [void] Set() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -17041,9 +17424,10 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 
     [bool] Test() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
             $this.ConnectVIServer()
+
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
             $vss = $this.GetVss()
@@ -17074,12 +17458,13 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
 
     [VMHostVssTeaming] Get() {
         try {
-            Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+            $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
+
+            $this.ConnectVIServer()
 
             $result = [VMHostVssTeaming]::new()
             $result.Server = $this.Server
 
-            $this.ConnectVIServer()
             $vmHost = $this.GetVMHost()
             $this.GetNetworkSystem($vmHost)
 
@@ -17101,7 +17486,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Returns a boolean value indicating if the VMHostVssTeaming should to be updated.
     #>
     [bool] Equals($vss) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $vssTeamingTest = @(
             $this.ShouldUpdateDscResourceSetting('CheckBeacon', $vss.Spec.Policy.NicTeaming.FailureCriteria.CheckBeacon, $this.CheckBeacon),
@@ -17140,7 +17525,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Updates the configuration of the virtual switch.
     #>
     [void] UpdateVssTeaming($vmHost) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $this.ValidatePhysicalNetworkAdapters()
 
@@ -17186,7 +17571,7 @@ class VMHostVssTeaming : VMHostVssBaseDSC {
     Populates the result returned from the Get() method with the values of the Security settings of the Virtual Switch.
     #>
     [void] PopulateResult($vmHost, $vmHostVSSTeaming) {
-        Write-VerboseLog -Message "{0} Entering {1}" -Arguments @((Get-Date), (Get-PSCallStack)[0].FunctionName)
+        $this.WriteLogUtil('Verbose', "{0} Entering {1}", @((Get-Date), (Get-PSCallStack)[0].FunctionName))
 
         $currentVss = $this.GetVss()
 
