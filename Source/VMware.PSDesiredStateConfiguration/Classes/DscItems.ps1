@@ -257,7 +257,7 @@ class DscConfigurationCompiler {
 
         # configurationData gets cloned because it's state gets mutated during execution.
         if ($null -ne $ConfigurationData) {
-            $this.ConfigurationData = $ConfigurationData.Clone()
+            $this.ConfigurationData = $this.DeepCloneUtil($ConfigurationData)
         }
 
         $this.CompositeResourceToScriptBlock = @{}
