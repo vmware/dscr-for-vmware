@@ -254,7 +254,11 @@ class DscConfigurationCompiler {
     DscConfigurationCompiler([string] $ConfigName, [Hashtable] $CustomParams, [Hashtable] $ConfigurationData) {
         $this.ConfigName = $ConfigName
         $this.CustomParams = $CustomParams
-        $this.ConfigurationData = $ConfigurationData
+
+        # configurationData gets cloned because it's state gets mutated during execution.
+        if ($null -ne $ConfigurationData) {
+            $this.ConfigurationData = $this.DeepCloneUtil($ConfigurationData)
+        }
 
         $this.CompositeResourceToScriptBlock = @{}
         $this.ResourceNameToInfo = @{}
@@ -297,6 +301,24 @@ class DscConfigurationCompiler {
         )
 
         return $dscConfigurationObject
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a deep clone of an object.
+    #>
+    hidden [PsObject] DeepCloneUtil([PsObject] $ObjectToClone) {
+        $memStream = New-Object -TypeName 'IO.MemoryStream'
+        $formatter = new-object -TypeName 'Runtime.Serialization.Formatters.Binary.BinaryFormatter'
+
+        $formatter.Serialize($memStream, $ObjectToClone)
+
+        $memStream.Position = 0
+
+        $clonedObject = $formatter.Deserialize($memStream)
+
+        return $clonedObject
     }
 
     <#
