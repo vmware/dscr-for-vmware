@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.6 - 2020-12-18
+### Changed
+- Fixed the bug with the same references for **DSC Resources** when multiple **vSphereNodes** are passed as array in a **DSC Configuration**. 
+
 ## VMware.vSphereDSC 2.1.0.77 - 2020-12-17
 ### Added
 - Added additional logic for **Verbose** and **Warning** outputs which enables printing the output when the **DSC Resource** is invoked via the **Invoke-DscResource** cmdlet.
