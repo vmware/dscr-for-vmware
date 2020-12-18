@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.7 - 2020-12-18
+### Added
+- Added integration tests for **VMware.PSDesiredStateConfiguration** module.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.6 - 2020-12-18
 ### Changed
 - Fixed the bug with the same references for **DSC Resources** when multiple **vSphereNodes** are passed as array in a **DSC Configuration**. 
