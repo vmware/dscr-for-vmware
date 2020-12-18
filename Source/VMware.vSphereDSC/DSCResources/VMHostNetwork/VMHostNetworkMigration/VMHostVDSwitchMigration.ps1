@@ -202,7 +202,7 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     #>
     [PSObject] GetStandardPortGroup($standardPortGroupName) {
         try {
-            Write-VerboseLog -Message $this.RetrieveStandardPortGroupMessage -Arguments @($standardPortGroupName, $this.VMHost.Name)
+            $this.WriteLogUtil('Verbose', $this.RetrieveStandardPortGroupMessage, @($standardPortGroupName, $this.VMHost.Name))
             $getVirtualPortGroupParams = @{
                 Server = $this.Connection
                 Name = $standardPortGroupName
@@ -420,7 +420,7 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
                 }
             }
 
-            Write-VerboseLog -Message $this.CreateVDPortGroupMessage -Arguments @($distributedPortGroupName, $distributedSwitch.Name, $createVDPortGroupMessageEnd)
+            $this.WriteLogUtil('Verbose', $this.CreateVDPortGroupMessage, @($distributedPortGroupName, $distributedSwitch.Name, $createVDPortGroupMessageEnd))
             return New-VDPortgroup @newVDPortGroupParams
         }
         catch {
