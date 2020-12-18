@@ -83,6 +83,29 @@ $script:DisableSoftwareIscsiMofFilePath = Join-Path -Path $PSScriptRoot -ChildPa
 $script:SoftwareIscsiToInitialStateMofFilePath = Join-Path -Path $PSScriptRoot -ChildPath $script:SoftwareIscsiToInitialStateConfigurationName
 
 Describe "$($script:DscResourceName)_Integration" {
+    AfterAll {
+        # Arrange
+        & $script:SoftwareIscsiToInitialStateConfigurationName `
+            -OutputPath $script:SoftwareIscsiToInitialStateMofFilePath `
+            -ConfigurationData $script:ConfigurationData `
+            -ErrorAction Stop
+
+        $startDscConfigurationParamsSoftwareIscsiToInitialState = @{
+            Path = $script:SoftwareIscsiToInitialStateMofFilePath
+            ComputerName = $script:ConfigurationData.AllNodes.NodeName
+            Wait = $true
+            Force = $true
+            Verbose = $true
+            ErrorAction = 'Stop'
+        }
+
+        # Act && Assert
+        { Start-DscConfiguration @startDscConfigurationParamsSoftwareIscsiToInitialState } | Should -Not -Throw
+        Test-CleanUp
+
+        Remove-Item -Path $script:SoftwareIscsiToInitialStateMofFilePath -Recurse -Confirm:$false -Verbose:$true -ErrorAction Stop
+    }
+
     Context 'When enabling software iSCSI' {
         BeforeAll {
             # Arrange
@@ -183,27 +206,8 @@ Describe "$($script:DscResourceName)_Integration" {
         }
 
         AfterAll {
-            # Arrange
-            & $script:SoftwareIscsiToInitialStateConfigurationName `
-                -OutputPath $script:SoftwareIscsiToInitialStateMofFilePath `
-                -ConfigurationData $script:ConfigurationData `
-                -ErrorAction Stop
-
-            $startDscConfigurationParamsSoftwareIscsiToInitialState = @{
-                Path = $script:SoftwareIscsiToInitialStateMofFilePath
-                ComputerName = $script:ConfigurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
-
-            # Act && Assert
-            { Start-DscConfiguration @startDscConfigurationParamsSoftwareIscsiToInitialState } | Should -Not -Throw
-
             Remove-Item -Path $script:DisableSoftwareIscsiMofFilePath -Recurse -Confirm:$false -Verbose:$true -ErrorAction Stop
             Remove-Item -Path $script:EnableSoftwareIscsiMofFilePath -Recurse -Confirm:$false -Verbose:$true -ErrorAction Stop
-            Remove-Item -Path $script:SoftwareIscsiToInitialStateMofFilePath -Recurse -Confirm:$false -Verbose:$true -ErrorAction Stop
         }
     }
 
@@ -307,27 +311,8 @@ Describe "$($script:DscResourceName)_Integration" {
         }
 
         AfterAll {
-            # Arrange
-            & $script:SoftwareIscsiToInitialStateConfigurationName `
-                -OutputPath $script:SoftwareIscsiToInitialStateMofFilePath `
-                -ConfigurationData $script:ConfigurationData `
-                -ErrorAction Stop
-
-            $startDscConfigurationParamsSoftwareIscsiToInitialState = @{
-                Path = $script:SoftwareIscsiToInitialStateMofFilePath
-                ComputerName = $script:ConfigurationData.AllNodes.NodeName
-                Wait = $true
-                Force = $true
-                Verbose = $true
-                ErrorAction = 'Stop'
-            }
-
-            # Act && Assert
-            { Start-DscConfiguration @startDscConfigurationParamsSoftwareIscsiToInitialState } | Should -Not -Throw
-
             Remove-Item -Path $script:EnableSoftwareIscsiMofFilePath -Recurse -Confirm:$false -Verbose:$true -ErrorAction Stop
             Remove-Item -Path $script:DisableSoftwareIscsiMofFilePath -Recurse -Confirm:$false -Verbose:$true -ErrorAction Stop
-            Remove-Item -Path $script:SoftwareIscsiToInitialStateMofFilePath -Recurse -Confirm:$false -Verbose:$true -ErrorAction Stop
         }
     }
 }

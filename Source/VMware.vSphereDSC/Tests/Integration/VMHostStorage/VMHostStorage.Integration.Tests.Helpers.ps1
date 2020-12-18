@@ -36,3 +36,89 @@ function Test-Setup {
         Disconnect-VIServer -Server $Server -Confirm:$false
     }
 }
+
+function Test-CleanUp {
+    <#
+    .SYNOPSIS
+
+    Restarts the specified VMHost after the Integration Tests.
+    #>
+
+    $defaultErrorActionPreference = $global:ErrorActionPreference
+    $global:ErrorActionPreference = 'Stop'
+
+    try {
+        $script:VIServer = Connect-VIServer -Server $Server -Credential $Credential
+        $script:VMHost = Get-VMHost -Server $script:VIServer -Name $Name
+
+        $script:VMHost = Set-VMHost -Server $script:VIServer -VMHost $script:VMHost -State Maintenance -Confirm:$false
+        Restart-VMHost -Server $script:VIServer -VMHost $script:VMHost -Confirm:$false
+
+        if ($script:VIServer.Connection.ProductLine -eq 'embeddedEsx') {
+            Assert-VMHostIsInDesiredState -VIServer $script:VIServer -DesiredState 'Maintenance' -RequiresVIServerConnection $true
+        }
+        else {
+            Assert-VMHostIsInDesiredState -VIServer $script:VIServer -DesiredState 'NotResponding' -RequiresVIServerConnection $false
+            Assert-VMHostIsInDesiredState -VIServer $script:VIServer -DesiredState 'Maintenance' -RequiresVIServerConnection $false
+        }
+
+        Get-VMHost -Server $script:VIServer -Name $Name | Set-VMHost -Server $script:VIServer -State Connected -Confirm:$false | Out-Null
+    }
+    finally {
+        $global:ErrorActionPreference = $defaultErrorActionPreference
+        Disconnect-VIServer -Server $Server -Confirm:$false
+    }
+}
+
+function Assert-VMHostIsInDesiredState {
+    <#
+    .SYNOPSIS
+
+    Asserts that the VMHost used in the Integration Tests is in the
+    specified desired state.
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [PSObject] $VIServer,
+
+        [Parameter(Mandatory = $true)]
+        [string] $DesiredState,
+
+        [Parameter(Mandatory = $true)]
+        [bool] $RequiresVIServerConnection
+    )
+
+    $restartTimeoutMinutes = 5
+    $sleepTimeInSeconds = 10
+    $elapsedTimeInSeconds = 0
+
+    while ($true) {
+        $timeSpan = New-TimeSpan -Seconds $elapsedTimeInSeconds
+        if ($timeSpan.Minutes -gt $restartTimeoutMinutes) {
+            throw "VMHost $Name is not in Maintenance mode."
+        }
+
+        Start-Sleep -Seconds $sleepTimeInSeconds
+        $elapsedTimeInSeconds += $sleepTimeInSeconds
+
+        try {
+            if ($RequiresVIServerConnection) {
+                $VIServer = Connect-VIServer -Server $Server -Credential $Credential
+            }
+
+            $vmHost = Get-VMHost -Server $VIServer -Name $Name
+            if ($vmHost.ConnectionState.ToString() -eq $DesiredState) {
+                break
+            }
+        }
+        catch {
+            Write-Verbose -Message "VMHost $Name is still not in $DesiredState State."
+        }
+
+        $vmHost = Get-VMHost -Server $VIServer -Name $Name
+        if ($vmHost.ConnectionState.ToString() -eq $DesiredState) {
+            break
+        }
+    }
+}
