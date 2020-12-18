@@ -54,8 +54,6 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                 }
             }
     
-            $root = $PSScriptRoot
-    
             $configFolder = Join-Path $root 'Configurations'
     
             $Script:ConfigPath = Join-Path $configFolder 'vSphereNodeConfiguration.ps1'
@@ -68,14 +66,53 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     ConfigName = 'Config_Add'
                     ConfigurationData = $Script:ConfigData
                 }
-    
+
+                $vSphereModuleVersion = (Get-Module 'VMware.vSphereDSC' -ListAvailable | Select-Object -First 1).Version.ToString()
+
+                $Script:Expected = [VmwDscConfiguration]::new(
+                    'Config_Add',
+                    @(
+                        foreach ($serverConfig in $serverConfigs) {
+                            [VmwDscNode]::New(
+                                $serverConfig.Server,
+                                @(
+                                    [VmwDscResource]::new(
+                                        'MyDatacenterFolder',
+                                        'DatacenterFolder',
+                                        @{ ModuleName = 'VMware.vSphereDSC'; RequiredVersion = $vSphereModuleVersion },
+                                        @{
+                                            Name = $Script:ConfigData.DatacenterFolder.Name
+                                            Location = $Script:ConfigData.DatacenterFolder.Location
+                                            Ensure = 'Present'
+                                        }
+                                    ),
+                                    [VmwDscResource]::new(
+                                        'MyDatacenter',
+                                        'Datacenter',
+                                        @{ ModuleName = 'VMware.vSphereDSC'; RequiredVersion = $vSphereModuleVersion },
+                                        @{
+                                            Name = $Script:ConfigData.Datacenter.Name
+                                            Location = $Script:ConfigData.Datacenter.Location
+                                            Ensure = 'Present'
+                                        }
+                                    )
+                                )
+                            )
+                        }
+                    )
+                )
+
+                $util = Join-Path (Split-Path $root) 'Utility.ps1'
+
+                . $util
+
                 . $Script:ConfigPath
     
                 # Act
                 $Script:DscConfigurationObj = New-VmwDscConfiguration @splatParams
     
                 # Assert
-                $Script:DscConfigurationObj | Should -Not -Be $null
+                Script:AssertConfigurationEqual $Script:DscConfigurationObj $Script:Expected
             }
     
             It 'Should apply the Configuration without throwing' {

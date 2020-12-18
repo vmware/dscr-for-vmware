@@ -305,6 +305,24 @@ class DscConfigurationCompiler {
 
     <#
     .DESCRIPTION
+
+    Creates a deep clone of an object.
+    #>
+    hidden [PsObject] DeepCloneUtil([PsObject] $ObjectToClone) {
+        $memStream = New-Object -TypeName 'IO.MemoryStream'
+        $formatter = new-object -TypeName 'Runtime.Serialization.Formatters.Binary.BinaryFormatter'
+
+        $formatter.Serialize($memStream, $ObjectToClone)
+
+        $memStream.Position = 0
+
+        $clonedObject = $formatter.Deserialize($memStream)
+
+        return $clonedObject
+    }
+
+    <#
+    .DESCRIPTION
     Ensures ConfigurationData is valid if present.
     Throws an exception if ConfigurationData is invalid.
     #>
