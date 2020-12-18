@@ -254,7 +254,11 @@ class DscConfigurationCompiler {
     DscConfigurationCompiler([string] $ConfigName, [Hashtable] $CustomParams, [Hashtable] $ConfigurationData) {
         $this.ConfigName = $ConfigName
         $this.CustomParams = $CustomParams
-        $this.ConfigurationData = $ConfigurationData
+
+        # configurationData gets cloned because it's state gets mutated during execution.
+        if ($null -ne $ConfigurationData) {
+            $this.ConfigurationData = $ConfigurationData.Clone()
+        }
 
         $this.CompositeResourceToScriptBlock = @{}
         $this.ResourceNameToInfo = @{}
