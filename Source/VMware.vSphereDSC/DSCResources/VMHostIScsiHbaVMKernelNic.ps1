@@ -110,8 +110,7 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
             $iScsiHba = $this.GetIScsiHba()
             $vmKernelNics = $this.GetVMKernelNetworkAdapters()
 
-            $result = $false
-
+            $result = !$this.ShouldUpdateIScsiHbaBoundNics($esxCli, $iScsiHba, $vmKernelNics)
             $this.WriteDscResourceState($result)
 
             return $result
@@ -255,6 +254,32 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
         }
 
         return $filteredVMKernelNics
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if VMKernel Network Adapters should be bound/unbound to/from the specified iSCSI Host Bus Adapter.
+    If Ensure is set to 'Present', checks if all passed VMKernel Network Adapters are bound to the specified iSCSI Host Bus Adapter.
+    If Ensure is set to 'Absent', checks if all passed VMKernel Network Adapters are unbound from the specified iSCSI Host Bus Adapter.
+    #>
+    [bool] ShouldUpdateIScsiHbaBoundNics($esxCli, $iScsiHba, $vmKernelNics) {
+        $result = $false
+
+        $boundVMKernelNics = Get-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHba $iScsiHba
+        foreach ($vmKernelNic in $vmKernelNics) {
+            $boundVMKernelNic = $boundVMKernelNics | Where-Object -FilterScript { $_.Vmknic -eq $vmKernelNic.Name }
+            if ($this.Ensure -eq [Ensure]::Present -and $null -eq $boundVMKernelNic) {
+                $result = $true
+                break
+            }
+            elseif ($this.Ensure -eq [Ensure]::Absent -and $null -ne $boundVMKernelNic) {
+                $result = $true
+                break
+            }
+        }
+
+        return $result
     }
 
     <#
