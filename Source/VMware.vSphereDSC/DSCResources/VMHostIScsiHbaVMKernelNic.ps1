@@ -134,6 +134,8 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
             $esxCli = $this.GetEsxCli()
             $iScsiHba = $this.GetIScsiHba()
 
+            $this.PopulateResult($result, $esxCli, $iScsiHba)
+
             return $result
         }
         finally {
@@ -313,6 +315,28 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
             catch {
                 throw ($this.CouldNotUnbindVMKernelNicMessage -f $vmKernelNic.Name, $iScsiHba.Device, $_.Exception.Message)
             }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $esxCli, $iScsiHba) {
+        $result.Server = $this.Connection.Name
+        $result.VMHostName = $this.VMHost.Name
+        $result.IScsiHbaName = $iScsiHba.Device
+        $result.Force = $this.Force
+
+        $boundVMKernelNics = Get-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHba $iScsiHba
+        if ($boundVMKernelNics.Length -gt 0) {
+            $result.Ensure = [Ensure]::Present
+            $result.VMKernelNicNames = $boundVMKernelNics.Vmknic
+        }
+        else {
+            $result.Ensure = [Ensure]::Absent
+            $result.VMKernelNicNames = $this.VMKernelNicNames
         }
     }
 }
