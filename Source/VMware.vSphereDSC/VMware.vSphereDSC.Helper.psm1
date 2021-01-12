@@ -680,3 +680,75 @@ function Update-VMHostFirewallRuleset {
 
     $VMHostFirewallSystem.UpdateRuleset($VMHostFirewallRulesetId, $VMHostFirewallRulesetSpec)
 }
+
+function Get-IScsiHbaBoundNics {
+    [CmdletBinding()]
+    [OutputType([Object[]])]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [VMware.VimAutomation.ViCore.Impl.V1.EsxCli.EsxCliImpl]
+        $EsxCli,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaImpl]
+        $IScsiHba
+    )
+
+    $listIScsiHbaBoundNicsArgs = $EsxCli.iscsi.networkportal.list.CreateArgs()
+    $listIScsiHbaBoundNicsArgs.adapter = $IScsiHba.Device
+
+    return $EsxCli.iscsi.networkportal.list.Invoke($listIScsiHbaBoundNicsArgs)
+}
+
+function Update-IScsiHbaBoundNics {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [VMware.VimAutomation.ViCore.Impl.V1.EsxCli.EsxCliImpl]
+        $EsxCli,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaImpl]
+        $IScsiHba,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.HostVMKernelVirtualNicImpl]
+        $VMKernelNic,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('Add', 'Remove')]
+        [string]
+        $Operation,
+
+        [Parameter(Mandatory = $false)]
+        [nullable[bool]]
+        $Force
+    )
+
+    $arguments = $null
+    if ($Operation -eq 'Add') {
+        $arguments = $EsxCli.iscsi.networkportal.add.CreateArgs()
+    }
+    else {
+        $arguments = $EsxCli.iscsi.networkportal.remove.CreateArgs()
+    }
+
+    $arguments.adapter = $IScsiHba.Device
+    $arguments.nic = $VMKernelNic.Name
+
+    if ($null -ne $Force) {
+        $arguments.force = $Force
+    }
+
+    if ($Operation -eq 'Add') {
+        $EsxCli.iscsi.networkportal.add.Invoke($arguments) | Out-Null
+    }
+    else {
+        $EsxCli.iscsi.networkportal.remove.Invoke($arguments) | Out-Null
+    }
+}
