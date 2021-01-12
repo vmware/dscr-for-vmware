@@ -248,7 +248,7 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
                 continue
             }
             elseif ($this.Ensure -eq [Ensure]::Absent -and $null -eq $boundVMKernelNic) {
-                $this.WriteLogUtil('Warning', $this.VMKernelNicAlreadyBoundMessage, @($vmKernelNic.Name, $iScsiHba.Device))
+                $this.WriteLogUtil('Warning', $this.VMKernelNicAlreadyUnboundMessage, @($vmKernelNic.Name, $iScsiHba.Device))
                 continue
             }
 
