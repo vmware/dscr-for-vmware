@@ -691,13 +691,13 @@ function Get-IScsiHbaBoundNics {
         $EsxCli,
 
         [Parameter(Mandatory = $true)]
-        [ValidateNotNull()]
-        [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaImpl]
-        $IScsiHba
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $IScsiHbaName
     )
 
     $listIScsiHbaBoundNicsArgs = $EsxCli.iscsi.networkportal.list.CreateArgs()
-    $listIScsiHbaBoundNicsArgs.adapter = $IScsiHba.Device
+    $listIScsiHbaBoundNicsArgs.adapter = $IScsiHbaName
 
     return $EsxCli.iscsi.networkportal.list.Invoke($listIScsiHbaBoundNicsArgs)
 }
@@ -711,14 +711,14 @@ function Update-IScsiHbaBoundNics {
         $EsxCli,
 
         [Parameter(Mandatory = $true)]
-        [ValidateNotNull()]
-        [VMware.VimAutomation.ViCore.Impl.V1.Host.Storage.IScsiHbaImpl]
-        $IScsiHba,
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $IScsiHbaName,
 
         [Parameter(Mandatory = $true)]
-        [ValidateNotNull()]
-        [VMware.VimAutomation.ViCore.Impl.V1.Host.Networking.Nic.HostVMKernelVirtualNicImpl]
-        $VMKernelNic,
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $VMKernelNicName,
 
         [Parameter(Mandatory = $true)]
         [ValidateSet('Add', 'Remove')]
@@ -738,8 +738,8 @@ function Update-IScsiHbaBoundNics {
         $arguments = $EsxCli.iscsi.networkportal.remove.CreateArgs()
     }
 
-    $arguments.adapter = $IScsiHba.Device
-    $arguments.nic = $VMKernelNic.Name
+    $arguments.adapter = $IScsiHbaName
+    $arguments.nic = $VMKernelNicName
 
     if ($null -ne $Force) {
         $arguments.force = $Force

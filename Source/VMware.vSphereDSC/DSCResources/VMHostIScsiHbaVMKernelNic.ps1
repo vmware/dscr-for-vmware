@@ -240,7 +240,7 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
     [array] GetFilteredVMKernelNetworkAdapters($esxCli, $iScsiHba, $vmKernelNics) {
         $filteredVMKernelNics = @()
 
-        $boundVMKernelNics = Get-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHba $iScsiHba
+        $boundVMKernelNics = Get-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHbaName $iScsiHba.Device
         foreach ($vmKernelNic in $vmKernelNics) {
             $boundVMKernelNic = $boundVMKernelNics | Where-Object -FilterScript { $_.Vmknic -eq $vmKernelNic.Name }
             if ($this.Ensure -eq [Ensure]::Present -and $null -ne $boundVMKernelNic) {
@@ -268,7 +268,7 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
     [bool] ShouldUpdateIScsiHbaBoundNics($esxCli, $iScsiHba, $vmKernelNics) {
         $result = $false
 
-        $boundVMKernelNics = Get-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHba $iScsiHba
+        $boundVMKernelNics = Get-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHbaName $iScsiHba.Device
         foreach ($vmKernelNic in $vmKernelNics) {
             $boundVMKernelNic = $boundVMKernelNics | Where-Object -FilterScript { $_.Vmknic -eq $vmKernelNic.Name }
             if ($this.Ensure -eq [Ensure]::Present -and $null -eq $boundVMKernelNic) {
@@ -293,7 +293,7 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
         foreach ($vmKernelNic in $vmKernelNics) {
             try {
                 $this.WriteLogUtil('Verbose', $this.VMKernelNicBindMessage, @($vmKernelNic.Name, $iScsiHba.Device))
-                Update-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHba $iScsiHba -VMKernelNic $vmKernelNic -Operation 'Add' -Force $this.Force
+                Update-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHbaName $iScsiHba.Device -VMKernelNicName $vmKernelNic.Name -Operation 'Add' -Force $this.Force
             }
             catch {
                 throw ($this.CouldNotBindVMKernelNicMessage -f $vmKernelNic.Name, $iScsiHba.Device, $_.Exception.Message)
@@ -310,7 +310,7 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
         foreach ($vmKernelNic in $vmKernelNics) {
             try {
                 $this.WriteLogUtil('Verbose', $this.VMKernelNicUnbindMessage, @($vmKernelNic.Name, $iScsiHba.Device))
-                Update-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHba $iScsiHba -VMKernelNic $vmKernelNic -Operation 'Remove' -Force $this.Force
+                Update-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHbaName $iScsiHba.Device -VMKernelNicName $vmKernelNic.Name -Operation 'Remove' -Force $this.Force
             }
             catch {
                 throw ($this.CouldNotUnbindVMKernelNicMessage -f $vmKernelNic.Name, $iScsiHba.Device, $_.Exception.Message)
@@ -329,7 +329,7 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
         $result.IScsiHbaName = $iScsiHba.Device
         $result.Force = $this.Force
 
-        $boundVMKernelNics = Get-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHba $iScsiHba
+        $boundVMKernelNics = Get-IScsiHbaBoundNics -EsxCli $esxCli -IScsiHbaName $iScsiHba.Device
         if ($boundVMKernelNics.Length -gt 0) {
             $result.Ensure = [Ensure]::Present
             $result.VMKernelNicNames = $boundVMKernelNics.Vmknic
