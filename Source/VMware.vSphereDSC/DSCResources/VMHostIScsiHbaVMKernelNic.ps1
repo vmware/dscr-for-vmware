@@ -47,7 +47,7 @@ class VMHostIScsiHbaVMKernelNic : VMHostEntityBaseDSC {
 
     Specifies whether to bind VMKernel Network Adapters to iSCSI Host Bus Adapter
     when VMKernel Network Adapters aren't compatible for iSCSI multipathing.
-    Specifies whether to unbind VMKernel Network Adapters to iSCSI Host Bus Adapter
+    Specifies whether to unbind VMKernel Network Adapters from iSCSI Host Bus Adapter
     when there're active sessions using the VMKernel Network Adapters.
     #>
     [DscProperty()]
