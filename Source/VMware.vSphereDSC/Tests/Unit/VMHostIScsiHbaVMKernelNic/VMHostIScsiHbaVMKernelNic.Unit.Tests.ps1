@@ -59,8 +59,8 @@ try {
                         CommandName = 'Update-IScsiHbaBoundNics'
                         ParameterFilter = {
                             $EsxCli -eq $script:EsxCli -and
-                            $IScsiHba -eq $script:IScsiHba -and
-                            $VMKernelNic -eq $script:UnboundVMKernelNic -and
+                            $IScsiHbaName -eq $script:IScsiHba.Device -and
+                            $VMKernelNicName -eq $script:UnboundVMKernelNic.Name -and
                             $Operation -eq 'Add' -and
                             $Force -eq $null
                         }
@@ -94,8 +94,8 @@ try {
                         CommandName = 'Update-IScsiHbaBoundNics'
                         ParameterFilter = {
                             $EsxCli -eq $script:EsxCli -and
-                            $IScsiHba -eq $script:IScsiHba -and
-                            $VMKernelNic -eq $script:BoundVMKernelNic -and
+                            $IScsiHbaName -eq $script:IScsiHba.Device -and
+                            $VMKernelNicName -eq $script:BoundVMKernelNic.Name -and
                             $Operation -eq 'Remove' -and
                             $Force -eq $true
                         }

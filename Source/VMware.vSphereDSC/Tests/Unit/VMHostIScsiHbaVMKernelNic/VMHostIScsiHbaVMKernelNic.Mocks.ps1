@@ -90,7 +90,7 @@ function New-MocksWhenEnsureIsPresentAndTwoVMKernelNetworkAdaptersArePassedOneBo
         MockWith = { return $bindedVMKernelNicsMock }.GetNewClosure()
         ParameterFilter = {
             $EsxCli -eq $script:EsxCli -and
-            $IScsiHba -eq $script:IScsiHba
+            $IScsiHbaName -eq $script:IScsiHba.Device
         }
         Verifiable = $true
     }
@@ -129,7 +129,7 @@ function New-MocksWhenEnsureIsAbsentAndTwoVMKernelNetworkAdaptersArePassedOneBou
         MockWith = { return $bindedVMKernelNicsMock }.GetNewClosure()
         ParameterFilter = {
             $EsxCli -eq $script:EsxCli -and
-            $IScsiHba -eq $script:IScsiHba
+            $IScsiHbaName -eq $script:IScsiHba.Device
         }
         Verifiable = $true
     }
@@ -167,7 +167,7 @@ function New-MocksWhenEnsureIsPresentAndOneBoundVMKernelNetworkAdapterIsPassed {
         MockWith = { return $bindedVMKernelNicsMock }.GetNewClosure()
         ParameterFilter = {
             $EsxCli -eq $script:EsxCli -and
-            $IScsiHba -eq $script:IScsiHba
+            $IScsiHbaName -eq $script:IScsiHba.Device
         }
         Verifiable = $true
     }
@@ -203,7 +203,7 @@ function New-MocksWhenEnsureIsAbsentAndOneUnboundVMKernelNetworkAdapterIsPassed 
         MockWith = { return $bindedVMKernelNicsMock }.GetNewClosure()
         ParameterFilter = {
             $EsxCli -eq $script:EsxCli -and
-            $IScsiHba -eq $script:IScsiHba
+            $IScsiHbaName -eq $script:IScsiHba.Device
         }
         Verifiable = $true
     }
@@ -226,7 +226,7 @@ function New-MocksWhenIScsiHostBusAdapterWithoutBoundVMKernelNetworkAdaptersIsPa
         MockWith = { return $bindedVMKernelNicsMock }.GetNewClosure()
         ParameterFilter = {
             $EsxCli -eq $script:EsxCli -and
-            $IScsiHba -eq $script:IScsiHba
+            $IScsiHbaName -eq $script:IScsiHba.Device
         }
         Verifiable = $true
     }
@@ -250,7 +250,7 @@ function New-MocksWhenIScsiHostBusAdapterWithBoundVMKernelNetworkAdaptersIsPasse
         MockWith = { return $bindedVMKernelNicsMock }.GetNewClosure()
         ParameterFilter = {
             $EsxCli -eq $script:EsxCli -and
-            $IScsiHba -eq $script:IScsiHba
+            $IScsiHbaName -eq $script:IScsiHba.Device
         }
         Verifiable = $true
     }
