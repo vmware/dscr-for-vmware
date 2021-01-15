@@ -48,7 +48,8 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     [nullable[bool]] $MigratePhysicalNicsOnly
 
     hidden [string] $RetrieveVDSwitchMessage = "Retrieving VDSwitch {0} from vCenter {1}."
-    hidden [string] $CreateVDPortGroupMessage = "Creating VDPortGroup {0} on VDSwitch {1}."
+    hidden [string] $RetrieveStandardPortGroupMessage = "Retrieving Standard Port Group {0} located on VMHost {1}."
+    hidden [string] $CreateVDPortGroupMessage = "Creating VDPortGroup {0} on VDSwitch {1}{2}"
     hidden [string] $AddVDSwitchToVMHostMessage = "Adding VDSwitch {0} to VMHost {1}."
     hidden [string] $AddPhysicalNicsToVDSwitchMessage = "Migrating Physical Network Adapters {0} to VDSwitch {1}."
     hidden [string] $AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage = "Migrating Physical Network Adapters {0} and VMKernel Network Adapters {1} to VDSwitch {2}."
@@ -56,6 +57,7 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     hidden [string] $MigratePhysicalNicsOnlyNotSpecified = "When migrating Physical Network Adapters without VMKernel Network Adapters, the MigratePhysicalNicsOnly parameter should be specified in order for the migration to occur."
 
     hidden [string] $CouldNotRetrieveVDSwitchMessage = "Could not retrieve VDSwitch {0}. For more information: {1}"
+    hidden [string] $CouldNotRetrieveStandardPortGroupMessage = "Could not retrieve Standard Port Group {0} located on VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotCreateVDPortGroupMessage = "Could not create VDPortGroup {0} on VDSwitch {1}. For more information: {2}"
     hidden [string] $CouldNotAddVDSwitchToVMHostMessage = "Could not add VDSwitch {0} to VMHost {1}. For more information: {2}"
     hidden [string] $CouldNotAddPhysicalNicsToVDSwitchMessage = "Could not migrate Physical Network Adapters {0} to VDSwitch {1}. For more information: {2}"
@@ -195,6 +197,31 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     <#
     .DESCRIPTION
 
+    Retrieves the Standard Port Group with the specified name if it exists.
+    Otherwise it throws an exception.
+    #>
+    [PSObject] GetStandardPortGroup($standardPortGroupName) {
+        try {
+            $this.WriteLogUtil('Verbose', $this.RetrieveStandardPortGroupMessage, @($standardPortGroupName, $this.VMHost.Name))
+            $getVirtualPortGroupParams = @{
+                Server = $this.Connection
+                Name = $standardPortGroupName
+                VMHost = $this.VMHost
+                Standard = $true
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+
+            return Get-VirtualPortGroup @getVirtualPortGroupParams
+        }
+        catch {
+            throw ($this.CouldNotRetrieveStandardPortGroupMessage -f $standardPortGroupName, $this.VMHost.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
     Creates a hashtable containing the parameters for the Add-VDSwitchPhysicalNetworkAdapter cmdlet.
     #>
     [hashtable] GetAddVDSwitchPhysicalNetworkAdapterParams($distributedSwitch, $physicalNics) {
@@ -319,7 +346,7 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     Ensures that the specified Distributed Port Groups exist. If a Distributed Port Group is specified and does not exist,
     it is created on the specified Distributed Switch.
     #>
-    [array] EnsureDistributedPortGroupsExist($distributedSwitch) {
+    [array] EnsureDistributedPortGroupsExist($distributedSwitch, $vmKernelNetworkAdapters) {
         $portGroups = @()
         foreach ($distributedPortGroupName in $this.PortGroupNames) {
             $getVDPortGroupParams = @{
@@ -331,22 +358,7 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
             }
             $distributedPortGroup = Get-VDPortgroup @getVDPortGroupParams
             if ($null -eq $distributedPortGroup) {
-                try {
-                    $this.WriteLogUtil('Verbose', $this.CreateVDPortGroupMessage, @($distributedPortGroupName, $distributedSwitch.Name))
-
-                    $newVDPortGroupParams = @{
-                        Server = $this.Connection
-                        Name = $distributedPortGroupName
-                        VDSwitch = $distributedSwitch
-                        Confirm = $false
-                        ErrorAction = 'Stop'
-                        Verbose = $false
-                    }
-                    $distributedPortGroup = New-VDPortgroup @newVDPortGroupParams
-                }
-                catch {
-                    throw ($this.CouldNotCreateVDPortGroupMessage -f $distributedPortGroupName, $distributedSwitch.Name, $_.Exception.Message)
-                }
+                $distributedPortGroup = $this.CreateDistributedPortGroup($distributedPortGroupName, $distributedSwitch, $vmKernelNetworkAdapters)
             }
 
             $portGroups += $distributedPortGroup
@@ -374,6 +386,45 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
             if ($this.PortGroupNames.Length -ne 0) {
                 throw "$($this.PortGroupNames.Length) Port Groups specified and no VMKernel Network Adapters specified which is not valid."
             }
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a new Distributed Port Group with the specified name on the specified Distributed Switch.
+    If a Standard Port Group with the same name exists on the Standard Switch from which the VMKernel Network Adapters are migrated
+    and the Standard Port Group is associated with a VLAN, the new Distributed Port Group is created with the same VLAN to avoid
+    any network misconfigurations due to VLANs not configured correctly.
+    #>
+    [PSObject] CreateDistributedPortGroup($distributedPortGroupName, $distributedSwitch, $vmKernelNetworkAdapters) {
+        try {
+            $createVDPortGroupMessageEnd = "."
+            $newVDPortGroupParams = @{
+                Server = $this.Connection
+                Name = $distributedPortGroupName
+                VDSwitch = $distributedSwitch
+                Confirm = $false
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+
+            $vmKernelNetworkAdapterOfStandardPortGroup = $vmKernelNetworkAdapters | Where-Object -FilterScript { $_.PortGroupName -eq $distributedPortGroupName }
+            if ($null -ne $vmKernelNetworkAdapterOfStandardPortGroup) {
+                $standardPortGroup = $this.GetStandardPortGroup($distributedPortGroupName)
+
+                # The VLAN for Distributed Port Groups is valid only in the specified range.
+                if ($standardPortGroup.VLanId -In 1..4094) {
+                    $newVDPortGroupParams.VlanId = $standardPortGroup.VLanId
+                    $createVDPortGroupMessageEnd = " with VLAN ID $($standardPortGroup.VLanId)."
+                }
+            }
+
+            $this.WriteLogUtil('Verbose', $this.CreateVDPortGroupMessage, @($distributedPortGroupName, $distributedSwitch.Name, $createVDPortGroupMessageEnd))
+            return New-VDPortgroup @newVDPortGroupParams
+        }
+        catch {
+            throw ($this.CouldNotCreateVDPortGroupMessage -f $distributedPortGroupName, $distributedSwitch.Name, $_.Exception.Message)
         }
     }
 
@@ -440,7 +491,7 @@ class VMHostVDSwitchMigration : VMHostNetworkMigrationBaseDSC {
     Adds the Physical Network Adapters and VMKernel Network Adapters to the specified Distributed Switch.
     #>
     [void] AddPhysicalNetworkAdaptersAndVMKernelNetworkAdaptersToDistributedSwitch($physicalNetworkAdapters, $vmKernelNetworkAdapters, $distributedSwitch) {
-        $portGroups = $this.EnsureDistributedPortGroupsExist($distributedSwitch)
+        $portGroups = $this.EnsureDistributedPortGroupsExist($distributedSwitch, $vmKernelNetworkAdapters)
 
         try {
             $this.WriteLogUtil('Verbose', $this.AddPhysicalNicsAndVMKernelNicsToVDSwitchMessage, @(

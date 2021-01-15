@@ -535,6 +535,47 @@ InModuleScope -ModuleName $script:moduleName {
                     Assert-MockCalled @assertMockCalledParams
                 }
             }
+
+            Context 'Port Group with associated VLan is passed' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenPortGroupWithAssociatedVLanIsPassed
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks with the correct parameters' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should call the Add-VDSwitchPhysicalNetworkAdapter mock with the Distributed Switch, the disconnected Physical Network Adapter, the VMKernel Network Adapter and the Port Group with VLan once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $expectedVMHostPhysicalNic = @($script:disconnectedPhysicalNetworkAdapterOne)
+                    $expectedVMHostVirtualNic = @($script:vmKernelNicAttachedToPortGroupWithVLan)
+
+                    $assertMockCalledParams = @{
+                        CommandName = 'Add-VDSwitchPhysicalNetworkAdapter'
+                        ParameterFilter = {
+                            $Server -eq $script:viServer -and
+                            $DistributedSwitch -eq $script:distributedSwitch -and
+                            [System.Linq.Enumerable]::SequenceEqual($VMHostPhysicalNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.PhysicalNic[]] $expectedVMHostPhysicalNic) -and
+                            [System.Linq.Enumerable]::SequenceEqual($VMHostVirtualNic, [VMware.VimAutomation.ViCore.Types.V1.Host.Networking.Nic.HostVirtualNic[]] $expectedVMHostVirtualNic) -and
+                            !$Confirm
+                        }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
+            }
         }
 
         Describe 'VMHostVDSwitchMigration\Test' -Tag 'Test' {
