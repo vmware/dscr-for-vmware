@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.80 - 2021-01-15
+### Added
+- Added **VMHostStorage** DSC Resource.
+- Added Unit Tests for **VMHostStorage** DSC Resource.
+- Added Integration Tests for **VMHostStorage** DSC Resource.
+- Added Documentation and example Configurations for **VMHostStorage** DSC Resource.
+
 ## VMware.vSphereDSC 2.1.0.79 - 2021-01-15
 ### Added
 - Added **VLanId** property of **VDPortGroup DSC Resource**.

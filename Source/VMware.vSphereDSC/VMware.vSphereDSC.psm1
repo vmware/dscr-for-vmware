@@ -11502,6 +11502,143 @@ class VMHostSettings : VMHostBaseDSC {
 }
 
 [DscResource()]
+class VMHostStorage : VMHostBaseDSC {
+    <#
+    .DESCRIPTION
+
+    Specifies whether the software iSCSI is enabled on the VMHost storage.
+    #>
+    [DscProperty(Mandatory)]
+    [bool] $Enabled
+
+    hidden [string] $RetrieveVMHostStorageMessage = "Retrieving VMHost storage for VMHost {0}."
+    hidden [string] $ConfigureVMHostStorageMessage = "Configuring VMHost storage for VMHost {0}."
+
+    hidden [string] $CouldNotRetrieveVMHostStorageMessage = "Could not retrieve VMHost storage for VMHost {0}. For more information: {1}"
+    hidden [string] $CouldNotConfigureVMHostStorageMessage = "Could not configure VMHost storage for VMHost {0}. For more information: {1}"
+
+    [void] Set() {
+        try {
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostStorage = $this.GetVMHostStorage($vmHost)
+            $this.ConfigureVMHostStorage($vmHostStorage)
+        }
+        finally {
+            $this.DisconnectVIServer()
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
+        }
+    }
+
+    [bool] Test() {
+        try {
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostStorage = $this.GetVMHostStorage($vmHost)
+
+            $result = !$this.ShouldConfigureVMHostStorage($vmHostStorage)
+            $this.WriteDscResourceState($result)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
+        }
+    }
+
+    [VMHostStorage] Get() {
+        try {
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
+            $result = [VMHostStorage]::new()
+
+            $this.ConnectVIServer()
+
+            $vmHost = $this.GetVMHost()
+            $vmHostStorage = $this.GetVMHostStorage($vmHost)
+
+            $this.PopulateResult($result, $vmHostStorage)
+
+            return $result
+        }
+        finally {
+            $this.DisconnectVIServer()
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Retrieves the VMHost storage for the specified VMHost.
+    #>
+    [PSObject] GetVMHostStorage($vmHost) {
+        $getVMHostStorageParams = @{
+            Server = $this.Connection
+            VMHost = $vmHost
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            $this.WriteLogUtil('Verbose', $this.RetrieveVMHostStorageMessage, @($vmHost.Name))
+            return Get-VMHostStorage @getVMHostStorageParams
+        }
+        catch {
+            throw ($this.CouldNotRetrieveVMHostStorageMessage -f $vmHost.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Checks if the specified VMHost storage should be configured - whether to
+    enable or disable the software iSCSI support.
+    #>
+    [bool] ShouldConfigureVMHostStorage($vmHostStorage) {
+        return $this.ShouldUpdateDscResourceSetting('Enabled', $vmHostStorage.SoftwareIScsiEnabled, $this.Enabled)
+    }
+
+    <#
+    .DESCRIPTION
+
+    Configures the VMHost storage - enables or disables the software iSCSI support.
+    #>
+    [void] ConfigureVMHostStorage($vmHostStorage) {
+        $setVMHostStorageParams = @{
+            VMHostStorage = $vmHostStorage
+            SoftwareIScsiEnabled = $this.Enabled
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        try {
+            $this.WriteLogUtil('Verbose', $this.ConfigureVMHostStorageMessage, @($vmHostStorage.VMHost.Name))
+            Set-VMHostStorage @setVMHostStorageParams
+        }
+        catch {
+            throw ($this.CouldNotConfigureVMHostStorageMessage -f $vmHostStorage.VMHost.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Populates the result returned from the Get method.
+    #>
+    [void] PopulateResult($result, $vmHostStorage) {
+        $result.Server = $this.Connection.Name
+        $result.Name = $vmHostStorage.VMHost.Name
+        $result.Enabled = $vmHostStorage.SoftwareIScsiEnabled
+    }
+}
+
+[DscResource()]
 class VMHostSyslog : VMHostBaseDSC {
     <#
     .DESCRIPTION
