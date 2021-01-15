@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.79 - 2021-01-15
+### Added
+- Added **VLanId** property of **VDPortGroup DSC Resource**.
+- Added Unit Tests for **VLanId** property of **VDPortGroup DSC Resource**.
+- Added Integration Tests for **VLanId** property of **VDPortGroup DSC Resource**.
+- Added Documentation and example Configuration for **VLanId** property of **VDPortGroup DSC Resource**.
+
 ## VMware.vSphereDSC 2.1.0.78 - 2021-01-15
 ### Changed
 - Extended **VMHostVDSwitchMigration DSC Resource** to create distributed port groups with **VLAN ID**.
