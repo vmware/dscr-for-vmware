@@ -91888,6 +91888,15 @@ namespace VMware.VimAutomation.Vds.Types.V1
         LLDP
     }
 
+    public enum VlanType
+    {
+        None,
+        Vlan,
+        Trunk,
+        PrivateVlan,
+        Unknown
+    }
+
     public interface VDPortGroup
     {
         string Id { get; set; }
@@ -91903,6 +91912,8 @@ namespace VMware.VimAutomation.Vds.Types.V1
         DistributedPortGroupPortBinding PortBinding { get; set; }
 
         VDSwitch VDSwitch { get; set; }
+
+        VlanConfiguration VlanConfiguration { get; set; }
 
         object ExtensionData { get; set; }
     }
@@ -91935,6 +91946,16 @@ namespace VMware.VimAutomation.Vds.Types.V1
 
         object ExtensionData { get; set; }
     }
+
+    public interface VlanConfiguration
+    {
+        VlanType VlanType { get; set; }
+    }
+
+    public interface SingleVlanConfiguration : VlanConfiguration
+    {
+        int VlanId { get; set; }
+    }
 }
 
 namespace VMware.VimAutomation.Vds.Impl.V1
@@ -91944,6 +91965,48 @@ namespace VMware.VimAutomation.Vds.Impl.V1
     using VMware.VimAutomation.ViCore.Types.V1;
     using VMware.VimAutomation.ViCore.Types.V1.Host.Networking;
     using VMware.VimAutomation.Vds.Types.V1;
+
+    public class SingleVlanConfigurationImpl : SingleVlanConfiguration, IEquatable<SingleVlanConfigurationImpl>
+    {
+        public VlanType VlanType { get; set; }
+        
+        public int VlanId { get; set; }
+
+        public bool Equals(SingleVlanConfigurationImpl singleVlanConfigurationImpl)
+        {
+            return (singleVlanConfigurationImpl != null && this.VlanType == singleVlanConfigurationImpl.VlanType && this.VlanId == singleVlanConfigurationImpl.VlanId);
+        }
+
+        public override bool Equals(object singleVlanConfigurationImpl)
+        {
+            return Equals(singleVlanConfigurationImpl as SingleVlanConfigurationImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return (VlanType + "_" + VlanId).GetHashCode();
+        }
+    }
+
+    public class VlanConfigurationImpl : VlanConfiguration, IEquatable<VlanConfigurationImpl>
+    {
+        public VlanType VlanType { get; set; }
+
+        public bool Equals(VlanConfigurationImpl vlanConfigurationImpl)
+        {
+            return (vlanConfigurationImpl != null && this.VlanType == vlanConfigurationImpl.VlanType);
+        }
+
+        public override bool Equals(object vlanConfigurationImpl)
+        {
+            return Equals(vlanConfigurationImpl as VlanConfigurationImpl);
+        }
+
+        public override int GetHashCode()
+        {
+            return VlanType.GetHashCode();
+        }
+    }
 
     public class VmwareVDPortgroupImpl : VDPortGroup, VIObject, VIObjectCore, ExtensionData, IEquatable<VmwareVDPortgroupImpl>
     {
@@ -91961,11 +92024,13 @@ namespace VMware.VimAutomation.Vds.Impl.V1
 
         public VDSwitch VDSwitch { get; set; }
 
+        public VlanConfiguration VlanConfiguration { get; set; }
+
         public object ExtensionData { get; set; }
 
         public bool Equals(VmwareVDPortgroupImpl vmwareVDPortgroupImpl)
         {
-            return (vmwareVDPortgroupImpl != null && this.Id == vmwareVDPortgroupImpl.Id && this.Uid == vmwareVDPortgroupImpl.Uid && this.Name == vmwareVDPortgroupImpl.Name && this.Notes == vmwareVDPortgroupImpl.Notes && this.NumPorts == vmwareVDPortgroupImpl.NumPorts && this.PortBinding == vmwareVDPortgroupImpl.PortBinding && ((this.VDSwitch == null && vmwareVDPortgroupImpl.VDSwitch == null) || (this.VDSwitch != null && this.VDSwitch.Equals(vmwareVDPortgroupImpl.VDSwitch))) && ((this.ExtensionData == null && vmwareVDPortgroupImpl.ExtensionData == null) || (this.ExtensionData != null && this.ExtensionData.Equals(vmwareVDPortgroupImpl.ExtensionData))));
+            return (vmwareVDPortgroupImpl != null && this.Id == vmwareVDPortgroupImpl.Id && this.Uid == vmwareVDPortgroupImpl.Uid && this.Name == vmwareVDPortgroupImpl.Name && this.Notes == vmwareVDPortgroupImpl.Notes && this.NumPorts == vmwareVDPortgroupImpl.NumPorts && this.PortBinding == vmwareVDPortgroupImpl.PortBinding && ((this.VDSwitch == null && vmwareVDPortgroupImpl.VDSwitch == null) || (this.VDSwitch != null && this.VDSwitch.Equals(vmwareVDPortgroupImpl.VDSwitch))) && ((this.VlanConfiguration == null && vmwareVDPortgroupImpl.VlanConfiguration == null) || (this.VlanConfiguration != null && this.VlanConfiguration.Equals(vmwareVDPortgroupImpl.VlanConfiguration))) && ((this.ExtensionData == null && vmwareVDPortgroupImpl.ExtensionData == null) || (this.ExtensionData != null && this.ExtensionData.Equals(vmwareVDPortgroupImpl.ExtensionData))));
         }
 
         public override bool Equals(object vmwareVDPortgroupImpl)
@@ -91975,7 +92040,7 @@ namespace VMware.VimAutomation.Vds.Impl.V1
 
         public override int GetHashCode()
         {
-            return (Id + "_" + Uid + "_" + Name + "_" + Notes + "_" + NumPorts + "_" + PortBinding + "_" + VDSwitch + "_" + ExtensionData).GetHashCode();
+            return (Id + "_" + Uid + "_" + Name + "_" + Notes + "_" + NumPorts + "_" + PortBinding + "_" + VDSwitch + "_" + VlanConfiguration + "_" + ExtensionData).GetHashCode();
         }
     }
 

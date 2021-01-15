@@ -69,14 +69,37 @@ class VDPortGroup : BaseDSC {
     <#
     .DESCRIPTION
 
+    Specifies the VLAN ID for the Distributed Port Group.
+    Valid values are integers in the range of 1 to 4094.
+    If 0 is specified, the VLAN type is 'None'.
+    #>
+    [DscProperty()]
+    [nullable[int]] $VLanId
+
+    <#
+    .DESCRIPTION
+
     Specifies the name for the reference Distributed Port Group.
     The properties of the new Distributed Port Group will be cloned from the reference Distributed Port Group.
     #>
     [DscProperty()]
     [string] $ReferenceVDPortGroupName
 
+    hidden [string] $RetrieveVDSwitchMessage = "Retrieving distributed switch {0}."
+    hidden [string] $CreateVDPortGroupMessage = "Creating distributed port group {0} on distributed switch {1}."
+    hidden [string] $ModifyVDPortGroupMessage = "Modifying distributed port group {0}."
+    hidden [string] $ModifyVDPortGroupVlanConfigurationMessage = "Modifying the VLAN ID of distributed port group {0} to {1}."
+    hidden [string] $RemoveVDPortGroupMessage = "Removing distributed port group {0} from distributed switch {1}."
+
+    hidden [string] $CouldNotRetrieveVDSwitchMessage = "Could not retrieve distributed switch {0}. For more information: {1}"
+    hidden [string] $CouldNotCreateVDPortGroupMessage = "Could not create distributed port group {0} on distributed switch {1}. For more information: {2}"
+    hidden [string] $CouldNotModifyVDPortGroupMessage = "Could not modify distributed port group {0}. For more information: {1}"
+    hidden [string] $CouldNotModifyVDPortGroupVlanConfigurationMessage = "Could not modify the VLAN ID of distributed port group {0} to {1}. For more information: {2}"
+    hidden [string] $CouldNotRemoveVDPortGroupMessage = "Could not remove distributed port group {0} from distributed switch {1}. For more information: {2}"
+
     [void] Set() {
         try {
+            $this.WriteLogUtil('Verbose', $this.SetMethodStartMessage, @($this.DscResourceName))
             $this.ConnectVIServer()
             $this.EnsureConnectionIsvCenter()
 
@@ -88,7 +111,13 @@ class VDPortGroup : BaseDSC {
                     $this.AddDistributedPortGroup($distributedSwitch)
                 }
                 else {
-                    $this.UpdateDistributedPortGroup($distributedPortGroup)
+                    if ($this.ShouldUpdateVLanId($distributedPortGroup)) {
+                        $this.UpdateDistributedPortGroupVlanConfiguration($distributedPortGroup)
+                    }
+
+                    if ($this.ShouldUpdateDistributedPortGroup($distributedPortGroup)) {
+                        $this.UpdateDistributedPortGroup($distributedPortGroup)
+                    }
                 }
             }
             else {
@@ -99,11 +128,13 @@ class VDPortGroup : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            $this.WriteLogUtil('Verbose', $this.SetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [bool] Test() {
         try {
+            $this.WriteLogUtil('Verbose', $this.TestMethodStartMessage, @($this.DscResourceName))
             $this.ConnectVIServer()
             $this.EnsureConnectionIsvCenter()
 
@@ -116,7 +147,7 @@ class VDPortGroup : BaseDSC {
                     $result = $false
                 }
                 else {
-                    $result = !$this.ShouldUpdateDistributedPortGroup($distributedPortGroup)
+                    $result = if ($this.ShouldUpdateDistributedPortGroup($distributedPortGroup) -or $this.ShouldUpdateVLanId($distributedPortGroup)) { $false } else { $true }
                 }
             }
             else {
@@ -129,11 +160,13 @@ class VDPortGroup : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            $this.WriteLogUtil('Verbose', $this.TestMethodEndMessage, @($this.DscResourceName))
         }
     }
 
     [VDPortGroup] Get() {
         try {
+            $this.WriteLogUtil('Verbose', $this.GetMethodStartMessage, @($this.DscResourceName))
             $result = [VDPortGroup]::new()
 
             $this.ConnectVIServer()
@@ -148,6 +181,7 @@ class VDPortGroup : BaseDSC {
         }
         finally {
             $this.DisconnectVIServer()
+            $this.WriteLogUtil('Verbose', $this.GetMethodEndMessage, @($this.DscResourceName))
         }
     }
 
@@ -160,23 +194,30 @@ class VDPortGroup : BaseDSC {
     #>
     [PSObject] GetDistributedSwitch() {
         <#
-        The Verbose logic here is needed to suppress the Exporting and Importing of the
-        cmdlets from the VMware.VimAutomation.Vds Module.
+            The Verbose logic here is needed to suppress the Verbose output of the Import-Module cmdlet
+            when importing the 'VMware.VimAutomation.Vds' Module.
         #>
         $savedVerbosePreference = $global:VerbosePreference
         $global:VerbosePreference = 'SilentlyContinue'
 
         try {
+            $getVDSwitchParams = @{
+                Server = $this.Connection
+                Name = $this.VdsName
+                Verbose = $false
+            }
             if ($this.Ensure -eq [Ensure]::Absent) {
-                return Get-VDSwitch -Server $this.Connection -Name $this.VdsName -ErrorAction SilentlyContinue
+                $getVDSwitchParams.ErrorAction = 'SilentlyContinue'
+                return Get-VDSwitch @getVDSwitchParams
             }
             else {
                 try {
-                    $distributedSwitch = Get-VDSwitch -Server $this.Connection -Name $this.VdsName -ErrorAction Stop
-                    return $distributedSwitch
+                    $this.WriteLogUtil('Verbose', $this.RetrieveVDSwitchMessage, @($this.VdsName))
+                    $getVDSwitchParams.ErrorAction = 'Stop'
+                    return Get-VDSwitch @getVDSwitchParams
                 }
                 catch {
-                    throw "Could not retrieve Distributed Switch $($this.VdsName). For more information: $($_.Exception.Message)"
+                    throw ($this.CouldNotRetrieveVDSwitchMessage -f $this.VdsName, $_.Exception.Message)
                 }
             }
         }
@@ -200,7 +241,14 @@ class VDPortGroup : BaseDSC {
             return $null
         }
 
-        return Get-VDPortgroup -Server $this.Connection -Name $this.Name -VDSwitch $distributedSwitch -ErrorAction SilentlyContinue
+        $getVDPortgroupParams = @{
+            Server = $this.Connection
+            Name = $this.Name
+            VDSwitch = $distributedSwitch
+            ErrorAction = 'SilentlyContinue'
+            Verbose = $false
+        }
+        return Get-VDPortgroup @getVDPortgroupParams
     }
 
     <#
@@ -221,6 +269,16 @@ class VDPortGroup : BaseDSC {
     <#
     .DESCRIPTION
 
+    Checks if the VLAN ID of the specified distributed port group should be modified.
+    #>
+    [bool] ShouldUpdateVLanId($distributedPortGroup) {
+        $currentVLanId = if ($null -ne $distributedPortGroup.VlanConfiguration) { $distributedPortGroup.VlanConfiguration.VlanId } else { 0 }
+        return $this.ShouldUpdateDscResourceSetting('VLanId', $currentVLanId, $this.VLanId)
+    }
+
+    <#
+    .DESCRIPTION
+
     Returns the populated Distributed Port Group parameters.
     #>
     [hashtable] GetDistributedPortGroupParams() {
@@ -229,6 +287,7 @@ class VDPortGroup : BaseDSC {
         $distributedPortGroupParams.Server = $this.Connection
         $distributedPortGroupParams.Confirm = $false
         $distributedPortGroupParams.ErrorAction = 'Stop'
+        $distributedPortGroupParams.Verbose = $false
 
         if ($null -ne $this.Notes) { $distributedPortGroupParams.Notes = $this.Notes }
         if ($null -ne $this.NumPorts) { $distributedPortGroupParams.NumPorts = $this.NumPorts }
@@ -251,16 +310,18 @@ class VDPortGroup : BaseDSC {
         $distributedPortGroupParams.VDSwitch = $distributedSwitch
 
         <#
-        ReferencePortGroup is parameter only for the New-VDPortgroup cmdlet
-        and is not used for the Set-VDPortgroup cmdlet.
+        ReferencePortGroup and VLanId are parameters only for the New-VDPortgroup cmdlet
+        and are not used for the Set-VDPortgroup cmdlet.
         #>
         if (![string]::IsNullOrEmpty($this.ReferenceVDPortGroupName)) { $distributedPortGroupParams.ReferencePortgroup = $this.ReferenceVDPortGroupName }
+        if ($null -ne $this.VLanId) { $distributedPortGroupParams.VlanId = $this.VLanId }
 
         try {
+            $this.WriteLogUtil('Verbose', $this.CreateVDPortGroupMessage, @($this.Name, $distributedSwitch.Name))
             New-VDPortgroup @distributedPortGroupParams
         }
         catch {
-            throw "Cannot create Distributed Port Group $($this.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotCreateVDPortGroupMessage -f $this.Name, $distributedSwitch.Name, $_.Exception.Message)
         }
     }
 
@@ -273,10 +334,40 @@ class VDPortGroup : BaseDSC {
         $distributedPortGroupParams = $this.GetDistributedPortGroupParams()
 
         try {
+            $this.WriteLogUtil('Verbose', $this.ModifyVDPortGroupMessage, @($distributedPortGroup.Name))
             $distributedPortGroup | Set-VDPortgroup @distributedPortGroupParams
         }
         catch {
-            throw "Cannot update Distributed Port Group $($this.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotModifyVDPortGroupMessage -f $distributedPortGroup.Name, $_.Exception.Message)
+        }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Modifies the VLAN configuration of the specified Distributed Port Group.
+    #>
+    [void] UpdateDistributedPortGroupVlanConfiguration($distributedPortGroup) {
+        $setVDVlanConfigurationParams = @{
+            VDPortgroup = $distributedPortGroup
+            Confirm = $false
+            ErrorAction = 'Stop'
+            Verbose = $false
+        }
+
+        if ($this.VLanId -eq 0) {
+            $setVDVlanConfigurationParams.DisableVlan = $true
+        }
+        else {
+            $setVDVlanConfigurationParams.VlanId = $this.VLanId
+        }
+
+        try {
+            $this.WriteLogUtil('Verbose', $this.ModifyVDPortGroupVlanConfigurationMessage, @($distributedPortGroup.Name, $this.VLanId))
+            Set-VDVlanConfiguration @setVDVlanConfigurationParams
+        }
+        catch {
+            throw ($this.CouldNotModifyVDPortGroupVlanConfigurationMessage -f $distributedPortGroup.Name, $this.VLanId, $_.Exception.Message)
         }
     }
 
@@ -287,10 +378,18 @@ class VDPortGroup : BaseDSC {
     #>
     [void] RemoveDistributedPortGroup($distributedPortGroup) {
         try {
-            $distributedPortGroup | Remove-VDPortGroup -Server $this.Connection -Confirm:$false -ErrorAction Stop
+            $this.WriteLogUtil('Verbose', $this.RemoveVDPortGroupMessage, @($distributedPortGroup.Name, $distributedPortGroup.VDSwitch.Name))
+            $removeVDPortGroupParams = @{
+                Server = $this.Connection
+                VDPortGroup = $distributedPortGroup
+                Confirm = $false
+                ErrorAction = 'Stop'
+                Verbose = $false
+            }
+            Remove-VDPortGroup @removeVDPortGroupParams
         }
         catch {
-            throw "Cannot remove Distributed Port Group $($this.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRemoveVDPortGroupMessage -f $distributedPortGroup.Name, $distributedPortGroup.VDSwitch.Name, $_.Exception.Message)
         }
     }
 
@@ -310,6 +409,7 @@ class VDPortGroup : BaseDSC {
             $result.Notes = $distributedPortGroup.Notes
             $result.NumPorts = $distributedPortGroup.NumPorts
             $result.PortBinding = $distributedPortGroup.PortBinding.ToString()
+            $result.VLanId = [int] $distributedPortGroup.VlanConfiguration.VlanId
         }
         else {
             $result.Name = $this.Name
@@ -318,6 +418,7 @@ class VDPortGroup : BaseDSC {
             $result.Notes = $this.Notes
             $result.NumPorts = $this.NumPorts
             $result.PortBinding = $this.PortBinding
+            $result.VLanId = [int] $this.VLanId
         }
     }
 }

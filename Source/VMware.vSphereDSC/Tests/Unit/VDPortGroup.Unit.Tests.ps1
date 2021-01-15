@@ -104,6 +104,7 @@ InModuleScope -ModuleName $script:moduleName {
                             $Notes -eq $script:constants.DistributedPortGroupNotes -and
                             $NumPorts -eq $script:constants.DistributedPortGroupNumPorts -and
                             $PortBinding -eq $script:constants.DistributedPortGroupStaticPortBinding -and
+                            $VLanId -eq $script:constants.VLanId -and
                             !$Confirm
                         }
                         Exactly = $true
@@ -180,6 +181,78 @@ InModuleScope -ModuleName $script:moduleName {
                             $VDPortgroup -eq $script:distributedPortGroup -and
                             $NumPorts -eq ($script:constants.DistributedPortGroupNumPorts + $script:constants.DistributedPortGroupNumPorts) -and
                             $PortBinding -eq $script:constants.DistributedPortGroupDynamicPortBinding -and
+                            !$Confirm
+                        }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
+            }
+
+            Context 'Distributed Port Group exists, VLAN ID 0 is passed and needs to be updated and Ensure is Present' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenDistributedPortGroupExistsVlanId0IsPassedAndNeedsToBeUpdatedAndEnsureIsPresent
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks with the correct parameters' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should call the Set-VDVlanConfiguration mock with the Distributed Port Group and DisableVlan parameter once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Set-VDVlanConfiguration'
+                        ParameterFilter = {
+                            $VDPortgroup -eq $script:distributedPortGroup -and
+                            $DisableVlan -and
+                            !$Confirm
+                        }
+                        Exactly = $true
+                        Times = 1
+                        Scope = 'It'
+                    }
+
+                    Assert-MockCalled @assertMockCalledParams
+                }
+            }
+
+            Context 'Distributed Port Group exists, VLAN ID is passed and needs to be updated and Ensure is Present' {
+                BeforeAll {
+                    # Arrange
+                    $resourceProperties = New-MocksWhenDistributedPortGroupExistsVlanIdIsPassedAndNeedsToBeUpdatedAndEnsureIsPresent
+                    $resource = New-Object -TypeName $resourceName -Property $resourceProperties
+                }
+
+                It 'Should call all defined mocks with the correct parameters' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    Assert-VerifiableMock
+                }
+
+                It 'Should call the Set-VDVlanConfiguration mock with the Distributed Port Group and VLAN ID once' {
+                    # Act
+                    $resource.Set()
+
+                    # Assert
+                    $assertMockCalledParams = @{
+                        CommandName = 'Set-VDVlanConfiguration'
+                        ParameterFilter = {
+                            $VDPortgroup -eq $script:distributedPortGroup -and
+                            $VlanId -eq $script:constants.ModifiedVLanId -and
                             !$Confirm
                         }
                         Exactly = $true
@@ -425,6 +498,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.NumPorts | Should -Be $resourceProperties.NumPorts
                     $result.PortBinding | Should -Be 'Unset'
                     $result.ReferenceVDPortGroupName | Should -BeNullOrEmpty
+                    $result.VLanId | Should -Be 0
                 }
             }
 
@@ -456,6 +530,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.NumPorts | Should -Be $script:distributedPortGroup.NumPorts
                     $result.PortBinding | Should -Be $script:distributedPortGroup.PortBinding
                     $result.ReferenceVDPortGroupName | Should -BeNullOrEmpty
+                    $result.VLanId | Should -Be $script:distributedPortGroup.VlanConfiguration.VlanId
                 }
             }
 
@@ -487,6 +562,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.NumPorts | Should -Be $resourceProperties.NumPorts
                     $result.PortBinding | Should -Be 'Unset'
                     $result.ReferenceVDPortGroupName | Should -BeNullOrEmpty
+                    $result.VLanId | Should -Be 0
                 }
             }
 
@@ -518,6 +594,7 @@ InModuleScope -ModuleName $script:moduleName {
                     $result.NumPorts | Should -Be $script:distributedPortGroup.NumPorts
                     $result.PortBinding | Should -Be $script:distributedPortGroup.PortBinding
                     $result.ReferenceVDPortGroupName | Should -BeNullOrEmpty
+                    $result.VLanId | Should -Be $script:distributedPortGroup.VlanConfiguration.VlanId
                 }
             }
         }
