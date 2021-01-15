@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.78 - 2021-01-15
+### Changed
+- Extended **VMHostVDSwitchMigration DSC Resource** to create distributed port groups with **VLAN ID**.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.7 - 2020-12-18
 ### Added
 - Added integration tests for **VMware.PSDesiredStateConfiguration** module.
