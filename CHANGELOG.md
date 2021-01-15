@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.81 - 2021-01-15
+### Added
+- Added **VMHostIScsiHbaVMKernelNic** DSC Resource.
+- Added Unit Tests for **VMHostIScsiHbaVMKernelNic** DSC Resource.
+- Added Integration Tests for **VMHostIScsiHbaVMKernelNic** DSC Resource.
+- Added Documentation and example Configurations for **VMHostIScsiHbaVMKernelNic** DSC Resource.
+
 ## VMware.vSphereDSC 2.1.0.80 - 2021-01-15
 ### Added
 - Added **VMHostStorage** DSC Resource.
