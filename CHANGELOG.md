@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.82 - 2021-01-18
+### Changed
+- Bumped **License.txt**.
+
+## VMware.PSDesiredStateConfiguration 0.0.0.8 - 2021-01-18
+### Changed
+- Bumped **License.txt**.
+
 ## 2021-01-18
 ### Added
 - Added **Getting Started** sections for **VMware.vSphereDSC** and **VMware.PSDesiredStateConfiguration** modules in **README.md**.
