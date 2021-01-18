@@ -1,6 +1,6 @@
 Desired State Configuration Resources for VMware
 
-Copyright (c) 2018-2020 VMware, Inc. All Rights Reserved.
+Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 This product is licensed to you under the BSD-2 license (the "License").  You may not use this product except in compliance with the BSD-2 License.
 
