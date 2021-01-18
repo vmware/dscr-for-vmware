@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2021-01-18
+### Added
+- Added **Getting Started** sections for **VMware.vSphereDSC** and **VMware.PSDesiredStateConfiguration** modules in **README.md**.
+
 ## VMware.vSphereDSC 2.1.0.81 - 2021-01-15
 ### Added
 - Added **VMHostIScsiHbaVMKernelNic** DSC Resource.
