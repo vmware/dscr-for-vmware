@@ -16,14 +16,15 @@ The **VMware.vSphereDSC** module contains resources for:
 - **Host accounts**, **roles** and **permissions**
 - **vCenter** and **Host** settings
 
-For more information about all available **Resources**, please visit the **wiki** page of the repository: [Wiki](https://github.com/vmware/dscr-for-vmware/wiki).
-For more information about the **VMware.vSphereDSC** module ,please visit: [VMware.vSphereDSC info](https://github.com/vmware/dscr-for-vmware/blob/master/VMware.vSphereDSC.md).
-
 The **VMware.PSDesiredStateConfiguration** module provides an alternative in-language way to compile and execute DSC Configurations. It does not require the use of LCM and supports PowerShell 7.0.
 
-For more information about the **VMware.PSDesiredStateConfiguration** module, please visit: [VMware.PSDesiredStateConfiguration info](https://github.com/vmware/dscr-for-vmware/blob/master/VMware.PSDesiredStateConfiguration.md).
+## VMware.vSphereDSC
+[Getting Started with VMware.vSphereDSC](https://github.com/vmware/dscr-for-vmware/blob/master/VMware.vSphereDSC.md)<br/>
+[DSC Resources Documentation](https://github.com/vmware/dscr-for-vmware/wiki)<br/>
 
-For a list of known limitations, please visit: [Known Limitations](https://github.com/vmware/dscr-for-vmware/blob/master/LIMITATIONS.md).
+## VMware.PSDesiredStateConfiguration
+[Getting Started with VMware.PSDesiredStateConfiguration](https://github.com/vmware/dscr-for-vmware/blob/master/VMware.PSDesiredStateConfiguration.md)<br/>
+[Known Limitations](https://github.com/vmware/dscr-for-vmware/blob/master/LIMITATIONS.md)<br/>
 
 ## Branches
 
