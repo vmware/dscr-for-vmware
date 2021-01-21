@@ -17,6 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 class VMHostNetworkBaseDSC : VMHostBaseDSC {
     hidden [PSObject] $VMHostNetworkSystem
 
+    hidden [string] $CouldNotRetrieveNetworkSystemMessage = "Could not retrieve the Network System of VMHost {0}. For more information: {1}"
+
     <#
     .DESCRIPTION
 
@@ -27,7 +29,7 @@ class VMHostNetworkBaseDSC : VMHostBaseDSC {
             $this.VMHostNetworkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
         }
         catch {
-            throw "Could not retrieve NetworkSystem on VMHost with name $($this.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRetrieveNetworkSystemMessage -f $this.Name, $_.Exception.Message)
         }
     }
 }

@@ -137,6 +137,10 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     [DscProperty()]
     [nullable[bool]] $VsanTrafficEnabled
 
+    hidden [string] $CouldNotCreateVMKernelNicMessage = "Cannot create VMKernel Network Adapter connected to Virtual Switch {0} and Port Group {1}. For more information: {2}"
+    hidden [string] $CouldNotUpdateVMKernelNicMessage = "Cannot update VMKernel Network Adapter {0}. For more information: {1}"
+    hidden [string] $CouldNotRemoveVMKernelNicMessage = "Cannot remove VMKernel Network Adapter {0}. For more information: {1}"
+
     <#
     .DESCRIPTION
 
@@ -257,7 +261,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
             return New-VMHostNetworkAdapter @vmHostNetworkAdapterParams
         }
         catch {
-            throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($virtualSwitch.Name) and Port Group $($this.PortGroupName). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotCreateVMKernelNicMessage -f $virtualSwitch.Name, $this.PortGroupName, $_.Exception.Message)
         }
     }
 
@@ -309,7 +313,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
             $vmHostNetworkAdapter | Set-VMHostNetworkAdapter @vmHostNetworkAdapterParams
         }
         catch {
-            throw "Cannot update VMKernel Network Adapter $($vmHostNetworkAdapter.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotUpdateVMKernelNicMessage -f $vmHostNetworkAdapter.Name, $_.Exception.Message)
         }
     }
 
@@ -323,7 +327,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
             Remove-VMHostNetworkAdapter -Nic $vmHostNetworkAdapter -Confirm:$false -ErrorAction Stop
         }
         catch {
-            throw "Cannot remove VMKernel Network Adapter $($vmHostNetworkAdapter.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRemoveVMKernelNicMessage -f $vmHostNetworkAdapter.Name, $_.Exception.Message)
         }
     }
 
