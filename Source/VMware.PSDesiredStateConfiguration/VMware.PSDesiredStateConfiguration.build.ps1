@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -16,6 +14,23 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
+$script:ModuleRoot = $PSScriptRoot
+$script:ProjectRoot = (Get-Item -Path $script:ModuleRoot).Parent.Parent.FullName
+$script:ModuleName = Split-Path -Path $script:ModuleRoot -Leaf
+
+$script:PsdPath = Join-Path -Path $script:ModuleRoot -ChildPath "$($script:ModuleName).psd1"
+
+$script:LicensePath = Join-Path -Path $script:ProjectRoot -ChildPath "LICENSE.txt"
+
+# This is used to skip the lines from LICENSE.txt containing the repository name and the empty line after it.
+$script:LicenseSkipLines = 2
+$script:LicenseFileContent = Get-Content -Path $script:LicensePath | Select-Object -Skip $script:LicenseSkipLines
+
+$script:ClassesPath = Join-Path -Path $script:ModuleRoot -ChildPath 'Classes'
+$script:FunctionsPath = Join-Path -Path $script:ModuleRoot -ChildPath 'Functions'
+$script:TestsPath = Join-Path -Path $script:ModuleRoot -ChildPath 'Tests'
+$script:ModuleFilePaths = @($script:ClassesPath, $script:FunctionsPath, $script:TestsPath)
+
 <#
 .Description
 Checks if file contains the required license
@@ -25,24 +40,34 @@ function EnsureLicenseInFile {
         [System.IO.FileInfo]
         $File,
 
-        [string]
-        $License,
-
-        [switch]
-        $AddLicense
+        [string[]]
+        $LicenseContent
     )
 
-    $fileContent = Get-Content $File.FullName -Raw
+    $fileContent = Get-Content -Path $File.FullName
+    $lineCounter = 1
+    $startsWithLicenseContent = $true
 
-    if (-not $fileContent.StartsWith($license)) {
-        if ($AddLicense) {
-            #add license to start of file
-            $fileContent = $License + [System.Environment]::NewLine + [System.Environment]::NewLine + $fileContent
-            $fileContent | Out-File $file.FullName -Encoding Default
-        } else {
-            # throw if license is not found
-            throw "$($file.FullName) does not contain the required license"
-        }    
+    foreach ($licenseLine in $LicenseContent) {
+        if ($fileContent[$lineCounter] -ne $licenseLine) {
+            $startsWithLicenseContent = $false
+            break
+        }
+
+        $lineCounter += 1
+    }
+
+    if (!$startsWithLicenseContent) {
+        $modifiedFileContent = @()
+
+        $modifiedFileContent += '<#'
+        $LicenseContent | ForEach-Object -Process { $modifiedFileContent += $_ }
+        $modifiedFileContent += '#>'
+        $modifiedFileContent += [string]::Empty
+
+        $fileContent | ForEach-Object -Process { $modifiedFileContent += $_ }
+
+        $modifiedFileContent | Out-File -FilePath $File.FullName -Encoding Default
     }
 }
 
@@ -69,26 +94,8 @@ function Update-ModuleVersion {
     ($fileContent -replace $moduleVersionPattern, $newVersion) | Out-File $FilePath -NoNewline
 }
 
-# paths to all scripts
-$scriptPaths = @(
-    (Join-Path $PSScriptRoot 'Classes')
-    (Join-Path $PSScriptRoot 'Functions')
-    (Join-Path $PSScriptRoot 'Tests')
-)
-
-# license with comment brackets
-$licensePath = (Join-Path (Split-Path (Split-Path $PSScriptRoot)) 'LICENSE.txt')
-$license = Get-Content $licensePath -Raw
-$license = $license.Trim()
-$license = "<`#" + [System.Environment]::NewLine + $license + [System.Environment]::NewLine + "`#>"
-
-Get-ChildItem -Filter '*.ps1' -Path $scriptPaths -Recurse | ForEach-Object {
-    # check if all files have their license
-    EnsureLicenseInFile $_ $license
+Get-ChildItem -Path $script:ModuleFilePaths -File -Recurse | ForEach-Object {
+    EnsureLicenseInFile -File $_ -LicenseContent $script:LicenseFileContent
 }
 
-# update version in psd1
-
-$psd1Path = Join-Path $PSScriptRoot 'VMware.PSDesiredStateConfiguration.psd1'
-
-Update-ModuleVersion $psd1Path
+Update-ModuleVersion -FilePath $script:PsdPath
