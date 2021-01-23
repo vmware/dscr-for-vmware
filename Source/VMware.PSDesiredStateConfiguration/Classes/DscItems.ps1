@@ -115,7 +115,7 @@ class VmwDscResource : DscItem {
         if ($null -eq $innerResources) {
             throw '$innerResources must not be null!'
         }
-        
+
         $this.innerResources = $innerResources
     }
 
@@ -134,7 +134,7 @@ class VmwDscResource : DscItem {
 This graph is used to sort Resources by their 'DependsOn' key in the 'Property' property
 #>
 class VmwDscResourceGraph {
-    [System.Collections.Specialized.OrderedDictionary] 
+    [System.Collections.Specialized.OrderedDictionary]
     hidden $Edges
 
     [System.Collections.Specialized.OrderedDictionary]
@@ -187,18 +187,18 @@ class VmwDscResourceGraph {
         if ($Cycles.Contains($ResKey)) {
             throw "Cycle detected with key: $ResKey"
         }
-    
+
         if ($Visited.Contains($ResKey)) {
             return
         }
-    
+
         $Visited.Add($ResKey) | Out-Null
-        $Cycles.Add($ResKey) | Out-Null 
-    
+        $Cycles.Add($ResKey) | Out-Null
+
         foreach ($child in $this.Edges[$ResKey]) {
             $this.TopologicalSortUtil($child, $sortedResourceKeys, $visited, $cycles)
         }
-    
+
         $Cycles.Remove($ResKey) | Out-Null
         $SortedResourceKeys.Push($ResKey) | Out-Null
     }
@@ -229,10 +229,10 @@ class VmwDscResourceGraph {
                 if (-not $this.Edges.Contains($dependency)) {
                     throw ($Script:DependsOnResourceNotFoundException -f $this.Resources[$key].InstanceName, $dependency)
                 }
-        
+
                 # remove DependsOn item so that it does not conflict with Invoke-DscResource later on
                 $this.Resources[$key].Property.Remove('DependsOn') | Out-Null
-        
+
                 $this.Edges[$dependency].Add($key) | Out-Null
             }
         }
@@ -273,7 +273,7 @@ class DscConfigurationCompiler {
         Write-Verbose "Starting compilation process"
 
         Write-Verbose "Validating ConfigurationData"
-        
+
         # validate the configurationData
         $this.ValidateConfigurationData()
 
@@ -344,7 +344,7 @@ class DscConfigurationCompiler {
 
         # hashset for detecting entries with same nodeName property
         $duplicateNodeNameSet = New-Object -TypeName 'System.Collections.Generic.HashSet[string]' -ArgumentList ([System.StringComparer]::OrdinalIgnoreCase)
-        
+
         # will contain the common nodes setting marked with '*'
         $commonNodesConfiguration = $null
 
@@ -399,38 +399,38 @@ class DscConfigurationCompiler {
         $dscResOrderedDict = [ordered]@{}
         foreach ($resource in $DscResources) {
             $key = $resource.GetId()
-    
+
             if ($dscResOrderedDict.Contains($key)) {
                 throw ($Script:DuplicateResourceException -f $resource.InstanceName, $resource.ResourceType)
             }
-    
+
             $dscResOrderedDict[$key] = $resource
         }
 
         # creates graph with the created ordered hashtable
         $resGraph = [VmwDscResourceGraph]::new($dscResOrderedDict)
-    
+
         # sort the resources based on their dependencies
         $sortedDscResArr = $resGraph.TopologicalSort()
-    
+
         $result = New-Object -TypeName 'System.Collections.ArrayList'
-    
+
         # iterate the ordered resources to find composite resources and retrieve their inner resources
         for ($i = 0; $i -lt $sortedDscResArr.Count; $i++) {
             $resource = $sortedDscResArr[$i]
-    
+
             if ($resource.GetIsComposite()) {
                 $innerResources = $resource.GetInnerResources()
-    
+
                 # this sorts the composite resource dsc resources and handles inner DependsOn properties
                 $parsedInnerResources = $this.OrderResources($innerResources)
-    
+
                 $resource.SetInnerResources($parsedInnerResources)
-            } 
-    
+            }
+
             $result.Add($resource) | Out-Null
         }
-    
+
         return $result.ToArray()
     }
 
@@ -492,7 +492,7 @@ class DscConfigurationCompiler {
                 New-Object -TypeName PSVariable -ArgumentList ('AllNodes', $this.ConfigurationData.AllNodes )
             }
         )
-        
+
         return $result
     }
 
@@ -505,7 +505,7 @@ class DscConfigurationCompiler {
         $connectionNodes = [ordered]@{}
 
         for ($i = 0; $i -lt $DscItemsArr.Count; $i++) {
-            # can be a node or nodeless resource 
+            # can be a node or nodeless resource
             $dscItem = $DscItemsArr[$i]
 
             # keep nodeless resources in a separate array in order to add them to the default 'localhost' node
@@ -541,7 +541,7 @@ class DscConfigurationCompiler {
         # group nodeless resources
         if ($nodeLessResources.Count -gt 0) {
             $localHostConnection = 'localhost'
-            
+
             if ($connectionNodes.Contains($localHostConnection)) {
                 $connectionNodes[$localHostConnection].Resources += $nodeLessResources.ToArray()
             } else {
@@ -601,7 +601,7 @@ class DscConfigurationCompiler {
 
             $dependsOn = $null
 
-            # check if dependsOn property is present and removes it 
+            # check if dependsOn property is present and removes it
             if ($parsedProps.ContainsKey('DependsOn')) {
                 $dependsOn = $parsedProps['DependsOn']
                 $parsedProps.Remove('DependsOn')
@@ -625,7 +625,7 @@ class DscConfigurationCompiler {
                 $moduleName = @{
                     ModuleName = $this.ResourceNameToInfo[$configType].ModuleName
                     RequiredVersion = $this.ResourceNameToInfo[$configType].Version
-                } 
+                }
             }
 
             $compositeResource = [VmwDscResource]::new(
@@ -707,18 +707,18 @@ class DscConfigurationCompiler {
             ModuleName = $resourceInfo.Module.Name
             RequiredVersion = $resourceInfo.Module.Version
         }
-    
+
         $propsAsText = $Properties.Ast.Extent.Text
         $propsAsText = $propsAsText.Insert(0, '@')
         $parsedProps = Invoke-Expression $propsAsText
-    
+
         $result = [VmwDscResource]::new(
             $Name,
             $resourceType,
             $moduleName,
             $parsedProps
         )
-    
+
         return $result
     }
 
@@ -745,7 +745,7 @@ class DscConfigurationCompiler {
 
 <#
 .DESCRIPTION
-Class that handles the parsing of the DSC 
+Class that handles the parsing of the DSC
 #>
 class DscConfigurationParser {
     hidden [Hashtable] $ResourceNameToInfo
@@ -761,8 +761,8 @@ class DscConfigurationParser {
     #>
     [PsObject] ParseDscConfiguration([System.Management.Automation.ConfigurationInfo] $ConfigCommand) {
         $configTextBlock = $ConfigCommand.ScriptBlock.Ast.Extent.Text
-        
-        # find and extract the import-dscresource statements so that they can be executed first 
+
+        # find and extract the import-dscresource statements so that they can be executed first
         $searchScriptBlock = [ScriptBlock]::Create($configTextBlock)
         $constantItemStatements = $searchScriptBlock.Ast.FindAll({
             $args[0] -is [System.Management.Automation.Language.StringConstantExpressionAst]
@@ -770,12 +770,12 @@ class DscConfigurationParser {
 
         $statements = New-Object -TypeName 'System.Collections.ArrayList'
 
-        foreach ($item in $constantItemStatements) {            
+        foreach ($item in $constantItemStatements) {
             $fullExpr = $item.Parent.ToString()
 
             $expressionIndex = $configTextBlock.IndexOf($fullExpr)
             $configTextBlock = $configTextBlock.Remove($expressionIndex, $fullExpr.Length)
-    
+
             $statements.Add($fullExpr) | Out-Null
         }
 
@@ -793,7 +793,7 @@ class DscConfigurationParser {
         # set bracket placement
         foreach ($dynamicKeyword in $dynamicKeywords) {
             $itemName = $dynamicKeyword.CommandElements[0].Value
-    
+
             $itemFullName = "$itemName $($dynamicKeyword.CommandElements[1].Extent.Text)"
             $configTextBlock = $this.ReplaceBracketWith($configTextBlock, $itemFullName, "{")
 
@@ -833,11 +833,11 @@ class DscConfigurationParser {
             if ([string]::IsNullOrEmpty($Name) -or [string]::IsNullOrWhiteSpace($Name)) {
                 $Name = '*'
             }
-    
+
             if ([string]::IsNullOrEmpty($ModuleName) -or [string]::IsNullOrWhiteSpace($ModuleName)) {
                 $ModuleName = '*'
             }
-    
+
             if ((-not [string]::IsNullOrEmpty($ModuleVersion)) -and (-not [string]::IsNullOrWhiteSpace($ModuleVersion))) {
                 if ($ModuleName -is [Microsoft.PowerShell.Commands.ModuleSpecification]) {
                     $ModuleName = @{
@@ -855,15 +855,15 @@ class DscConfigurationParser {
             $getDscResourceSplatParams = @{
                 Name = $Name
                 Module = $ModuleName
-            }  
-    
+            }
+
             $oldProgPref = $Global:ProgressPreference
             $Global:ProgressPreference = 'SilentlyContinue'
-    
+
             $importedResources = Get-DscResource @getDscResourceSplatParams
-    
+
             $Global:ProgressPreference = $oldProgPref
-    
+
             foreach ($importedResource in $importedResources) {
                 $this.ResourceNameToInfo[$importedResource.Name] = $importedResource
             }
@@ -886,22 +886,22 @@ class DscConfigurationParser {
     and replaces it with StringToReplace in StringToChange
     .EXAMPLE
     ReplaceBracketWith -StringToChange @"
-    TestResource test 
+    TestResource test
     {
     }
     "@ `
     -SearchString 'TestResource test' `
     -StringToReplaceWith '{'
-    Outputs 
+    Outputs
     TestResource test {
     }
-    #> 
+    #>
     hidden [string] ReplaceBracketWith([string] $StringToChange, [string] $SearchString, [string] $StringToReplaceWith) {
         $regexPattern = "$SearchString[\s]*{"
         $replacement = "$SearchString $StringToReplaceWith"
-    
+
         $StringToChange = $StringToChange -replace $regexPattern, $replacement
-    
+
         return $StringToChange
     }
 }
@@ -924,7 +924,7 @@ Used for get method result to represent composite resources
 #>
 class CompositeResourceGetMethodResult {
     [string] $Name
-    
+
     [PsObject[]] $InnerResources
 
     CompositeResourceGetMethodResult([string] $Name, [PsObject[]] $InnerResources) {
@@ -1018,7 +1018,7 @@ Type used for checking uniqueness of dsc resource key properties
 #>
 class DscKeyPropertyResourceCheck {
     [string] $DscResourceType
-      
+
     # can contain only string, int, enum values, because only properties of those types can be keys
     [Hashtable] $KeyPropertiesToValues
 
@@ -1094,10 +1094,10 @@ class DscConfigurationRunner {
         $invokeResult = New-Object 'System.Collections.ArrayList'
 
         foreach ($node in $this.ValidNodes) {
-            Write-Verbose "Invoking node with name: $($node.InstanceName)"
+            Write-Verbose -Message "Invoking DSC Configuration for Node: $($node.InstanceName)"
 
             $this.ValidateDscKeyProperties($node.Resources)
-            
+
             $result = $this.InvokeNodeResources($node.Resources)
 
             $nodeResult = [PsObject]@{
@@ -1215,13 +1215,13 @@ class DscConfigurationRunner {
 
         $logs = New-Object -TypeName 'System.Collections.ArrayList'
 
-        $invokeSplatParams.Property['logs'] = [ref] $logs
+        $invokeSplatParams.Property['Logs'] = [ref] $logs
 
-        Write-Verbose "Invoking resource with id: $($DscResource.GetId())"
+        Write-Verbose -Message "Invoking DSC Resource with id: $($DscResource.GetId())"
 
         $invokeResult = $null
 
-        # ignore progress from internal Get-DscResource in Invoke-DscResource 
+        # ignore progress from internal Get-DscResource in Invoke-DscResource
         $oldProgressPref = (Get-Variable 'ProgressPreference').Value
         Set-Variable -Name 'ProgressPreference' -Value 'SilentlyContinue' -Scope 'Global'
 
@@ -1231,18 +1231,18 @@ class DscConfigurationRunner {
             } else {
                 # checks if the resource is in target state
                 $isInDesiredState = Invoke-DscResource @invokeSplatParams -Method 'Test'
-    
+
                 # executes 'set' method only if state is not desired
                 if (-not $isInDesiredState.InDesiredState) {
                     (Invoke-DscResource @invokeSplatParams -Method $this.DscMethod) | Out-Null
                 }
             }
         } catch {
-            if ($this.DscMethod -eq 'Test') {
-                $invokeResult = [PSCustomObject]@{
-                    InDesiredState = $false
-                }
-            }
+            $message = "{0} method of {1} DSC Resource failed with the following error: {2}"
+            $arguments = @($this.DscMethod, $invokeSplatParams.Name, $_.Exception.Message)
+            $dscResourceErrorMessage = [string]::Format($message, $arguments)
+
+            throw $dscResourceErrorMessage
         } finally {
             $this.HandleStreamOutputFromDscResources($logs)
         }
@@ -1264,9 +1264,9 @@ class DscConfigurationRunner {
             $message = $log.Message
 
             if ($logType -eq 'Verbose') {
-                Write-Verbose $message
+                Write-Verbose -Message $message
             } elseif ($logType -eq 'Warning') {
-                Write-Warning $message
+                Write-Warning -Message $message
             }
         }
     }

@@ -15,6 +15,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 class VMHostGraphicsBaseDSC : VMHostRestartBaseDSC {
+    hidden [string] $CouldNotRetrieveGraphicsManagerMessage = "Could not retrieve the Graphics Manager of VMHost {0}. For more information: {1}"
+
     <#
     .DESCRIPTION
 
@@ -26,7 +28,7 @@ class VMHostGraphicsBaseDSC : VMHostRestartBaseDSC {
             return $vmHostGraphicsManager
         }
         catch {
-            throw "Could not retrieve the Graphics Manager of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRetrieveGraphicsManagerMessage -f $vmHost.Name, $_.Exception.Message)
         }
     }
 

@@ -147,7 +147,7 @@ InModuleScope -ModuleName $script:moduleName {
                 It 'Should throw the correct error when closing the Connection results in an Error' {
                     # Act && Assert
                     # When the Throw statement does not appear in a Catch block, and it does not include an expression, it generates a ScriptHalted error.
-                    { $baseDSCClass.DisconnectVIServer() } | Should -Throw "Cannot close Connection to vSphere Server $($script:viServer.Name). For more information: ScriptHalted"
+                    { $baseDSCClass.DisconnectVIServer() } | Should -Throw "Could not close connection to vSphere Server $($script:viServer.Name). For more information: ScriptHalted"
                 }
             }
         }

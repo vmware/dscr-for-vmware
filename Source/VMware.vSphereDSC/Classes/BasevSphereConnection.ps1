@@ -51,6 +51,12 @@ class BasevSphereConnection {
     hidden [string] $SettingIsNotInDesiredStateMessage = "Setting {0}: Current setting value [ {1} ] does not match desired setting value [ {2} ]."
     hidden [string] $DscResourcesEnumDefaultValue = 'Unset'
 
+    hidden [string] $VCenterConnectionRequiredMessage = "The DSC Resource operations are only supported when connection is directly to a vCenter."
+    hidden [string] $ESXiConnectionRequiredMessage = "The DSC Resource operations are only supported when connection is directly to an ESXi host."
+
+    hidden [string] $CouldNotEstablishvSphereConnectionMessage = "Could not establish connection to vSphere Server {0}. For more information: {1}"
+    hidden [string] $CouldNotClosevSphereConnectionMessage = "Could not close connection to vSphere Server {0}. For more information: {1}"
+
     hidden [string] $vCenterProductId = 'vpx'
     hidden [string] $ESXiProductId = 'embeddedEsx'
 
@@ -145,7 +151,7 @@ class BasevSphereConnection {
     #>
     [void] EnsureConnectionIsvCenter() {
         if ($this.Connection.ProductLine -ne $this.vCenterProductId) {
-            throw 'The Resource operations are only supported when connection is directly to a vCenter.'
+            throw $this.VCenterConnectionRequiredMessage
         }
     }
 
@@ -156,7 +162,7 @@ class BasevSphereConnection {
     #>
     [void] EnsureConnectionIsESXi() {
         if ($this.Connection.ProductLine -ne $this.ESXiProductId) {
-            throw 'The Resource operations are only supported when connection is directly to an ESXi host.'
+            throw $this.ESXiConnectionRequiredMessage
         }
     }
 
@@ -231,11 +237,11 @@ class BasevSphereConnection {
                 $this.Connection = Connect-VIServer @connectVIServerParams
             }
             catch {
-                throw "Cannot establish connection to vSphere Server $($this.Server). For more information: $($_.Exception.Message)"
+                throw ($this.CouldNotEstablishvSphereConnectionMessage -f $this.Server, $_.Exception.Message)
             }
         } else {
             # this is a connection from a vSphereDSC node
-            # a new connection with the same session and server name get created because of an issue with runspaces in PowerShell 
+            # a new connection with the same session and server name get created because of an issue with runspaces in PowerShell
 
             $this.Connection = Connect-VIServer -Session $this.Connection.SessionSecret -Server $this.Connection.Name
         }
@@ -247,6 +253,10 @@ class BasevSphereConnection {
     Closes the last open connection to the specified vSphere Server.
     #>
     [void] DisconnectVIServer() {
+        if ($null -eq $this.Connection) {
+            return
+        }
+
         try {
             $disconnectVIServerParams = @{
                 Server = $this.Connection
@@ -258,7 +268,7 @@ class BasevSphereConnection {
             Disconnect-VIServer @disconnectVIServerParams
         }
         catch {
-            throw "Cannot close connection to vSphere Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotClosevSphereConnectionMessage -f $this.Connection.Name, $_.Exception.Message)
         }
     }
 

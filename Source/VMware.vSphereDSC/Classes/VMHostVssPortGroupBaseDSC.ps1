@@ -38,6 +38,9 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
     #>
     hidden [PSObject] $VMHostNetworkSystem
 
+    hidden [string] $CouldNotRetrievePortGroupMessage = "Could not retrieve Virtual Port Group {0} of VMHost {1}. For more information: {2}"
+    hidden [string] $CouldNotRetrieveNetworkSystemMessage = "Could not retrieve the Network System of VMHost {0}. For more information: {1}"
+
     <#
     .DESCRIPTION
 
@@ -55,7 +58,7 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
                 return $virtualPortGroup
             }
             catch {
-                throw "Could not retrieve Virtual Port Group $($this.Name) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+                throw ($this.CouldNotRetrievePortGroupMessage -f $this.Name, $this.VMHost.Name, $_.Exception.Message)
             }
         }
     }
@@ -70,7 +73,7 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
             $this.VMHostNetworkSystem = Get-View -Server $this.Connection -Id $this.VMHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
         }
         catch {
-            throw "Could not retrieve the Network System of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRetrieveNetworkSystemMessage -f $this.VMHost.Name, $_.Exception.Message)
         }
     }
 
