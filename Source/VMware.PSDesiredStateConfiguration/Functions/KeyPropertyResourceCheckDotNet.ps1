@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -25,13 +23,13 @@ PowerShell by itself automaticaly changes the number type when before overflowin
 function Get-KeyPropertyResourceCheckDotNetHashCode {
     Param(
         [string] $ResourceType,
-    
+
         [Hashtable] $KeyPropertiesToValues
     )
-    
+
     $code = @"
     using System.Collections;
-    
+
     public class KeyPropertyResourceCheckDotNet
     {
         public KeyPropertyResourceCheckDotNet(string resourceType, Hashtable keyPropertiesToValues)
@@ -39,33 +37,33 @@ function Get-KeyPropertyResourceCheckDotNetHashCode {
             this.ResourceType = resourceType;
             this.KeyPropertiesToValues = keyPropertiesToValues;
         }
-    
+
         private string ResourceType { get; set; }
-    
+
         private Hashtable KeyPropertiesToValues { get; set; }
-    
+
         public override int GetHashCode()
         {
             unchecked
             {
                 int hash = 17;
-    
+
                 hash = hash * 23 + this.ResourceType.GetHashCode();
-    
+
                 foreach (var key in this.KeyPropertiesToValues.Keys)
                 {
                     hash = hash * 23 + this.KeyPropertiesToValues[key].GetHashCode();
                 }
-    
+
                 return hash;
             }
         }
     }
 "@
-    
+
     Add-Type -TypeDefinition $code
-    
+
     $obj = [KeyPropertyResourceCheckDotNet]::new($ResourceType, $KeyPropertiesToValues)
-    
-    $obj.GetHashCode() 
+
+    $obj.GetHashCode()
 }

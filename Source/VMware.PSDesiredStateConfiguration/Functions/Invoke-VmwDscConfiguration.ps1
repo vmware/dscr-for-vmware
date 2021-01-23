@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -48,7 +46,7 @@ function Start-VmwDscConfiguration {
         ConnectionFilter = $ConnectionFilter
         Method = 'Set'
     }
-    
+
     Invoke-VmwDscConfiguration @invokeParams | Out-Null
 }
 
@@ -56,7 +54,7 @@ function Start-VmwDscConfiguration {
 .DESCRIPTION
 Invokes the DSC Configuration with the 'Get' DSC method.
 Retrieves the dsc resources current states.
-#> 
+#>
 function Get-VmwDscConfiguration {
     [CmdletBinding()]
     param (
@@ -91,7 +89,7 @@ function Get-VmwDscConfiguration {
         ConnectionFilter = $ConnectionFilter
         Method = 'Get'
     }
-    
+
     $getResult = Invoke-VmwDscConfiguration @invokeParams
 
     $result = New-Object -TypeName 'System.Collections.ArrayList'
@@ -129,7 +127,7 @@ function Test-VmwDscConfiguration {
         Position             = 0)]
         [Switch]
         $ExecuteLastConfiguration,
-        
+
         [Parameter(
         Mandatory            = $false,
         Position             = 1)]
