@@ -21,7 +21,7 @@ Configuration CompositeResourceTest {
 
     Import-DscResource -ModuleName MyDscResource
 
-    MyTestResource Test 
+    MyTestResource Test
     {
         SomeVal = $Value
         Ensure = 'Present'

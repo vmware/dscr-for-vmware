@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -27,15 +25,15 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
         try {
             $root = $PSScriptRoot
             $serverConfigPath = Join-Path $root 'ServerConfig.ps1'
-    
+
             # server data is retrieved from a ServerConfig.ps1 file
             $serverConfigs = . $serverConfigPath
-    
+
             foreach ($serverConfig in $serverConfigs) {
                 # establish connection to the vCenter
                 $Script:Connection = Connect-ViServer -Server $serverConfig.Server -User $serverConfig.User -Password $serverConfig.Password
             }
-    
+
             $Script:ConfigData = @{
                 AllNodes = @(
                     foreach ($serverConfig in $serverConfigs) {
@@ -53,13 +51,13 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     Location = 'MyDatacentersFolder'
                 }
             }
-    
+
             $configFolder = Join-Path $root 'Configurations'
-    
+
             $Script:ConfigPath = Join-Path $configFolder 'vSphereNodeConfiguration.ps1'
-    
+
             $Script:DscConfigurationObj = $null
-    
+
             It 'Should compile correctly' {
                 # Arrange
                 $splatParams = @{
@@ -107,33 +105,33 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                 . $util
 
                 . $Script:ConfigPath
-    
+
                 # Act
                 $Script:DscConfigurationObj = New-VmwDscConfiguration @splatParams
-    
+
                 # Assert
                 Script:AssertConfigurationEqual $Script:DscConfigurationObj $Script:Expected
             }
-    
+
             It 'Should apply the Configuration without throwing' {
                 # Assert
                 { Start-VmwDscConfiguration $Script:DscConfigurationObj } | Should -Not -Throw
             }
-    
+
             It 'Should be able to call Get-VmwDscConfiguration without throwing' {
                 # Assert
                 { Get-VmwDscConfiguration $Script:DscConfigurationObj } | Should -Not -Throw
             }
-    
+
             It 'Should return $true when Test-VmwDscConfiguration is run' {
                 # Assert
                 Test-VmwDscConfiguration $Script:DscConfigurationObj | Should -Contain $true
             }
-    
+
             It 'Should return correct object when Test-VmwDscConfiguration is run with -Detailed flag' {
                 # Act
                 $nodeResults = Test-VmwDscConfiguration $Script:DscConfigurationObj -Detailed
-    
+
                 foreach($res in $nodeResults) {
                     # Assert
                     $res.InDesiredState | Should -Be $true
@@ -141,35 +139,35 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     $res.ResourcesNotInDesiredState.Count | Should -Be 0
                 }
             }
-    
+
             It 'Should be able to call Get-VmwDscConfiguration and all parameters should match' {
                 # Act
                 $nodeResults = Get-VmwDscConfiguration $Script:DscConfigurationObj
-    
+
                 foreach($res in $nodeResults) {
                     # Assert
                     $res.ResourcesStates[0].Name | Should -Be $Script:ConfigData.DatacenterFolder.Name
                     $res.ResourcesStates[0].Location | Should -Be $Script:ConfigData.DatacenterFolder.Location
-    
+
                     $res.ResourcesStates[1].Name | Should -Be $Script:ConfigData.Datacenter.Name
                     $res.ResourcesStates[1].Location | Should -Be $Script:ConfigData.Datacenter.Location
                 }
             }
-    
+
             It 'Should execute current configuration with -ExecuteLastConfiguration flag on Test-VmwDscConfiguration' {
                 # Assert
                 Test-VmwDscConfiguration -ExecuteLastConfiguration | Should -Contain $true
             }
-    
+
             It 'Should execute current configuration with -ExecuteLastConfiguration flag on Get-VmwDscConfiguration' {
                 # Act
                 $nodeResults = Get-VmwDscConfiguration -ExecuteLastConfiguration
-    
+
                 foreach($res in $nodeResults) {
                     # Assert
                     $res.ResourcesStates[0].Name | Should -Be $Script:ConfigData.DatacenterFolder.Name
                     $res.ResourcesStates[0].Location | Should -Be $Script:ConfigData.DatacenterFolder.Location
-    
+
                     $res.ResourcesStates[1].Name | Should -Be $Script:ConfigData.Datacenter.Name
                     $res.ResourcesStates[1].Location | Should -Be $Script:ConfigData.Datacenter.Location
                 }

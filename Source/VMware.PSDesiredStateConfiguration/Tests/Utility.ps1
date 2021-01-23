@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -28,7 +26,7 @@ function Script:AssertResourceEqual {
         [VmwDscResource]
         $ExpectedRes
     )
-    
+
     # assert regular properties
     $ResultRes.InstanceName | Should -Be $ExpectedRes.InstanceName
     $ResultRes.ResourceType | Should -Be $ExpectedRes.ResourceType
@@ -72,7 +70,7 @@ function Script:AssertResourceEqual {
 <#
 .DESCRIPTION
 Performs an assert on two [VmwNode] objects to check if they're equal
-#> 
+#>
 function Script:AssertNodeEqual {
     Param (
         [VmwDscNode]
@@ -95,7 +93,7 @@ function Script:AssertNodeEqual {
 <#
 .DESCRIPTION
 Performs an assert on two [VmwDscConfiguration] objects to check if they're equal
-#> 
+#>
 function Script:AssertConfigurationEqual {
     Param (
         [VmwDscConfiguration]
