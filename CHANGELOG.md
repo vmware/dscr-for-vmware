@@ -1,6 +1,18 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.9 - 2021-01-23
+### Changed
+- Fix bug with exceptions not being thrown when an error occurs in a **DSC Resource** when invoking the **DSC Configuration** through the **VMware.PSDesiredStateConfiguration** module.
+- Fix bug when connection is not established and the **DisconnectVIServer** method is called.
+- Extract exceptions for base classes to constants in **VMware.vSphereDSC** module.
+
+## VMware.vSphereDSC 2.1.0.83 - 2021-01-23
+### Changed
+- Fix bug with exceptions not being thrown when an error occurs in a **DSC Resource** when invoking the **DSC Configuration** through the **VMware.PSDesiredStateConfiguration** module.
+- Fix bug when connection is not established and the **DisconnectVIServer** method is called.
+- Extract exceptions for base classes to constants in **VMware.vSphereDSC** module.
+
 ## VMware.vSphereDSC 2.1.0.82 - 2021-01-18
 ### Changed
 - Bumped **License.txt**.

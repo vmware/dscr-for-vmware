@@ -284,6 +284,12 @@ class BasevSphereConnection {
     hidden [string] $SettingIsNotInDesiredStateMessage = "Setting {0}: Current setting value [ {1} ] does not match desired setting value [ {2} ]."
     hidden [string] $DscResourcesEnumDefaultValue = 'Unset'
 
+    hidden [string] $VCenterConnectionRequiredMessage = "The DSC Resource operations are only supported when connection is directly to a vCenter."
+    hidden [string] $ESXiConnectionRequiredMessage = "The DSC Resource operations are only supported when connection is directly to an ESXi host."
+
+    hidden [string] $CouldNotEstablishvSphereConnectionMessage = "Could not establish connection to vSphere Server {0}. For more information: {1}"
+    hidden [string] $CouldNotClosevSphereConnectionMessage = "Could not close connection to vSphere Server {0}. For more information: {1}"
+
     hidden [string] $vCenterProductId = 'vpx'
     hidden [string] $ESXiProductId = 'embeddedEsx'
 
@@ -378,7 +384,7 @@ class BasevSphereConnection {
     #>
     [void] EnsureConnectionIsvCenter() {
         if ($this.Connection.ProductLine -ne $this.vCenterProductId) {
-            throw 'The Resource operations are only supported when connection is directly to a vCenter.'
+            throw $this.VCenterConnectionRequiredMessage
         }
     }
 
@@ -389,7 +395,7 @@ class BasevSphereConnection {
     #>
     [void] EnsureConnectionIsESXi() {
         if ($this.Connection.ProductLine -ne $this.ESXiProductId) {
-            throw 'The Resource operations are only supported when connection is directly to an ESXi host.'
+            throw $this.ESXiConnectionRequiredMessage
         }
     }
 
@@ -464,11 +470,11 @@ class BasevSphereConnection {
                 $this.Connection = Connect-VIServer @connectVIServerParams
             }
             catch {
-                throw "Cannot establish connection to vSphere Server $($this.Server). For more information: $($_.Exception.Message)"
+                throw ($this.CouldNotEstablishvSphereConnectionMessage -f $this.Server, $_.Exception.Message)
             }
         } else {
             # this is a connection from a vSphereDSC node
-            # a new connection with the same session and server name get created because of an issue with runspaces in PowerShell 
+            # a new connection with the same session and server name get created because of an issue with runspaces in PowerShell
 
             $this.Connection = Connect-VIServer -Session $this.Connection.SessionSecret -Server $this.Connection.Name
         }
@@ -480,6 +486,10 @@ class BasevSphereConnection {
     Closes the last open connection to the specified vSphere Server.
     #>
     [void] DisconnectVIServer() {
+        if ($null -eq $this.Connection) {
+            return
+        }
+
         try {
             $disconnectVIServerParams = @{
                 Server = $this.Connection
@@ -491,7 +501,7 @@ class BasevSphereConnection {
             Disconnect-VIServer @disconnectVIServerParams
         }
         catch {
-            throw "Cannot close connection to vSphere Server $($this.Connection.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotClosevSphereConnectionMessage -f $this.Connection.Name, $_.Exception.Message)
         }
     }
 
@@ -1832,6 +1842,8 @@ class VMHostRestartBaseDSC : VMHostBaseDSC {
 }
 
 class VMHostGraphicsBaseDSC : VMHostRestartBaseDSC {
+    hidden [string] $CouldNotRetrieveGraphicsManagerMessage = "Could not retrieve the Graphics Manager of VMHost {0}. For more information: {1}"
+
     <#
     .DESCRIPTION
 
@@ -1843,7 +1855,7 @@ class VMHostGraphicsBaseDSC : VMHostRestartBaseDSC {
             return $vmHostGraphicsManager
         }
         catch {
-            throw "Could not retrieve the Graphics Manager of VMHost $($vmHost.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRetrieveGraphicsManagerMessage -f $vmHost.Name, $_.Exception.Message)
         }
     }
 
@@ -2032,6 +2044,8 @@ class VMHostIScsiHbaBaseDSC : VMHostEntityBaseDSC {
 class VMHostNetworkBaseDSC : VMHostBaseDSC {
     hidden [PSObject] $VMHostNetworkSystem
 
+    hidden [string] $CouldNotRetrieveNetworkSystemMessage = "Could not retrieve the Network System of VMHost {0}. For more information: {1}"
+
     <#
     .DESCRIPTION
 
@@ -2042,7 +2056,7 @@ class VMHostNetworkBaseDSC : VMHostBaseDSC {
             $this.VMHostNetworkSystem = Get-View -Server $this.Connection -Id $vmHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
         }
         catch {
-            throw "Could not retrieve NetworkSystem on VMHost with name $($this.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRetrieveNetworkSystemMessage -f $this.Name, $_.Exception.Message)
         }
     }
 }
@@ -2265,6 +2279,10 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
     [DscProperty()]
     [nullable[bool]] $VsanTrafficEnabled
 
+    hidden [string] $CouldNotCreateVMKernelNicMessage = "Cannot create VMKernel Network Adapter connected to Virtual Switch {0} and Port Group {1}. For more information: {2}"
+    hidden [string] $CouldNotUpdateVMKernelNicMessage = "Cannot update VMKernel Network Adapter {0}. For more information: {1}"
+    hidden [string] $CouldNotRemoveVMKernelNicMessage = "Cannot remove VMKernel Network Adapter {0}. For more information: {1}"
+
     <#
     .DESCRIPTION
 
@@ -2385,7 +2403,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
             return New-VMHostNetworkAdapter @vmHostNetworkAdapterParams
         }
         catch {
-            throw "Cannot create VMKernel Network Adapter connected to Virtual Switch $($virtualSwitch.Name) and Port Group $($this.PortGroupName). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotCreateVMKernelNicMessage -f $virtualSwitch.Name, $this.PortGroupName, $_.Exception.Message)
         }
     }
 
@@ -2437,7 +2455,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
             $vmHostNetworkAdapter | Set-VMHostNetworkAdapter @vmHostNetworkAdapterParams
         }
         catch {
-            throw "Cannot update VMKernel Network Adapter $($vmHostNetworkAdapter.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotUpdateVMKernelNicMessage -f $vmHostNetworkAdapter.Name, $_.Exception.Message)
         }
     }
 
@@ -2451,7 +2469,7 @@ class VMHostNicBaseDSC : VMHostEntityBaseDSC {
             Remove-VMHostNetworkAdapter -Nic $vmHostNetworkAdapter -Confirm:$false -ErrorAction Stop
         }
         catch {
-            throw "Cannot remove VMKernel Network Adapter $($vmHostNetworkAdapter.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRemoveVMKernelNicMessage -f $vmHostNetworkAdapter.Name, $_.Exception.Message)
         }
     }
 
@@ -2555,6 +2573,9 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
     #>
     hidden [PSObject] $VMHostNetworkSystem
 
+    hidden [string] $CouldNotRetrievePortGroupMessage = "Could not retrieve Virtual Port Group {0} of VMHost {1}. For more information: {2}"
+    hidden [string] $CouldNotRetrieveNetworkSystemMessage = "Could not retrieve the Network System of VMHost {0}. For more information: {1}"
+
     <#
     .DESCRIPTION
 
@@ -2572,7 +2593,7 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
                 return $virtualPortGroup
             }
             catch {
-                throw "Could not retrieve Virtual Port Group $($this.Name) of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+                throw ($this.CouldNotRetrievePortGroupMessage -f $this.Name, $this.VMHost.Name, $_.Exception.Message)
             }
         }
     }
@@ -2587,7 +2608,7 @@ class VMHostVssPortGroupBaseDSC : VMHostEntityBaseDSC {
             $this.VMHostNetworkSystem = Get-View -Server $this.Connection -Id $this.VMHost.ExtensionData.ConfigManager.NetworkSystem -ErrorAction Stop
         }
         catch {
-            throw "Could not retrieve the Network System of VMHost $($this.VMHost.Name). For more information: $($_.Exception.Message)"
+            throw ($this.CouldNotRetrieveNetworkSystemMessage -f $this.VMHost.Name, $_.Exception.Message)
         }
     }
 
