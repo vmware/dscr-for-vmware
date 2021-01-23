@@ -1309,6 +1309,12 @@ class DscConfigurationRunner {
     wraps it in a DscKeyPropertyResourceCheck object with the resource type and key props array.
     #>
     hidden [DscKeyPropertyResourceCheck] GetDscResouceKeyProperties([VmwDscResource] $DscResource) {
+        <#
+            The Verbose preference is set to 'SilentlyContinue' to suppress the
+            Verbose output of 'using module' when importing the 'VMware.vSphereDSC' module.
+        #>
+        $VerbosePreference = 'SilentlyContinue'
+
         $moduleName = $DscResource.ModuleName.Name
         $moduleVersion = $DscResource.ModuleName.RequiredVersion.ToString()
 
