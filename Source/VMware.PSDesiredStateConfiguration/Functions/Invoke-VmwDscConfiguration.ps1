@@ -47,7 +47,7 @@ function Start-VmwDscConfiguration {
         Method = 'Set'
     }
 
-    Invoke-VmwDscConfiguration @invokeParams | Out-Null
+    Invoke-VmwDscConfiguration @invokeParams -Verbose:$VerbosePreference | Out-Null
 }
 
 <#
@@ -90,7 +90,7 @@ function Get-VmwDscConfiguration {
         Method = 'Get'
     }
 
-    $getResult = Invoke-VmwDscConfiguration @invokeParams
+    $getResult = Invoke-VmwDscConfiguration @invokeParams -Verbose:$VerbosePreference
 
     $result = New-Object -TypeName 'System.Collections.ArrayList'
 
@@ -150,7 +150,7 @@ function Test-VmwDscConfiguration {
         Method = 'Test'
     }
 
-    $testResults = Invoke-VmwDscConfiguration @invokeParams
+    $testResults = Invoke-VmwDscConfiguration @invokeParams -Verbose:$VerbosePreference
 
     $result = $null
 
@@ -235,7 +235,15 @@ function Invoke-VmwDscConfiguration {
 
     $invoker = [DscConfigurationRunner]::new($configToUse, $Method)
 
-    $invokeResult = $invoker.InvokeConfiguration()
+    try {
+        $savedVerbosePreference = $Global:VerbosePreference
+        $Global:VerbosePreference = $VerbosePreference
+
+        $invokeResult = $invoker.InvokeConfiguration()
+    }
+    finally {
+        $Global:VerbosePreference = $savedVerbosePreference
+    }
 
     $script:LastExecutedConfiguration = $Configuration
 

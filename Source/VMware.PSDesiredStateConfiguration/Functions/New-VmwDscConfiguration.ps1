@@ -89,7 +89,15 @@ function New-VmwDscConfiguration {
 
     $dscCompiler = [DscConfigurationCompiler]::new($ConfigName, $CustomParams, $ConfigurationData)
 
-    $vmwDscConfiguration = $dscCompiler.CompileDscConfiguration()
+    try {
+        $savedVerbosePreference = $Global:VerbosePreference
+        $Global:VerbosePreference = $VerbosePreference
+
+        $vmwDscConfiguration = $dscCompiler.CompileDscConfiguration()
+    }
+    finally {
+        $Global:VerbosePreference = $savedVerbosePreference
+    }
 
     $vmwDscConfiguration
 }

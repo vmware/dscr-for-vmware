@@ -517,8 +517,17 @@ class DscConfigurationCompiler {
 
         Write-Verbose "Parsing configuration block of $($ConfigCommand.Name)"
 
+        <#
+            The Verbose preference is set to 'SilentlyContinue' to suppress the
+            Verbose output of 'Import-DscResource' when importing the 'VMware.vSphereDSC' module.
+        #>
+        $savedVerbosePreference = $Global:VerbosePreference
+        $Global:VerbosePreference = 'SilentlyContinue'
+
         # parse the configuration, run Import-DscResource statements and retrieve the found resources/nested configurations
         $parseResult = $dscConfigurationParser.ParseDscConfiguration($configCommand)
+
+        $Global:VerbosePreference = $savedVerbosePreference
 
         Write-Verbose "Preparing functions for dsc resources and nodes"
 
@@ -1285,11 +1294,20 @@ class DscConfigurationRunner {
             Name = $DscResource.ResourceType
             ModuleName = $DscResource.ModuleName
             Property = $DscResource.Property
+            Verbose = $false
+            ErrorAction = 'Stop'
         }
 
         $logs = New-Object -TypeName 'System.Collections.ArrayList'
 
-        $invokeSplatParams.Property['Logs'] = [ref] $logs
+        <#
+            On PowerShell 5.1, System.Management.Automation.PSReference
+            cannot be serialized into CimInstance. So the logs are only
+            available for the PowerShell Core version.
+        #>
+        if ($Global:PSVersionTable.PSEdition -eq 'Core') {
+            $invokeSplatParams.Property['Logs'] = [ref] $logs
+        }
 
         Write-Verbose -Message "Invoking DSC Resource with id: $($DscResource.GetId())"
 
@@ -1301,14 +1319,17 @@ class DscConfigurationRunner {
 
         try {
             if ($this.DscMethod -eq 'Test' -or $this.DscMethod -eq 'Get') {
-                $invokeResult = Invoke-DscResource @invokeSplatParams -Method $this.DscMethod
+                $invokeSplatParams.Method = $this.DscMethod
+                $invokeResult = Invoke-DscResource @invokeSplatParams
             } else {
                 # checks if the resource is in target state
-                $isInDesiredState = Invoke-DscResource @invokeSplatParams -Method 'Test'
+                $invokeSplatParams.Method = 'Test'
+                $isInDesiredState = Invoke-DscResource @invokeSplatParams
 
                 # executes 'set' method only if state is not desired
                 if (-not $isInDesiredState.InDesiredState) {
-                    (Invoke-DscResource @invokeSplatParams -Method $this.DscMethod) | Out-Null
+                    $invokeSplatParams.Method = $this.DscMethod
+                    (Invoke-DscResource @invokeSplatParams) | Out-Null
                 }
             }
         } catch {
@@ -1366,7 +1387,16 @@ class DscConfigurationRunner {
                     continue
                 }
 
+                <#
+                    The Verbose preference is set to 'SilentlyContinue' to suppress the
+                    Verbose output of 'using module' when importing the 'VMware.vSphereDSC' module.
+                #>
+                $savedVerbosePreference = $Global:VerbosePreference
+                $Global:VerbosePreference = 'SilentlyContinue'
+
                 $resourceCheck = $this.GetDscResouceKeyProperties($currentResource)
+
+                $Global:VerbosePreference = $savedVerbosePreference
 
                 $isAdded = $dscResourcesDuplicateChecker.Add($resourceCheck)
 
@@ -1383,12 +1413,6 @@ class DscConfigurationRunner {
     wraps it in a DscKeyPropertyResourceCheck object with the resource type and key props array.
     #>
     hidden [DscKeyPropertyResourceCheck] GetDscResouceKeyProperties([VmwDscResource] $DscResource) {
-        <#
-            The Verbose preference is set to 'SilentlyContinue' to suppress the
-            Verbose output of 'using module' when importing the 'VMware.vSphereDSC' module.
-        #>
-        $VerbosePreference = 'SilentlyContinue'
-
         $moduleName = $DscResource.ModuleName.Name
         $moduleVersion = $DscResource.ModuleName.RequiredVersion.ToString()
 
