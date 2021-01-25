@@ -1,6 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<<<<<<< HEAD
 ## VMware.PSDesiredStateConfiguration 0.0.0.10 - 2021-01-25
 ### Changed
 - Modified the **License** logic in the **VMware.PSDesiredStateConfiguration** build to cut the first two lines of the **License** in **License.txt**.
@@ -11,6 +12,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Removed unused **ExperimentalEnabled** script.
 
+=======
+>>>>>>> 4591ae9 (sync upstream with origin)
 ## VMware.PSDesiredStateConfiguration 0.0.0.9 - 2021-01-23
 ### Changed
 - Fix bug with exceptions not being thrown when an error occurs in a **DSC Resource** when invoking the **DSC Configuration** through the **VMware.PSDesiredStateConfiguration** module.
