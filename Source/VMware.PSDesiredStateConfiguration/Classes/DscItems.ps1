@@ -1453,6 +1453,10 @@ class DscConfigurationRunner {
         $dscResourceKeyPropertiesHashTable = @{}
 
         foreach ($dscKeyProp in $dscResourceKeyProperties) {
+            if ($null -eq $DscResource.Property[$dscKeyProp]) {
+               # DSC Key Property cannot be null, throw configuration error
+               throw "Incorrect DSC Configuration: Key Property '$dscKeyProp' of resource $($DscResource.GetId()) is NULL"
+            }
             $dscResourceKeyPropertiesHashTable[$dscKeyProp] = $DscResource.Property[$dscKeyProp]
         }
 
