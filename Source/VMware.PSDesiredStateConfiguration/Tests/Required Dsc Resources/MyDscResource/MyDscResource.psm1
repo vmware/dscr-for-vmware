@@ -28,7 +28,7 @@ class MyTestResource
 
     [DscProperty(Mandatory)]
     [Ensure] $Ensure
-    
+
     [string] $PropForSet
 
     [void] Set() {
@@ -36,18 +36,18 @@ class MyTestResource
 
         if ($this.ensure -eq [Ensure]::Present) {
             $val = 'Set result'
-        } 
+        }
         elseif ($this.Ensure -eq [Ensure]::Absent) {
             $val = ''
         }
-        
+
         $this.PropForSet = $val
 	}
-	
+
 	[MyTestResource] Get() {
 		return $this
 	}
-	
+
 	[bool] Test() {
         $result = [string]::IsNullOrEmpty($this.PropForSet)
 

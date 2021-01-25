@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -24,7 +22,7 @@ Should get ordered by their DependsOn property.
 Configuration Test {
     Import-DscResource -ModuleName MyDscResource
 
-    FileResource file1 
+    FileResource file1
     {
         Path = "path"
         SourcePath = "path"
@@ -39,7 +37,7 @@ Configuration Test {
         Ensure = "present"
     }
 
-    FileResource file3 
+    FileResource file3
     {
         Path = "path"
         SourcePath = "path"
@@ -96,7 +94,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file2',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"
@@ -106,7 +104,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file3',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"
@@ -116,7 +114,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file1',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"
@@ -126,7 +124,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file4',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"
@@ -136,7 +134,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file5',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"
@@ -146,7 +144,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file8',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"
@@ -156,7 +154,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file7',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"
@@ -166,7 +164,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file6',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"

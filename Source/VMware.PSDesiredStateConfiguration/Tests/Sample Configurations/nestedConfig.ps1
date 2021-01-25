@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -48,13 +46,13 @@ Configuration Test
     $SourcePath = "source path"
     $Ensure = 'Present'
 
-    Another NestedConfig 
+    Another NestedConfig
     {
         Destination = 'Some Destination'
         Source = 'Some source'
     }
 
-    FileResource Test 
+    FileResource Test
     {
         Path = $Path
         SourcePath = $SourcePath
@@ -78,7 +76,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                             'Test2',
                             'FileResource',
                             @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                            @{ 
+                            @{
                                 Path = "Some Destination"
                                 SourcePath = "Some Source"
                                 Ensure = "present"
@@ -90,7 +88,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'Test',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "source path"
                         Ensure = "present"

@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -33,7 +31,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         'file',
                         'FileResource',
                         @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
-                        @{ 
+                        @{
                             Path = "path"
                             SourcePath = "path"
                             Ensure = "present"
@@ -43,7 +41,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         'file2',
                         'FileResource',
                         @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
-                        @{ 
+                        @{
                             Path = "path2"
                             SourcePath = "path2"
                             Ensure = "absent"
@@ -85,7 +83,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         'file',
                         'FileResource',
                         @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
-                        @{ 
+                        @{
                             Path = "path"
                             SourcePath = "path"
                             Ensure = "present"
@@ -95,7 +93,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         'file2',
                         'FileResource',
                         @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
-                        @{ 
+                        @{
                             Path = "path"
                             SourcePath = "path"
                             Ensure = "present"
@@ -116,7 +114,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         'file',
                         'FileResource',
                         @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
-                        @{ 
+                        @{
                             Path = "path"
                             SourcePath = "path"
                             Ensure = "present"
@@ -131,7 +129,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         'file2',
                         'FileResource',
                         @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
-                        @{ 
+                        @{
                             Path = "path2"
                             SourcePath = "path2"
                             Ensure = "absent"
@@ -146,7 +144,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         'file3',
                         'FileResource',
                         @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0.0.0' },
-                        @{ 
+                        @{
                             Path = "path3"
                             SourcePath = "path3"
                             Ensure = "present"
@@ -156,7 +154,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
             )
         )
     )
-    
+
     Describe 'Get-VmwDscConfiguration' {
         It 'Should return the last executed configuration resources when ExecuteLastConfiguration switch is used' {
             # arrange
@@ -164,7 +162,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                 Param(
                     $Method
                 )
-                
+
                 if ($Method -eq 'Get') {
                     [PSCustomObject]@{
                         Prop = 'MyProp'
@@ -173,7 +171,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
             } -Verifiable
 
             $Script:LastExecutedConfiguration = $Script:SampleDscConfiguration
-            
+
             # act
             $result = Get-VmwDscConfiguration -ExecuteLastConfiguration
 
@@ -185,7 +183,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
             #assert
             {
                 $Script:LastExecutedConfiguration = $null
-             
+
                 Get-VmwDscConfiguration -ExecuteLastConfiguration
             } | Should -Throw $Script:NoConfigurationDetectedForInvokeException
         }
@@ -197,7 +195,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     Param(
                         $Name
                     )
-    
+
                     [PSCustomObject]@{
                         InDesiredState = $true
                     }
@@ -217,7 +215,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     Param(
                         $Name
                     )
-    
+
                     [PSCustomObject]@{
                         InDesiredState = $false
                     }
@@ -240,10 +238,10 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         InDesiredState = $true
                     }
                 } -Verifiable
-    
+
                 # act
                 $res = Test-VmwDscConfiguration $Script:SampleDscConfiguration
-    
+
                 # assert
                 Assert-VerifiableMock
                 $res | Should -Be $true
@@ -254,10 +252,10 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         InDesiredState = $false
                     }
                 } -Verifiable
-    
+
                 # act
                 $res = Test-VmwDscConfiguration $Script:SampleDscConfiguration
-    
+
                 # assert
                 Assert-VerifiableMock
                 $res | Should -Be $false
@@ -329,18 +327,18 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     Describe 'Invoke-VmwDscConfiguration' {
         It 'Should throw if invalid method is given' {
             # assert
-            { 
+            {
                 $splat = @{
                     Configuration = $Script:SampleDscConfiguration
                     Method = 'Invalid Method'
                 }
 
-                Invoke-VmwDscConfiguration @splat 
+                Invoke-VmwDscConfiguration @splat
             } | Should -Throw
         }
         It 'Should throw if node contains a resource with duplicate key property values' {
             # assert
-            { 
+            {
                 $splat = @{
                     Configuration = $Script:SampleDscConfigurationWithDuplicateKeyPropertiesResource
                     Method = 'Test'
@@ -431,7 +429,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     Describe 'vSphereNode functionality' {
         It 'Should throw if DefaultViServers is null' {
             # assert
-            { 
+            {
                 $splat = @{
                     Configuration = $Script:SampleDscConfigurationWithVsphereNode
                     Method = 'Test'
@@ -451,9 +449,9 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                         Name = $Script:SampleDscConfigurationWithVsphereNode.Nodes[0].InstanceName
                     }
                 )
-    
+
                 # assert
-                { 
+                {
                     $splat = @{
                         Configuration = $Script:SampleDscConfigurationWithVsphereNode
                         Method = 'Test'
@@ -478,21 +476,21 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                     Param(
                         $Property
                     )
-    
+
                     $Global:_IsConnectionPropertySet = $Property.ContainsKey('Connection')
 
                     [PSCustomObject]@{
                         InDesiredState = $true
                     }
                 } -Verifiable
-    
+
                 # act
                 $splat = @{
                     Configuration = $Script:SampleDscConfigurationWithVsphereNode
                     Method = 'Test'
                 }
                 Invoke-VmwDscConfiguration @splat | Out-Null
-    
+
                 # assert
                 Assert-VerifiableMock
                 $Global:_IsConnectionPropertySet | Should -Be $true

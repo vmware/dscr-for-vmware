@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -18,7 +16,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 <#
 .DESCRIPTION
-Compiles a dsc configuration 
+Compiles a dsc configuration
 Compiles a dsc configuration into an object with the name of the configuration and an array of dsc resources
 
 .EXAMPLE
@@ -75,13 +73,13 @@ function New-VmwDscConfiguration {
         Mandatory   = $true,
         Position    = 0)]
         $ConfigName,            # Name of the Configuration
-        
+
         [Parameter(
         Mandatory   = $false,
         Position    = 1)]
         [Hashtable]
         $CustomParams,          # User defined parameters of the configuration
-        
+
         [Parameter(
         Mandatory   = $false,
         Position    = 2)]
@@ -91,7 +89,15 @@ function New-VmwDscConfiguration {
 
     $dscCompiler = [DscConfigurationCompiler]::new($ConfigName, $CustomParams, $ConfigurationData)
 
-    $vmwDscConfiguration = $dscCompiler.CompileDscConfiguration()
+    try {
+        $savedVerbosePreference = $Global:VerbosePreference
+        $Global:VerbosePreference = $VerbosePreference
+
+        $vmwDscConfiguration = $dscCompiler.CompileDscConfiguration()
+    }
+    finally {
+        $Global:VerbosePreference = $savedVerbosePreference
+    }
 
     $vmwDscConfiguration
 }

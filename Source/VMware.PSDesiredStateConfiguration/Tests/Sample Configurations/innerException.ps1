@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -21,11 +19,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 Configuration that causes an exception during runtime.
 Should rethrow the exception.
 #>
-Configuration Test 
+Configuration Test
 {
     Import-DscResource -ModuleName MyDscResource
 
-    FileResource file 
+    FileResource file
     {
         Path = "path"
         SourcePath = "path"

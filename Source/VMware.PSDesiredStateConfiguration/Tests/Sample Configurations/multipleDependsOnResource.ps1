@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -60,7 +58,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file2',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path2"
                         SourcePath = "path2"
                         Ensure = "absent"
@@ -70,7 +68,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file3',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path3"
                         SourcePath = "path3"
                         Ensure = "absent"
@@ -80,7 +78,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file1',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = "path"
                         SourcePath = "path"
                         Ensure = "present"

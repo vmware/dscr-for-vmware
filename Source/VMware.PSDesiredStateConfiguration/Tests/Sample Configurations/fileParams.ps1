@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -28,7 +26,7 @@ Param(
 Configuration Test {
     Import-DscResource -ModuleName MyDscResource
 
-    FileResource file 
+    FileResource file
     {
         Path = $PathToUse
         SourcePath = 'some path'
@@ -46,7 +44,7 @@ $Script:expectedCompiled = [VmwDscConfiguration]::new(
                     'file',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                    @{ 
+                    @{
                         Path = $PathToUse
                         SourcePath = "some path"
                         Ensure = "present"

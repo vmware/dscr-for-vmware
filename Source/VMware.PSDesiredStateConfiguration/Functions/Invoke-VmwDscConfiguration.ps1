@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -16,7 +14,7 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-$Script:LastExecutedConfiguration = $null
+$script:LastExecutedConfiguration = $null
 
 <#
 .DESCRIPTION
@@ -48,15 +46,15 @@ function Start-VmwDscConfiguration {
         ConnectionFilter = $ConnectionFilter
         Method = 'Set'
     }
-    
-    Invoke-VmwDscConfiguration @invokeParams | Out-Null
+
+    Invoke-VmwDscConfiguration @invokeParams -Verbose:$VerbosePreference | Out-Null
 }
 
 <#
 .DESCRIPTION
 Invokes the DSC Configuration with the 'Get' DSC method.
 Retrieves the dsc resources current states.
-#> 
+#>
 function Get-VmwDscConfiguration {
     [CmdletBinding()]
     param (
@@ -91,8 +89,8 @@ function Get-VmwDscConfiguration {
         ConnectionFilter = $ConnectionFilter
         Method = 'Get'
     }
-    
-    $getResult = Invoke-VmwDscConfiguration @invokeParams
+
+    $getResult = Invoke-VmwDscConfiguration @invokeParams -Verbose:$VerbosePreference
 
     $result = New-Object -TypeName 'System.Collections.ArrayList'
 
@@ -129,7 +127,7 @@ function Test-VmwDscConfiguration {
         Position             = 0)]
         [Switch]
         $ExecuteLastConfiguration,
-        
+
         [Parameter(
         Mandatory            = $false,
         Position             = 1)]
@@ -152,7 +150,7 @@ function Test-VmwDscConfiguration {
         Method = 'Test'
     }
 
-    $testResults = Invoke-VmwDscConfiguration @invokeParams
+    $testResults = Invoke-VmwDscConfiguration @invokeParams -Verbose:$VerbosePreference
 
     $result = $null
 
@@ -203,11 +201,11 @@ function Invoke-VmwDscConfiguration {
     )
 
     if ($ExecuteLastConfiguration) {
-        if ($null -eq $Script:LastExecutedConfiguration) {
-            throw $Script:NoConfigurationDetectedForInvokeException
+        if ($null -eq $script:LastExecutedConfiguration) {
+            throw $script:NoConfigurationDetectedForInvokeException
         }
 
-        $Configuration = $Script:LastExecutedConfiguration
+        $Configuration = $script:LastExecutedConfiguration
     }
 
     $configToUse = $Configuration
@@ -237,9 +235,17 @@ function Invoke-VmwDscConfiguration {
 
     $invoker = [DscConfigurationRunner]::new($configToUse, $Method)
 
-    $invokeResult = $invoker.InvokeConfiguration()
+    try {
+        $savedVerbosePreference = $Global:VerbosePreference
+        $Global:VerbosePreference = $VerbosePreference
 
-    $Script:LastExecutedConfiguration = $Configuration
+        $invokeResult = $invoker.InvokeConfiguration()
+    }
+    finally {
+        $Global:VerbosePreference = $savedVerbosePreference
+    }
+
+    $script:LastExecutedConfiguration = $Configuration
 
     $invokeResult
 }

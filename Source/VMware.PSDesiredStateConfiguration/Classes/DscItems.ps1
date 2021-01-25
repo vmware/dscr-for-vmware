@@ -1,6 +1,4 @@
 <#
-Desired State Configuration Resources for VMware
-
 Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
@@ -15,6 +13,82 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
+
+$script:ConfigurationNotFoundException = "Configuration with name {0} not found"
+$script:CommandIsNotAConfigurationException = "{0} is not a configuration. It is a {1}"
+$script:DuplicateResourceException = "Duplicate resources found with name {0} and type {1}"
+$script:DependsOnResourceNotFoundException = "DependsOn resource of {0} with name {1} was not found"
+$script:DscResourceNotFoundException = "Resource of type: {0} was not found. Try importing it in the configuration file with Import-DscResource"
+$script:ExperimentalFeatureNotEnabledInPsCoreException = 'This module depends on the Invoke-DscResource cmdlet and in order to use it must be enabled with "Enable-ExperimentalFeature PSDesiredStateConfiguration.InvokeDscResource"'
+$script:NoVsphereConnectionsFoundException = "No active vSphere connection found. Please establish a connection first!"
+$script:NestedMoreThanASingleLevelException = "Nesting configurations, composite resources or regular dsc resources more than a single level of nesting is not supported"
+$script:NestedNodesAreNotSupportedException = "Nesting nodes is not supported."
+$script:TooManyConnectionOnASingleVCenterException = "More than 1 active connection found for '{0}'. Please establish only a single connection."
+$script:VsphereNodesAreOnlySupportedOnPowerShellCoreException = "In order to be able to run vSphere Nodes please switch to a Core version of PowerShell"
+$script:NoConfigurationDetectedForInvokeException = "No configuration has been found! Please supply a configuration via a parameter."
+$script:DscResourcesWithDuplicateKeyPropertiesException = "The Dsc Resource of type '{0}' has multiple entries with the same key properties values. Please ensure all key properties have unique values."
+
+$script:ConfigurationDataDoesNotContainAllNodesException = "ConfigurationData parameter must contain an AllNodes key."
+$script:ConfigurationDataAllNodesKeyIsNotAnArrayException = "ConfigurationData AllNodes key must be an array."
+$script:ConfigurationDataNodeEntryInAllNodesIsNotAHashtableException = "ConfigurationData AllNodes entries must be hashtables."
+$script:ConfigurationDataNodeEntryInAllNodesDoesNotContainNodeNameException = "ConfigurationData AllNodes entries must contain an entry named NodeName."
+$script:DuplicateEntryInAllNodesException = "ConfigurationData AllNodes must not have entries with the same NodeName."
+
+$script:NoVsphereConnectionsFoundForNodeWarning = "No active vSphere connection found for node with name '{0}' and will be skipped. Please establish a connection."
+
+<#
+.DESCRIPTION
+Used to generate a hashcode for the KeyPropertyResourceCheck object.
+A similiar class is created via c# so that the unchecked param is used for overflow ignoring.
+PowerShell by itself automaticaly changes the number type when before overflowing to avoid it.
+#>
+function Get-KeyPropertyResourceCheckDotNetHashCode {
+    Param(
+        [string] $ResourceType,
+
+        [Hashtable] $KeyPropertiesToValues
+    )
+
+    $code = @"
+    using System.Collections;
+
+    public class KeyPropertyResourceCheckDotNet
+    {
+        public KeyPropertyResourceCheckDotNet(string resourceType, Hashtable keyPropertiesToValues)
+        {
+            this.ResourceType = resourceType;
+            this.KeyPropertiesToValues = keyPropertiesToValues;
+        }
+
+        private string ResourceType { get; set; }
+
+        private Hashtable KeyPropertiesToValues { get; set; }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+
+                hash = hash * 23 + this.ResourceType.GetHashCode();
+
+                foreach (var key in this.KeyPropertiesToValues.Keys)
+                {
+                    hash = hash * 23 + this.KeyPropertiesToValues[key].GetHashCode();
+                }
+
+                return hash;
+            }
+        }
+    }
+"@
+
+    Add-Type -TypeDefinition $code
+
+    $obj = [KeyPropertyResourceCheckDotNet]::new($ResourceType, $KeyPropertiesToValues)
+
+    $obj.GetHashCode()
+}
 
 <#
 .DESCRIPTION
@@ -227,7 +301,7 @@ class VmwDscResourceGraph {
 
             foreach ($dependency in $dependencies) {
                 if (-not $this.Edges.Contains($dependency)) {
-                    throw ($Script:DependsOnResourceNotFoundException -f $this.Resources[$key].InstanceName, $dependency)
+                    throw ($script:DependsOnResourceNotFoundException -f $this.Resources[$key].InstanceName, $dependency)
                 }
 
                 # remove DependsOn item so that it does not conflict with Invoke-DscResource later on
@@ -334,12 +408,12 @@ class DscConfigurationCompiler {
 
         # must contain AllNodes key
         if (-not $this.ConfigurationData.ContainsKey('AllNodes')) {
-            throw $Script:ConfigurationDataDoesNotContainAllNodesException
+            throw $script:ConfigurationDataDoesNotContainAllNodesException
         }
 
         # AllNodes key must be array
         if ($this.ConfigurationData['AllNodes'] -isnot [Array]) {
-            throw $Script:ConfigurationDataAllNodesKeyIsNotAnArrayException
+            throw $script:ConfigurationDataAllNodesKeyIsNotAnArrayException
         }
 
         # hashset for detecting entries with same nodeName property
@@ -351,19 +425,19 @@ class DscConfigurationCompiler {
         foreach ($nodeConfiguration in $this.ConfigurationData['AllNodes']) {
             # each node entry must be a hashtable
             if ($nodeConfiguration -isnot [Hashtable]) {
-                throw $Script:ConfigurationDataNodeEntryInAllNodesIsNotAHashtableException
+                throw $script:ConfigurationDataNodeEntryInAllNodesIsNotAHashtableException
             }
 
             # each node entry must have a NodeName property
             if (-not $nodeConfiguration.ContainsKey('NodeName')) {
-                throw $Script:ConfigurationDataNodeEntryInAllNodesDoesNotContainNodeNameException
+                throw $script:ConfigurationDataNodeEntryInAllNodesDoesNotContainNodeNameException
             }
 
             # checks if nodeName is added to the hashset or if it's already in.
             $isNodeNameAdded = $duplicateNodeNameSet.Add($nodeConfiguration['NodeName'])
 
             if (-not $isNodeNameAdded) {
-                throw $Script:DuplicateEntryInAllNodesException
+                throw $script:DuplicateEntryInAllNodesException
             }
 
             if($nodeConfiguration['NodeName'] -eq '*')
@@ -401,7 +475,7 @@ class DscConfigurationCompiler {
             $key = $resource.GetId()
 
             if ($dscResOrderedDict.Contains($key)) {
-                throw ($Script:DuplicateResourceException -f $resource.InstanceName, $resource.ResourceType)
+                throw ($script:DuplicateResourceException -f $resource.InstanceName, $resource.ResourceType)
             }
 
             $dscResOrderedDict[$key] = $resource
@@ -443,8 +517,17 @@ class DscConfigurationCompiler {
 
         Write-Verbose "Parsing configuration block of $($ConfigCommand.Name)"
 
+        <#
+            The Verbose preference is set to 'SilentlyContinue' to suppress the
+            Verbose output of 'Import-DscResource' when importing the 'VMware.vSphereDSC' module.
+        #>
+        $savedVerbosePreference = $Global:VerbosePreference
+        $Global:VerbosePreference = 'SilentlyContinue'
+
         # parse the configuration, run Import-DscResource statements and retrieve the found resources/nested configurations
         $parseResult = $dscConfigurationParser.ParseDscConfiguration($configCommand)
+
+        $Global:VerbosePreference = $savedVerbosePreference
 
         Write-Verbose "Preparing functions for dsc resources and nodes"
 
@@ -589,7 +672,7 @@ class DscConfigurationCompiler {
             )
 
             if ($this.IsNested) {
-                throw $Script:NestedMoreThanASingleLevelException
+                throw $script:NestedMoreThanASingleLevelException
             }
 
             $this.IsNested = $true
@@ -651,11 +734,11 @@ class DscConfigurationCompiler {
                 $Connections,
 
                 [ScriptBlock]
-                $ScriptBlock
+                $scriptBlock
             )
 
             if ($this.IsNested) {
-                throw $Script:NestedNodesAreNotSupportedException
+                throw $script:NestedNodesAreNotSupportedException
             }
 
             $type = Get-PSCallStack | Select-Object -First 1 -ExpandProperty Command
@@ -667,7 +750,7 @@ class DscConfigurationCompiler {
                 $nodeObject = $null
 
                 # resources are created here to avoid duplicates via reference
-                $dscResources = . $ScriptBlock
+                $dscResources = . $scriptBlock
 
                 if ($type -eq 'Node') {
                     $nodeObject = [VmwDscNode]::new($connection, $dscResources)
@@ -699,7 +782,7 @@ class DscConfigurationCompiler {
 
         if (-not $this.ResourceNameToInfo.ContainsKey($resourceType)) {
              # if the resource is not found throws exception
-             throw ($Script:DscResourceNotFoundException -f $resourceType)
+             throw ($script:DscResourceNotFoundException -f $resourceType)
         }
 
         $resourceInfo = $this.ResourceNameToInfo[$resourceType]
@@ -731,12 +814,12 @@ class DscConfigurationCompiler {
         $foundConfigCommand = Get-Command $ConfigName -ErrorAction SilentlyContinue
 
         if ($null -eq $foundConfigCommand) {
-            throw ($Script:ConfigurationNotFoundException -f $ConfigName)
+            throw ($script:ConfigurationNotFoundException -f $ConfigName)
         }
 
         # check if found command is correct type
         if ($foundConfigCommand.CommandType -ne 'Configuration') {
-            throw ($Script:CommandIsNotAConfigurationException -f $ConfigName, $foundConfigCommand.CommandType)
+            throw ($script:CommandIsNotAConfigurationException -f $ConfigName, $foundConfigCommand.CommandType)
         }
 
         return $foundConfigCommand
@@ -1129,7 +1212,7 @@ class DscConfigurationRunner {
         $psVersionTableVariable = Get-Variable -Name PSVersionTable
 
         if ($psVersionTableVariable.Value['PSEdition'] -ne 'Core') {
-            throw $Script:VsphereNodesAreOnlySupportedOnPowerShellCoreException
+            throw $script:VsphereNodesAreOnlySupportedOnPowerShellCoreException
         }
 
         $validVsphereNodes = New-Object 'System.Collections.ArrayList'
@@ -1138,14 +1221,14 @@ class DscConfigurationRunner {
 
         # check if any connections are established
         if ($null -eq $viServersHashtable -or $viServersHashtable.Count -eq 0) {
-            throw $Script:NoVsphereConnectionsFoundException
+            throw $script:NoVsphereConnectionsFoundException
         }
 
         foreach ($vSphereNode in $vSphereNodes) {
             $warningMessage = [string]::Empty
 
             if (-not $viServersHashtable.ContainsKey($vSphereNode.InstanceName)) {
-                $warningMessage = ($Script:NoVsphereConnectionsFoundForNodeWarning -f $vSphereNode.InstanceName)
+                $warningMessage = ($script:NoVsphereConnectionsFoundForNodeWarning -f $vSphereNode.InstanceName)
             } else {
                 $this.SetResourcesConnection($vSphereNode.Resources, $viServersHashtable, $vSphereNode.InstanceName)
 
@@ -1211,11 +1294,20 @@ class DscConfigurationRunner {
             Name = $DscResource.ResourceType
             ModuleName = $DscResource.ModuleName
             Property = $DscResource.Property
+            Verbose = $false
+            ErrorAction = 'Stop'
         }
 
         $logs = New-Object -TypeName 'System.Collections.ArrayList'
 
-        $invokeSplatParams.Property['Logs'] = [ref] $logs
+        <#
+            On PowerShell 5.1, System.Management.Automation.PSReference
+            cannot be serialized into CimInstance. So the logs are only
+            available for the PowerShell Core version.
+        #>
+        if ($Global:PSVersionTable.PSEdition -eq 'Core') {
+            $invokeSplatParams.Property['Logs'] = [ref] $logs
+        }
 
         Write-Verbose -Message "Invoking DSC Resource with id: $($DscResource.GetId())"
 
@@ -1227,14 +1319,17 @@ class DscConfigurationRunner {
 
         try {
             if ($this.DscMethod -eq 'Test' -or $this.DscMethod -eq 'Get') {
-                $invokeResult = Invoke-DscResource @invokeSplatParams -Method $this.DscMethod
+                $invokeSplatParams.Method = $this.DscMethod
+                $invokeResult = Invoke-DscResource @invokeSplatParams
             } else {
                 # checks if the resource is in target state
-                $isInDesiredState = Invoke-DscResource @invokeSplatParams -Method 'Test'
+                $invokeSplatParams.Method = 'Test'
+                $isInDesiredState = Invoke-DscResource @invokeSplatParams
 
                 # executes 'set' method only if state is not desired
                 if (-not $isInDesiredState.InDesiredState) {
-                    (Invoke-DscResource @invokeSplatParams -Method $this.DscMethod) | Out-Null
+                    $invokeSplatParams.Method = $this.DscMethod
+                    (Invoke-DscResource @invokeSplatParams) | Out-Null
                 }
             }
         } catch {
@@ -1292,12 +1387,21 @@ class DscConfigurationRunner {
                     continue
                 }
 
+                <#
+                    The Verbose preference is set to 'SilentlyContinue' to suppress the
+                    Verbose output of 'using module' when importing the 'VMware.vSphereDSC' module.
+                #>
+                $savedVerbosePreference = $Global:VerbosePreference
+                $Global:VerbosePreference = 'SilentlyContinue'
+
                 $resourceCheck = $this.GetDscResouceKeyProperties($currentResource)
+
+                $Global:VerbosePreference = $savedVerbosePreference
 
                 $isAdded = $dscResourcesDuplicateChecker.Add($resourceCheck)
 
                 if (-not $isAdded) {
-                    throw ($Script:DscResourcesWithDuplicateKeyPropertiesException -f $currentResource.ResourceType)
+                    throw ($script:DscResourcesWithDuplicateKeyPropertiesException -f $currentResource.ResourceType)
                 }
             }
         }
@@ -1377,7 +1481,7 @@ class DscConfigurationRunner {
         foreach ($server in $serverList) {
             if ($serverHashtable.ContainsKey($server.Name)) {
                 # more than one connection to the same VIServer
-                throw ($Script:TooManyConnectionOnASingleVCenterException -f $server.Name)
+                throw ($script:TooManyConnectionOnASingleVCenterException -f $server.Name)
             }
 
             $serverHashtable[$server.Name] = $server
