@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.10 - 2021-01-25
+### Changed
+- Modified the **License** logic in the **VMware.PSDesiredStateConfiguration** build to cut the first two lines of the **License** in **License.txt**.
+- Moved the **error constants** and the **Get-KeyPropertyResourceCheckDotNetHashCode** function to the **DscItems** file because on **PowerShell 5.1** they're not visible and are missing due to the **DscItems** being imported first.
+-  Fixed the **error** and **verbose** output for all cmdlets in the **VMware.PSDesiredStateConfiguration** module.
+- Fix **logs** property bug for **PowerShell 5.1** - the **logs** can't be serialized into a **CimInstance**.
+
+### Removed
+- Removed unused **ExperimentalEnabled** script.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.9 - 2021-01-23
 ### Changed
 - Fix bug with exceptions not being thrown when an error occurs in a **DSC Resource** when invoking the **DSC Configuration** through the **VMware.PSDesiredStateConfiguration** module.
