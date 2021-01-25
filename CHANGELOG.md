@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.11 - 2021-01-25
+### Changed
+- Extended the validation of the key properties of a **DSC Resource** in the **VMware.PSDesiredStateConfiguration** module to throw an exception when a key property is **$null**.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.10 - 2021-01-25
 ### Changed
 - Modified the **License** logic in the **VMware.PSDesiredStateConfiguration** build to cut the first two lines of the **License** in **License.txt**.
