@@ -15,7 +15,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 $script:FunctionsPath = Join-Path -Path $PSScriptRoot -ChildPath 'Functions'
+$script:ClassesPath = Join-Path -Path $PSScriptRoot -ChildPath 'Classes'
+$script:ModuleFilePaths = @($script:ClassesPath, $script:FunctionsPath)
 
-Get-ChildItem -Path $script:FunctionsPath -Recurse -File | ForEach-Object {
+Get-ChildItem -Path $script:ModuleFilePaths -Recurse -File | ForEach-Object {
     . $_.FullName
 }
