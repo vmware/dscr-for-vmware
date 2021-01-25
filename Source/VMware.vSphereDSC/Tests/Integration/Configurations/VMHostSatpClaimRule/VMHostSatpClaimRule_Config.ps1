@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -15,21 +15,21 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Name,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Name,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
@@ -55,14 +55,11 @@ $script:configurationData = @{
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-Configuration VMHostSatpClaimRule_WithClaimRuleToAdd_Config
-{
+Configuration VMHostSatpClaimRule_WithClaimRuleToAdd_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
-        VMHostSatpClaimRule vmHostSatpClaimRule
-        {
+    Node localhost {
+        VMHostSatpClaimRule vmHostSatpClaimRule {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential
@@ -78,14 +75,11 @@ Configuration VMHostSatpClaimRule_WithClaimRuleToAdd_Config
     }
 }
 
-Configuration VMHostSatpClaimRule_WithClaimRuleToRemove_Config
-{
+Configuration VMHostSatpClaimRule_WithClaimRuleToRemove_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
-        VMHostSatpClaimRule vmHostSatpClaimRule
-        {
+    Node localhost {
+        VMHostSatpClaimRule vmHostSatpClaimRule {
             Name = $Name
             Server = $Server
             Credential = $script:vmHostCredential

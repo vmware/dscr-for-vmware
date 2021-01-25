@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -15,25 +15,24 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Name,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Name,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
 $script:dscResourceName = 'VMHostTpsSettings'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -62,7 +61,7 @@ $script:resourceProperties = @{
 
 $script:mofFilePath = "$script:integrationTestsFolderPath\$($script:config)\"
 
-function BeforeAllTests {
+function Invoke-TestSetup {
     $script:vmHost = Get-VMHost -Server $script:connection -Name $script:resourceProperties.Name
 
     $script:shareScanTime = Get-AdvancedSetting -Server $script:connection -Entity $script:vmHost -Name "Mem.ShareScanTime"
@@ -71,65 +70,75 @@ function BeforeAllTests {
     $script:shareForceSalting = Get-AdvancedSetting -Server $script:connection -Entity $script:vmHost -Name "Mem.ShareForceSalting"
 }
 
-function AfterAllTests {
+function Invoke-TestCleanup {
     $script:vmHost = Get-VMHost -Server $script:connection -Name $script:resourceProperties.Name
 
     Set-AdvancedSetting -AdvancedSetting $script:shareScanTime -Value $script:shareScanTime.Value -Confirm:$false
     Set-AdvancedSetting -AdvancedSetting $script:shareForceSalting -Value $script:shareForceSalting.Value -Confirm:$false
 }
 
-Describe "$($script:dscResourceName)_Integration" {
-    Context "When using configuration $($script:config)" {
-        BeforeAll {
-            BeforeAllTests
-        }
-
-        AfterAll {
-            AfterAllTests
-        }
-
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFilePath
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+try {
+    Describe "$($script:dscResourceName)_Integration" {
+        Context "When using configuration $($script:config)" {
+            BeforeAll {
+                Invoke-TestSetup
             }
 
-            # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
-        }
+            AfterAll {
+                Invoke-TestCleanup
+            }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
-        }
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFilePath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfig = Get-DscConfiguration `
-            | Where-Object {$_.configurationName -eq $script:config }
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
 
-            $configuration = $script:dscConfig `
-            | Select-Object -Last 1
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFilePath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
+                # Act && Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
 
-            $configuration.Name | Should -Be $script:resourceProperties.Name
-            $configuration.Server | Should -Be $script:resourceProperties.Server
-            $configuration.ShareScanTime | Should -Be $script:shareScanTimeTestValue
-            $configuration.ShareScanGHz | Should -Be $script:shareScanGHz.Value
-            $configuration.ShareRateMax | Should -Be $script:shareRateMax.Value
-            $configuration.ShareForceSalting | Should -Be $script:shareForceSaltingTestValue
-        }
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
 
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Name | Should -Be $script:resourceProperties.Name
+                $configuration.Server | Should -Be $script:resourceProperties.Server
+                $configuration.ShareScanTime | Should -Be $script:shareScanTimeTestValue
+                $configuration.ShareScanGHz | Should -Be $script:shareScanGHz.Value
+                $configuration.ShareRateMax | Should -Be $script:shareRateMax.Value
+                $configuration.ShareForceSalting | Should -Be $script:shareForceSaltingTestValue
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
     }
 }
-
-Disconnect-VIServer -Server $Server -Confirm:$false
+finally {
+    Disconnect-VIServer -Server $Server -Confirm:$false
+}

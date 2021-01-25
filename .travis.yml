@@ -1,0 +1,48 @@
+language: generic
+
+branches:
+  only:
+    - master
+
+env:
+  global:
+    - PSDS_CODECOVERAGE_RESULTFILE='psdsTestsCoverage'
+
+jobs:
+  include:
+    - stage: VMware.PSDesiredStateConfigurationTests
+      os: linux
+      dist: bionic
+      addons:
+        apt:
+          sources:
+            - sourceline: "deb [arch=amd64] https://packages.microsoft.com/ubuntu/18.04/prod bionic main"
+              key_url: "https://packages.microsoft.com/keys/microsoft.asc"
+          packages:
+            - powershell
+      workspaces:
+        create:
+          name: coverageWorkspace
+          paths:
+            - psdsTestsCoverage
+      script:
+        - pwsh -File './Build/enableExperimentalFeature.ps1'
+        - pwsh -File './Build/VMware.PSDSCUnitTestsRunner.ps1'
+    - stage: Build
+      os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - sourceline: "deb [arch=amd64] https://packages.microsoft.com/ubuntu/14.04/prod trusty main"
+              key_url: "https://packages.microsoft.com/keys/microsoft.asc"
+          packages:
+            - powershell
+      workspaces:
+        use: coverageWorkspace
+      before_install:
+        - chmod +x Build/travis-push.sh
+      script:
+        - pwsh -File './Build/build.ps1'
+      after_success:
+        - '[ "${TRAVIS_EVENT_TYPE}" = "push" ] && [ "${TRAVIS_BRANCH}" = "master" ] && Build/travis-push.sh'

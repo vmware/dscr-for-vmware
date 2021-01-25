@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -15,17 +15,17 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
 $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
@@ -48,14 +48,11 @@ $script:configurationData = @{
 $moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 
-Configuration vCenterStatistics_WithPassedEnabledProperty_Config
-{
+Configuration vCenterStatistics_WithPassedEnabledProperty_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
-        vCenterStatistics vCenterStatistics
-        {
+    Node localhost {
+        vCenterStatistics vCenterStatistics {
             Server = $Server
             Credential = $script:vCenterCredential
             Period = $script:period
@@ -67,14 +64,11 @@ Configuration vCenterStatistics_WithPassedEnabledProperty_Config
     }
 }
 
-Configuration vCenterStatistics_WithoutEnabledProperty_Config
-{
+Configuration vCenterStatistics_WithoutEnabledProperty_Config {
     Import-DscResource -ModuleName VMware.vSphereDSC
 
-    Node localhost
-    {
-        vCenterStatistics vCenterStatistics
-        {
+    Node localhost {
+        vCenterStatistics vCenterStatistics {
             Server = $Server
             Credential = $script:vCenterCredential
             Period = $script:period

@@ -1,98 +1,59 @@
 
 
-# Desired State Configuration Resources for VMware
+# Desired State Configuration for VMware
 
 ## Overview
+The **Desired State Configuration for VMware** project contains **VMware.vSphereDSC** and **VMware.PSDesiredStateConfiguration** PowerShell modules.
 
 The **VMware.vSphereDSC** module is a collection of DSC Resources. This module includes DSC resources that simplify the management of vCenter and ESXi settings, with a simple declarative language.
 
-The **VMware.vSphereDSC** module contains the following resources:
+The **VMware.vSphereDSC** module contains resources for:
 
-- **VMHostNtpSettings**: Used to configure NTP Server property and the Service Policy of the 'ntpd' Service of a ESXi host.
-- **VMHostDnsSettings**: Used to configure the DNS Settings of a ESXi host.
-- **VMHostSatpClaimRule**: Used to create or remove SATP Claim Rules of a ESXi host.
-- **VMHostTpsSettings**: Used to configure TPS Settings of a ESXi host.
-- **vCenterStatistics**: Used to configure the Statistics Settings of a vCenter.
-- **vCenterSettings**: Used to update EventMaxAge Settings, TaskMaxAge Settings and the Logging Level of a vCenter.
+- **Datacenters**, **Folders** and **Clusters**
+- **Standard** and **distributed switches** and **portgroups** and **network migration** between them
+- **Host network adapters**
+- **Datastores** (**VMFS** and **NFS**) and **storage adapters**
+- **Host accounts**, **roles** and **permissions**
+- **vCenter** and **Host** settings
 
-## Getting Started
-## Requirements
-**VMware.vSphereDSC** module contains Windows PowerShell Desired State Configuration Resources. 
-The following table describes the required dependencies for running VMware.vSphereDSC Resources.
+The **VMware.PSDesiredStateConfiguration** module provides an alternative in-language way to compile and execute DSC Configurations. It does not require the use of LCM and supports PowerShell 7.0.
 
- **Required dependency**   | **Minimum version**
--------------------------- | -------------------
-`PowerShell`               | 5.1
-`PowerCLI`                 | 10.1.1
+## VMware.vSphereDSC
+[Getting Started with VMware.vSphereDSC](https://github.com/vmware/dscr-for-vmware/blob/master/VMware.vSphereDSC.md)<br/>
+[DSC Resources Documentation](https://github.com/vmware/dscr-for-vmware/wiki)<br/>
 
-For information on how to install PowerShell, please visit [Installing Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell?view=powershell-5.1).  
-
-For information on how to install PowerCLI, please visit the [PowerCLI Blog](https://blogs.vmware.com/PowerCLI/2018/02/powercli-10.html).  
-
-You also need to configure the DSC LCM on a Windows machine where the resources will run. For more information on how to configure it, please visit [Desired State Configuration Quick Start](https://docs.microsoft.com/en-us/powershell/dsc/quickstart)
-
-## Installing the VMware.vSphereDSC Resources
-
-1. Copy the VMware.vSphereDSC Module to one of the system PowerShell module directories.For more information on installing PowerShell Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/developer/module/installing-a-powershell-module#rules-for-installing-modules).
-2. In PowerShell import the VMware.vSphereDSC Module:
-   ```
-    Import-Module -Name 'VMware.vSphereDSC' 
-   ```
-
-   To check if the module was successfully installed: 
-   ```
-    Get-DscResource -Module 'VMware.vSphereDSC'
-   ```
-
-## Applying VMware.vSphereDSC Resource Configuration
-# Example
-The following example uses [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) and configures the NTP Server and the 'ntpd' Service Policy.  
-
-1. You need to compile the [Configuration File](https://github.com/vmware/dscr-for-vmware/blob/master/Source/VMware.vSphereDSC/Configurations/ESXiConfigs/VMHostNtpSettings_Config.ps1) to [MOF](https://docs.microsoft.com/en-us/windows/desktop/wmisdk/managed-object-format--mof-):  
-   ```
-    $ntpConfigPath = Join-Path (Join-Path (Join-Path (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase 'Configurations') 'ESXiConfigs')'VMHostNtpSettings_Config.ps1'
-    . $ntpConfigPath -Name '<VMHost Name>' -Server 'Server Name>' -User '<User Name>' -Password '<Password for User>'
-   ```
-2. To Test if the NTP Settings are in the desired state:
-   ```
-    Test-DscConfiguration -ComputerName <The name of the machine on which you are applying your configuration> -Path .\VMHostNtpSettings_Config\
-   ```
-3. To Apply the NTP Configuration:
-   ```
-    Start-DscConfiguration -ComputerName <The name of the machine on which you are applying your configuration> -Path .\VMHostNtpSettings_Config\ -Wait -Force
-   ```
-4. To get the latest applied configuration on your machine:
-   ```
-    Get-DscConfiguration
-   ```
-
-If you want to apply other configurations, you just need to compile the configuration file and pass the path of the created MOF file to the DSC cmdlets.
-
-For more information about the DSC cmdlets please visit the [PSDesiredStateConfiguration](https://docs.microsoft.com/en-us/powershell/module/psdesiredstateconfiguration/?view=powershell-5.1).
-
-## Documentation and Examples
-
-For a full list of resources in VMware.vSphereDSC and examples on their use, check out
-the [Desired State Configuration Resources for VMware wiki](https://github.com/vmware/dscr-for-vmware/wiki).
+## VMware.PSDesiredStateConfiguration
+[Getting Started with VMware.PSDesiredStateConfiguration](https://github.com/vmware/dscr-for-vmware/blob/master/VMware.PSDesiredStateConfiguration.md)<br/>
+[Known Limitations](https://github.com/vmware/dscr-for-vmware/blob/master/LIMITATIONS.md)<br/>
 
 ## Branches
 
 ### master
 
-This is the branch containing the latest release - no contributions should be made
-directly to this branch.
+[![Build Status](https://travis-ci.org/vmware/dscr-for-vmware.svg?branch=master)](https://travis-ci.org/vmware/dscr-for-vmware)
 
-### dev
+**VMware.vSphereDSC** ![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg?maxAge=60)
 
-This is the development branch to which contributions should be proposed by contributors
-as pull requests. This development branch will periodically be merged to the master
-branch.
+**VMware.PSDesiredStateConfiguration** ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg?maxAge=60)
+
+This is the branch to which contributions should be proposed by contributors as pull requests. The content of the module releases will be from the master branch.
 
 ## Contributing
 
 The Desired State Configuration Resources for VMware project team welcomes contributions from the community. For more detailed information, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Join us on Slack
+
+If you have any questions about the project you can join us on Slack:
+
+1. Join [VMware Code](https://code.vmware.com/web/code/join)
+2. Join the following channel:
+    ```
+    powercli-dsc-contrib
+    ```
+
 ## License
+
 The Desired State Configuration Resources for VMware is distributed under the [BSD-2](https://github.com/vmware/dscr-for-vmware/blob/master/LICENSE.txt).
 
 For more details, please refer to the [BSD-2 License File](https://github.com/vmware/dscr-for-vmware/blob/master/LICENSE.txt).

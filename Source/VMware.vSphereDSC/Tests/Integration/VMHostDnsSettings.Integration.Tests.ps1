@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -15,25 +15,24 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Name,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Name,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
 $script:dscResourceName = 'VMHostDnsSettings'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -90,203 +89,233 @@ $script:mofFileWithDhcpDisabledPath = "$script:integrationTestsFolderPath\$($scr
 $script:mofFileWithoutAddressAndSearchDomainPath = "$script:integrationTestsFolderPath\$($script:configWithoutAddressAndSearchDomain)\"
 $script:mofFileWithDhcpEnabledPath = "$script:integrationTestsFolderPath\$($script:configWithDhcpEnabled)\"
 
-function BeforeAllTests {
+function Invoke-TestSetup {
     $script:vmHost = Get-VMHost -Server $Server -Name $Name
     $script:dnsConfig = $script:vmHost.ExtensionData.Config.Network.DnsConfig
 }
 
-Describe "$($script:dscResourceName)_Integration" {
-    Context "When using configuration $($script:configWithDhcpDisabled)" {
-        BeforeAll {
-            BeforeAllTests
+try {
+    Describe "$($script:dscResourceName)_Integration" {
+        Context "When using configuration $($script:configWithDhcpDisabled)" {
+            BeforeAll {
+                Invoke-TestSetup
 
-            $script:dnsHostName = $script:dnsConfig.HostName
-            $script:dnsDomainName = $script:dnsConfig.DomainName
-            $script:dnsAddress = $script:dnsConfig.Address
-            $script:dnsSearchDomain = $script:dnsConfig.SearchDomain
-        }
-
-        AfterAll {
-            $dnsConfig = New-Object VMware.Vim.HostDnsConfig
-
-            $dnsConfig.HostName = $script:dnsHostName
-            $dnsConfig.DomainName = $script:dnsDomainName
-            $dnsConfig.Address = $script:dnsAddress
-            $dnsConfig.SearchDomain = $script:dnsSearchDomain
-
-            $networkSystem = Get-View -Server $Server $script:vmHost.ExtensionData.ConfigManager.NetworkSystem
-            $networkSystem.UpdateDnsConfig($dnsConfig)
-        }
-
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithDhcpDisabledPath
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+                $script:dnsHostName = $script:dnsConfig.HostName
+                $script:dnsDomainName = $script:dnsConfig.DomainName
+                $script:dnsAddress = $script:dnsConfig.Address
+                $script:dnsSearchDomain = $script:dnsConfig.SearchDomain
             }
 
-            # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
-        }
+            AfterAll {
+                $dnsConfig = New-Object VMware.Vim.HostDnsConfig
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
-        }
+                $dnsConfig.HostName = $script:dnsHostName
+                $dnsConfig.DomainName = $script:dnsDomainName
+                $dnsConfig.Address = $script:dnsAddress
+                $dnsConfig.SearchDomain = $script:dnsSearchDomain
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithDhcpDisabled = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithDhcpDisabled
-
-            # Assert
-            { $script:dscConfigWithDhcpDisabled } | Should -Not -Throw
-
-            $configuration.Name | Should -Be $script:resourceWithDhcpDisabled.Name
-            $configuration.Server | Should -Be $script:resourceWithDhcpDisabled.Server
-            $configuration.HostName | Should -Be $script:resourceWithDhcpDisabled.HostName
-            $configuration.DomainName | Should -Be $script:resourceWithDhcpDisabled.DomainName
-            $configuration.Dhcp | Should -Be $false
-            $configuration.Address | Should -Be $script:resourceWithDhcpDisabled.Address
-            $configuration.SearchDomain | Should -Be $script:resourceWithDhcpDisabled.SearchDomain
-        }
-
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
-        }
-    }
-
-    Context "When using configuration $($script:configWithoutAddressAndSearchDomain)" {
-        BeforeAll {
-            BeforeAllTests
-
-            $script:dnsHostName = $script:dnsConfig.HostName
-            $script:dnsDomainName = $script:dnsConfig.DomainName
-            $script:dnsAddress = $script:dnsConfig.Address
-            $script:dnsSearchDomain = $script:dnsConfig.SearchDomain
-        }
-
-        AfterAll {
-            $dnsConfig = New-Object VMware.Vim.HostDnsConfig
-
-            $dnsConfig.HostName = $script:dnsHostName
-            $dnsConfig.DomainName = $script:dnsDomainName
-            $dnsConfig.Address = $script:dnsAddress
-            $dnsConfig.SearchDomain = $script:dnsSearchDomain
-
-            $networkSystem = Get-View -Server $Server $script:vmHost.ExtensionData.ConfigManager.NetworkSystem
-            $networkSystem.UpdateDnsConfig($dnsConfig)
-        }
-
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithoutAddressAndSearchDomainPath
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+                $networkSystem = Get-View -Server $Server $script:vmHost.ExtensionData.ConfigManager.NetworkSystem
+                $networkSystem.UpdateDnsConfig($dnsConfig)
             }
 
-            # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
-        }
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithDhcpDisabledPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithoutAddressAndSearchDomain = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithoutAddressAndSearchDomain
-
-            # Assert
-            { $script:dscConfigWithoutAddressAndSearchDomain } | Should -Not -Throw
-
-            $configuration.Name | Should -Be $script:resourceWithoutAddressAndSearchDomain.Name
-            $configuration.Server | Should -Be $script:resourceWithoutAddressAndSearchDomain.Server
-            $configuration.HostName | Should -Be $script:resourceWithoutAddressAndSearchDomain.HostName
-            $configuration.DomainName | Should -Be $script:resourceWithoutAddressAndSearchDomain.DomainName
-            $configuration.Dhcp | Should -Be $false
-            $configuration.Address | Should -Be $null
-            $configuration.SearchDomain | Should -Be $null
-        }
-
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
-        }
-    }
-
-    Context "When using configuration $($script:configWithDhcpEnabled)" {
-        BeforeAll {
-            BeforeAllTests
-
-            $script:dnsHostName = $script:dnsConfig.HostName
-            $script:dnsDomainName = $script:dnsConfig.DomainName
-            $script:dnsDhcp = $script:dnsConfig.Dhcp
-            $script:dnsVirtualNicDevice = $script:dnsConfig.VirtualNicDevice
-        }
-
-        AfterAll {
-            $dnsConfig = New-Object VMware.Vim.HostDnsConfig
-
-            $dnsConfig.HostName = $script:dnsHostName
-            $dnsConfig.DomainName = $script:dnsDomainName
-            $dnsConfig.Dhcp = $script:dnsDhcp
-            $dnsConfig.VirtualNicDevice = $script:dnsVirtualNicDevice
-
-            $networkSystem = Get-View -Server $Server $script:vmHost.ExtensionData.ConfigManager.NetworkSystem
-            $networkSystem.UpdateDnsConfig($dnsConfig)
-        }
-
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithDhcpEnabledPath
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
             }
 
-            # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithDhcpDisabledPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act && Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Name | Should -Be $script:resourceWithDhcpDisabled.Name
+                $configuration.Server | Should -Be $script:resourceWithDhcpDisabled.Server
+                $configuration.HostName | Should -Be $script:resourceWithDhcpDisabled.HostName
+                $configuration.DomainName | Should -Be $script:resourceWithDhcpDisabled.DomainName
+                $configuration.Dhcp | Should -Be $false
+                $configuration.Address | Should -Be $script:resourceWithDhcpDisabled.Address
+                $configuration.SearchDomain | Should -Be $script:resourceWithDhcpDisabled.SearchDomain
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
+        Context "When using configuration $($script:configWithoutAddressAndSearchDomain)" {
+            BeforeAll {
+                Invoke-TestSetup
+
+                $script:dnsHostName = $script:dnsConfig.HostName
+                $script:dnsDomainName = $script:dnsConfig.DomainName
+                $script:dnsAddress = $script:dnsConfig.Address
+                $script:dnsSearchDomain = $script:dnsConfig.SearchDomain
+            }
+
+            AfterAll {
+                $dnsConfig = New-Object VMware.Vim.HostDnsConfig
+
+                $dnsConfig.HostName = $script:dnsHostName
+                $dnsConfig.DomainName = $script:dnsDomainName
+                $dnsConfig.Address = $script:dnsAddress
+                $dnsConfig.SearchDomain = $script:dnsSearchDomain
+
+                $networkSystem = Get-View -Server $Server $script:vmHost.ExtensionData.ConfigManager.NetworkSystem
+                $networkSystem.UpdateDnsConfig($dnsConfig)
+            }
+
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithoutAddressAndSearchDomainPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithoutAddressAndSearchDomainPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act && Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Name | Should -Be $script:resourceWithoutAddressAndSearchDomain.Name
+                $configuration.Server | Should -Be $script:resourceWithoutAddressAndSearchDomain.Server
+                $configuration.HostName | Should -Be $script:resourceWithoutAddressAndSearchDomain.HostName
+                $configuration.DomainName | Should -Be $script:resourceWithoutAddressAndSearchDomain.DomainName
+                $configuration.Dhcp | Should -Be $false
+                $configuration.Address | Should -Be $null
+                $configuration.SearchDomain | Should -Be $null
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithDhcpEnabled = Get-DscConfiguration
+        Context "When using configuration $($script:configWithDhcpEnabled)" {
+            BeforeAll {
+                Invoke-TestSetup
 
-            $configuration = $script:dscConfigWithDhcpEnabled
+                $script:dnsHostName = $script:dnsConfig.HostName
+                $script:dnsDomainName = $script:dnsConfig.DomainName
+                $script:dnsDhcp = $script:dnsConfig.Dhcp
+                $script:dnsVirtualNicDevice = $script:dnsConfig.VirtualNicDevice
+            }
 
-            # Assert
-            { $script:dscConfigWithDhcpEnabled } | Should -Not -Throw
+            AfterAll {
+                $dnsConfig = New-Object VMware.Vim.HostDnsConfig
 
-            $configuration.Name | Should -Be $script:resourceWithDhcpEnabled.Name
-            $configuration.Server | Should -Be $script:resourceWithDhcpEnabled.Server
-            $configuration.HostName | Should -Be $script:resourceWithDhcpEnabled.HostName
-            $configuration.DomainName | Should -Be $script:resourceWithDhcpEnabled.DomainName
-            $configuration.Dhcp | Should -Be $true
-            $configuration.VirtualNicDevice | Should -Be $script:resourceWithDhcpEnabled.VirtualNicDevice
-            $configuration.Ipv6VirtualNicDevice | Should -Be ""
-        }
+                $dnsConfig.HostName = $script:dnsHostName
+                $dnsConfig.DomainName = $script:dnsDomainName
+                $dnsConfig.Dhcp = $script:dnsDhcp
+                $dnsConfig.VirtualNicDevice = $script:dnsVirtualNicDevice
 
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
+                $networkSystem = Get-View -Server $Server $script:vmHost.ExtensionData.ConfigManager.NetworkSystem
+                $networkSystem.UpdateDnsConfig($dnsConfig)
+            }
+
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithDhcpEnabledPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithDhcpEnabledPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act && Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Name | Should -Be $script:resourceWithDhcpEnabled.Name
+                $configuration.Server | Should -Be $script:resourceWithDhcpEnabled.Server
+                $configuration.HostName | Should -Be $script:resourceWithDhcpEnabled.HostName
+                $configuration.DomainName | Should -Be $script:resourceWithDhcpEnabled.DomainName
+                $configuration.Dhcp | Should -Be $true
+                $configuration.VirtualNicDevice | Should -Be $script:resourceWithDhcpEnabled.VirtualNicDevice
+                $configuration.Ipv6VirtualNicDevice | Should -Be ""
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
     }
 }
-
-Disconnect-VIServer -Server $Server -Confirm:$false
+finally {
+    Disconnect-VIServer -Server $Server -Confirm:$false
+}

@@ -1,0 +1,13 @@
+- hosts: <host>
+  tasks:
+  - name: Updates the Statistics settings of the passed vCenter.
+    win_dsc:
+        resource_name: vCenterStatistics
+        Server: <server>
+        Credential_username: <user>
+        Credential_password: <password>
+        Period: Day
+        PeriodLength: 3
+        Level: 2
+        Enabled: True
+        IntervalMinutes: 3

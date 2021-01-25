@@ -1,9 +1,9 @@
 <#
-Copyright (c) 2018 VMware, Inc.  All rights reserved				
+Copyright (c) 2018-2021 VMware, Inc.  All rights reserved
 
 The BSD-2 license (the "License") set forth below applies to all parts of the Desired State Configuration Resources for VMware project.  You may not use this file except in compliance with the License.
 
-BSD-2 License 
+BSD-2 License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -15,21 +15,27 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #>
 
 param(
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Server,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Name,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $User,
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Server,
 
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Password
+    [Parameter(Mandatory = $true)]
+    [string]
+    $User,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Password
 )
 
+# Mandatory Integration Tests parameter unused so set to null.
+$Name = $null
+
 $script:dscResourceName = 'vCenterStatistics'
-$script:dscConfig = $null
 $script:moduleFolderPath = (Get-Module VMware.vSphereDSC -ListAvailable).ModuleBase
 $script:integrationTestsFolderPath = Join-Path (Join-Path $moduleFolderPath 'Tests') 'Integration'
 $script:configurationFile = "$script:integrationTestsFolderPath\Configurations\$($script:dscResourceName)\$($script:dscResourceName)_Config.ps1"
@@ -72,17 +78,17 @@ $script:resourceWithoutEnabledProperty = @{
 $script:mofFileWithPassedEnabledPropertyPath = "$script:integrationTestsFolderPath\$($script:configWithPassedEnabledProperty)\"
 $script:mofFileWithoutEnabledPropertyPath = "$script:integrationTestsFolderPath\$($script:configWithoutEnabledProperty)\"
 
-function BeforeAllTests {
+function Invoke-TestSetup {
     $script:performanceManager = Get-View -Server $script:vCenter $script:vCenter.ExtensionData.Content.PerfManager
     $script:currentPerformanceInterval = $script:performanceManager.HistoricalInterval | Where-Object { $_.Name -Match $script:period }
-    
+
     $script:currentLevel = $script:currentPerformanceInterval.Level
     $script:currentEnabled = $script:currentPerformanceInterval.Enabled
     $script:currentSamplingPeriod = $script:currentPerformanceInterval.SamplingPeriod
     $script:currentLength = $script:currentPerformanceInterval.Length
 }
 
-function AfterAllTests {
+function Invoke-TestCleanup {
     $script:performanceManager = Get-View -Server $script:vCenter $script:vCenter.ExtensionData.Content.PerfManager
 
     $desiredPerformanceInterval = New-Object VMware.Vim.PerfInterval
@@ -97,106 +103,127 @@ function AfterAllTests {
     $script:performanceManager.UpdatePerfInterval($desiredPerformanceInterval)
 }
 
-Describe "$($script:dscResourceName)_Integration" {
-    Context "When using configuration $($script:configWithPassedEnabledProperty)" {
-        BeforeAll {
-            BeforeAllTests
-        }
-
-        AfterAll {
-            AfterAllTests
-        }
-
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithPassedEnabledPropertyPath
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+try {
+    Describe "$($script:dscResourceName)_Integration" {
+        Context "When using configuration $($script:configWithPassedEnabledProperty)" {
+            BeforeAll {
+                Invoke-TestSetup
             }
-            
-            # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
-        }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
-        }
-
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithPassedEnabledProperty = Get-DscConfiguration
-
-            $configuration = $script:dscConfigWithPassedEnabledProperty 
-
-            # Assert
-            { $script:dscConfigWithPassedEnabledProperty } | Should -Not -Throw
-
-            $configuration.Server | Should -Be $script:resourceWithPassedEnabledProperty.Server
-            $configuration.Period | Should -Be $script:resourceWithPassedEnabledProperty.Period
-            $configuration.Level | Should -Be $script:resourceWithPassedEnabledProperty.Level
-            $configuration.Enabled | Should -Be $script:resourceWithPassedEnabledProperty.Enabled
-            $configuration.IntervalMinutes | Should -Be $script:resourceWithPassedEnabledProperty.IntervalMinutes
-            $configuration.PeriodLength | Should -Be $script:resourceWithPassedEnabledProperty.PeriodLength
-        }
-
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
-        }
-    }
-
-    Context "When using configuration $($script:configWithoutEnabledProperty)" {
-        BeforeAll {
-            BeforeAllTests
-        }
-
-        AfterAll {
-            AfterAllTests
-        }
-
-        BeforeEach {
-            # Arrange
-            $startDscConfigurationParameters = @{
-                Path = $script:mofFileWithoutEnabledPropertyPath
-                ComputerName = 'localhost'
-                Wait = $true
-                Force = $true
+            AfterAll {
+                Invoke-TestCleanup
             }
-            
-            # Act
-            $script:dscConfig = Start-DscConfiguration @startDscConfigurationParameters
+
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithPassedEnabledPropertyPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
+
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithPassedEnabledPropertyPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Server | Should -Be $script:resourceWithPassedEnabledProperty.Server
+                $configuration.Period | Should -Be $script:resourceWithPassedEnabledProperty.Period
+                $configuration.Level | Should -Be $script:resourceWithPassedEnabledProperty.Level
+                $configuration.Enabled | Should -Be $script:resourceWithPassedEnabledProperty.Enabled
+                $configuration.IntervalMinutes | Should -Be $script:resourceWithPassedEnabledProperty.IntervalMinutes
+                $configuration.PeriodLength | Should -Be $script:resourceWithPassedEnabledProperty.PeriodLength
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
 
-        It 'Should compile and apply the MOF without throwing' {
-            # Assert
-            { $script:dscConfig } | Should -Not -Throw
-        }
+        Context "When using configuration $($script:configWithoutEnabledProperty)" {
+            BeforeAll {
+                Invoke-TestSetup
+            }
 
-        It 'Should be able to call Get-DscConfiguration without throwing and all the parameters should match' {
-            # Arrange && Act
-            $script:dscConfigWithoutEnabledProperty = Get-DscConfiguration
+            AfterAll {
+                Invoke-TestCleanup
+            }
 
-            $configuration = $script:dscConfigWithoutEnabledProperty
-            
-            # Assert
-            { $script:dscConfigWithoutEnabledProperty } | Should -Not -Throw
+            BeforeEach {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithoutEnabledPropertyPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
 
-            $configuration.Server | Should -Be $script:resourceWithoutEnabledProperty.Server
-            $configuration.Period | Should -Be $script:resourceWithoutEnabledProperty.Period
-            $configuration.Level | Should -Be $script:resourceWithoutEnabledProperty.Level
-            $configuration.Enabled | Should -Be $script:currentEnabled
-            $configuration.IntervalMinutes | Should -Be $script:resourceWithoutEnabledProperty.IntervalMinutes
-            $configuration.PeriodLength | Should -Be $script:resourceWithoutEnabledProperty.PeriodLength
-        }
+                # Act
+                Start-DscConfiguration @startDscConfigurationParameters
+            }
 
-        It 'Should return $true when Test-DscConfiguration is run' {
-            # Arrange && Act && Assert
-            Test-DscConfiguration | Should -Be $true
+            It 'Should compile and apply the MOF without throwing' {
+                # Arrange
+                $startDscConfigurationParameters = @{
+                    Path = $script:mofFileWithoutEnabledPropertyPath
+                    ComputerName = 'localhost'
+                    Wait = $true
+                    Force = $true
+                }
+
+                # Assert
+                { Start-DscConfiguration @startDscConfigurationParameters } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration without throwing' {
+                # Arrange && Act && Assert
+                { Get-DscConfiguration } | Should -Not -Throw
+            }
+
+            It 'Should be able to call Get-DscConfiguration and all parameters should match' {
+                # Arrange && Act
+                $configuration = Get-DscConfiguration
+
+                # Assert
+                $configuration.Server | Should -Be $script:resourceWithoutEnabledProperty.Server
+                $configuration.Period | Should -Be $script:resourceWithoutEnabledProperty.Period
+                $configuration.Level | Should -Be $script:resourceWithoutEnabledProperty.Level
+                $configuration.Enabled | Should -Be $script:currentEnabled
+                $configuration.IntervalMinutes | Should -Be $script:resourceWithoutEnabledProperty.IntervalMinutes
+                $configuration.PeriodLength | Should -Be $script:resourceWithoutEnabledProperty.PeriodLength
+            }
+
+            It 'Should return $true when Test-DscConfiguration is run' {
+                # Arrange && Act && Assert
+                Test-DscConfiguration | Should -Be $true
+            }
         }
     }
 }
-
-Disconnect-VIServer -Server $Server -Confirm:$false
+finally {
+    Disconnect-VIServer -Server $Server -Confirm:$false
+}
