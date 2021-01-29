@@ -19,7 +19,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 ModuleToProcess = 'VMware.PSDesiredStateConfiguration.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.0.11'
+ModuleVersion = '0.0.0.11'
 
 # ID used to uniquely identify this module
 GUID = '4f9a62bf-e2a6-4bd1-ac20-ccf127bc643e'
@@ -40,7 +40,7 @@ Description = 'This PowerShell module contains logic for creating and running ob
 PowerShellVersion = '5.1'
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = @( 'Classes\DscItems.ps1' )
+ScriptsToProcess = @('Classes\DscConfigurationFileParser.ps1', 'Classes\DscItems.ps1')
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(

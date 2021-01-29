@@ -14,90 +14,88 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-<#
-.DESCRIPTION
-Compiles a dsc configuration
-Compiles a dsc configuration into an object with the name of the configuration and an array of dsc resources
-
-.EXAMPLE
-Compiling a basic configuration
-
-Configuration Test
-{
-    Import-DscResource -ModuleName MyDscResource
-
-    CustomResource myResource
-    {
-        Field = "Test field"
-        Ensure = "Present"
-    }
-}
-
-New-VmwDscConfiguration Test will output
-[VmwDscConfiguration]@{
-    InstanceName = 'Test'
-    Nodes = @(
-        [VmwDscNode]@{
-            InstanceName = 'localhost'
-            Resources = @(
-                InstanceName = 'myResource'
-                ResourceType = 'CustomResource'
-                ModuleName = @{
-                    ModuleName = 'MyDscResource'
-                    RequiredVersion = '1.0.0.0'
-                }
-                Property = @{
-                    Field = "Test field"
-                    Ensure = "Present"
-                }
-            )
-        }
-    )
-}
-
-.PARAMETER ConfigName
-Name of the dsc configuration to compile.
-
-.PARAMETER CustomParams
-The parameters for the dsc configuration.
-
-.PARAMETER ConfigurationData
-Configuration Data for the configuration.
-#>
 function New-VmwDscConfiguration {
+    <#
+    .SYNOPSIS
+        Compiles a DSC Configuration into a VmwDscConfiguration object, which contains
+        the name of the DSC Configuration and the DSC Resources defined in it.
+
+    .DESCRIPTION
+        Compiles a DSC Configuration into a VmwDscConfiguration object, which contains
+        the name of the DSC Configuration and the DSC Resources defined in it. The provided
+        PowerShell script file can contain multiple DSC Configurations in which case the cmdlet
+        returns an array of VmwDscConfiguration objects. If the ConfigurationName parameter is specified,
+        the cmdlet returns only one VmwDscConfiguration object - the one constructed from the specified
+        DSC Configuration.
+
+    .PARAMETER Path
+        Specifies a file path of a file that contains DSC Configurations. The file can contain multiple DSC Configurations
+        and for each one, a separate VmwDscConfiguration object is created. If ConfigurationData hashtable is defined in the provided
+        file, it is passed to each DSC Configuration defined in the file.
+
+    .PARAMETER ConfigurationName
+        Specifies the name of the DSC Configuration which should be compiled into a VmwDscConfiguration object. This parameter is applicable
+        only when multiple DSC Configurations are defined in the file and only one specific DSC Configuration should be compiled. If not specified,
+        all DSC Configurations in the file are compiled and returned as VmwDscConfiguration objects.
+
+    .PARAMETER CustomParams
+        Specifies the parameters of the DSC Configuration as a hashtable where each key is the parameter name and each value is the parameter value.
+        If the ConfigurationName parameter is specified, the hashtable is passed to the specific DSC Configuration.
+        If the ConfigurationName parameter is not specified, the hashtable is passed to all DSC Configurations defined in the PowerShell script file.
+
+    .EXAMPLE
+        Compiles the DSC Configurations defined in the vSphere_Config file located in the current directory.
+
+        PS> $dscConfigs = New-VmwDscConfiguration -Path .\vSphere_Config.ps1
+
+    .EXAMPLE
+        Compiles the DSC Configuration vSphereNode_Config defined in the vSphere_Config file located in the current directory
+        and passes the VMHostName parameter to the vSphereNode_Config DSC Configuration.
+
+        PS> $dscConfig = New-VmwDscConfiguration -Path .\vSphere_Config.ps1 -ConfigurationName 'vSphereNode_Config' -CustomParams @{ VMHostName = 'MyVMHost' }
+
+    #>
     [CmdletBinding()]
-    [OutputType([VmwDscConfiguration])]
+    [OutputType([VmwDscConfiguration[]])]
     Param (
+        [Parameter(Mandatory = $true,
+                   Position = 0)]
+        [ValidateScript({ Test-Path -Path $_ })]
         [string]
-        [Parameter(
-        Mandatory   = $true,
-        Position    = 0)]
-        $ConfigName,            # Name of the Configuration
+        $Path,
 
-        [Parameter(
-        Mandatory   = $false,
-        Position    = 1)]
-        [Hashtable]
-        $CustomParams,          # User defined parameters of the configuration
+        [Parameter(Mandatory = $false)]
+        [string]
+        $ConfigurationName,
 
-        [Parameter(
-        Mandatory   = $false,
-        Position    = 2)]
-        [HashTable]
-        $ConfigurationData      # ConfigurationData for use in the configuration
+        [Parameter(Mandatory = $false)]
+        [System.Collections.Hashtable]
+        $CustomParams
     )
 
-    $dscCompiler = [DscConfigurationCompiler]::new($ConfigName, $CustomParams, $ConfigurationData)
+    $vmwDscConfigurations = @()
 
     try {
         $savedVerbosePreference = $Global:VerbosePreference
         $Global:VerbosePreference = $VerbosePreference
 
-        $vmwDscConfiguration = $dscCompiler.CompileDscConfiguration()
+        $dscConfigurationFileParser = [DscConfigurationFileParser]::new()
+        $dscConfigurationBlocks = $dscConfigurationFileParser.ParseDscConfigurationFile($Path)
+
+        foreach ($dscConfigurationBlock in $dscConfigurationBlocks) {
+            if (![string]::IsNullOrEmpty($ConfigurationName) -and $dscConfigurationBlock.Name -ne $ConfigurationName) {
+                continue
+            }
+
+            $dscConfigurationCompiler = [DscConfigurationCompiler]::new($dscConfigurationBlock.Name, $CustomParams, $dscConfigurationBlock.ConfigurationData)
+            $vmwDscConfiguration = $dscConfigurationCompiler.CompileDscConfiguration($dscConfigurationBlock)
+
+            $vmwDscConfigurations += $vmwDscConfiguration
+        }
     }
     finally {
         $Global:VerbosePreference = $savedVerbosePreference
     }
 
-    $vmwDscConfiguration
+    $vmwDscConfigurations
 }
