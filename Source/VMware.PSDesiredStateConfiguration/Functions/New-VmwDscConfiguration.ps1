@@ -38,10 +38,9 @@ function New-VmwDscConfiguration {
         only when multiple DSC Configurations are defined in the file and only one specific DSC Configuration should be compiled. If not specified,
         all DSC Configurations in the file are compiled and returned as VmwDscConfiguration objects.
 
-    .PARAMETER CustomParams
-        Specifies the parameters of the DSC Configuration as a hashtable where each key is the parameter name and each value is the parameter value.
-        If the ConfigurationName parameter is specified, the hashtable is passed to the specific DSC Configuration.
-        If the ConfigurationName parameter is not specified, the hashtable is passed to all DSC Configurations defined in the PowerShell script file.
+    .PARAMETER Parameters
+        Specifies the parameters of the file that contains the DSC Configurations as a hashtable
+        where each key is the parameter name and each value is the parameter value.
 
     .EXAMPLE
         Compiles the DSC Configurations defined in the vSphere_Config file located in the current directory.
@@ -50,9 +49,9 @@ function New-VmwDscConfiguration {
 
     .EXAMPLE
         Compiles the DSC Configuration vSphereNode_Config defined in the vSphere_Config file located in the current directory
-        and passes the VMHostName parameter to the vSphereNode_Config DSC Configuration.
+        and passes the VMHostName parameter to the vSphere_Config file.
 
-        PS> $dscConfig = New-VmwDscConfiguration -Path .\vSphere_Config.ps1 -ConfigurationName 'vSphereNode_Config' -CustomParams @{ VMHostName = 'MyVMHost' }
+        PS> $dscConfig = New-VmwDscConfiguration -Path .\vSphere_Config.ps1 -ConfigurationName 'vSphereNode_Config' -Parameters @{ VMHostName = 'MyVMHost' }
 
     #>
     [CmdletBinding()]
@@ -70,7 +69,7 @@ function New-VmwDscConfiguration {
 
         [Parameter(Mandatory = $false)]
         [System.Collections.Hashtable]
-        $CustomParams
+        $Parameters
     )
 
     $vmwDscConfigurations = @()
@@ -80,14 +79,14 @@ function New-VmwDscConfiguration {
         $Global:VerbosePreference = $VerbosePreference
 
         $dscConfigurationFileParser = [DscConfigurationFileParser]::new()
-        $dscConfigurationBlocks = $dscConfigurationFileParser.ParseDscConfigurationFile($Path)
+        $dscConfigurationBlocks = $dscConfigurationFileParser.ParseDscConfigurationFile($Path, $Parameters)
 
         foreach ($dscConfigurationBlock in $dscConfigurationBlocks) {
             if (![string]::IsNullOrEmpty($ConfigurationName) -and $dscConfigurationBlock.Name -ne $ConfigurationName) {
                 continue
             }
 
-            $dscConfigurationCompiler = [DscConfigurationCompiler]::new($dscConfigurationBlock.Name, $CustomParams, $dscConfigurationBlock.ConfigurationData)
+            $dscConfigurationCompiler = [DscConfigurationCompiler]::new($dscConfigurationBlock.Name, $Parameters, $dscConfigurationBlock.ConfigurationData)
             $vmwDscConfiguration = $dscConfigurationCompiler.CompileDscConfiguration($dscConfigurationBlock)
 
             $vmwDscConfigurations += $vmwDscConfiguration

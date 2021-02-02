@@ -317,15 +317,15 @@ Used for parsing and compiling a DSC Configuration into a DSC object.
 #>
 class DscConfigurationCompiler {
     hidden [string] $ConfigName
-    hidden [Hashtable] $CustomParams
+    hidden [Hashtable] $Parameters
     hidden [Hashtable] $ConfigurationData
     hidden [Hashtable] $ResourceNameToInfo
     hidden [Hashtable] $CompositeResourceToScriptBlock
     hidden [bool] $IsNested
 
-    DscConfigurationCompiler([string] $ConfigName, [Hashtable] $CustomParams, [Hashtable] $ConfigurationData) {
+    DscConfigurationCompiler([string] $ConfigName, [Hashtable] $Parameters, [Hashtable] $ConfigurationData) {
         $this.ConfigName = $ConfigName
-        $this.CustomParams = $CustomParams
+        $this.Parameters = $Parameters
 
         # configurationData gets cloned because it's state gets mutated during execution.
         if ($null -ne $ConfigurationData) {
@@ -350,7 +350,7 @@ class DscConfigurationCompiler {
         $this.ValidateConfigurationData()
 
         # parse and compile the configuration
-        $dscItems = $this.CompileDscConfigurationUtil($dscConfigurationBlock, $this.CustomParams)
+        $dscItems = $this.CompileDscConfigurationUtil($dscConfigurationBlock, $this.Parameters)
 
         Write-Verbose "Handling nodes"
 
@@ -507,7 +507,7 @@ class DscConfigurationCompiler {
     .DESCRIPTION
     Handles the main logic for compiling a dsc configuration
     #>
-    hidden [DscItem[]] CompileDscConfigurationUtil([DscConfigurationBlock] $dscConfigurationBlock, [Hashtable] $CustomParams) {
+    hidden [DscItem[]] CompileDscConfigurationUtil([DscConfigurationBlock] $dscConfigurationBlock, [Hashtable] $Parameters) {
         $dscConfigurationParser = [DscConfigurationParser]::new()
 
         Write-Verbose "Parsing configuration block of $($dscConfigurationBlock.Name)"
@@ -554,7 +554,7 @@ class DscConfigurationCompiler {
 
         Write-Verbose "Executing Configuration scriptblock to extract resources and nodes"
 
-        $dscItems = $configScriptBlock.InvokeWithContext($functionsToDefine, $variablesToDefine, $CustomParams)
+        $dscItems = $configScriptBlock.InvokeWithContext($functionsToDefine, $variablesToDefine, $Parameters)
 
         return $dscItems
     }
@@ -862,7 +862,7 @@ class DscConfigurationParser {
         # invoke the import-dscresource statements
         $this.InvokeImportDscResource($statements.ToArray())
 
-        $configTextBlock = $configTextBlock.Insert(0, 'Param( $CustomParams ) . ')
+        $configTextBlock = $configTextBlock.Insert(0, 'Param( $Parameters ) . ')
 
         # find all dynamic keywords inside the configuration
         # nodes are removed from the list as they are executed separately
@@ -887,7 +887,7 @@ class DscConfigurationParser {
             }
         }
 
-        $configTextBlock += ' @CustomParams'
+        $configTextBlock += ' @Parameters'
 
         return [PsObject]@{
             ScriptBlock = [ScriptBlock]::Create($configTextBlock)

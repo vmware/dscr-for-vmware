@@ -45,8 +45,10 @@ class DscConfigurationFileParser {
     2. Invokes all non DSC Configuration lines in the provided file and this ways makes them available in the current scope. This way
     for example if there is configurationData defined, the hashtable will be available in memory for the DscConfigurationCompiler to
     produce the VmwDscConfiguration object.
+
+    3. If the Parameters hashtable is passed, invokes all non DSC Configuration lines with the specified PowerShell script file parameters.
     #>
-    [DscConfigurationBlock[]] ParseDscConfigurationFile([string] $dscConfigurationFilePath) {
+    [DscConfigurationBlock[]] ParseDscConfigurationFile([string] $dscConfigurationFilePath, [System.Collections.Hashtable] $parameters) {
         $dscConfigurationFileContent = Get-Content -Path $dscConfigurationFilePath
         $dscConfigurationFileContentRaw = Get-Content -Path $dscConfigurationFilePath -Raw
 
@@ -84,9 +86,17 @@ class DscConfigurationFileParser {
             }
         }
 
-        # The ScriptBlock is invoked for all non DSC Configurations lines.
+        # The ScriptBlock is invoked for all non DSC Configurations lines with the PowerShell script file parameters if specified.
         $scriptContentAsString = $scriptContent.ToString()
-        $scriptBlock = [ScriptBlock]::Create($scriptContentAsString)
+        $scriptBlock = $null
+
+        if ($parameters.Count -gt 0) {
+            $scriptBlock = $this.CreateScriptBlockWithParameters($scriptContentAsString, $parameters)
+        }
+        else {
+            $scriptBlock = [ScriptBlock]::Create($scriptContentAsString)
+        }
+
         $scriptBlock.Invoke()
 
         <#
@@ -168,5 +178,66 @@ class DscConfigurationFileParser {
         }
 
         return $dscConfigurations
+    }
+
+    <#
+    .DESCRIPTION
+
+    Creates a ScriptBlock for the specified script content with the passed script parameters.
+    #>
+    hidden [ScriptBlock] CreateScriptBlockWithParameters([string] $scriptContent, [System.Collections.Hashtable] $parameters) {
+        $modifiedParameters = @{}
+        foreach ($key in $parameters.Keys) {
+            if ($parameters.$key -is [array]) {
+                <#
+                    Array parameters should be enclosed in quotes because if they aren't
+                    the ToString() method is called which results in System.Object[] as value of the
+                    parameter. With quotes the original value of the array parameter is kept.
+                #>
+                $arrayParameterAsString = "@("
+                for ($i = 0; $i -lt $parameters.$key.Length; $i++) {
+                    $arrayElement = $parameters.$key[$i]
+
+                    # String values in the array should be enclosed in quotes.
+                    if ($arrayElement -is [string]) {
+                        $arrayParameterAsString += "'"
+                        $arrayParameterAsString += $arrayElement
+                        $arrayParameterAsString += "'"
+                    }
+                    else {
+                        $arrayParameterAsString += $arrayElement
+                    }
+
+                    if ($i -lt $parameters.$key.Length - 1) {
+                        $arrayParameterAsString += ', '
+                    }
+                }
+
+                $arrayParameterAsString += ")"
+                $modifiedParameters.$key = $arrayParameterAsString
+            }
+            elseif ($parameters.$key -is [string] -and $parameters.$key.Split(' ').Count -gt 1) {
+                <#
+                    String parameters containing whitespaces should be enclosed with additional quotes
+                    because the value is not parsed correctly when passed as an argument to the script.
+                #>
+                $modifiedStringParameter = "'" + $parameters.$key + "'"
+                $modifiedParameters.$key = $modifiedStringParameter
+            }
+            else {
+                $modifiedParameters.$key = $parameters.$key
+            }
+        }
+
+        <#
+            The parameters are passed to the Create() method as
+            named parameters which allows parameter validation. This
+            way an invalid parameter can't be passed to the script.
+        #>
+        $formattedParameters = & { $args } @modifiedParameters
+        $script = ".{$scriptContent} $formattedParameters"
+        $scriptBlock = [ScriptBlock]::Create($script)
+
+        return $scriptBlock
     }
 }
