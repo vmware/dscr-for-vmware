@@ -88,16 +88,15 @@ class DscConfigurationFileParser {
 
         # The ScriptBlock is invoked for all non DSC Configurations lines with the PowerShell script file parameters if specified.
         $scriptContentAsString = $scriptContent.ToString()
-        $scriptBlock = $null
+        $scriptBlock = [ScriptBlock]::Create($scriptContentAsString)
 
         if ($parameters.Count -gt 0) {
-            $scriptBlock = $this.CreateScriptBlockWithParameters($scriptContentAsString, $parameters)
+            $invokeParameters = $this.GetOrderedScriptParameters($tokens, $parameters)
+            $scriptBlock.Invoke($invokeParameters)
         }
         else {
-            $scriptBlock = [ScriptBlock]::Create($scriptContentAsString)
+            $scriptBlock.Invoke()
         }
-
-        $scriptBlock.Invoke()
 
         <#
             In the file there should be only one configurationData hashtable for all defined DSC Configurations. If the user wants to use different
@@ -183,61 +182,88 @@ class DscConfigurationFileParser {
     <#
     .DESCRIPTION
 
-    Creates a ScriptBlock for the specified script content with the passed script parameters.
+    Orders the specified script parameters in the correct order.
+
+    1. Extracts each script parameter in an array in the correct order when parsing the script file.
+    2. Checks all passed parameters and orders the values in the correct parameter order.
+    3. If a parameter is not passed, $null is added to the array for the specified parameter.
     #>
-    hidden [ScriptBlock] CreateScriptBlockWithParameters([string] $scriptContent, [System.Collections.Hashtable] $parameters) {
-        $modifiedParameters = @{}
-        foreach ($key in $parameters.Keys) {
-            if ($parameters.$key -is [array]) {
-                <#
-                    Array parameters should be enclosed in quotes because if they aren't
-                    the ToString() method is called which results in System.Object[] as value of the
-                    parameter. With quotes the original value of the array parameter is kept.
-                #>
-                $arrayParameterAsString = "@("
-                for ($i = 0; $i -lt $parameters.$key.Length; $i++) {
-                    $arrayElement = $parameters.$key[$i]
+    hidden [array] GetOrderedScriptParameters(
+        [System.Collections.ObjectModel.Collection[System.Management.Automation.PSToken]] $tokens,
+        [System.Collections.Hashtable] $parameters) {
+        $scriptParameters = @()
+        $invokeParameters = @()
 
-                    # String values in the array should be enclosed in quotes.
-                    if ($arrayElement -is [string]) {
-                        $arrayParameterAsString += "'"
-                        $arrayParameterAsString += $arrayElement
-                        $arrayParameterAsString += "'"
-                    }
-                    else {
-                        $arrayParameterAsString += $arrayElement
+        $i = 0
+        $endOfParamsReached = $false
+
+        while ($i -lt $tokens.Count -and !$endOfParamsReached) {
+            $token = $tokens[$i]
+
+            if ($token.Type -eq 'Keyword' -and $token.Content -eq 'Param') {
+                $j = $i + 1
+                $paramsBlockReached = $false
+                $bracketsCounter = 0
+
+                while ($j -lt $tokens.Count -and !$endOfParamsReached) {
+                    $paramsToken = $tokens[$j]
+
+                    if ($paramsToken.Type -eq 'GroupStart' -and $paramsToken.Content -eq '(') {
+                        if (!$paramsBlockReached) {
+                            $paramsBlockReached = $true
+                        }
+
+                        $bracketsCounter++
                     }
 
-                    if ($i -lt $parameters.$key.Length - 1) {
-                        $arrayParameterAsString += ', '
+                    if ($paramsToken.Type -eq 'GroupEnd' -and $paramsToken.Content -eq ')') {
+                        $bracketsCounter--
                     }
+
+                    <#
+                        The additional check is needed to ignore the Parameter Attributes, for example:
+                        [Parameter(Mandatory = $true)] where true is also a variable.
+                    #>
+                    if ($paramsToken.Type -eq 'Variable' -and $paramsToken.Content -ne 'true' -and $paramsToken.Content -ne 'false') {
+                        $scriptParameters += $paramsToken.Content
+                    }
+
+                    # bracketsCounter equal to zero indicates that the closing bracket of the Param was reached.
+                    if ($paramsBlockReached -and $bracketsCounter -eq 0) {
+                        $endOfParamsReached = $true
+                    }
+
+                    $j++
+                    $i = $j
                 }
-
-                $arrayParameterAsString += ")"
-                $modifiedParameters.$key = $arrayParameterAsString
             }
-            elseif ($parameters.$key -is [string] -and $parameters.$key.Split(' ').Count -gt 1) {
-                <#
-                    String parameters containing whitespaces should be enclosed with additional quotes
-                    because the value is not parsed correctly when passed as an argument to the script.
-                #>
-                $modifiedStringParameter = "'" + $parameters.$key + "'"
-                $modifiedParameters.$key = $modifiedStringParameter
+
+            $i++
+        }
+
+        foreach ($scriptParameter in $scriptParameters) {
+            $parameterName = $parameters.Keys | Where-Object -FilterScript { $_ -eq $scriptParameter }
+            if ($null -ne $parameterName) {
+                if ($parameters.$parameterName -is [array]) {
+                    <#
+                        Arrays should be passed with the below syntax, otherwise
+                        only the first element of the array is passed to the script.
+                    #>
+                    $invokeParameters += (, $parameters.$parameterName)
+                }
+                else {
+                    $invokeParameters += $parameters.$parameterName
+                }
             }
             else {
-                $modifiedParameters.$key = $parameters.$key
+                <#
+                    If not specified, the parameter shoule be added with $null value
+                    to keep the order of the parameters.
+                #>
+                $invokeParameters += $null
             }
         }
 
-        <#
-            The parameters are passed to the Create() method as
-            named parameters which allows parameter validation. This
-            way an invalid parameter can't be passed to the script.
-        #>
-        $formattedParameters = & { $args } @modifiedParameters
-        $script = ".{$scriptContent} $formattedParameters"
-        $scriptBlock = [ScriptBlock]::Create($script)
-
-        return $scriptBlock
+        return $invokeParameters
     }
 }
