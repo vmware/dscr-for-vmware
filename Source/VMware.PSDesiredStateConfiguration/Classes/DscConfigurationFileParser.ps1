@@ -204,6 +204,7 @@ class DscConfigurationFileParser {
                 $j = $i + 1
                 $paramsBlockReached = $false
                 $bracketsCounter = 0
+                $attributeBracketsCounter = 0
 
                 while ($j -lt $tokens.Count -and !$endOfParamsReached) {
                     $paramsToken = $tokens[$j]
@@ -220,11 +221,19 @@ class DscConfigurationFileParser {
                         $bracketsCounter--
                     }
 
+                    if ($paramsToken.Type -eq 'Operator' -and $paramsToken.Content -eq '[') {
+                        $attributeBracketsCounter++
+                    }
+
+                    if ($paramsToken.Type -eq 'Operator' -and $paramsToken.Content -eq ']') {
+                        $attributeBracketsCounter--
+                    }
+
                     <#
                         The additional check is needed to ignore the Parameter Attributes, for example:
                         [Parameter(Mandatory = $true)] where true is also a variable.
                     #>
-                    if ($paramsToken.Type -eq 'Variable' -and $paramsToken.Content -ne 'true' -and $paramsToken.Content -ne 'false') {
+                    if ($paramsToken.Type -eq 'Variable' -and $attributeBracketsCounter -eq 0) {
                         $scriptParameters += $paramsToken.Content
                     }
 
