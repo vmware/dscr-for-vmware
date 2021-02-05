@@ -19,11 +19,15 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 Configuration with parameters from the file.
 Should get parsed correctly.
 #>
-Param(
+Param (
     $PathToUse
 )
 
 Configuration Test {
+    Param (
+        $PathToUse
+    )
+
     Import-DscResource -ModuleName MyDscResource
 
     FileResource file
