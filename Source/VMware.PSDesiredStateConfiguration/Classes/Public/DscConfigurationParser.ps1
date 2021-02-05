@@ -33,7 +33,6 @@ class DscConfigurationParser {
     #>
     [PsObject] ParseDscConfiguration([DscConfigurationBlock] $dscConfigurationBlock) {
         $configTextBlock = $dscConfigurationBlock.Extent.Text
-        $dscConfigurationBlockAsScriptBlock = [ScriptBlock]::Create($dscConfigurationBlock.Extent.Text)
 
         # find and extract the import-dscresource statements so that they can be executed first
         $searchScriptBlock = [ScriptBlock]::Create($configTextBlock)
@@ -59,6 +58,7 @@ class DscConfigurationParser {
 
         # find all dynamic keywords inside the configuration
         # nodes are removed from the list as they are executed separately
+        $dscConfigurationBlockAsScriptBlock = $this.ConvertDscConfigurationBlockToScriptBlock($dscConfigurationBlock)
         $dynamicKeywords = $dscConfigurationBlockAsScriptBlock.Ast.FindAll({
             $args[0] -is [System.Management.Automation.Language.DynamicKeywordStatementAst]
         }, $true)
@@ -66,6 +66,9 @@ class DscConfigurationParser {
         # set bracket placement
         foreach ($dynamicKeyword in $dynamicKeywords) {
             $itemName = $dynamicKeyword.CommandElements[0].Value
+            if ($itemName -eq 'Import-DscResource') {
+                continue
+            }
 
             $itemFullName = "$itemName $($dynamicKeyword.CommandElements[1].Extent.Text)"
             $configTextBlock = $this.ReplaceBracketWith($configTextBlock, $itemFullName, "{")
@@ -151,6 +154,19 @@ class DscConfigurationParser {
 
             $sb.InvokeWithContext($funcToDefine, $null)
         }
+    }
+
+    <#
+    .DESCRIPTION
+
+    Converts the specified DSC Configuration Block to Script Block by adding the Configuration keyword and the
+    Configuration name to the text of the DSC Configuration.
+    #>
+    hidden [ScriptBlock] ConvertDscConfigurationBlockToScriptBlock([DscConfigurationBlock] $dscConfigurationBlock) {
+        $script = 'Configuration ' + $dscConfigurationBlock.Name + [System.Environment]::NewLine
+        $script += $dscConfigurationBlock.Extent.Text
+
+        return [ScriptBlock]::Create($script)
     }
 
     <#
