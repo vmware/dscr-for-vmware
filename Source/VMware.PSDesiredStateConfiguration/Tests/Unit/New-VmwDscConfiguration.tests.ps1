@@ -90,6 +90,29 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
                 Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
             }
 
+            It 'Should compile all DSC Configurations defined in the script file correctly' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'Multiple_DSCConfigurations.ps1'
+
+                # Act
+                $dscConfigurations = New-VmwDscConfiguration -Path $configFile
+
+                # Assert
+                Script:AssertConfigurationEqual $dscConfigurations[0] $script:expectedCompiledOne
+                Script:AssertConfigurationEqual $dscConfigurations[1] $script:expectedCompiledTwo
+            }
+
+            It 'Should compile only the DSC Configuration with the specified name correctly' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'Multiple_DSCConfigurations.ps1'
+
+                # Act
+                $dscConfiguration = New-VmwDscConfiguration -Path $configFile -ConfigurationName 'DSC_Configuration_Two'
+
+                # Assert
+                Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiledTwo
+            }
+
             It 'Should throw an exception with the correct message for a DSC Configuration with duplicate DSC Resources' {
                 # Arrange
                 $configFile = Join-Path -Path $script:configFolder -ChildPath 'duplicateResources.ps1'
