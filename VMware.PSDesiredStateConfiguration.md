@@ -1,48 +1,58 @@
 ## Getting Started
 
-**VMware.PSDesiredStateConfiguration** provides a set of commands to compile and execute **DSC Configuration** without using the DSC Local Configuration Manager. Compiled DSC Configurations are stored in memory as PowerShell objects.
-**Start-VmwDscConfiguration**, **Get-VmwDscConfiguration**, **Test-VmwDscConfiguration** cmdlets use **Invoke-DSCResource** cmdlet from the **PSDesiredStateConfiguration** module to execute the compiled configuration.
-This solution allows cross platform support on MacOS and Linux. This module is also designed to work with the existing **DSC Resources** in the **VMware.vSphereDSC** module.
-This module also features vSphereNodes which represent connections to VIServers.
-For more information on vSphereNodes please read here [vSphere Nodes](https://github.com/vmware/dscr-for-vmware/blob/master/Documentation/vSphereNodes.md)
+**VMware.PSDesiredStateConfiguration** module provides a set of cmdlets to compile and execute a **DSC Configuration** without using the **DSC Local Configuration Manager**. Compiled **DSC Configurations** are stored in memory as **PowerShell** objects.
+
+**Start-VmwDscConfiguration**, **Get-VmwDscConfiguration** and **Test-VmwDscConfiguration** cmdlets use the **Invoke-DSCResource** cmdlet from the **PSDesiredStateConfiguration** module to execute the compiled **DSC Configurations**.
+
+The **VMware.PSDesiredStateConfiguration** module provides a cross platform support on **MacOS** and **Linux**. The module is also designed to work with the existing **DSC Resources** from the **VMware.vSphereDSC** module.
+
+The module also exposes **vSphereNodes**, which represent connections to **vCenter Servers**.
+For more information on **vSphereNodes**, please read here [vSphere Nodes](https://github.com/vmware/dscr-for-vmware/blob/master/Documentation/vSphereNodes.md).
 
 ## Requirements
 
-The following table describes the required dependencies for running VMware.PSDesiredStateConfiguration Resources.
+The following table describes the required dependencies for running the **VMware.PSDesiredStateConfiguration** module.
 
  **Required dependency**   | **Minimum version**
 -------------------------- | -------------------
-`PowerShell`               | 5.1 or 7.0
+`PowerShell`               | **5.1 or 7.0**
 
-This module also has additional requirements depending on which version of PowerShell you wish to use it with.
+The module also has additional requirements, depending on the **PowerShell** version, on which it is used.
 
-#### PowerShell 7.0 requirements
+### PowerShell 7.0 requirements
+
 ---
-**VMware.PSDesiredStateConfiguration** uses the **Invoke-DscResource** cmdlet from the **PSDesiredStateConfiguration** module to process individual DSC Resources. In **PowerShell 7.0** the **Invoke-DscResource** cmdlet is an experimental feature.
-The **Invoke-DscResource** cmdlet and it can be enabled with the following command:
+**VMware.PSDesiredStateConfiguration** uses the **Invoke-DscResource** cmdlet from the **PSDesiredStateConfiguration** module to process individual **DSC Resources**. In **PowerShell 7.0** the **Invoke-DscResource** cmdlet is an experimental feature.
+The **Invoke-DscResource** cmdlet can be enabled with the following command:
+
 ```powershell
 Enable-ExperimentalFeature PSDesiredStateConfiguration.InvokeDscResource
 ```
- After executing the command you must restart your powershell session. The command needs to be run only once and the cmdlet will be usable.
- To check if the **Invoke-DscResource** cmdlet has been enabled correctly run the following command
+
+After executing the command you must restart your **PowerShell** session. The command needs to be run only once and the cmdlet will be available.
+To check if the **Invoke-DscResource** cmdlet has been enabled correctly run the following command:
+
 ```powershell
 Get-Module 'PSDesiredStateConfiguration' -ListAvailable | Select-Object -ExpandProperty ExportedCommands
 ```
-##### Important!
-When using **PowerShell 7.0** please keep in mind the list of [Known Limitations](https://github.com/vmware/dscr-for-vmware/blob/master/LIMITATIONS.md)
+### Important
+
+When using **PowerShell 7.0** please keep in mind the list of [Known Limitations](https://github.com/vmware/dscr-for-vmware/blob/master/LIMITATIONS.md).
 
 ---
-#### PowerShell 5.1 requirements
-For **PowerShell 5.1** you need to enable Windows Remote Management
-For information on how to enable it read here: [WinRM guide](https://docs.microsoft.com/en-us/windows/win32/winrm/installation-and-configuration-for-windows-remote-management)
+### PowerShell 5.1 requirements
 
+For **PowerShell 5.1** you need to enable Windows Remote Management.
+For information on how to enable it read here: [WinRM guide](https://docs.microsoft.com/en-us/windows/win32/winrm/installation-and-configuration-for-windows-remote-management).
 
 ## Installations
 
 ### Manual Installation
 
-1. Copy the VMware.PSDesiredStateConfiguration Module to one of the system PowerShell module directories. For more information on installing PowerShell Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/scripting/developer/module/installing-a-powershell-module?view=powershell-7).
-2. In PowerShell import the VMware.PSDesiredStateConfiguration Module:
+1. Copy the **VMware.PSDesiredStateConfiguration** module to one of the system **PowerShell** module directories. For more information on installing PowerShell Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/scripting/developer/module/installing-a-powershell-module?view=powershell-7).
+
+2. In **PowerShell** import the **VMware.PSDesiredStateConfiguration** module:
+
    ```powershell
     Import-Module -Name 'VMware.PSDesiredStateConfiguration'
    ```
@@ -53,34 +63,49 @@ For information on how to enable it read here: [WinRM guide](https://docs.micros
    ```
 
 ## Overview
-VMware.PSDesiredStateConfiguration works with ps1 configuration files and the general flow is as follow:
-- Compiles a DSC Configuration defined in a PowerShell script file (ps1) and transforms the given DSC Configuration to a configuration object. The object contains the name of the configuration and an array of DSC Nodes. All Dsc Resources which are not nested inside a node block will get bundled into a default 'localhost' node. Each Node contains the name of the Node and an array of DSC Resources. Each DSC Resource object contains an **InstanceName** for name of the DSC Resource given in the configuration, a **ResourceType** which display the type of the DSC Resource, a  **ModuleName** which displays the module of the DSC Resource and a **Property** which is a hashtable of properties which are unique for a given DSC Resource. Example Configuration object from a given configuration:
-    ```powershell
-    Configuration Test
-    {
-        Import-DscResource -ModuleName MyDscResource
 
-        CustomResource myResource
-        {
-            Field = "Test field"
-            Ensure = "Present"
+The **VMware.PSDesiredStateConfiguration** module works with **PowerShell** script files that contain **DSC Configurations** and the general workflow for creating **VmwDscConfiguration** objects is:
+
+- Compiles **DSC Configurations** defined in a **PowerShell** script file and transforms the given **DSC Configurations** into **VmwDscConfiguration** objects. The **VmwDscConfiguration** object contains the name of the **DSC Configuration** and an array of **DSC Nodes**.
+
+- All **DSC Resources** which are not defined inside a **Node** will get bundled into a default **localhost** **Node**. Each **Node** contains the name of the **Node** and an array of **DSC Resources**.
+
+- Each **DSC Resource** object contains an **InstanceName** for the name of the **DSC Resource** given in the **DSC Configuration**, a **ResourceType** which display the type of the **DSC Resource**, a **ModuleName** which displays the module of the **DSC Resource** and a **Property** which is a hashtable of properties which are unique for a given **DSC Resource**. Example **VmwDscConfiguration** object from a given **DSC Configuration**:
+
+    ```powershell
+    $Credential = Get-Credential
+
+    Configuration Datacenter_Config {
+        Import-DscResource -ModuleName VMware.vSphereDSC
+
+        Node localhost {
+            Datacenter MyDatacenter {
+                Server = '10.23.112.235'
+                Credential = $Credential
+                Name = 'MyDatacenter'
+                Location = ''
+                Ensure = 'Present'
+            }
         }
     }
 
-    # configuration object result
-    [VmwDscConfiguration]@{
-        InstanceName = 'Test'
-        Resource = @(
-            [VmwDscNode]@{
+    # The compiled Datacenter_Config DSC Configuration as VmwDscConfiguration object.
+    [VmwDscConfiguration] @{
+        InstanceName = 'Datacenter_Config'
+        Nodes = @(
+            [VmwDscNode] @{
                 InstanceName = 'localhost'
                 Resources = @(
-                    [VmwDscResource]@{
-                        InstanceName = 'myResource'
-                        ResourceType = 'CustomResource'
-                        ModuleName = 'MyDscResource'
+                    [VmwDscResource] @{
+                        InstanceName = 'MyDatacenter'
+                        ResourceType = 'Datacenter'
+                        ModuleName = 'VMware.vSphereDSC'
                         Property = @{
-                            Field = "Test field"
-                            Ensure = "Present"
+                            Server = '10.23.112.235'
+                            Credential = System.Management.Automation.PSCredential
+                            Name = 'MyDatacenter'
+                            Location = ''
+                            Ensure = 'Present'
                         }
                     }
                 )
@@ -88,97 +113,174 @@ VMware.PSDesiredStateConfiguration works with ps1 configuration files and the ge
         )
     }
     ```
-    Note: this step does not require the use of **LCM** and does not generate a **MOF** file.
-- The resulting configuration object generated by the **New-VmwDscConfiguration** cmdlet gets used with the Start, Get, Test cmdlets and the result is based on the cmdlet.
+
+    Note: This step does not require a configured **LCM** and does not generate a **MOF** file.
+
+- The resulting **VmwDscConfiguration** objects generated by the **New-VmwDscConfiguration** cmdlet are used by the **Start, Get and Test-VmwDscConfiguration** cmdlets.
 
 ## Cmdlet Guide
-#### New-VmwDscConfiguration
-This cmdlet creates a VmwDscConfiguration object which contains information about the configuration. This object is then used with the other cmdlets in order to perform the three main DSC operations(GET, SET, TEST).
 
-##### Parameters
-##### Mandatory
-- **ConfigName** - Name of the Configuration to be compiled as string
-##### Optional
-- **CustomParams** - Represents a hashtable of parameters that are used for the Configuration.
-- **ConfigurationData** - Hashtable of values that are to be used as variables during the configuration execution
+### New-VmwDscConfiguration
 
-#### Examples with the optional parameters
-##### CustomParams example:
+Compiles a **DSC Configuration** into a **VmwDscConfiguration** object, which contains the name of the **DSC Configuration** and the **DSC Resources** defined in it.
 
-The following DSC Configuration depends on a parameter:
-```powershell
-Configuration ConfigurationDataRequired {
-    Param(
-        $SomeValue
-    )
-    Import-DscResource MyResource
-    
-    MyResource res {
-        requredKey = $SomeValue
-    }
-}
-```
+#### Parameters
 
-In order to supply the required parameter of the DSC Configuration we use the **$CustomParams** parameter.
+#### Mandatory
 
-```powershell
-$newVmwDscConfigParams = @{
-    ConfigName = 'ConfigurationDataRequired'
-    CustomParams = @{
-        someValue = 'sample value'
-    }
-}
-
-$config = New-VmwDscConfiguration @vmwDscConfigParams
-```
-
-##### ConfigurationData example:
-In the following DSC Configuration there is a variable **$someValue** that is used, but it does not have a value assigned to it.
-```powershell
-Configuration ConfigurationDataRequired {
-    Import-DscResource MyResource
-    
-    MyResource res {
-        requredKey = $ConfigurationData.SomeValue
-    }
-}
-```
-In order to assign a value to it we must define it in the **ConfigurationData** parameter. This will supply the necessary value to the variable during the compilation of the DSC Configuration.
-```powershell
-$newVmwDscConfigParams = @{
-    ConfigName = 'ConfigurationDataRequired'
-    ConfigurationData = @{
-        SomeValue = 'sample value'
-    }
-}
-
-$config = New-VmwDscConfiguration @vmwDscConfigParams
-```
-
----
-#### Start,Test,Get-VmwDscConfiguration
-These cmdlets work with the PowerShell object created by **New-VmwDscConfiguration** and apply the Set, Test, Get **DSC methods** to the compiled configuration.
-
-##### Parameters
-##### Mandatory
-- **Configuration** - A DSC Configuration object compiled by **New-VmwDscConfiguration**
+- **Path** - A file path of a file that contains **DSC Configurations**. The file can contain multiple **DSC Configurations** and for each one, a separate **VmwDscConfiguration** object is created. If **ConfigurationData** hashtable is defined in the provided file, it is passed to each **DSC Configuration** defined in the file.
 
 #### Optional
-- **ConnectionFilter** - An array of node names that should be executed. Nodes that are not in the list will be skipped. Node names can be in the form of strings or ViConnection objects. 
+
+- **ConfigurationName** - The name of the **DSC Configuration** which should be compiled into a **VmwDscConfiguration** object. This parameter is applicable only when multiple **DSC Configurations** are defined in the file and only one specific **DSC Configuration** should be compiled. If not specified, all **DSC Configurations** in the file are compiled and returned as **VmwDscConfiguration** objects.
+
+- **Parameters** - The parameters of the file that contains the **DSC Configurations** as a hashtable where each key is the parameter name and each value is the parameter value.
+
+#### Examples
+
+#### **Parameters** example:
+
+The following **DSC Configuration** depends on a **Server** and **Credential** parameters:
+
+```powershell
+Param(
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $Server,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [System.Management.Automation.PSCredential]
+    $Credential
+)
+
+Configuration Datacenter_Config {
+    Param(
+        [string]
+        $Server,
+
+        [System.Management.Automation.PSCredential]
+        $Credential
+    )
+
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node localhost {
+        Datacenter MyDatacenter {
+            Server = $Server
+            Credential = $Credential
+            Name = 'MyDatacenter'
+            Location = ''
+            Ensure = 'Present'
+        }
+    }
+}
+```
+
+In order to supply the required **Server** and **Credential** parameters of the **DSC Configuration** we use the **Parameters** parameter.
+
+```powershell
+$Credential = Get-Credential
+
+$newVmwDscConfigParams = @{
+    Path = '.\Datacenter_Config.ps1'
+    Parameters = @{
+        Server = '10.23.112.235'
+        Credential = $Credential
+    }
+}
+
+$dscConfiguration = New-VmwDscConfiguration @newVmwDscConfigParams
+```
+
+#### ConfigurationData example:
+
+The following **DSC Configuration** depends on a **Server** and **Credential** parameters that are specified in the **ConfigurationData** hashtable:
+
+```powershell
+Param(
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $Server,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [System.Management.Automation.PSCredential]
+    $Credential
+)
+
+$script:configurationData = @{
+    AllNodes = @(
+        @{
+            NodeName = 'localhost'
+            Server = $Server
+            Credential = $Credential
+        }
+    )
+}
+
+Configuration Datacenter_Config {
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node $AllNodes.NodeName {
+        Datacenter MyDatacenter {
+            Server = $AllNodes.Server
+            Credential = $AllNodes.Credential
+            Name = 'MyDatacenter'
+            Location = ''
+            Ensure = 'Present'
+        }
+    }
+}
+```
+
+In order to supply the required **Server** and **Credential** parameters of the **ConfigurationData** hashtable we use the **Parameters** parameter.
+
+```powershell
+$Credential = Get-Credential
+
+$newVmwDscConfigParams = @{
+    Path = '.\Datacenter_Config.ps1'
+    Parameters = @{
+        Server = '10.23.112.235'
+        Credential = $Credential
+    }
+}
+
+$dscConfiguration = New-VmwDscConfiguration @newVmwDscConfigParams
+```
 
 ---
-### Examples
+### Start, Test and Get-VmwDscConfiguration
 
-##### Example with [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) from the vSphereDSC module
+These cmdlets work with the **VmwDscConfiguration** object created by the **New-VmwDscConfiguration** cmdlet and apply the **Set, Test, Get methods** to the compiled **DSC Configuration**.
 
-1. Use the following vSphereDSC Configuration
+#### Parameters
+
+#### Mandatory
+
+- **Configuration** - A **VmwDscConfiguration** object compiled by the **New-VmwDscConfiguration** cmdlet.
+
+#### Optional
+
+- **ConnectionFilter** - An array of **Node** names on which the **DSC Configuration** should be executed. **Nodes** that are not in the list will be skipped. **Node** names can be strings or **VIServer** objects.
+
+---
+#### Examples
+
+#### Example with the [VMHostNtpSettings Resource](https://github.com/vmware/dscr-for-vmware/wiki/VMHostNtpSettings) from the **VMware.vSphereDSC** module
+
+1. Use the following **VNware.vSphereDSC DSC Configuration**:
+
     ```powershell
     Configuration VMHostNtpSettings_Config {
         Import-DscResource -ModuleName VMware.vSphereDSC
-    
+
         $Password = $Password | ConvertTo-SecureString -AsPlainText -Force
         $Credential = New-Object System.Management.Automation.PSCredential($User, $Password)
-    
+
         VMHostNtpSettings vmHostNtpSettings {
             Name = $Name
             Server = $Server
@@ -189,73 +291,117 @@ These cmdlets work with the PowerShell object created by **New-VmwDscConfigurati
     }
     ```
 
-2. You need to compile the Configuration to a PowerShell object
+2. You need to compile the **DSC Configuration** to a **VmwDscConfiguration** object:
+
     ```powershell
-    $compilationArgs = @{
-        ConfigName = VMHostNtpSettings
-        CustomParams = @{
-            Name = '<VMHost Name>'
-            Server 'Server Name>'
-            Password '<Password for User>'
+    $newVmwDscConfigParams = @{
+        Path = '.\VMHostNtpSettings_Config.ps1'
+        ConfigurationName = 'VMHostNtpSettings_Config'
+        Parameters = @{
+            Server = '10.23.112.235'
+            User = 'Admin'
+            Password = 'AdminPass'
+            Name = '10.23.112.236'
         }
     }
 
-    $dscConfiguration = New-VmwDscConfiguration @compilationArgs
+    $dscConfiguration = New-VmwDscConfiguration @newVmwDscConfigParams
     ```
-3. To Test if the NTP Settings are in the desired state:
+
+3. To test if the **NTP Settings** are in the desired state:
+
     ```powershell
-    Test-VmwDscConfiguration -Configuration $dscConfiguration 
+    Test-VmwDscConfiguration -Configuration $dscConfiguration
     ```
-    This will return a boolean result that shows if the state is desired or not. If you want a detailed result in which every resource state is shown you can use the optional **-Detailed** switch for the **Test-VmwDscConfiguration** cmdlet.
+
+    This will return a boolean result that shows if the state is desired or not. If you want a detailed result in which every **DSC Resource** state is shown you can use the optional **-Detailed** switch of the **Test-VmwDscConfiguration** cmdlet:
+
     ```powershell
     Test-VmwDscConfiguration -Configuration $dscConfiguration -Detailed
     ```
-    The resulting object will contain an **InDesiredState** flag which shows the overall state of the configuration, a **ResourcesInDesiredState** array of resources in desired state and a **ResourcesNotInDesiredState** array of resources not in desired state.
-    
-    **Test-VmwDscConfiguration** also remembers the last run configuration so you can use the -ExecuteLastConfiguration flag to invoke it.
+
+    The resulting object will contain an **InDesiredState** flag which shows the overall state of the **DSC Configuration**, a **ResourcesInDesiredState** array of **DSC Resources** in desired state and a **ResourcesNotInDesiredState** array of **DSC Resources** not in desired state.
+
+    **Test-VmwDscConfiguration** also remembers the last run **DSC Configuration** so you can use the **-ExecuteLastConfiguration** flag to invoke it:
+
     ```powershell
     Test-VmwDscConfiguration -ExecuteLastConfiguration
     ```
-4. To Apply the NTP Configuration:
+
+4. To Apply the **NTP Configuration**:
+
     ```powershell
     Start-VmwDscConfiguration -Configuration $dscConfiguration
     ```
-5. To get the current sate of the configuration:
+
+5. To get the current sate of the **DSC Configuration**:
+
     ```powershell
     Get-VmwDscConfiguration -Configuration $dscConfiguration
     ```
-    
-    **Get-VmwDscConfiguration** also remembers the last run configuration so you can use the -ExecuteLastConfiguration flag to invoke it.
+
+    **Get-VmwDscConfiguration** also remembers the last run configuration so you can use the **-ExecuteLastConfiguration** flag to invoke it:
+
     ```powershell
     Get-VmwDscConfiguration -ExecuteLastConfiguration
     ```
-##### Example with ConnectionFilter parameter
 
-The following configuration has multiple nodes. Only the nodes specified in **ConnectionFilter**
-will be executed.
+#### Example with the ConnectionFilter parameter
+
+The following configuration has multiple **Nodes**. Only the **Nodes** specified in the **ConnectionFilter** will be executed.
 
 ```powershell
-Configuration Test {
-    Import-DscResource -ModuleName 'MyDscResourceModule'
-    
-    Node 'mynode' {
-        MyResource res {
-            Prop = 'Test'
+Param(
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [System.Management.Automation.PSCredential]
+    $Credential
+)
+
+Configuration Datacenter_Config {
+    Param(
+        [System.Management.Automation.PSCredential]
+        $Credential
+    )
+
+    Import-DscResource -ModuleName VMware.vSphereDSC
+
+    Node 10.23.112.235 {
+        Datacenter MyDatacenter {
+            Server = '10.23.112.235'
+            Credential = $Credential
+            Name = 'MyDatacenter'
+            Location = ''
+            Ensure = 'Present'
         }
     }
-    Node 'other node' {
-        MyResource res {
-            Prop = 'Test'
+
+    Node 10.23.112.237 {
+        Datacenter MyDatacenter {
+            Server = '10.23.112.237'
+            Credential = $Credential
+            Name = 'MyDatacenter'
+            Location = ''
+            Ensure = 'Present'
         }
     }
 }
 
-$dscConfiguration = New-VmwDscConfiguration -ConfigName 'Test'
+$Credential = Get-Credential
 
-$splatParams = @{
+$newVmwDscConfigParams = @{
+    Path = '.\Datacenter_Config.ps1'
+    Parameters = @{
+        Credential = $Credential
+    }
+}
+
+$dscConfiguration = New-VmwDscConfiguration @newVmwDscConfigParams
+
+$startVmwDscConfigParams = @{
     Configuration = $dscConfiguration
-    ConnectionFilter = 'other node'
+    ConnectionFilter = '10.23.112.237'
 }
 
-$result = Start-VmwDscConfiguration @$splatParams
+$result = Start-VmwDscConfiguration @startVmwDscConfigParams
 ```
