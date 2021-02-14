@@ -1,6 +1,18 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.12 - 2021-02-14
+### Added
+- Added a new **Path** parameter for the **New-VmwDscConfiguration** cmdlet which specifies a file path to file containing **DSC Configurations**.
+- Added a new **ConfigurationName** parameter for the **New-VmwDscConfiguration** cmdlet which specifies the **DSC Configuration** to compile from the specified **DSC Configurations** file.
+
+### Changed
+- Renamed the **CustomParams** parameter of the **New-VmwDscConfiguration** cmdlet to **Parameters** which works with script parameters instead of configuration parameters only.
+
+### Removed
+- Removed the **ConfigName** parameter from the  **New-VmwDscConfiguration** cmdlet.
+- Removed the **ConfigurationData** parameter from the  **New-VmwDscConfiguration** cmdlet.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.11 - 2021-01-25
 ### Changed
 - Extended the validation of the key properties of a **DSC Resource** in the **VMware.PSDesiredStateConfiguration** module to throw an exception when a key property is **$null**.
