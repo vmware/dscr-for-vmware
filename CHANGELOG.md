@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.14 - 2021-02-14
+### Added
+- Added additional **DSC Configurations** with **ConfigurationData** for the **Unit Tests** in the **VMware.PSDesiredStateConfiguration** module.
+- Added additional **Unit Tests** for the **ConfigurationName** parameter of the **New-VmwDscConfiguration** cmdlet.
+
+### Changed
+- Fixed bug with retrieving dynamic keywords from a **DSC Configuration Script Block**.
+- Refactored the **New-VmwDscConfiguration Unit Tests** to work with the new cmdlet parameters.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.13 - 2021-02-14
 ### Added
 - Implemented ordering of public classes when importing the **VMware.PSDesiredStateConfiguration** module.
