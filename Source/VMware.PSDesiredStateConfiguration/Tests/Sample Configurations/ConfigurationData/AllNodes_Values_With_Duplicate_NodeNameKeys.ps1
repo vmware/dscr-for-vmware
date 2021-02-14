@@ -17,44 +17,22 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 $script:configurationData = @{
     AllNodes = @(
         @{
-            NodeName = 'localhost'
-            Path = 'C:\Users\temp'
-            SourcePath = 'C:\Users\temp'
+            NodeName = 'NodeName'
+        },
+        @{
+            NodeName = 'NodeName'
         }
     )
 }
 
-<#
-.DESCRIPTION
-Configuration that requires ConfigurationData
-Should get parsed correctly.
-#>
-Configuration Test {
+Configuration Test
+{
     Import-DscResource -ModuleName MyDscResource
 
     FileResource file
     {
-        Path = $script:configurationData['AllNodes']['Path']
-        SourcePath = $script:configurationData['AllNodes']['SourcePath']
-        Ensure = 'Present'
+        Path = "path"
+        SourcePath = "path"
+        Ensure = "present"
     }
 }
-
-$Script:expectedCompiled = [VmwDscConfiguration]::new(
-    'Test',
-    @(
-        [VmwDscNode]::new(
-            'localhost',
-            [VmwDscResource]::new(
-                'file',
-                'FileResource',
-                @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                @{
-                    Path = $script:configurationData['AllNodes']['Path']
-                    SourcePath = $script:configurationData['AllNodes']['SourcePath']
-                    Ensure = 'Present'
-                }
-            )
-        )
-    )
-)

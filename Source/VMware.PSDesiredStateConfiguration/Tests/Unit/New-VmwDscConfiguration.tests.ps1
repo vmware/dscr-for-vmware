@@ -14,9 +14,9 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-$root = Split-Path (Split-Path $PSScriptRoot)
+$root = Split-Path -Path (Split-Path -Path $PSScriptRoot)
 
-$module = Join-Path $root 'VMware.PSDesiredStateConfiguration.psd1'
+$module = Join-Path -Path $root -ChildPath 'VMware.PSDesiredStateConfiguration.psd1'
 
 Import-Module $module -Force
 
@@ -24,338 +24,211 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
     try {
         $rootTestPath = Split-Path $PSScriptRoot
 
-        $Script:configFolder = Join-Path $rootTestPath 'Sample Configurations'
-        $Script:NodeConfigFolder = Join-Path $Script:configFolder 'Nodes'
+        $script:configFolder = Join-Path -Path $rootTestPath -ChildPath 'Sample Configurations'
+        $script:configurationDataFolder = Join-Path -Path $script:configFolder -ChildPath 'ConfigurationData'
+        $script:nodeConfigFolder = Join-Path -Path $script:configFolder -ChildPath 'Nodes'
 
-        $util = Join-Path $rootTestPath 'Utility.ps1'
+        $util = Join-Path -Path $rootTestPath -ChildPath 'Utility.ps1'
         . $util
 
         $Global:OldProgressPreference = $ProgressPreference
         $Global:ProgressPreference = 'SilentlyContinue'
 
-        Describe 'New-VmwDscConfiguration' {
-            It 'Should Compile configuration with a single correctly' -Skip {
-                # arrange
-                $configToUse = 'simple.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
+        Describe 'New-VmwDscConfiguration Tests' {
+            It 'Should compile a DSC Configuration with one DSC Resource correctly' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'simple.ps1'
 
-                . $configFile
+                # Act
+                $dscConfiguration = New-VmwDscConfiguration -Path $configFile
 
-                # act
-                $res = New-VmwDscConfiguration 'Test'
-
-                # assert
-
-                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                # Assert
+                Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
             }
-            It 'Should Compile configuration with multiple resources correctly' -Skip {
-                # arrange
-                $configToUse = 'manyResources.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
 
-                . $configFile
+            It 'Should compile a DSC Configuration with many DSC Resources correctly' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'manyResources.ps1'
 
-                # act
-                $res = New-VmwDscConfiguration 'Test'
+                # Act
+                $dscConfiguration = New-VmwDscConfiguration -Path $configFile
 
-                # assert
-
-                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                # Assert
+                Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
             }
-            It 'Should Compile configuration with parameters in file correctly' -Skip {
-                # arrange
-                $configToUse = 'fileParams.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
 
-                . $configFile 'Test path'
+            It 'Should compile a DSC Configuration with script parameters correctly' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'fileParams.ps1'
 
-                # act
-                $res = New-VmwDscConfiguration 'Test'
+                # Act
+                $dscConfiguration = New-VmwDscConfiguration -Path $configFile -Parameters @{ PathToUse = 'C:\Users\temp' }
 
-                # assert
-
-                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                # Assert
+                Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
             }
-            It 'Should Compile configuration with a dependsOn correctly and order resources properly' -Skip {
-                # arrange
-                $configToUse = 'dependsOnOrder.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
 
-                . $configFile
+            It 'Should compile a DSC Configuration with dependencies and order the DSC Resources correctly' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'dependsOnOrder.ps1'
 
-                # act
-                $res = New-VmwDscConfiguration 'Test'
+                # Act
+                $dscConfiguration = New-VmwDscConfiguration -Path $configFile
 
-                # assert
-
-                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                # Assert
+                Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
             }
-            It 'Should compile configuration with parameters correctly' -Skip {
-                # arrange
-                $configToUse = 'configParams.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
-                $paramsToUse = @{
-                    Path = 'parameter path'
-                    SourcePath = 'parameter sourcepath'
-                    Ensure = 'present'
+
+            It 'Should compile a DSC Configuration with multiple dependencies on a DSC Resource and order the DSC Resources correctly' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'multipleDependsOnResource.ps1'
+
+                # Act
+                $dscConfiguration = New-VmwDscConfiguration -Path $configFile
+
+                # Assert
+                Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
+            }
+
+            It 'Should compile all DSC Configurations defined in the script file correctly' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'Multiple_DSCConfigurations.ps1'
+
+                # Act
+                $dscConfigurations = New-VmwDscConfiguration -Path $configFile
+
+                # Assert
+                Script:AssertConfigurationEqual $dscConfigurations[0] $script:expectedCompiledOne
+                Script:AssertConfigurationEqual $dscConfigurations[1] $script:expectedCompiledTwo
+            }
+
+            It 'Should compile only the DSC Configuration with the specified name correctly' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'Multiple_DSCConfigurations.ps1'
+
+                # Act
+                $dscConfiguration = New-VmwDscConfiguration -Path $configFile -ConfigurationName 'DSC_Configuration_Two'
+
+                # Assert
+                Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiledTwo
+            }
+
+            It 'Should throw an exception with the correct message for a DSC Configuration with duplicate DSC Resources' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'duplicateResources.ps1'
+
+                # Act && Assert
+                { New-VmwDscConfiguration -Path $configFile } | Should -Throw ($script:DuplicateResourceException -f 'file', 'FileResource')
+            }
+
+            It 'Should throw an exception with the correct message for a DSC Configuration with a DSC Resource with invalid dependency' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'invalidDependsOn.ps1'
+
+                # Act && Assert
+                { New-VmwDscConfiguration -Path $configFile } | Should -Throw ($script:DependsOnResourceNotFoundException -f 'file', 'Something else')
+            }
+
+            It 'Should throw an exception for a DSC Configuration that contains an invalid code' {
+                # Arrange
+                $configFile = Join-Path -Path $script:configFolder -ChildPath 'innerException.ps1'
+
+                # Act && Assert
+                { New-VmwDscConfiguration -Path $configFile } | Should -Throw
+            }
+
+            Context 'New-VmwDscConfiguration ConfigurationData Tests' {
+                It 'Should throw an exception with the correct message for a ConfigurationData where AllNodes key is not an array' {
+                    # Arrange
+                    $configFile = Join-Path -Path $script:configurationDataFolder -ChildPath 'AllNodes_NotAnArray.ps1'
+
+                    # Act && Assert
+                    { New-VmwDscConfiguration -Path $configFile } | Should -Throw $script:ConfigurationDataAllNodesKeyIsNotAnArrayException
                 }
 
-                . $configFile
+                It 'Should throw an exception with the correct message for a ConfigurationData where AllNodes array contains a value which is not a hashtable' {
+                    # Arrange
+                    $configFile = Join-Path -Path $script:configurationDataFolder -ChildPath 'AllNodes_ArrayWithNonHashtable_Value.ps1'
 
-                $Script:ExpectedCompiled.Nodes[0].Resources[0].Property = $paramsToUse
-
-                # act
-                $res = New-VmwDscConfiguration 'Test' -CustomParams $paramsToUse
-
-                # assert
-
-                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
-            }
-            It 'Should compile configuration with multiple DependsOn resources in a single resource' -Skip {
-                # arrange
-                $configToUse = 'multipleDependsOnResource.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
-
-                . $configFile
-                # act
-                $res = New-VmwDscConfiguration 'Test' -CustomParams $paramsToUse
-
-                # assert
-                Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
-            }
-            It 'Should throw if given an invaid configuration name' {
-                # arrange
-                $configName = 'Non-Existing Configuration'
-
-                # assert
-
-                { New-VmwDscConfiguration $configName } | Should -Throw ($Script:ConfigurationNotFoundException -f $configName)
-            }
-            It 'Should throw if given a configuration with duplicate resources' -Skip {
-                # arrange
-                $configToUse = 'duplicateResources.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
-
-                . $configFile
-
-                # assert
-
-                { New-VmwDscConfiguration 'Test' } | Should -Throw ($Script:DuplicateResourceException -f 'file', 'FileResource')
-            }
-            It 'Should throw if given a configuration with a resource that contains an invalid dependsOn property' -Skip {
-                # arrange
-                $configToUse = 'invalidDependsOn.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
-
-                . $configFile
-
-                # assert
-                { New-VmwDscConfiguration 'Test' } | Should -Throw ($Script:DependsOnResourceNotFoundException -f 'file', 'Something else')
-                #"DependsOn resource of $($Resources[$key]) with name $dependency was not found"
-            }
-            It 'Should throw if configuration contains code that causes an exception' -Skip {
-                # arrange
-                $configToUse = 'innerException.ps1'
-                $configFile = Join-Path $Script:configFolder $configToUse
-
-                . $configFile
-
-                # assert
-                { New-VmwDscConfiguration 'Test' } | Should -Throw
-            }
-            It 'Should throw if configName is not a configuration' -Skip {
-                # arrange
-                function ImpostorConfig { }
-
-                # assert
-                { New-VmwDscConfiguration 'ImpostorConfig' } | Should -Throw ($Script:CommandIsNotAConfigurationException -f 'ImpostorConfig', 'function')
-            }
-            Context 'ConfigurationData logic' {
-                It 'Should throw if no AllNodes key is present' -Skip {
-                    # assert
-                    {
-                        $splat = @{
-                            ConfigurationData = @{}
-                            ConfigName = 'placeholder'
-                        }
-
-                        New-VmwDscConfiguration @splat
-                    } | Should -Throw $Script:ConfigurationDataDoesNotContainAllNodesException
+                    # Act && Assert
+                    { New-VmwDscConfiguration -Path $configFile } | Should -Throw $script:ConfigurationDataNodeEntryInAllNodesIsNotAHashtableException
                 }
-                It 'Should throw if AllNodes key is not an array' -Skip {
-                    # assert
-                    {
-                        $splat = @{
-                            ConfigurationData = @{
-                                AllNodes = [string]::empty
-                            }
-                            ConfigName = 'placeholder'
-                        }
 
-                        New-VmwDscConfiguration @splat
-                    } | Should -Throw $Script:ConfigurationDataAllNodesKeyIsNotAnArrayException
-                }
-                It 'Should throw if AllNodes contains a non hashtable entry' -Skip {
-                    # assert
-                    {
-                        $splat = @{
-                            ConfigurationData = @{
-                                AllNodes = @([string]::empty)
-                            }
-                            ConfigName = 'placeholder'
-                        }
+                It 'Should throw an exception with the correct message for a ConfigurationData where AllNodes array contains a hashtable value without NodeName key' {
+                    # Arrange
+                    $configFile = Join-Path -Path $script:configurationDataFolder -ChildPath 'AllNodes_HashtableValue_Without_NodeNameKey.ps1'
 
-                        New-VmwDscConfiguration @splat
-                    } | Should -Throw $Script:ConfigurationDataNodeEntryInAllNodesIsNotAHashtableException
+                    # Act && Assert
+                    { New-VmwDscConfiguration -Path $configFile } | Should -Throw $script:ConfigurationDataNodeEntryInAllNodesDoesNotContainNodeNameException
                 }
-                It 'Should throw if AllNodes values contain a entry without the nodename property' -Skip {
-                    # assert
-                    {
-                        $splat = @{
-                            ConfigurationData = @{
-                                AllNodes = @(
-                                    @{
-                                        TestProp = [string]::empty
-                                    }
-                                )
-                            }
-                            ConfigName = 'placeholder'
-                        }
 
-                        New-VmwDscConfiguration @splat
-                    } | Should -Throw $Script:ConfigurationDataNodeEntryInAllNodesDoesNotContainNodeNameException
-                }
-                It 'Should throw if AllNodes contains values with duplicate nodename properties' -Skip {
-                    # assert
-                    {
-                        $splat = @{
-                            ConfigurationData = @{
-                                AllNodes = @(
-                                    @{
-                                        NodeName = 'Duplicate'
-                                    },
-                                    @{
-                                        NodeName = 'Duplicate'
-                                    }
-                                )
-                            }
-                            ConfigName = 'placeholder'
-                        }
+                It 'Should throw an exception with the correct message for a ConfigurationData where AllNodes array contains values with duplicate NodeName keys' {
+                    # Arrange
+                    $configFile = Join-Path -Path $script:configurationDataFolder -ChildPath 'AllNodes_Values_With_Duplicate_NodeNameKeys.ps1'
 
-                        New-VmwDscConfiguration @splat
-                    } | Should -Throw $Script:DuplicateEntryInAllNodesException
+                    # Act && Assert
+                    { New-VmwDscConfiguration -Path $configFile } | Should -Throw $script:DuplicateEntryInAllNodesException
                 }
-                It 'Should compile configuration that requires configurationData successfully' -Skip {
-                    # arrange
-                    $configToUse = 'configurationDataConfig.ps1'
-                    $configFile = Join-Path $Script:configFolder $configToUse
-                    $configurationData = @{
-                        AllNodes = @(
-                            @{
-                                NodeName = 'localhost'
-                                Path = 'Some path'
-                                SourcePath = 'Source path'
-                            }
-                        )
+
+                It 'Should compile a DSC Configuration with ConfigurationData correctly' {
+                    # Arrange
+                    $configFile = Join-Path -Path $script:configFolder -ChildPath 'configurationDataConfig.ps1'
+
+                    # Act
+                    $dscConfiguration = New-VmwDscConfiguration -Path $configFile
+
+                    # Assert
+                    Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
+                }
+            }
+
+            Context 'New-VmwDscConfiguration Composite DSC Resources Tests' {
+                if ($PSVersionTable.OS -Match 'Microsoft Windows') {
+                    It 'Should compile a DSC Configuration with Composite DSC Resource correctly' {
+                        # Arrange
+                        $configFile = Join-Path -Path $script:configFolder -ChildPath 'compositeResourceConfig.ps1'
+
+                        # Act
+                        $dscConfiguration = New-VmwDscConfiguration -Path $configFile
+
+                        # Assert
+                        Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
                     }
-
-                    . $configFile $configurationData
-                    # act
-                    $res = New-VmwDscConfiguration 'Test' -ConfigurationData $configurationData
-
-                    # assert
-                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
                 }
             }
-            Context 'Nested configurations and composite resources' {
-                It 'Should compile nested configuration correctly' -Skip {
-                    # arrange
-                    $configToUse = 'nestedConfig.ps1'
-                    $configFile = Join-Path $Script:configFolder $configToUse
 
-                    . $configFile
-                    # act
-                    $res = New-VmwDscConfiguration 'Test'
+            Context 'New-VmwDscConfiguration Node Tests' {
+                It 'Should compile a DSC Configuration with a single Node correctly' {
+                    # Arrange
+                    $configFile = Join-Path -Path $script:nodeConfigFolder -ChildPath 'singleNode.ps1'
 
-                    # assert
-                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                    # Act
+                    $dscConfiguration = New-VmwDscConfiguration -Path $configFile
+
+                    # Assert
+                    Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
                 }
-                It 'Should compile composite resource correctly' -Skip {
-                    $os = $PSVersionTable['OS']
 
-                    # null check because the OS key is not present on PowerShell 5.1
-                    if ([string]::IsNullOrEmpty($os)) {
-                        $os = 'Microsoft Windows'
-                    }
+                It 'Should compile a DSC Configuration and group the DSC Resources from one vSphereNode which value is array correctly' {
+                    # Arrange
+                    $configFile = Join-Path -Path $script:nodeConfigFolder -ChildPath 'oneNodeManyConnections.ps1'
 
-                    if (-not $os.Contains('Microsoft Windows')) {
-                        Write-Warning 'Composite Resources are not discoverable in non windows OS due to a bug in Powershell'
+                    # Act
+                    $dscConfiguration = New-VmwDscConfiguration -Path $configFile
 
-                        $true | Should -Be $true
-
-                        return
-                    }
-
-                    # arrange
-                    $configToUse = 'compositeResourceConfig.ps1'
-                    $configFile = Join-Path $Script:configFolder $configToUse
-
-                    .$configFile
-                    # act
-                    $res = New-VmwDscConfiguration 'Test'
-
-                    # assert
-                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                    # Assert
+                    Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
                 }
-            }
-            Context 'Node logic' {
-                It 'Should compile a single Node correctly' -Skip {
-                    # arrange
-                    $configToUse = 'singleNode.ps1'
-                    $configFile = Join-Path $Script:NodeConfigFolder $configToUse
 
-                    . $configFile
-                    # act
-                    $res = New-VmwDscConfiguration 'Test'
+                It 'Should compile a DSC Configuration with multiple Nodes correctly' {
+                    # Arrange
+                    $configFile = Join-Path -Path $script:nodeConfigFolder -ChildPath 'manyNodes.ps1'
 
-                    # assert
-                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
-                }
-                It 'Should group resources from multiple same node definitions correctly' -Skip {
-                    # arrange
-                    $configToUse = 'singleNode.ps1'
-                    $configFile = Join-Path $Script:NodeConfigFolder $configToUse
+                    # Act
+                    $dscConfiguration = New-VmwDscConfiguration -Path $configFile
 
-                    . $configFile
-                    # act
-                    $res = New-VmwDscConfiguration 'Test'
-
-                    # assert
-                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
-                }
-                It 'Should compile multiple Nodes correctly' -Skip {
-                    # arrange
-                    $configToUse = 'manyNodes.ps1'
-                    $configFile = Join-Path $Script:NodeConfigFolder $configToUse
-
-                    . $configFile
-                    # act
-                    $res = New-VmwDscConfiguration 'Test'
-
-                    # assert
-                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
-                }
-                It 'Shoud compile a single Node with multiple connections' -Skip {
-                    # arrange
-                    $configToUse = 'oneNodeManyConnections.ps1'
-                    $configFile = Join-Path $Script:NodeConfigFolder $configToUse
-
-                    . $configFile
-                    # act
-                    $res = New-VmwDscConfiguration 'Test'
-
-                    # assert
-                    Script:AssertConfigurationEqual $res $Script:ExpectedCompiled
+                    # Assert
+                    Script:AssertConfigurationEqual $dscConfiguration $script:expectedCompiled
                 }
             }
         }

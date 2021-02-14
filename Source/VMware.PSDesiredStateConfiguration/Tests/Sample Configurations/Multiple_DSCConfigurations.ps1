@@ -14,84 +14,61 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-<#
-.DESCRIPTION
-Configuration that contains another nested configuration.
-Should compile the nested configuration successfully.
-#>
-Configuration Another {
-    Param(
-        [Parameter(Mandatory = $true)]
-        [string] $Destination,
-
-        [Parameter(Mandatory)]
-        [string]
-        $Source
-    )
-
+Configuration DSC_Configuration_One {
     Import-DscResource -ModuleName MyDscResource
-    FileResource Test2
-    {
-        Path = $Destination
-        SourcePath = $Source
-        Ensure = 'present'
+
+    FileResource fileOne {
+        Path = 'C:\Users\temp'
+        SourcePath = 'C:\Users\temp'
+        Ensure = 'Present'
     }
 }
 
-Configuration Test
-{
+Configuration DSC_Configuration_Two {
     Import-DscResource -ModuleName MyDscResource
 
-    $Path = "path"
-    $SourcePath = "source path"
-    $Ensure = 'Present'
-
-    Another NestedConfig
-    {
-        Destination = 'Some Destination'
-        Source = 'Some source'
-    }
-
-    FileResource Test
-    {
-        Path = $Path
-        SourcePath = $SourcePath
-        Ensure = $Ensure
+    FileResource fileTwo {
+        Path = 'C:\Users\temp'
+        SourcePath = 'C:\Users\temp'
+        Ensure = 'Present'
     }
 }
 
-$Script:expectedCompiled = [VmwDscConfiguration]::new(
-    'Test',
+$script:expectedCompiledOne = [VmwDscConfiguration]::new(
+    'DSC_Configuration_One',
     @(
         [VmwDscNode]::new(
             'localhost',
             @(
                 [VmwDscResource]::new(
-                    'NestedConfig',
-                    'Another',
-                    '',
-                    @{},
-                    @(
-                        [VmwDscResource]::new(
-                            'Test2',
-                            'FileResource',
-                            @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
-                            @{
-                                Path = "Some Destination"
-                                SourcePath = "Some Source"
-                                Ensure = "present"
-                            }
-                        )
-                    )
-                ),
-                [VmwDscResource]::new(
-                    'Test',
+                    'fileOne',
                     'FileResource',
                     @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
                     @{
-                        Path = "path"
-                        SourcePath = "source path"
-                        Ensure = "present"
+                        Path = 'C:\Users\temp'
+                        SourcePath = 'C:\Users\temp'
+                        Ensure = 'Present'
+                    }
+                )
+            )
+        )
+    )
+)
+
+$script:expectedCompiledTwo = [VmwDscConfiguration]::new(
+    'DSC_Configuration_Two',
+    @(
+        [VmwDscNode]::new(
+            'localhost',
+            @(
+                [VmwDscResource]::new(
+                    'fileTwo',
+                    'FileResource',
+                    @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' },
+                    @{
+                        Path = 'C:\Users\temp'
+                        SourcePath = 'C:\Users\temp'
+                        Ensure = 'Present'
                     }
                 )
             )

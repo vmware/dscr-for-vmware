@@ -14,38 +14,18 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-<#
-.DESCRIPTION
-Configuration with parameters.
-Should get filled by CustomParams parameter.
-#>
-Configuration Test {
-    Param(
-        $Path,
-        $SourcePath,
-        $Ensure
-    )
+$script:configurationData = @{
+    AllNodes = 'AllNodes'
+}
 
+Configuration Test
+{
     Import-DscResource -ModuleName MyDscResource
 
     FileResource file
     {
-        Path = $Path
-        SourcePath = $SourcePath
-        Ensure = $Ensure
+        Path = "path"
+        SourcePath = "path"
+        Ensure = "present"
     }
 }
-
-$Script:expectedCompiled = [VmwDscConfiguration]::new(
-    'Test',
-    @(
-        [VmwDscNode]::new(
-            'localhost',
-            [VmwDscResource]::new(
-                'file',
-                'FileResource',
-                @{ ModuleName = 'MyDscResource'; RequiredVersion = '1.0' }
-            )
-        )
-    )
-)
