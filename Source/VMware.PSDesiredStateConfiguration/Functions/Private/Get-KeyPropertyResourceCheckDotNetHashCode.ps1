@@ -14,26 +14,57 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-$script:PrivateClassesPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Classes') -ChildPath 'Private'
-$script:PublicClassesPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Classes') -ChildPath 'Public'
+<#
+.DESCRIPTION
 
-$script:PrivateFunctionsPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Functions') -ChildPath 'Private'
-$script:PublicFunctionsPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Functions') -ChildPath 'Public'
+Used to generate a hashcode for the KeyPropertyResourceCheck object.
+A similiar class is created via c# so that the unchecked param is used for overflow ignoring.
+PowerShell by itself automaticaly changes the number type when before overflowing to avoid it.
+#>
+function Get-KeyPropertyResourceCheckDotNetHashCode {
+    Param(
+        [string] $ResourceType,
 
-$script:PrivateFunctions = Get-ChildItem -Path $script:PrivateFunctionsPath -Recurse -File -Filter '*.ps1'
-$script:PublicFunctions = Get-ChildItem -Path $script:PublicFunctionsPath -Recurse -File -Filter '*.ps1'
-$script:Functions = @($script:PrivateFunctions + $script:PublicFunctions)
+        [Hashtable] $KeyPropertiesToValues
+    )
 
-$script:PublicClassFiles = Get-ChildItem -Path $script:PublicClassesPath -Recurse -File -Filter '*.ps1'
+    $code = @"
+    using System.Collections;
 
-# The private classes are imported first so that the ClassResolver can order all public classes.
-Get-ChildItem -Path $script:PrivateClassesPath -Recurse -File -Filter '*.ps1' | ForEach-Object -Process { . $_.FullName }
+    public class KeyPropertyResourceCheckDotNet
+    {
+        public KeyPropertyResourceCheckDotNet(string resourceType, Hashtable keyPropertiesToValues)
+        {
+            this.ResourceType = resourceType;
+            this.KeyPropertiesToValues = keyPropertiesToValues;
+        }
 
-$script:ClassResolver = [ClassResolver]::new($script:PublicClassFiles)
-$script:OrderedPublicClassFiles = $script:ClassResolver.OrderClassFiles()
+        private string ResourceType { get; set; }
 
-$script:OrderedPublicClassFiles | ForEach-Object -Process { . $_.FullName }
+        private Hashtable KeyPropertiesToValues { get; set; }
 
-$script:Functions | ForEach-Object -Process { . $_.FullName }
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
 
-Export-ModuleMember -Function $script:PublicFunctions.BaseName
+                hash = hash * 23 + this.ResourceType.GetHashCode();
+
+                foreach (var key in this.KeyPropertiesToValues.Keys)
+                {
+                    hash = hash * 23 + this.KeyPropertiesToValues[key].GetHashCode();
+                }
+
+                return hash;
+            }
+        }
+    }
+"@
+
+    Add-Type -TypeDefinition $code
+
+    $obj = [KeyPropertyResourceCheckDotNet]::new($ResourceType, $KeyPropertiesToValues)
+
+    $obj.GetHashCode()
+}

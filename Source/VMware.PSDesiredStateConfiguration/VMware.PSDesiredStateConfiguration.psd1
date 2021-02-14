@@ -39,16 +39,8 @@ Description = 'This PowerShell module contains logic for creating and running ob
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.1'
 
-# Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = @('Classes\DscConfigurationFileParser.ps1', 'Classes\DscItems.ps1')
-
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @(
-    'New-VmwDscConfiguration',
-    'Start-VmwDscConfiguration',
-    'Get-VmwDscConfiguration',
-    'Test-VmwDscConfiguration'
-)
+FunctionsToExport = '*'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

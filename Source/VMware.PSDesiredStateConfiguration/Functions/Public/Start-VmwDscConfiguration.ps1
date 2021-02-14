@@ -14,26 +14,35 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-$script:PrivateClassesPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Classes') -ChildPath 'Private'
-$script:PublicClassesPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Classes') -ChildPath 'Public'
+<#
+.DESCRIPTION
 
-$script:PrivateFunctionsPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Functions') -ChildPath 'Private'
-$script:PublicFunctionsPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Functions') -ChildPath 'Public'
+Invokes the DSC Configuration with the 'Set' DSC method.
+Every Resource that is not in desired state gets it's set method run.
+#>
+function Start-VmwDscConfiguration {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline = $true,
+                   Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [VmwDscConfiguration]
+        $Configuration,
 
-$script:PrivateFunctions = Get-ChildItem -Path $script:PrivateFunctionsPath -Recurse -File -Filter '*.ps1'
-$script:PublicFunctions = Get-ChildItem -Path $script:PublicFunctionsPath -Recurse -File -Filter '*.ps1'
-$script:Functions = @($script:PrivateFunctions + $script:PublicFunctions)
+        [Parameter(Mandatory = $false,
+                   ValueFromPipeline = $false,
+                   Position = 1)]
+        [ValidateNotNullOrEmpty()]
+        [PSObject]
+        $ConnectionFilter
+    )
 
-$script:PublicClassFiles = Get-ChildItem -Path $script:PublicClassesPath -Recurse -File -Filter '*.ps1'
+    $invokeParams = @{
+        Configuration = $Configuration
+        ConnectionFilter = $ConnectionFilter
+        Method = 'Set'
+    }
 
-# The private classes are imported first so that the ClassResolver can order all public classes.
-Get-ChildItem -Path $script:PrivateClassesPath -Recurse -File -Filter '*.ps1' | ForEach-Object -Process { . $_.FullName }
-
-$script:ClassResolver = [ClassResolver]::new($script:PublicClassFiles)
-$script:OrderedPublicClassFiles = $script:ClassResolver.OrderClassFiles()
-
-$script:OrderedPublicClassFiles | ForEach-Object -Process { . $_.FullName }
-
-$script:Functions | ForEach-Object -Process { . $_.FullName }
-
-Export-ModuleMember -Function $script:PublicFunctions.BaseName
+    Invoke-VmwDscConfiguration @invokeParams -Verbose:$VerbosePreference | Out-Null
+}

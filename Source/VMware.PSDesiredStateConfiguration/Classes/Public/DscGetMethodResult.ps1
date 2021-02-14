@@ -14,26 +14,34 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-$script:PrivateClassesPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Classes') -ChildPath 'Private'
-$script:PublicClassesPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Classes') -ChildPath 'Public'
+<#
+.DESCRIPTION
 
-$script:PrivateFunctionsPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Functions') -ChildPath 'Private'
-$script:PublicFunctionsPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Functions') -ChildPath 'Public'
+Result type for Get-VmwDscConfiguration.
+#>
+class DscGetMethodResult : BaseDscMethodResult {
+    [PsObject[]] $ResourcesStates
 
-$script:PrivateFunctions = Get-ChildItem -Path $script:PrivateFunctionsPath -Recurse -File -Filter '*.ps1'
-$script:PublicFunctions = Get-ChildItem -Path $script:PublicFunctionsPath -Recurse -File -Filter '*.ps1'
-$script:Functions = @($script:PrivateFunctions + $script:PublicFunctions)
+    DscGetMethodResult([VmwDscNode] $node, [PsObject[]] $resources) : base($node.InstanceName) {
+        $this.FillResourceStates($node, $resources)
+    }
 
-$script:PublicClassFiles = Get-ChildItem -Path $script:PublicClassesPath -Recurse -File -Filter '*.ps1'
+    hidden [void] FillResourceStates([VmwDscNode] $node, [PsObject[]] $resources) {
+        $result = New-Object 'System.Collections.ArrayList'
 
-# The private classes are imported first so that the ClassResolver can order all public classes.
-Get-ChildItem -Path $script:PrivateClassesPath -Recurse -File -Filter '*.ps1' | ForEach-Object -Process { . $_.FullName }
+        for ($i = 0; $i -lt $resources.Count; $i++) {
+            $states = $resources[$i]
+            $objectToAdd = $null
 
-$script:ClassResolver = [ClassResolver]::new($script:PublicClassFiles)
-$script:OrderedPublicClassFiles = $script:ClassResolver.OrderClassFiles()
+            if ($states.Count -gt 1) {
+                $objectToAdd = [CompositeResourceGetMethodResult]::new($node.Resources[$i].InstanceName, $states)
+            } else {
+                $objectToAdd = $states
+            }
 
-$script:OrderedPublicClassFiles | ForEach-Object -Process { . $_.FullName }
+            $result.Add($objectToAdd) | Out-Null
+        }
 
-$script:Functions | ForEach-Object -Process { . $_.FullName }
-
-Export-ModuleMember -Function $script:PublicFunctions.BaseName
+        $this.ResourcesStates = $result.ToArray()
+    }
+}

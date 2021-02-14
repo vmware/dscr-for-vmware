@@ -14,26 +14,46 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-$script:PrivateClassesPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Classes') -ChildPath 'Private'
-$script:PublicClassesPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Classes') -ChildPath 'Public'
+<#
+.DESCRIPTION
 
-$script:PrivateFunctionsPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Functions') -ChildPath 'Private'
-$script:PublicFunctionsPath = Join-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Functions') -ChildPath 'Public'
+Class that defines each class in the VMware.PSDesiredStateConfiguration module as a
+Node with Edges and Dependencies - other classes with which the class interacts.
+#>
+class ClassNode {
+    [string] $Name
 
-$script:PrivateFunctions = Get-ChildItem -Path $script:PrivateFunctionsPath -Recurse -File -Filter '*.ps1'
-$script:PublicFunctions = Get-ChildItem -Path $script:PublicFunctionsPath -Recurse -File -Filter '*.ps1'
-$script:Functions = @($script:PrivateFunctions + $script:PublicFunctions)
+    [string] $FileName
 
-$script:PublicClassFiles = Get-ChildItem -Path $script:PublicClassesPath -Recurse -File -Filter '*.ps1'
+    [string[]] $Dependencies
 
-# The private classes are imported first so that the ClassResolver can order all public classes.
-Get-ChildItem -Path $script:PrivateClassesPath -Recurse -File -Filter '*.ps1' | ForEach-Object -Process { . $_.FullName }
+    [ClassNode[]] $Edge
 
-$script:ClassResolver = [ClassResolver]::new($script:PublicClassFiles)
-$script:OrderedPublicClassFiles = $script:ClassResolver.OrderClassFiles()
+    <#
+    .DESCRIPTION
 
-$script:OrderedPublicClassFiles | ForEach-Object -Process { . $_.FullName }
+    Adds the specified dependency class name to the list of dependencies
+    for the current ClassNode.
+    #>
+    [void] AddDependency([string] $dependency) {
+        if ($null -eq $this.Dependencies) {
+            $this.Dependencies = @()
+        }
 
-$script:Functions | ForEach-Object -Process { . $_.FullName }
+        $this.Dependencies += $dependency
+    }
 
-Export-ModuleMember -Function $script:PublicFunctions.BaseName
+    <#
+    .DESCRIPTION
+
+    Adds the specified edge ClassNode to the list of edges
+    for the current ClassNode.
+    #>
+    [void] AddEdge([ClassNode] $edge) {
+        if ($null -eq $this.Edge) {
+            $this.Edge = @()
+        }
+
+        $this.Edge += $edge
+    }
+}
