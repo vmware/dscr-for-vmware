@@ -1,111 +1,102 @@
 # vSphere Nodes
-Inside a DSC Configuration vSphereNode is a special dynamic keyword that represents a connection to a VIServer. Each vSphereNode can contain DSC Resources from the module **VMware.vSphereDSC**. Currently vSphere Nodes only work on PowerShell 7.
 
-With standard DSC we need to supply each resource with a Server and Credential parameter so that they can establish a connection the specified VIServer because the LCM runs the resources in different runspaces and a common connection cannot be reused.
+Inside a **DSC Configuration** a **vSphereNode** is a special dynamic keyword that represents a connection to a **VIServer**. Each **vSphereNode** can contain **DSC Resources** from the module **VMware.vSphereDSC**. Currently **vSphere Nodes** only work on **PowerShell 7**.
 
-The vSphere Nodes along with the new execution engine allow the user to bundle resources and specify a common VIServer connection which gets reused.
+With standard DSC we need to supply each **DSC Resource** with a **Server** and **Credential** properties so that they can establish a connection to the specified **VIServer** because the **LCM** runs the **DSC Resources** in different runspaces and a common connection cannot be reused.
 
-## DSC Configurations with a Single Node Examples
+The **vSphere Nodes** along with the new execution engine allow the user to bundle **DSC Resources** and specify a common **VIServer** connection which gets reused.
 
-#### Regular DSC Configuration
+## **DSC Configuration** with a standard **Node**
+
 ```powershell
-Configuration Test {
+Param(
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $Server,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [System.Management.Automation.PSCredential]
+    $Credential
+)
+
+Configuration Datacenter_Config {
+    Param(
+        [string]
+        $Server,
+
+        [System.Management.Automation.PSCredential]
+        $Credential
+    )
+
     Import-DscResource -ModuleName 'VMware.vSphereDSC'
 
     Node 'localhost' {
-        DatacenterFolder "MyDatacentersFolder" {
-            Server = '<server here>'
-            Credential = '<credentials object here>'
-            Name = 'MyDatacentersFolder'
+        Datacenter 'MyDatacenter' {
+            Server = $Server
+            Credential = $Credential
+            Name = 'MyDatacenter'
             Location = ''
             Ensure = 'Present'
         }
+    }
+}
+```
 
-        Datacenter "MyDatacenter" {
-            Server = '<server here>'
-            Credential = '<credentials object here>'
+## **DSC Configuration** with a **vSphere Node**
+
+```powershell
+Configuration Datacenter_Config {
+    Import-DscResource -ModuleName 'VMware.vSphereDSC'
+
+    vSphereNode '10.23.112.235' {
+        Datacenter 'MyDatacenter' {
             Name = 'MyDatacenter'
-            Location = 'MyDatacentersFolder'
+            Location = ''
             Ensure = 'Present'
-            DependsOn = "[DatacenterFolder]MyDatacentersFolder"
         }
     }
 }
 
-Test
+$dscConfiguration = New-VmwDscConfiguration -Path '.\Datacenter_Config.ps1'
 ```
 
-#### DSC Configuration with vSphere Nodes
+Here each **VMware.vSphere DSC Resource** loses the previously mandatory **Server** and **Credential** properties and instead the connection is retrieved from the **vSphereNode** name. Note that the **vSphereNode** keyword opening bracket **'{'** must be placed on the same row as the keyword or else a parsing error is triggered.
+
+## **DSC Configuration** with multiple **vSphere Nodes**
+
 ```powershell
-Configuration Test {
-    Import-DscResource -ModuleName 'VMware.vSphereDSC'
-
-    vSphereNode '<server name goes here>' {
-        DatacenterFolder "MyDatacentersFolder" {
-            Name = 'MyDatacentersFolder'
-            Location = ''
-            Ensure = 'Present'
+$script:configurationData = @{
+    AllNodes = @(
+        @{
+            NodeName = '10.23.112.235'
+        },
+        @{
+            NodeName = '10.23.112.236'
         }
-
-        Datacenter "MyDatacenter" {
-            Name = 'MyDatacenter'
-            Location = 'MyDatacentersFolder'
-            Ensure = 'Present'
-            DependsOn = "[DatacenterFolder]MyDatacentersFolder"
-        }
-    }
+    )
 }
 
-$splat = @{
-    ConfigName = 'Test'
-}
-
-$dscConfig = New-VmwDscConfiguration @splat
-```
-
-Here each **VMware.vSphere** DSC Resource loses the previously mandatory Server and Credentials Parameters and instead the connection is retrieved from the **vSphereNode** Name. Note that the **vSphereNode** keyword opening bracket '{' must be placed on the same row as the keyword or else a parsing error is triggered.
-
-## DSC Configuration with multiple Nodes Example
-```powershell
-Configuration Test {
+Configuration Datacenter_Config {
     Import-DscResource -ModuleName 'VMware.vSphereDSC'
 
-    # $AllNodes gets supplied via ConfigurationData parameter
     vSphereNode $AllNodes.NodeName {
-        DatacenterFolder "MyDatacentersFolder" {
-            Name = 'MyDatacentersFolder'
+        Datacenter 'MyDatacenter' {
+            Name = 'MyDatacenter'
             Location = ''
             Ensure = 'Present'
         }
-
-        Datacenter "MyDatacenter" {
-            Name = 'MyDatacenter'
-            Location = 'MyDatacentersFolder'
-            Ensure = 'Present'
-            DependsOn = "[DatacenterFolder]MyDatacentersFolder"
-        }
     }
 }
 
-$splat = @{
-    ConfigName = 'Test'
-    ConfigurationData = @{
-        AllNodes = @(
-            @{
-                NodeName = '<Connection>' # Example: 10.10.10.10
-            },
-            @{
-                NodeName = '<Connection>'
-            }
-        )
-    }
-}
-
-$dscConfig = New-VmwDscConfiguration @splat
+$dscConfiguration = New-VmwDscConfiguration -Path '.\Datacenter_Config.ps1'
 ```
-Here $AllNodes can contain multiple ViServer connections that can be specified via the **NodeName** property and a separate node object will be generated for each connection.
 
-Common properties for all nodes can be specified with a **$AllNodes** entry that has a Nodename property that equals '*'. This value will be applied to all other Nodes. Nodes with duplicate **NodeName** properties will result in a exception.
+Here **AllNodes** can contain multiple **VIServer** connections that can be specified via the **NodeName** property and a separate **Node** object will be generated for each connection.
+
+Common properties for all nodes can be specified with a **$AllNodes** entry that has a **NodeName** property that equals **'*'**. This value will be applied to all other **Nodes**. **Nodes** with duplicate **NodeName** properties will result in a exception.
+
 ```powershell
 ConfigurationData = @{
         AllNodes = @(
@@ -117,20 +108,21 @@ ConfigurationData = @{
             },
             @{
                 NodeName = '*'
-                MyProp = 'common'
+                VMHostName = '10.23.112.237'
             }
         )
     }
 ```
 ---
 
-After the configuration is compiled the user needs to establish a connection to the VIServers specified in the vSphereNodes before executing the configuration. This can be done using the PowerCLI cmdlet **Connect-VIServer**. This gives more freedom in terms of ways to connect to a server instead of only supporting connectons via username and password.
+After the **DSC Configuration** is compiled the user needs to establish a connection to the **VIServers** specified in the **vSphereNodes** before executing the **DSC Configuration**. This can be done using the PowerCLI cmdlet **Connect-VIServer**. This gives more freedom in terms of ways to connect to a server instead of only supporting connectons via username and password.
 
-#### Example connection before Invoke
+### Example **VIServer** connection before calling **Start-VmwDscConfiguration** cmdlet
+
 ```powershell
 $connection = Connect-ViServer -User '<Username here>' -Password '<Password here>' -Server '<vSphereNode server name here>'
 
-$dscConfig | Start-VmwDscConfiguration
+$dscConfiguration | Start-VmwDscConfiguration
 ```
 
-When invoking a DSC configuration object that contains vSphereNodes but connections to those nodes are not established then a warning is printed to the console and those nodes get skipped during execution.
+When invoking a **VmwDscConfiguration** object that contains **vSphereNodes** but connections to those nodes are not established then a warning is printed to the console and those **Nodes** get skipped during execution.
