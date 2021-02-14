@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.13 - 2021-02-14
+### Added
+- Implemented ordering of public classes when importing the **VMware.PSDesiredStateConfiguration** module.
+
+### Changed
+- Extracted all classes in the **VMware.PSDesiredStateConfiguration** module in separate files.
+- Extracted all functions in the **VMware.PSDesiredStateConfiguration** module in separate files.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.12 - 2021-02-14
 ### Added
 - Added a new **Path** parameter for the **New-VmwDscConfiguration** cmdlet which specifies a file path to file containing **DSC Configurations**.
