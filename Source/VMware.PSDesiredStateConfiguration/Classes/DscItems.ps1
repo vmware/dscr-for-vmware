@@ -14,8 +14,6 @@ Redistributions in binary form must reproduce the above copyright notice, this l
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
-$script:ConfigurationNotFoundException = "Configuration with name {0} not found"
-$script:CommandIsNotAConfigurationException = "{0} is not a configuration. It is a {1}"
 $script:DuplicateResourceException = "Duplicate resources found with name {0} and type {1}"
 $script:DependsOnResourceNotFoundException = "DependsOn resource of {0} with name {1} was not found"
 $script:DscResourceNotFoundException = "Resource of type: {0} was not found. Try importing it in the configuration file with Import-DscResource"
@@ -319,15 +317,15 @@ Used for parsing and compiling a DSC Configuration into a DSC object.
 #>
 class DscConfigurationCompiler {
     hidden [string] $ConfigName
-    hidden [Hashtable] $CustomParams
+    hidden [Hashtable] $Parameters
     hidden [Hashtable] $ConfigurationData
     hidden [Hashtable] $ResourceNameToInfo
     hidden [Hashtable] $CompositeResourceToScriptBlock
     hidden [bool] $IsNested
 
-    DscConfigurationCompiler([string] $ConfigName, [Hashtable] $CustomParams, [Hashtable] $ConfigurationData) {
+    DscConfigurationCompiler([string] $ConfigName, [Hashtable] $Parameters, [Hashtable] $ConfigurationData) {
         $this.ConfigName = $ConfigName
-        $this.CustomParams = $CustomParams
+        $this.Parameters = $Parameters
 
         # configurationData gets cloned because it's state gets mutated during execution.
         if ($null -ne $ConfigurationData) {
@@ -343,7 +341,7 @@ class DscConfigurationCompiler {
     .DESCRIPTION
     Compiles the DSC Configuration and returns an configuration object
     #>
-    [VmwDscConfiguration] CompileDscConfiguration() {
+    [VmwDscConfiguration] CompileDscConfiguration([DscConfigurationBlock] $dscConfigurationBlock) {
         Write-Verbose "Starting compilation process"
 
         Write-Verbose "Validating ConfigurationData"
@@ -351,11 +349,8 @@ class DscConfigurationCompiler {
         # validate the configurationData
         $this.ValidateConfigurationData()
 
-        # retrieve the configuration command from loaded commands.
-        $configCommand = $this.GetConfigCommand($this.ConfigName)
-
         # parse and compile the configuration
-        $dscItems = $this.CompileDscConfigurationUtil($configCommand, $this.CustomParams)
+        $dscItems = $this.CompileDscConfigurationUtil($dscConfigurationBlock, $this.Parameters)
 
         Write-Verbose "Handling nodes"
 
@@ -512,10 +507,10 @@ class DscConfigurationCompiler {
     .DESCRIPTION
     Handles the main logic for compiling a dsc configuration
     #>
-    hidden [DscItem[]] CompileDscConfigurationUtil([System.Management.Automation.ConfigurationInfo] $ConfigCommand, [Hashtable] $CustomParams) {
+    hidden [DscItem[]] CompileDscConfigurationUtil([DscConfigurationBlock] $dscConfigurationBlock, [Hashtable] $Parameters) {
         $dscConfigurationParser = [DscConfigurationParser]::new()
 
-        Write-Verbose "Parsing configuration block of $($ConfigCommand.Name)"
+        Write-Verbose "Parsing configuration block of $($dscConfigurationBlock.Name)"
 
         <#
             The Verbose preference is set to 'SilentlyContinue' to suppress the
@@ -525,7 +520,7 @@ class DscConfigurationCompiler {
         $Global:VerbosePreference = 'SilentlyContinue'
 
         # parse the configuration, run Import-DscResource statements and retrieve the found resources/nested configurations
-        $parseResult = $dscConfigurationParser.ParseDscConfiguration($configCommand)
+        $parseResult = $dscConfigurationParser.ParseDscConfiguration($dscConfigurationBlock)
 
         $Global:VerbosePreference = $savedVerbosePreference
 
@@ -559,7 +554,7 @@ class DscConfigurationCompiler {
 
         Write-Verbose "Executing Configuration scriptblock to extract resources and nodes"
 
-        $dscItems = $configScriptBlock.InvokeWithContext($functionsToDefine, $variablesToDefine, $CustomParams)
+        $dscItems = $configScriptBlock.InvokeWithContext($functionsToDefine, $variablesToDefine, $Parameters)
 
         return $dscItems
     }
@@ -694,7 +689,9 @@ class DscConfigurationCompiler {
             $configType = Get-PSCallStack | Select-Object -First 1 | Select-Object -ExpandProperty Command
 
             # retrieve internal resources
-            $innerResources = $this.CompileDscConfigurationUtil($this.CompositeResourceToScriptBlock[$configType], $parsedProps)
+            $compositeDscResource = $this.CompositeResourceToScriptBlock[$configType]
+            $dscConfigurationBlock = $this.MapCompositeDSCResourceToDscConfigurationBlock($compositeDscResource)
+            $innerResources = $this.CompileDscConfigurationUtil($dscConfigurationBlock, $parsedProps)
 
             $compositeResourceProps = @{}
 
@@ -772,6 +769,25 @@ class DscConfigurationCompiler {
 
     <#
     .DESCRIPTION
+
+    Maps the specified PowerShell ConfigurationInfo object to a DSC Configuration Block by retrieving the name of the DSC Configuration and the text
+    information for it - start and end line and also the text of the DSC Configuration.
+    #>
+    hidden [DscConfigurationBlock] MapCompositeDSCResourceToDscConfigurationBlock([System.Management.Automation.ConfigurationInfo] $compositeDscResource) {
+        $dscConfigurationBlock = [DscConfigurationBlock]::new()
+
+        $dscConfigurationBlock.Name = $compositeDscResource.Name
+        $dscConfigurationBlock.Extent = [DscConfigurationBlockExtent]::new()
+
+        $dscConfigurationBlock.Extent.StartLine = $compositeDscResource.ScriptBlock.Ast.Extent.StartLineNumber
+        $dscConfigurationBlock.Extent.EndLine = $compositeDscResource.ScriptBlock.Ast.Extent.EndLineNumber
+        $dscConfigurationBlock.Extent.Text = $compositeDscResource.ScriptBlock.Ast.Extent.Text
+
+        return $dscConfigurationBlock
+    }
+
+    <#
+    .DESCRIPTION
     Handles the logic for dsc resources and composite dsc resources.
     #>
     hidden [VmwDscResource] ParseDscResource([string] $Name, [ScriptBlock] $Properties) {
@@ -804,26 +820,6 @@ class DscConfigurationCompiler {
 
         return $result
     }
-
-    <#
-    .DESCRIPTION
-    Validates that the command is of type Configuration and returns it.
-    #>
-    hidden [System.Management.Automation.ConfigurationInfo] GetConfigCommand([string] $ConfigName) {
-        # find the configuration with the given name
-        $foundConfigCommand = Get-Command $ConfigName -ErrorAction SilentlyContinue
-
-        if ($null -eq $foundConfigCommand) {
-            throw ($script:ConfigurationNotFoundException -f $ConfigName)
-        }
-
-        # check if found command is correct type
-        if ($foundConfigCommand.CommandType -ne 'Configuration') {
-            throw ($script:CommandIsNotAConfigurationException -f $ConfigName, $foundConfigCommand.CommandType)
-        }
-
-        return $foundConfigCommand
-    }
 }
 
 <#
@@ -842,8 +838,9 @@ class DscConfigurationParser {
     Parses the Configuration scriptblock into an invokable form and retrieves a list dsc resources
     and a hashtable of local configuration names to their scriptblock
     #>
-    [PsObject] ParseDscConfiguration([System.Management.Automation.ConfigurationInfo] $ConfigCommand) {
-        $configTextBlock = $ConfigCommand.ScriptBlock.Ast.Extent.Text
+    [PsObject] ParseDscConfiguration([DscConfigurationBlock] $dscConfigurationBlock) {
+        $configTextBlock = $dscConfigurationBlock.Extent.Text
+        $dscConfigurationBlockAsScriptBlock = [ScriptBlock]::Create($dscConfigurationBlock.Extent.Text)
 
         # find and extract the import-dscresource statements so that they can be executed first
         $searchScriptBlock = [ScriptBlock]::Create($configTextBlock)
@@ -865,11 +862,11 @@ class DscConfigurationParser {
         # invoke the import-dscresource statements
         $this.InvokeImportDscResource($statements.ToArray())
 
-        $configTextBlock = $configTextBlock.Insert(0, 'Param( $CustomParams ) . ')
+        $configTextBlock = $configTextBlock.Insert(0, 'Param( $Parameters ) . ')
 
         # find all dynamic keywords inside the configuration
         # nodes are removed from the list as they are executed separately
-        $dynamicKeywords = $ConfigCommand.ScriptBlock.Ast.FindAll({
+        $dynamicKeywords = $dscConfigurationBlockAsScriptBlock.Ast.FindAll({
             $args[0] -is [System.Management.Automation.Language.DynamicKeywordStatementAst]
         }, $true)
 
@@ -890,7 +887,7 @@ class DscConfigurationParser {
             }
         }
 
-        $configTextBlock += ' @CustomParams'
+        $configTextBlock += ' @Parameters'
 
         return [PsObject]@{
             ScriptBlock = [ScriptBlock]::Create($configTextBlock)
