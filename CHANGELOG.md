@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.1.0.84 - 2021-02-15
+### Changed
+- Modified the **VMware.vSphereDSC** and **VMware.PSDesiredStateConfiguration** module manifests to contain the **CompatiblePSEditions** module manifest key with both values: **Desktop** and **Core**.
+
+## VMware.PSDesiredStateConfiguration 0.0.0.15 - 2021-02-15
+### Changed
+- Modified the **VMware.vSphereDSC** and **VMware.PSDesiredStateConfiguration** module manifests to contain the **CompatiblePSEditions** module manifest key with both values: **Desktop** and **Core**.
+
 ## 2021-02-15
 ### Changed
 - Modified the documentation of the **VMware.PSDesiredStateConfiguration** module to reflect the changes made in the **New-VmwDscConfiguration** cmdlet.
