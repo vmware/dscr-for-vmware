@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2021-02-15
+### Changed
+- Modified the documentation of the **VMware.PSDesiredStateConfiguration** module to reflect the changes made in the **New-VmwDscConfiguration** cmdlet.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.14 - 2021-02-14
 ### Added
 - Added additional **DSC Configurations** with **ConfigurationData** for the **Unit Tests** in the **VMware.PSDesiredStateConfiguration** module.
