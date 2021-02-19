@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 0.0.0.16 - 2021-02-19
+### Changed
+- Modified the **VMware.PSDesiredStateConfiguration** module manifest to contain the **FunctionsToExport** to allow using the cmdlets without invoking **Import-Module** every time.
+
 ## VMware.vSphereDSC 2.1.0.84 - 2021-02-15
 ### Changed
 - Modified the **VMware.vSphereDSC** and **VMware.PSDesiredStateConfiguration** module manifests to contain the **CompatiblePSEditions** module manifest key with both values: **Desktop** and **Core**.
@@ -111,7 +115,7 @@ All notable changes to this project will be documented in this file.
 
 ## VMware.PSDesiredStateConfiguration 0.0.0.6 - 2020-12-18
 ### Changed
-- Fixed the bug with the same references for **DSC Resources** when multiple **vSphereNodes** are passed as array in a **DSC Configuration**. 
+- Fixed the bug with the same references for **DSC Resources** when multiple **vSphereNodes** are passed as array in a **DSC Configuration**.
 
 ## VMware.vSphereDSC 2.1.0.77 - 2020-12-17
 ### Added

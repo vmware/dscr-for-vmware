@@ -19,7 +19,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 ModuleToProcess = 'VMware.PSDesiredStateConfiguration.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.0.15'
+ModuleVersion = '1.0.0.16'
 
 # ID used to uniquely identify this module
 GUID = '4f9a62bf-e2a6-4bd1-ac20-ccf127bc643e'
@@ -43,7 +43,7 @@ Description = 'This PowerShell module contains logic for creating and running ob
 PowerShellVersion = '5.1'
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = '*'
+FunctionsToExport = @('New-VmwDscConfiguration', 'Start-VmwDscConfiguration', 'Test-VmwDscConfiguration', 'Get-VmwDscConfiguration')
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

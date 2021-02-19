@@ -35,5 +35,3 @@ $script:OrderedPublicClassFiles = $script:ClassResolver.OrderClassFiles()
 $script:OrderedPublicClassFiles | ForEach-Object -Process { . $_.FullName }
 
 $script:Functions | ForEach-Object -Process { . $_.FullName }
-
-Export-ModuleMember -Function $script:PublicFunctions.BaseName
