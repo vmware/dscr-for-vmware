@@ -26,7 +26,7 @@
 
 ## Description
 
-The resource is used to create, update and remove VMKernel Network Adapters added to the specified Standard Switch and Port Group. If the Port Group is not existing, it will be created and the VMKernel Network Adapter will be connected to it.
+The resource is used to create, update and remove VMKernel Network Adapters added to the specified Standard Switch and Port Group. If the Port Group is not existing, it will be created and the VMKernel Network Adapter will be connected to it. If the Port Groupd exists, the resource updates the associated VMKernel Network Adapter. There could be only one VMKernel Network Adapter into a Port Group, thus the resource identifies the VMKernel Network Adapter by the Port Group Name.
 
 ## Examples
 
@@ -81,7 +81,7 @@ Configuration VMHostVssNic_Config {
 
 ### Example 2
 
-The first Configuration creates a new VMKernel Network Adapter with the specified settings adding it to Standard Switch **MyVirtualSwitch** and Port Group **MyVirtualPortGroup**. The second Configuration updates the VMKernel Network Adapter added to Standard Switch **MyVirtualSwitch** and Port Group **MyVirtualPortGroup** by disabling IPv6 and enabling Dhcp.
+The first Configuration creates a new VMKernel Network Adapter with the specified settings adding it to Standard Switch **MyVirtualSwitch** and Port Group **MyVirtualPortGroup**. The second Configuration updates the VMKernel Network Adapter added to Standard Switch **MyVirtualSwitch** and Port Group **MyVirtualPortGroup** by disabling IPv6 and enabling DHCP.
 
 ```powershell
 Configuration VMHostVssNic_WhenAddingVMKernelNetworkAdapter_Config {
