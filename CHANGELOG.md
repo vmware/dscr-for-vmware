@@ -1,6 +1,30 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.vSphereDSC 2.2.0.84 - 2021-02-24
+### Added
+- Added **DatastoreCluster DSC Resource** that is used to create, modify and remove **Datastore Clusters** in the specified **Datacenter** on the specified **vCenter Server**.
+- Added **DRSRule DSC Resource** that is used to create, modify and remove **DRS rules** for the specified **Cluster**.
+- Added **DatastoreClusterAddDatastore DSC Resource** that is used to add **Datastores** to the specified **Datastore Cluster**.
+- Added **VMHostVdsNic DSC Resource** that is used to modify the settings or remove **VMKernel NICs** connected to the specified **Distributed Port Group** on the specified **VDSwitch**.
+- Added **VMHostStorage DSC Resource** that is used to enable or disable the **software iSCSI support** for the specified **VMHost**.
+- Added **VMHostIScsiHbaVMKernelNic DSC Resource** that is used to **bind/unbind VMKernel Network Adapters** to/from the specified **iSCSI Host Bus Adapter**.
+
+### Changed
+- **VMHostVDSwitchMigration DSC Resource**: Added a new **MigratePhysicalNicsOnly** parameter to allow the user to choose to migrate only **Physical Network Adapters**. Extended the **DSC Resource** to create **distributed port groups** with **VLAN ID**.
+- **VMHostIScsiHba DSC Resource**: Added **IScsiName** property to configure the **IScsiName** of the **IScsiHba**.
+- **VDPortGroup DSC Resource**: Added **VLanId** property to configure the **VLanId** for a **Distributed Port Group**.
+- **VMHostAccount DSC Resource**: Fixed the bug with determiting the desired state, when the **ESXi account password** should be changed.
+- **VMHostVDSwitchMigration DSC Resource**: Fixed the bug with migrating **Physical Network Adapters** to **VDSwitch**. The **Physical Network Adapters** should be migrated with the **VMKernel Network Adapters** to avoid connectivity loss for the **ESXi** during the migration.
+- **VMHostVssTeaming DSC Resource**: Fixed bugs with **physical network adapters** when updating the **teaming policy** of the **standard switch**.
+- **NfsDatastore DSC Resource**: Moved name validation to **VmfsDatastore DSC Resource** due to not being applicable for **NfsDatastores**.
+
+## VMware.PSDesiredStateConfiguration 1.0.0.16 - 2021-02-24
+### Added
+- Added **New-VmwDscConfiguration** cmdlet which compiles a **DSC Configuration** into a **VmwDscConfiguration** object, which contains the name of the **DSC Configuration** and the **DSC Resources** defined in it.
+- Added **Start**, **Test** and **Get-VmwDscConfiguration** cmdlets which work with the **VmwDscConfiguration** object created by the **New-VmwDscConfiguration** cmdlet and apply the **Set**, **Test**, **Get** methods to the compiled **DSC Configuration**.
+- Added **vSphereNode** which is a special dynamic keyword that represents a connection to a **VIServer**. Each **vSphereNode** can contain **DSC Resources** from the module **VMware.vSphereDSC**. The **vSphere Nodes** along with the new execution engine allow the user to bundle **DSC Resources** and specify a common **VIServer** connection which gets reused.
+
 ## VMware.PSDesiredStateConfiguration 0.0.0.16 - 2021-02-19
 ### Changed
 - Modified the **VMware.PSDesiredStateConfiguration** module manifest to contain the **FunctionsToExport** to allow using the cmdlets without invoking **Import-Module** every time.
