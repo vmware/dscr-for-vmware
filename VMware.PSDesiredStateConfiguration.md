@@ -45,14 +45,20 @@ When using **PowerShell 7.0** please keep in mind the list of [Known Limitations
 For **PowerShell 5.1** you need to enable Windows Remote Management.
 For information on how to enable it read here: [WinRM guide](https://docs.microsoft.com/en-us/windows/win32/winrm/installation-and-configuration-for-windows-remote-management).
 
-## Installations
+## Installing the VMware.PSDesiredStateConfiguration Module
 
-### Manual Installation
+There are two ways to install the **VMware.PSDesiredStateConfiguration** Module: Download it from the **PowerShell Gallery** or download it from the [Releases page](https://github.com/vmware/dscr-for-vmware/releases).
 
-1. Copy the **VMware.PSDesiredStateConfiguration** module to one of the system **PowerShell** module directories. For more information on installing PowerShell Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/scripting/developer/module/installing-a-powershell-module?view=powershell-7).
+### PowerShell Gallery
 
+```powershell
+ Install-Module -Name VMware.PSDesiredStateConfiguration
+```
+
+### Download it from [Releases](https://github.com/vmware/dscr-for-vmware/releases)
+
+1. Copy the **VMware.PSDesiredStateConfiguration** Module to one of the system **PowerShell** module directories. For more information on installing **PowerShell** Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/scripting/developer/module/installing-a-powershell-module?view=powershell-7).
 2. In **PowerShell** import the **VMware.PSDesiredStateConfiguration** module:
-
    ```powershell
     Import-Module -Name 'VMware.PSDesiredStateConfiguration'
    ```

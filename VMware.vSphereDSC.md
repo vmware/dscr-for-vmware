@@ -18,7 +18,7 @@ You also need to configure the DSC LCM on a Windows machine where the resources 
 
 ## Installing the VMware.vSphereDSC Resources
 
-There are two ways to install the VMware.vSphereDSC Module: Download it from the PowerShell Gallery or download it from the [Releases page](https://github.com/vmware/dscr-for-vmware/releases).
+There are two ways to install the **VMware.vSphereDSC** Module: Download it from the **PowerShell Gallery** or download it from the [Releases page](https://github.com/vmware/dscr-for-vmware/releases).
 
 ### PowerShell Gallery
 
@@ -28,8 +28,8 @@ There are two ways to install the VMware.vSphereDSC Module: Download it from the
 
 ### Download it from [Releases](https://github.com/vmware/dscr-for-vmware/releases)
 
-1. Copy the VMware.vSphereDSC Module to one of the system PowerShell module directories. For more information on installing PowerShell Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/module/powershellget/install-module?view=powershell-5.1).
-2. In PowerShell import the VMware.vSphereDSC Module:
+1. Copy the **VMware.vSphereDSC** Module to one of the system **PowerShell** module directories. For more information on installing **PowerShell** Modules, please visit [Installing a PowerShell Module](https://docs.microsoft.com/en-us/powershell/module/powershellget/install-module?view=powershell-5.1).
+2. In **PowerShell** import the **VMware.vSphereDSC** Module:
    ```
     Import-Module -Name 'VMware.vSphereDSC'
    ```
