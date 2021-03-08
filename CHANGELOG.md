@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2021-03-08
+### Added
+- Added installation guide for **VMware.PSDesiredStateConfiguration** module.
+
+### Changed
+- Updated the **VMHostVssNic DSC Resource** documentation to be the same as the one in the [Wiki](https://github.com/vmware/dscr-for-vmware/wiki).
+
 ## VMware.vSphereDSC 2.2.0.84 - 2021-02-24
 ### Added
 - Added **DatastoreCluster DSC Resource** that is used to create, modify and remove **Datastore Clusters** in the specified **Datacenter** on the specified **vCenter Server**.
