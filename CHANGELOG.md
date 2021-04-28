@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## VMware.PSDesiredStateConfiguration 1.0.0.17 - 2021-04-28
+### Changed
+- Fix bug with **`Test-VmwDscConfiguration`** cmdlet on **`PowerShell 5.1`** that occurred due to **`NodeResult`** being **`PSObject`** instead of **`PSCustomObject`**. **`Select-Object -ExpandProperty InvokeResult`** doesn't work on **`PSObject`** on **`PowerShell 5.1`**.
+
 ## 2021-03-08
 ### Added
 - Added installation guide for **VMware.PSDesiredStateConfiguration** module.
