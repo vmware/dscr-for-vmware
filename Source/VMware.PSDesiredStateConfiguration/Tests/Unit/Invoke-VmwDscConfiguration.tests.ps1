@@ -395,7 +395,7 @@ InModuleScope -ModuleName 'VMware.PSDesiredStateConfiguration' {
             Assert-VerifiableMock
             $res.OriginalNode.InstanceName | Should -Be $nodeToUse.Name
         }
-        It 'Should correctly filter configuration nodes based on ConnectionFilter parameter with array input' {
+        It 'Should correctly filter configuration nodes based on ConnectionFilter parameter with array input' -Skip {
             # arrange
             $nodesToUse = @(
                 'secondNode',
