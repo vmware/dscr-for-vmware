@@ -34,7 +34,7 @@ class DscConfigurationRunner {
     .DESCRIPTION
     Invokes the configuration
     #>
-    [Psobject] InvokeConfiguration() {
+    [PSCustomObject] InvokeConfiguration() {
         $this.ValidateVsphereNodes()
 
         $invokeResult = New-Object 'System.Collections.ArrayList'
@@ -46,7 +46,7 @@ class DscConfigurationRunner {
 
             $result = $this.InvokeNodeResources($node.Resources)
 
-            $nodeResult = [PsObject]@{
+            $nodeResult = [PSCustomObject] @{
                 OriginalNode = $node
                 InvokeResult = $result
             }
