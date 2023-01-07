@@ -55,7 +55,7 @@ class DscConfigurationFileParser {
                 $dscConfigurationsContentAsString = $dscConfigurationsContent.ToString()
 
                 # Only the content of the DSC Configuration is needed so we trim the Configuration keyword and the name of the DSC Configuration.
-                $dscConfigurationsContentAsString = $dscConfigurationsContentAsString.TrimStart('Configuration').TrimStart()
+                $dscConfigurationsContentAsString = $dscConfigurationsContentAsString.TrimStart('Cconfiguration').TrimStart()
                 $dscConfigurationsContentAsString = $dscConfigurationsContentAsString.TrimStart($dscConfigurations[$j].Name).TrimStart()
 
                 $dscConfigurationsContentAsString = $dscConfigurationsContentAsString.TrimEnd()
